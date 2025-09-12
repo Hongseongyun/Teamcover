@@ -8,10 +8,12 @@ google-auth==2.23.4
 google-auth-oauthlib==1.1.0
 google-auth-httplib2==0.1.1
 google-api-python-client==2.108.0
-easyocr==1.7.0
-opencv-python==4.8.1.78
-Pillow>=10.1.0
-numpy>=1.24.0
 python-dotenv==1.0.0
 psycopg2-binary>=2.9.0
 gunicorn==21.2.0
+
+# OCR packages (optional, can be installed later if needed)
+# easyocr==1.7.0
+# opencv-python==4.8.1.78
+# Pillow>=10.1.0
+# numpy>=1.24.0

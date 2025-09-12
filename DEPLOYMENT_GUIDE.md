@@ -24,8 +24,9 @@
 ### 1.3 백엔드 서비스 배포
 
 1. Railway에서 "New Service" → "GitHub Repo" 선택
-2. `backend` 폴더 선택
-3. 환경변수 설정:
+2. setting > Root Directory : backend 입력
+3. `backend` 폴더 선택
+4. 환경변수 설정:
    ```
    FLASK_ENV=production
    FLASK_SECRET_KEY=your-secret-key-here
