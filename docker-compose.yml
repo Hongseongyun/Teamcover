@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 백엔드 API 서버
+  backend:
+    build: ./backend
+    ports:
+      - '5000:5000'
+    environment:
+      - FLASK_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=teamcover_db
+      - DB_USER=postgres
+      - DB_PASSWORD=teamcover123
+    depends_on:
+      - postgres
+    volumes:
+      - ./API_KEY:/app/API_KEY:ro
+    networks:
+      - teamcover-network
+
+  # 프론트엔드 React 앱
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    networks:
+      - teamcover-network
+
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=teamcover_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=teamcover123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - teamcover-network
+
+volumes:
+  postgres_data:
+
+networks:
+  teamcover-network:
+    driver: bridge

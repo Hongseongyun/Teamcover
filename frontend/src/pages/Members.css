@@ -1,0 +1,244 @@
+.members-page {
+  padding: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--toss-gray-900);
+}
+
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--toss-shadow-lg);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-primary .stat-number {
+  color: var(--toss-primary);
+}
+
+.stat-success .stat-number {
+  color: var(--toss-success);
+}
+
+.stat-info .stat-number {
+  color: var(--toss-secondary);
+}
+
+.stat-warning .stat-number {
+  color: var(--toss-warning);
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.section-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin-bottom: 1.5rem;
+}
+
+.member-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.members-section {
+  margin-bottom: 2rem;
+}
+
+.members-table {
+  overflow-x: auto;
+}
+
+.members-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.members-table th,
+.members-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.members-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.members-table tr:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--toss-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--toss-gray-600);
+}
+
+.btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--toss-danger-dark);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: var(--toss-gray-600);
+}
+
+/* CSS 변수 정의 */
+:root {
+  --toss-white: #ffffff;
+  --toss-gray-50: #f9fafb;
+  --toss-gray-200: #e5e7eb;
+  --toss-gray-300: #d1d5db;
+  --toss-gray-500: #6b7280;
+  --toss-gray-600: #4b5563;
+  --toss-gray-700: #374151;
+  --toss-gray-900: #111827;
+  --toss-primary: #3b82f6;
+  --toss-primary-dark: #2563eb;
+  --toss-success: #10b981;
+  --toss-secondary: #8b5cf6;
+  --toss-warning: #f59e0b;
+  --toss-danger: #ef4444;
+  --toss-danger-dark: #dc2626;
+  --toss-radius: 0.5rem;
+  --toss-radius-lg: 0.75rem;
+  --toss-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}

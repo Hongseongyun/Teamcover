@@ -1,0 +1,966 @@
+.scores-page {
+  padding: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--toss-gray-900);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 통계 섹션 */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+/* 개인별 검색 섹션 */
+.member-search-section {
+  margin-bottom: 2rem;
+}
+
+.search-form {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+}
+
+.search-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-direction: row;
+  justify-content: center;
+  max-width: 600px;
+  margin: 0 auto;
+  height: 100%;
+}
+
+.search-row .form-group {
+  flex: 1;
+}
+
+.search-row .form-group select {
+  width: 100%;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+}
+
+.search-row .btn {
+  height: 40px;
+  padding: 0.5rem 1.5rem;
+  white-space: nowrap;
+  margin-top: 0;
+  align-self: flex-end;
+}
+
+.member-stats {
+  margin-top: 1.5rem;
+}
+
+.member-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.member-header h4 {
+  margin: 0;
+  color: var(--toss-primary);
+  font-size: 1.5rem;
+}
+
+.member-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.recent-games {
+  margin-top: 2rem;
+}
+
+.recent-games h5 {
+  margin-bottom: 1rem;
+  color: var(--toss-gray-900);
+}
+
+.recent-games-table {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.recent-games-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recent-games-table th,
+.recent-games-table td {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.recent-games-table th {
+  background: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.recent-games-table td {
+  color: var(--toss-gray-800);
+}
+
+/* 전체 게임 기록 테이블 */
+.all-games {
+  margin-top: 2rem;
+}
+
+.all-games h5 {
+  margin-bottom: 1rem;
+  color: var(--toss-gray-900);
+}
+
+.all-games-table {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.all-games-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.all-games-table th,
+.all-games-table td {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.all-games-table th {
+  background: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.all-games-table td {
+  color: var(--toss-gray-800);
+}
+
+/* 페이징 컨트롤 */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.pagination-controls span {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+  min-width: 100px;
+  text-align: center;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 날짜별 그룹 헤더 */
+.date-header-row {
+  background: var(--toss-primary-light);
+}
+
+.date-header {
+  padding: 1rem !important;
+  background: var(--toss-primary-light) !important;
+  border-bottom: 2px solid var(--toss-primary) !important;
+}
+
+.date-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.date-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--toss-primary-dark);
+}
+
+.date-stats {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.date-stats .stat-item {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  background: var(--toss-white);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-primary);
+}
+
+.score-row {
+  background: var(--toss-white);
+}
+
+.score-row:hover {
+  background: var(--toss-gray-50);
+}
+
+/* 스코어 헤더 */
+.scores-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* 단일 날짜 보기 */
+.single-date-view {
+  margin-top: 1rem;
+}
+
+.date-navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.date-navigation button {
+  padding: 0.5rem 1rem;
+  font-size: 1.2rem;
+  min-width: 50px;
+}
+
+/* 네비게이션 버튼 스타일 */
+.nav-btn {
+  padding: 0.75rem !important;
+  min-width: 60px !important;
+  height: 60px;
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.nav-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.current-date-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.date-display {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--toss-primary);
+}
+
+.date-counter {
+  font-size: 0.9rem;
+  color: var(--toss-gray-600);
+  background: var(--toss-gray-100);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+}
+
+/* 날짜 상세 정보 */
+.date-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.participant-count {
+  font-size: 0.9rem;
+  color: var(--toss-gray-700);
+  background: var(--toss-success-light);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-success);
+  font-weight: 600;
+}
+
+.single-date-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.single-date-table th,
+.single-date-table td {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.single-date-table th {
+  background: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.single-date-table tr:hover {
+  background: var(--toss-gray-50);
+}
+
+/* 아웃라인 버튼 스타일 */
+.btn-outline-primary {
+  background: transparent;
+  color: var(--toss-primary);
+  border: 2px solid var(--toss-primary);
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+  background: var(--toss-primary);
+  color: white;
+}
+
+.btn-outline-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stat-warning .stat-number {
+  color: var(--toss-warning);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--toss-shadow-lg);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-primary .stat-number {
+  color: var(--toss-primary);
+}
+
+.stat-success .stat-number {
+  color: var(--toss-success);
+}
+
+.stat-info .stat-number {
+  color: var(--toss-secondary);
+}
+
+/* 섹션별 통계 */
+.section-stats {
+  margin-top: 2rem;
+}
+
+.section-stats h3 {
+  margin-bottom: 1.5rem;
+  color: var(--toss-gray-900);
+}
+
+.section-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.section-stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-stat-card h4 {
+  margin: 0 0 1rem 0;
+  color: var(--toss-primary);
+  font-size: 1.25rem;
+}
+
+.section-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: var(--toss-gray-600);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+}
+
+/* 가져오기 섹션 */
+.import-section {
+  margin-bottom: 2rem;
+}
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: var(--toss-radius);
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  background-color: var(--toss-warning-light);
+  color: var(--toss-warning-dark);
+  border: 1px solid var(--toss-warning);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
+
+/* 사진 업로드 섹션 */
+.photo-section {
+  margin-bottom: 2rem;
+}
+
+.upload-step {
+  margin-bottom: 2rem;
+}
+
+.file-input {
+  padding: 0.75rem;
+  border: 2px dashed var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  background-color: var(--toss-gray-50);
+  transition: all 0.3s ease;
+}
+
+.file-input:hover {
+  border-color: var(--toss-primary);
+  background-color: var(--toss-primary-light);
+}
+
+.image-preview {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: var(--toss-radius);
+  box-shadow: var(--toss-shadow);
+  margin-bottom: 1rem;
+}
+
+.form-text {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+  margin-top: 0.25rem;
+}
+
+/* OCR 결과 */
+.result-step {
+  margin-bottom: 2rem;
+}
+
+.ocr-summary {
+  background: var(--toss-info-light);
+  padding: 1rem;
+  border-radius: var(--toss-radius);
+  margin-bottom: 1.5rem;
+}
+
+.ocr-summary p {
+  margin: 0;
+  font-weight: 500;
+  color: var(--toss-info-dark);
+}
+
+.ocr-results-table {
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.ocr-results-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ocr-results-table th,
+.ocr-results-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.ocr-results-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.ocr-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* 기존 폼 스타일 */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.section-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin-bottom: 1.5rem;
+}
+
+.score-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* 컴팩트 폼 간격 축소 */
+.compact-form .form-row {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.entry-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0.25rem 0;
+}
+
+/* 한 줄 입력 행 레이아웃 */
+.entry-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.7fr 0.7fr 0.7fr 1.2fr auto;
+  gap: 0.5rem;
+  align-items: center; /* 행 내부 요소 수직 중앙 정렬 */
+}
+
+/* 화면에서는 라벨 숨김 (접근성 유지) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.entry-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center; /* 삭제 버튼 수직 중앙 정렬 */
+}
+
+/* 행 삭제 버튼: 작은 원형 '-' */
+.minus-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--toss-danger) !important; /* 빨간 배경 */
+  border: none !important;
+  color: #fff !important; /* 흰 글씨 */
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.6rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 인라인 편집 입력 UI - 더 부드럽고 세련되게 */
+.scores-table td .inline-input,
+.scores-table td .inline-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius-lg);
+  background-color: var(--toss-gray-50);
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.scores-table td .inline-input:focus,
+.scores-table td .inline-select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background-color: #fff;
+}
+
+.scores-table td input.inline-input[type='number'] {
+  text-align: center;
+}
+
+.inline-actions .btn + .btn {
+  margin-left: 0.5rem;
+}
+
+.form-group input.readonly {
+  background-color: var(--toss-gray-50);
+  color: var(--toss-gray-600);
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+/* + 버튼 가운데 배치 */
+.plus-center {
+  display: flex;
+  justify-content: center;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.plus-btn {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  font-size: 2rem; /* 더 크게 */
+  font-weight: 700; /* 더 굵게 */
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  color: #111 !important;
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scores-section {
+  margin-bottom: 2rem;
+}
+
+.scores-table {
+  overflow-x: auto;
+}
+
+.scores-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.scores-table th,
+.scores-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.scores-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.scores-table tr:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--toss-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--toss-gray-600);
+}
+
+.btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: var(--toss-success-dark);
+}
+
+.btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: var(--toss-info-dark);
+}
+
+.btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--toss-danger-dark);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: var(--toss-gray-600);
+}
+
+/* CSS 변수 정의 */
+:root {
+  --toss-white: #ffffff;
+  --toss-gray-50: #f9fafb;
+  --toss-gray-200: #e5e7eb;
+  --toss-gray-300: #d1d5db;
+  --toss-gray-500: #6b7280;
+  --toss-gray-600: #4b5563;
+  --toss-gray-700: #374151;
+  --toss-gray-900: #111827;
+  --toss-primary: #3b82f6;
+  --toss-primary-dark: #2563eb;
+  --toss-primary-light: #eff6ff;
+  --toss-success: #10b981;
+  --toss-success-dark: #059669;
+  --toss-info: #06b6d4;
+  --toss-info-dark: #0891b2;
+  --toss-info-light: #ecfeff;
+  --toss-info-dark: #0e7490;
+  --toss-secondary: #8b5cf6;
+  --toss-warning: #f59e0b;
+  --toss-warning-light: #fffbeb;
+  --toss-warning-dark: #d97706;
+  --toss-danger: #ef4444;
+  --toss-danger-dark: #dc2626;
+  --toss-radius: 0.5rem;
+  --toss-radius-lg: 0.75rem;
+  --toss-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 원형 삭제 버튼 강제 오버라이드 (btn, btn-sm 규칙보다 나중에 적용) */
+.btn.minus-btn {
+  padding: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+}
+
+/* + 버튼도 btn 규칙보다 우선 적용되도록 오버라이드 */
+.btn.plus-btn {
+  padding: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+}
+
+.btn.plus-btn:hover {
+  font-size: 2rem !important;
+}

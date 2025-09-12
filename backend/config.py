@@ -1,0 +1,37 @@
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드 (백엔드 디렉토리 기준)
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+print(f"Loading .env from: {env_path}")
+load_dotenv(env_path)
+
+# 환경변수 로드 확인
+print(f"GOOGLE_CLIENT_ID: {os.environ.get('GOOGLE_CLIENT_ID', 'NOT_SET')}")
+print(f"GOOGLE_CLIENT_SECRET: {'SET' if os.environ.get('GOOGLE_CLIENT_SECRET') else 'NOT_SET'}")
+
+class Config:
+    # Flask 설정
+    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'teamcover_secret_key_2025'
+    
+    # PostgreSQL 데이터베이스 설정
+    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
+    DB_PORT = os.environ.get('DB_PORT') or '5432'
+    DB_NAME = os.environ.get('DB_NAME') or 'teamcover_db'
+    DB_USER = os.environ.get('DB_USER') or 'postgres'
+    DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'teamcover123'
+    
+    # SQLAlchemy 설정 (pg8000 드라이버 사용)
+    SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
+    
+    # Google OAuth 2.0 설정
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID') or '여기에_실제_클라이언트_ID_입력'
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET') or '여기에_실제_클라이언트_시크릿_입력'
+    
+    # JWT 설정
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'your-secret-key-change-this-in-production' 

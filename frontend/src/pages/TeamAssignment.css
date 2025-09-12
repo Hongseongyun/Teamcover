@@ -1,0 +1,1527 @@
+.team-assignment-page {
+  padding: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--toss-gray-900);
+}
+
+/* 선수 입력 섹션 */
+.player-input-section {
+  margin-bottom: 2rem;
+}
+
+/* 검색 섹션 */
+.search-section {
+  margin-bottom: 2rem;
+}
+
+.search-header {
+  margin-bottom: 1.5rem;
+}
+
+.search-header h4 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: 1.125rem;
+}
+
+/* 검색 입력란 스타일 (버튼 제거 후) */
+.search-input-row {
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+/* 기본 검색 그룹 스타일 */
+.search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 검색 그룹 - 입력란 영역 */
+.search-input-row .search-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 검색 입력란 - 높이 통일 */
+.search-input-row .search-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+}
+
+/* 검색 입력란 스타일 */
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+}
+
+/* 작은 화면에서도 가로 배치 유지 */
+@media (max-width: 768px) {
+  .search-input-row {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+
+  .search-group {
+    flex: 1;
+  }
+
+  .btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* 검색 결과 */
+.search-results {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--toss-gray-200);
+}
+
+.search-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.search-results-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.search-results h5 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: 1rem;
+}
+
+.search-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.search-result-card {
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  /* 제거 버튼과 추가 버튼 간격을 위한 여백 */
+  padding-right: 3.5rem;
+}
+
+.search-result-card:hover {
+  box-shadow: var(--toss-shadow);
+  transform: translateY(-1px);
+}
+
+.search-result-card .member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-result-card .member-name {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+}
+
+.search-result-card .member-gender {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+}
+
+.search-result-card .average-info {
+  margin-top: 0.25rem;
+}
+
+.section-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 검색 입력란 그룹 (버튼 제거 후) */
+.search-input-row .form-group {
+  width: 100%;
+  margin-right: 0;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 읽기 전용 입력 필드 스타일 */
+.readonly-input {
+  background-color: var(--toss-gray-50);
+  color: var(--toss-gray-700);
+  cursor: not-allowed;
+  border: 1px solid var(--toss-gray-300);
+}
+
+.readonly-input:focus {
+  border-color: var(--toss-gray-300);
+  box-shadow: none;
+}
+
+/* 에버 정보 표시 */
+.average-info {
+  margin-top: 0.5rem;
+}
+
+.info-text {
+  color: var(--toss-success);
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: var(--toss-success-light);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--toss-radius);
+  display: inline-block;
+}
+
+/* 대량 입력 섹션 */
+.bulk-input-section {
+  margin-top: 2rem;
+}
+
+.bulk-header {
+  margin-bottom: 1.5rem;
+}
+
+.bulk-header h4 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: 1.125rem;
+}
+
+/* 목록 아래 버튼 스타일 */
+.bulk-actions-bottom {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--toss-gray-200);
+}
+
+.bulk-actions-bottom .btn {
+  min-width: 150px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+/* 회원 그리드 */
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* 회원 카드 - 선택 상태별 스타일 */
+.member-card {
+  background: var(--toss-white);
+  border: 2px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 선택되지 않은 회원 카드 */
+.member-card.unselected {
+  background: var(--toss-white);
+  border-color: var(--toss-gray-200);
+  opacity: 0.8;
+}
+
+.member-card.unselected:hover {
+  border-color: var(--toss-blue-300);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 선택된 회원 카드 */
+.member-card.selected {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: var(--toss-blue-500);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+  opacity: 1;
+}
+
+.member-card.selected:hover {
+  border-color: var(--toss-blue-600);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.25);
+}
+
+/* 선택 표시기 스타일 */
+.selection-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  /* 정확한 중앙 정렬을 위한 추가 설정 */
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* 선택되지 않은 회원의 표시기 */
+.member-card.unselected .selection-indicator {
+  background-color: var(--toss-gray-200);
+  color: var(--toss-gray-600);
+  border: 2px solid var(--toss-gray-300);
+}
+
+.member-card.unselected:hover .selection-indicator {
+  background-color: var(--toss-blue-100);
+  color: var(--toss-blue-600);
+  border-color: var(--toss-blue-300);
+}
+
+/* 선택된 회원의 표시기 */
+.member-card.selected .selection-indicator {
+  background-color: var(--toss-blue-500);
+  color: white;
+  border: 2px solid var(--toss-blue-600);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* 회원 정보 스타일 */
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.member-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--toss-gray-900);
+}
+
+.member-card.unselected .member-name {
+  color: var(--toss-gray-700);
+}
+
+.member-card.selected .member-name {
+  color: var(--toss-blue-900);
+}
+
+.member-gender {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+  padding: 0.25rem 0.5rem;
+  background-color: var(--toss-gray-100);
+  border-radius: var(--toss-radius-sm);
+  display: inline-block;
+  width: fit-content;
+}
+
+.member-card.selected .member-gender {
+  background-color: var(--toss-blue-100);
+  color: var(--toss-blue-700);
+}
+
+/* 회원 카드 하이라이트 효과 */
+.member-card.highlighted {
+  animation: highlightPulse 2s ease-in-out;
+  border: 3px solid var(--toss-blue-500) !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5) !important;
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+@keyframes highlightPulse {
+  0% {
+    border-color: var(--toss-blue-500);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    border-color: var(--toss-blue-600);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+  }
+  100% {
+    border-color: var(--toss-blue-500);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+}
+
+/* 하이라이트된 카드 호버 효과 */
+.member-card.highlighted:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.7) !important;
+}
+
+/* 선수 목록 */
+.players-section {
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.player-card {
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.player-card:hover {
+  box-shadow: var(--toss-shadow);
+  transform: translateY(-1px);
+}
+
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-name {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+}
+
+.player-average {
+  font-size: 0.875rem;
+  color: var(--toss-primary);
+  font-weight: 500;
+}
+
+.player-gender {
+  font-size: 0.75rem;
+  color: var(--toss-gray-600);
+}
+
+.no-players {
+  text-align: center;
+  padding: 3rem;
+  color: var(--toss-gray-500);
+  font-style: italic;
+}
+
+/* 팀 구성 */
+.team-config-section {
+  margin-bottom: 2rem;
+}
+
+.team-config {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 2rem;
+}
+
+.team-config .form-group {
+  min-width: 120px;
+}
+
+/* 팀 구성 옵션 (삭제됨 - 성별 균형 옵션만 팀 구성하기 버튼 옆에 배치) */
+
+.teams-result {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--toss-gray-200);
+}
+
+.teams-result h4 {
+  margin-bottom: 1.5rem;
+  color: var(--toss-gray-900);
+}
+
+/* 밸런싱 결과 메시지 */
+.balancing-result-message {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: var(--toss-radius);
+  font-weight: 500;
+  text-align: center;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.balancing-result-message:contains('✅') {
+  background: var(--toss-success-light);
+  color: var(--toss-success-dark);
+  border: 1px solid var(--toss-success);
+}
+
+.balancing-result-message:contains('⚠️') {
+  background: var(--toss-warning-light);
+  color: var(--toss-warning-dark);
+  border: 1px solid var(--toss-warning);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* 팀 순서 고정 - 왼쪽부터 1, 2, 3... 순으로 배치 */
+.teams-grid {
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(300px, 1fr);
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--toss-gray-300) transparent;
+}
+
+/* 스크롤바 스타일링 */
+.teams-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.teams-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.teams-grid::-webkit-scrollbar-thumb {
+  background: var(--toss-gray-300);
+  border-radius: 4px;
+}
+
+.teams-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--toss-gray-400);
+}
+
+/* 팀 카드 순서 강제 적용 */
+.team-card[data-team-number='1'] {
+  order: 1;
+}
+.team-card[data-team-number='2'] {
+  order: 2;
+}
+.team-card[data-team-number='3'] {
+  order: 3;
+}
+.team-card[data-team-number='4'] {
+  order: 4;
+}
+.team-card[data-team-number='5'] {
+  order: 5;
+}
+.team-card[data-team-number='6'] {
+  order: 6;
+}
+.team-card[data-team-number='7'] {
+  order: 7;
+}
+.team-card[data-team-number='8'] {
+  order: 8;
+}
+.team-card[data-team-number='9'] {
+  order: 9;
+}
+.team-card[data-team-number='10'] {
+  order: 10;
+}
+
+.team-card {
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  box-shadow: var(--toss-shadow);
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.team-header h5 {
+  margin: 0;
+  color: var(--toss-primary);
+  font-size: 1.25rem;
+}
+
+.team-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+}
+
+.team-players {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.team-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: var(--toss-gray-50);
+  border-radius: var(--toss-radius);
+}
+
+.team-player .player-name {
+  font-weight: 500;
+}
+
+.team-player .player-average {
+  color: var(--toss-primary);
+  font-weight: 600;
+}
+
+.team-player .player-gender {
+  color: var(--toss-gray-600);
+  font-size: 0.75rem;
+}
+
+/* 팀 통계 요약 */
+.team-summary {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--toss-gray-200);
+}
+
+.team-summary h5 {
+  margin-bottom: 1.5rem;
+  color: var(--toss-gray-900);
+  font-size: 1.125rem;
+}
+
+.team-stats-table {
+  overflow-x: auto;
+}
+
+.team-stats-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.team-stats-table th,
+.team-stats-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.team-stats-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.gender-balance {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.gender-balance.balanced {
+  background-color: var(--toss-success-light);
+  color: var(--toss-success);
+}
+
+.gender-balance.unbalanced {
+  background-color: var(--toss-warning-light);
+  color: var(--toss-warning);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap; /* 버튼 텍스트 줄바꿈 방지 */
+  flex-shrink: 0; /* 버튼 크기 고정 */
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-600);
+}
+
+.btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--toss-success-dark);
+}
+
+.btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--toss-danger-dark);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* CSS 변수 정의 */
+:root {
+  --toss-white: #ffffff;
+  --toss-gray-50: #f9fafb;
+  --toss-gray-200: #e5e7eb;
+  --toss-gray-300: #d1d5db;
+  --toss-gray-500: #6b7280;
+  --toss-gray-600: #4b5563;
+  --toss-gray-700: #374151;
+  --toss-gray-900: #111827;
+  --toss-primary: #3b82f6;
+  --toss-primary-dark: #2563eb;
+  --toss-success: #10b981;
+  --toss-success-dark: #059669;
+  --toss-success-light: #d1fae5;
+  --toss-secondary: #8b5cf6;
+  --toss-warning: #f59e0b;
+  --toss-warning-dark: #d97706;
+  --toss-warning-light: #fffbeb;
+  --toss-danger: #ef4444;
+  --toss-danger-dark: #dc2626;
+  --toss-radius: 0.5rem;
+  --toss-radius-lg: 0.75rem;
+  --toss-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 부드러운 스크롤 효과 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 선수 목록 섹션 하이라이트 효과 */
+.players-section {
+  scroll-margin-top: 2rem;
+}
+
+/* 로딩 오버레이 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-content {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--toss-radius-lg);
+  text-align: center;
+  box-shadow: var(--toss-shadow-lg);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--toss-gray-200);
+  border-top: 4px solid var(--toss-blue-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-content p {
+  margin: 0;
+  color: var(--toss-gray-700);
+  font-weight: 500;
+}
+
+/* 중복 알림 메시지 */
+.duplicate-alert {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+  margin-top: 1.5rem;
+  animation: slideInDown 0.3s ease-out;
+  position: relative;
+  z-index: 100;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 검색 결과 전체 추가 시 알림 스타일 */
+.search-duplicate-alert {
+  margin-top: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* 선택된 회원 추가 시 알림 스타일 */
+.bulk-duplicate-alert {
+  margin-top: 1.5rem;
+  margin-bottom: 0;
+}
+
+.alert-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.alert-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.alert-text {
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.alert-text div {
+  margin-bottom: 0.25rem;
+}
+
+.alert-text div:last-child {
+  margin-bottom: 0;
+}
+
+/* 중복된 회원 이름 강조 */
+.alert-text div:first-child {
+  font-weight: 600;
+  color: #78350f;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 검색 결과 카드 - 중복된 회원 스타일 */
+.search-result-card.duplicate {
+  opacity: 0.6;
+  background-color: var(--toss-gray-100);
+  border-color: var(--toss-gray-300);
+}
+
+.search-result-card.duplicate .member-name {
+  color: var(--toss-gray-500);
+}
+
+.search-result-card.duplicate .btn {
+  background-color: var(--toss-gray-400);
+  color: var(--toss-gray-600);
+  cursor: not-allowed;
+}
+
+.search-result-card.duplicate .btn:hover {
+  background-color: var(--toss-gray-400);
+}
+
+/* 비활성화된 회원 카드 (이미 선수 목록에 있는 경우) */
+.member-card.disabled {
+  background: var(--toss-gray-50);
+  border-color: var(--toss-gray-300);
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.member-card.disabled::after {
+  content: '이미 선수 목록에 추가됨';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.member-card.disabled:hover::after {
+  opacity: 1;
+}
+
+.member-card.disabled:hover {
+  border-color: var(--toss-gray-300);
+  box-shadow: none;
+  transform: none;
+}
+
+/* 비활성화된 회원의 표시기 */
+.member-card.disabled .selection-indicator {
+  background-color: var(--toss-green-500);
+  color: white;
+  border: 2px solid var(--toss-green-600);
+  box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+}
+
+/* 비활성화된 회원의 텍스트 */
+.member-card.disabled .member-name {
+  color: var(--toss-gray-500);
+}
+
+.member-card.disabled .member-gender {
+  background-color: var(--toss-gray-200);
+  color: var(--toss-gray-500);
+}
+
+/* 자동완성 목록 */
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--toss-gray-200);
+  border-top: none;
+  border-radius: 0 0 var(--toss-radius) var(--toss-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.autocomplete-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--toss-gray-100);
+  transition: background-color 0.2s ease;
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item:hover {
+  background-color: var(--toss-blue-50);
+}
+
+.autocomplete-item:active {
+  background-color: var(--toss-blue-100);
+}
+
+.autocomplete-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.autocomplete-name {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  font-size: 1rem;
+}
+
+.autocomplete-gender {
+  font-size: 0.75rem;
+  color: var(--toss-gray-600);
+  padding: 0.125rem 0.5rem;
+  background-color: var(--toss-gray-100);
+  border-radius: var(--toss-radius-sm);
+  display: inline-block;
+  width: fit-content;
+}
+
+.autocomplete-indicator {
+  font-size: 0.75rem;
+  color: var(--toss-blue-600);
+  font-weight: 500;
+}
+
+/* 검색 입력란 컨테이너를 상대 위치로 설정 */
+.search-group {
+  position: relative;
+}
+
+/* 자동완성 항목 비활성화 상태는 더 이상 사용하지 않음 */
+
+/* 검색 결과 카드 제거 버튼 */
+.search-result-card {
+  position: relative;
+}
+
+.remove-member-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ef4444;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  line-height: 1;
+  transition: all 0.2s ease;
+  z-index: 10;
+  opacity: 1;
+  visibility: visible;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* 정확한 중앙 정렬을 위한 추가 설정 */
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* 제거 버튼이 항상 보이도록 강제 */
+.search-result-card:hover .remove-member-btn,
+.search-result-card .remove-member-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.remove-member-btn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.remove-member-btn:active {
+  transform: scale(0.95);
+}
+
+.remove-member-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* 팀 구성 결과 정렬 정보 */
+.sorting-info {
+  background: var(--toss-blue-50);
+  border: 1px solid var(--toss-blue-200);
+  border-radius: var(--toss-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.sorting-info p {
+  margin: 0;
+  color: var(--toss-blue-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* 팀 밸런싱 상태 스타일 */
+.balance-analysis {
+  margin-bottom: 1.5rem;
+}
+
+.balance-status {
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+}
+
+.balance-status.balanced {
+  border-color: var(--toss-green-300);
+  background: var(--toss-green-50);
+}
+
+.balance-status.unbalanced {
+  border-color: var(--toss-red-300);
+  background: var(--toss-red-50);
+}
+
+.balance-status h5 {
+  margin: 0 0 0.5rem 0;
+  color: var(--toss-gray-900);
+  font-size: 1rem;
+}
+
+.balance-status p {
+  margin: 0;
+  color: var(--toss-gray-700);
+  font-size: 0.875rem;
+}
+
+.balance-status.balanced p strong {
+  color: var(--toss-green-600);
+}
+
+.balance-status.unbalanced p strong {
+  color: var(--toss-red-600);
+}
+
+/* 팀 구성 액션 행 (더 이상 사용되지 않음 - team-config-row로 대체) */
+
+/* 팀 구성 행 - 모든 요소를 가로로 배치 */
+.team-config-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* 팀 구성 섹션의 form-group 스타일 조정 */
+.team-config .form-group {
+  margin-bottom: 0;
+  min-width: 120px;
+}
+
+.team-config .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--toss-gray-700);
+  font-size: 0.875rem;
+}
+
+.team-config .form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.team-config .form-group input:focus {
+  outline: none;
+  border-color: var(--toss-blue-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 팀 구성하기 버튼 스타일 */
+.team-config .btn {
+  height: 42px; /* 입력란과 높이 맞춤 */
+  padding: 0.75rem 1.5rem;
+  white-space: nowrap;
+}
+
+/* 팀 구성하기 버튼 - 심플하고 고급스러운 플랫 스타일 */
+.team-config .btn.btn-primary {
+  background: var(--toss-primary) !important; /* 그라데이션 제거 */
+  background-image: none !important;
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.team-config .btn.btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.team-config .btn.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 6px 12px rgba(59, 130, 246, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.team-config .btn.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+/* 성별 균형 옵션을 팀 구성 행에 맞게 조정 */
+.team-config .gender-balance-option {
+  height: 42px; /* 입력란과 높이 맞춤 */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  padding: 0 0.75rem;
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.team-config .gender-balance-option:hover {
+  border-color: var(--toss-blue-300);
+  background: var(--toss-blue-50);
+}
+
+.team-config .gender-balance-option input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.team-config .gender-balance-option span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+/* 드래그 앤 드롭 관련 스타일 */
+.team-player {
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+  /* 드래그 가능하도록 명시적 설정 */
+  -webkit-user-drag: element;
+  -khtml-user-drag: element;
+  -moz-user-drag: element;
+  -o-user-drag: element;
+  user-drag: element;
+}
+
+.team-player:active {
+  cursor: grabbing;
+}
+
+.team-player.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  cursor: grabbing;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* 드래그 중일 때 시각적 피드백 강화 */
+.team-player:not(.dragging):hover {
+  background: var(--toss-gray-50);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 드래그 시작 상태 */
+.team-player.drag-start {
+  background: var(--toss-blue-50);
+  border: 1px solid var(--toss-blue-300);
+  transform: scale(1.02);
+}
+
+.team-card.drag-over {
+  border: 2px dashed var(--toss-blue-500);
+  background: var(--toss-blue-50);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  /* 드래그 오버 시 더 명확한 시각적 피드백 */
+  position: relative;
+}
+
+.team-card.drag-over::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.team-card.drag-over .team-header {
+  background: var(--toss-blue-100);
+}
+
+/* 드래그 오버 상태에서도 선수 목록은 정상 작동 */
+.team-card.drag-over .team-player:not(.dragging) {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+/* 드래그 중일 때 전체 페이지 스타일 */
+.team-assignment-page.dragging {
+  cursor: grabbing;
+}
+
+/* 기존 호버 효과는 위에서 통합하여 정의됨 */
+
+/* 드롭 영역 시각적 피드백 */
+.team-card.drag-over .team-players {
+  background: var(--toss-blue-25);
+  border-radius: var(--toss-radius);
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+/* 자동 밸런싱 버튼 로딩 스피너 */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 선택 가능한 선수 스타일 */
+.team-player {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.team-player:hover {
+  background: var(--toss-blue-50);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.team-player:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+}
+
+/* 선택된 선수 스타일 */
+.team-player.selected {
+  background: var(--toss-blue-100);
+  border: 2px solid var(--toss-blue-400);
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.team-player.selected::before {
+  content: '✓';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: var(--toss-blue-500);
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10;
+}
+
+/* 드래그 중인 선수 호버 효과 비활성화 */
+.team-player.dragging:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* 성별 균형 상태 스타일 */
+.gender-balance {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--toss-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.gender-balance.balanced {
+  background: var(--toss-green-100);
+  color: var(--toss-green-700);
+  border: 1px solid var(--toss-green-200);
+}
+
+.gender-balance.unbalanced {
+  background: var(--toss-orange-100);
+  color: var(--toss-orange-700);
+  border: 1px solid var(--toss-orange-200);
+}
+
+.gender-balance.no-female {
+  background: var(--toss-red-100);
+  color: var(--toss-red-700);
+  border: 1px solid var(--toss-red-200);
+}
+
+/* 팀 밸런싱 분석 섹션 간격 조정 */
+.balance-analysis {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.balance-analysis .balance-status {
+  flex: 1;
+  min-width: 250px;
+}

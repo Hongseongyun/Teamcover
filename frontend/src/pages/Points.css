@@ -1,0 +1,462 @@
+.points-page {
+  padding: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--toss-gray-900);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 통계 섹션 */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--toss-shadow-lg);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-primary .stat-number {
+  color: var(--toss-primary);
+}
+
+.stat-success .stat-number {
+  color: var(--toss-success);
+}
+
+.stat-info .stat-number {
+  color: var(--toss-secondary);
+}
+
+.stat-danger .stat-number {
+  color: var(--toss-danger);
+}
+
+/* 월별 통계 */
+.monthly-stats {
+  margin-top: 2rem;
+}
+
+.monthly-stats h3 {
+  margin-bottom: 1.5rem;
+  color: var(--toss-gray-900);
+}
+
+.monthly-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.monthly-stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.monthly-stat-card h4 {
+  margin: 0 0 1rem 0;
+  color: var(--toss-primary);
+  font-size: 1.25rem;
+}
+
+.monthly-stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-weight: 500;
+  color: var(--toss-gray-600);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+}
+
+.stat-value.positive {
+  color: var(--toss-success);
+}
+
+.stat-value.negative {
+  color: var(--toss-danger);
+}
+
+/* 가져오기 섹션 */
+.import-section {
+  margin-bottom: 2rem;
+}
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: var(--toss-radius);
+  margin-bottom: 1rem;
+}
+
+.alert-warning {
+  background-color: var(--toss-warning-light);
+  color: var(--toss-warning-dark);
+  border: 1px solid var(--toss-warning);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+}
+
+/* 필터 섹션 */
+.filter-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--toss-gray-50);
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.filter-row .form-group {
+  margin-bottom: 0;
+}
+
+/* 기존 폼 스타일 */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.section-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin-bottom: 1.5rem;
+}
+
+.point-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.points-section {
+  margin-bottom: 2rem;
+}
+
+.points-table {
+  overflow-x: auto;
+}
+
+.points-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.points-table th,
+.points-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+}
+
+.points-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.points-table tr:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.point-type {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.point-type.positive {
+  background-color: var(--toss-success-light);
+  color: var(--toss-success);
+}
+
+.point-type.negative {
+  background-color: var(--toss-danger-light);
+  color: var(--toss-danger);
+}
+
+.points-table td.positive {
+  color: var(--toss-success);
+  font-weight: 600;
+}
+
+.points-table td.negative {
+  color: var(--toss-danger);
+  font-weight: 600;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--toss-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--toss-gray-600);
+}
+
+.btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: var(--toss-info-dark);
+}
+
+.btn-outline-secondary {
+  background-color: transparent;
+  color: var(--toss-gray-600);
+  border: 1px solid var(--toss-gray-300);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--toss-gray-50);
+  border-color: var(--toss-gray-400);
+}
+
+.btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--toss-danger-dark);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: var(--toss-gray-600);
+}
+
+/* 인라인 편집 스타일 */
+.inline-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.form-control {
+  padding: 0.5rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  width: 100%;
+  min-width: 120px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+/* 편집 중인 행 스타일 */
+.points-table tr.editing {
+  background-color: #fef3c7;
+  border: 2px solid var(--toss-warning);
+}
+
+.points-table tr.editing td {
+  border-color: var(--toss-warning);
+}
+
+/* CSS 변수 정의 */
+:root {
+  --toss-white: #ffffff;
+  --toss-gray-50: #f9fafb;
+  --toss-gray-200: #e5e7eb;
+  --toss-gray-300: #d1d5db;
+  --toss-gray-500: #6b7280;
+  --toss-gray-600: #4b5563;
+  --toss-gray-700: #374151;
+  --toss-gray-900: #111827;
+  --toss-primary: #3b82f6;
+  --toss-primary-dark: #2563eb;
+  --toss-success: #10b981;
+  --toss-success-light: #d1fae5;
+  --toss-info: #06b6d4;
+  --toss-info-dark: #0891b2;
+  --toss-secondary: #8b5cf6;
+  --toss-warning: #f59e0b;
+  --toss-warning-light: #fffbeb;
+  --toss-warning-dark: #d97706;
+  --toss-danger: #ef4444;
+  --toss-danger-dark: #dc2626;
+  --toss-danger-light: #fee2e2;
+  --toss-radius: 0.5rem;
+  --toss-radius-lg: 0.75rem;
+  --toss-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
