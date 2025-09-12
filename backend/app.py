@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, current_user
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
+import os
 from models import db, User
 from config import Config
 
@@ -62,6 +63,25 @@ app.register_blueprint(scores_bp)
 app.register_blueprint(points_bp)
 app.register_blueprint(teams_bp)
 app.register_blueprint(sheets_bp)
+
+# 헬스체크 엔드포인트
+@app.route('/health')
+def health_check():
+    """헬스체크 엔드포인트"""
+    try:
+        # 데이터베이스 연결 테스트
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'message': '서버가 정상적으로 작동 중입니다.',
+            'database': 'connected'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'message': f'데이터베이스 연결 오류: {str(e)}',
+            'database': 'disconnected'
+        }), 500
 
 # 페이지 라우트
 @app.route('/')
@@ -124,6 +144,14 @@ def create_super_admin():
 
 if __name__ == '__main__':
     with app.app_context():
-        # 데이터베이스 테이블 생성
-        db.create_all()
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+        try:
+            # 데이터베이스 테이블 생성
+            db.create_all()
+            print("데이터베이스 테이블이 생성되었습니다.")
+        except Exception as e:
+            print(f"데이터베이스 연결 오류: {e}")
+    
+    # Railway 환경에서는 PORT 환경변수를 사용
+    port = int(os.environ.get('PORT', 5000))
+    print(f"서버가 포트 {port}에서 시작됩니다.")
+    app.run(debug=False, host='0.0.0.0', port=port) 
