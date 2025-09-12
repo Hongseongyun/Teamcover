@@ -21,8 +21,8 @@ class Config:
     DB_USER = os.environ.get('DB_USER') or 'postgres'
     DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'teamcover123'
     
-    # SQLAlchemy 설정 (pg8000 드라이버 사용)
-    SQLALCHEMY_DATABASE_URI = f"postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    # SQLAlchemy 설정 (psycopg2 드라이버 사용)
+    SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
