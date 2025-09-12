@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask_cors import CORS
 from flask_login import LoginManager, current_user
 from flask_jwt_extended import JWTManager
-from datetime import timedelta
+from datetime import timedelta, datetime
 import os
 from models import db, User
 from config import Config
@@ -82,12 +82,21 @@ else:
 @app.route('/health')
 def health_check():
     """헬스체크 엔드포인트"""
+    return jsonify({
+        'status': 'healthy',
+        'message': '서버가 정상적으로 작동 중입니다.',
+        'timestamp': str(datetime.utcnow())
+    }), 200
+
+@app.route('/health/db')
+def health_check_db():
+    """데이터베이스 헬스체크 엔드포인트"""
     try:
         # 데이터베이스 연결 테스트
         db.session.execute('SELECT 1')
         return jsonify({
             'status': 'healthy',
-            'message': '서버가 정상적으로 작동 중입니다.',
+            'message': '데이터베이스가 정상적으로 연결되었습니다.',
             'database': 'connected'
         }), 200
     except Exception as e:
@@ -157,15 +166,20 @@ def create_super_admin():
         print(f"슈퍼 관리자 계정이 생성되었습니다: {email}")
 
 if __name__ == '__main__':
+    print("=== Teamcover 애플리케이션 시작 ===")
+    
     with app.app_context():
         try:
             # 데이터베이스 테이블 생성
             db.create_all()
-            print("데이터베이스 테이블이 생성되었습니다.")
+            print("✓ 데이터베이스 테이블이 생성되었습니다.")
         except Exception as e:
-            print(f"데이터베이스 연결 오류: {e}")
+            print(f"✗ 데이터베이스 연결 오류: {e}")
     
     # Railway 환경에서는 PORT 환경변수를 사용
     port = int(os.environ.get('PORT', 5000))
-    print(f"서버가 포트 {port}에서 시작됩니다.")
+    print(f"✓ 서버가 포트 {port}에서 시작됩니다.")
+    print(f"✓ 헬스체크 URL: http://0.0.0.0:{port}/health")
+    print("=== 애플리케이션 시작 완료 ===")
+    
     app.run(debug=False, host='0.0.0.0', port=port) 
