@@ -13,7 +13,15 @@ from blueprints.members import members_bp
 from blueprints.scores import scores_bp
 from blueprints.points import points_bp
 from blueprints.teams import teams_bp
-from blueprints.sheets import sheets_bp
+
+# Google Sheets 기능을 선택적으로 로드
+try:
+    from blueprints.sheets import sheets_bp
+    SHEETS_AVAILABLE = True
+    print("Google Sheets 기능이 활성화되었습니다.")
+except ImportError as e:
+    print(f"Google Sheets 기능을 로드할 수 없습니다: {e}")
+    SHEETS_AVAILABLE = False
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -62,7 +70,13 @@ app.register_blueprint(members_bp)
 app.register_blueprint(scores_bp)
 app.register_blueprint(points_bp)
 app.register_blueprint(teams_bp)
-app.register_blueprint(sheets_bp)
+
+# Google Sheets 기능이 사용 가능한 경우에만 등록
+if SHEETS_AVAILABLE:
+    app.register_blueprint(sheets_bp)
+    print("Google Sheets Blueprint가 등록되었습니다.")
+else:
+    print("Google Sheets Blueprint를 건너뛰었습니다.")
 
 # 헬스체크 엔드포인트
 @app.route('/health')
