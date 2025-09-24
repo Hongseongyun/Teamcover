@@ -25,7 +25,11 @@ def get_google_credentials():
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
+        from flask import current_app
+        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [])
+        request_origin = request.headers.get('Origin')
+        if request_origin and request_origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", request_origin)
         response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -231,7 +235,7 @@ def google_callback():
             'client_secret': google_creds['client_secret'],
             'code': code,
             'grant_type': 'authorization_code',
-            'redirect_uri': 'http://localhost:3000/google-callback'  # 프론트엔드 리디렉션 URI 사용
+            'redirect_uri': current_app.config.get('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google-callback')
         }
         
         token_response = requests.post(token_url, data=token_data)
@@ -462,7 +466,7 @@ def get_google_config():
             'success': True,
             'client_id': google_creds['client_id'],
             'client_secret_set': bool(google_creds['client_secret'] and google_creds['client_secret'] != 'your-google-client-secret-here'),
-            'redirect_uri': 'http://localhost:3000/google-callback'
+            'redirect_uri': current_app.config.get('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google-callback')
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'설정 확인 중 오류: {str(e)}'})

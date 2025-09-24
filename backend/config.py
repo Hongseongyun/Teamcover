@@ -34,4 +34,15 @@ class Config:
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET') or '여기에_실제_클라이언트_시크릿_입력'
     
     # JWT 설정
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'your-secret-key-change-this-in-production' 
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'your-secret-key-change-this-in-production'
+
+    # Frontend/Base URL 및 CORS 설정
+    FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL') or 'http://localhost:3000'
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS')  # 콤마(,)로 구분된 허용 오리진 목록
+    if CORS_ORIGINS:
+        CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ORIGINS.split(',') if origin.strip()]
+    else:
+        CORS_ALLOWED_ORIGINS = [FRONTEND_BASE_URL]
+
+    # Google OAuth Redirect URI
+    GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI') or f"{FRONTEND_BASE_URL}/google-callback"

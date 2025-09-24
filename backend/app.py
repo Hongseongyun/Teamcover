@@ -43,9 +43,10 @@ jwt = JWTManager(app)
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# CORS 설정
-CORS(app, 
-     origins=["http://localhost:3000", "http://localhost:8080"],
+# CORS 설정 (환경변수 기반)
+allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', ["http://localhost:3000", "http://localhost:8080"]) 
+CORS(app,
+     origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
      supports_credentials=True)
@@ -55,7 +56,10 @@ CORS(app,
 def handle_preflight():
     if request.method == "OPTIONS":
         response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
+        # 요청 Origin을 그대로 반영하되, 허용 목록에 있는 경우에만 설정
+        request_origin = request.headers.get('Origin')
+        if request_origin and request_origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", request_origin)
         response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
