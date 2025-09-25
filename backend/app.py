@@ -13,6 +13,7 @@ from blueprints.members import members_bp
 from blueprints.scores import scores_bp
 from blueprints.points import points_bp
 from blueprints.teams import teams_bp
+from blueprints.ocr import ocr_bp
 
 # Google Sheets 기능을 선택적으로 로드
 try:
@@ -74,6 +75,7 @@ app.register_blueprint(members_bp)
 app.register_blueprint(scores_bp)
 app.register_blueprint(points_bp)
 app.register_blueprint(teams_bp)
+app.register_blueprint(ocr_bp)
 
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:
@@ -96,8 +98,9 @@ def health_check():
 def health_check_db():
     """데이터베이스 헬스체크 엔드포인트"""
     try:
-        # 데이터베이스 연결 테스트
-        db.session.execute('SELECT 1')
+        # 데이터베이스 연결 테스트 (SQLAlchemy 2.0 문법)
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
         return jsonify({
             'status': 'healthy',
             'message': '데이터베이스가 정상적으로 연결되었습니다.',

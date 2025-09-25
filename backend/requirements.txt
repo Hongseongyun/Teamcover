@@ -14,8 +14,8 @@ psycopg2-binary>=2.9.0
 pg8000>=1.29.0
 gunicorn==21.2.0
 
-# OCR packages (optional, can be installed later if needed)
-# easyocr==1.7.0
-# opencv-python==4.8.1.78
-# Pillow>=10.1.0
-# numpy>=1.24.0
+# LLM packages for image analysis
+openai>=1.0.0
+google-generativeai>=0.3.0
+Pillow>=10.1.0
+requests>=2.31.0
