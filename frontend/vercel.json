@@ -10,12 +10,10 @@
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://your-railway-backend-url.railway.app"
+    "REACT_APP_API_URL": "https://api.hsyun.store"
   }
 }
