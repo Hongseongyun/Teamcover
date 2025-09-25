@@ -356,8 +356,8 @@ const Scores = () => {
         setCurrentStep('result');
       }
     } catch (error) {
-      console.error('이미지 분석 실패:', error);
-      alert('이미지 분석에 실패했습니다.');
+      console.error('AI 스코어 인식 실패:', error);
+      alert('AI 스코어 인식에 실패했습니다.');
     }
   };
 
@@ -371,7 +371,7 @@ const Scores = () => {
           score1: result.score1,
           score2: result.score2,
           score3: result.score3,
-          note: 'OCR로 자동 인식',
+          note: 'AI로 자동 인식',
         });
       }
 
@@ -631,7 +631,7 @@ const Scores = () => {
             className="btn btn-success"
             onClick={() => setShowPhotoForm(true)}
           >
-            사진으로 등록
+            AI로 스코어 인식
           </button>
           <button
             className="btn btn-primary"
@@ -835,7 +835,7 @@ const Scores = () => {
       {showPhotoForm && (
         <div className="photo-section">
           <div className="section-card">
-            <h3 className="section-title">사진으로 스코어 등록</h3>
+            <h3 className="section-title">AI 스코어 인식</h3>
 
             {currentStep === 'upload' && (
               <div className="upload-step">
@@ -848,7 +848,8 @@ const Scores = () => {
                     className="file-input"
                   />
                   <div className="form-text">
-                    JPG, PNG, GIF 파일을 선택해주세요.
+                    JPG, PNG, GIF 파일을 선택해주세요. AI가 자동으로 스코어를
+                    인식합니다.
                   </div>
                 </div>
 
@@ -860,7 +861,7 @@ const Scores = () => {
                       className="btn btn-primary"
                       onClick={handleAnalyzeImage}
                     >
-                      이미지 분석
+                      AI 스코어 인식
                     </button>
                   </div>
                 )}
@@ -869,7 +870,7 @@ const Scores = () => {
 
             {currentStep === 'result' && ocrResults.length > 0 && (
               <div className="result-step">
-                <h4>OCR 분석 결과</h4>
+                <h4>AI 인식 결과</h4>
                 <div className="ocr-summary">
                   <p>인식된 회원 수: {ocrResults.length}명</p>
                 </div>
