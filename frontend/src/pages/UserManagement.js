@@ -39,6 +39,7 @@ const UserManagement = () => {
             user.id === userId ? { ...user, role: newRole } : user
           )
         );
+        setError(''); // 성공 시 에러 메시지 초기화
       } else {
         setError(response.data.message);
       }
@@ -132,11 +133,16 @@ const UserManagement = () => {
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
                     className={`role-select ${getRoleBadgeClass(user.role)}`}
-                    disabled={user.id === currentUser?.id} // 자신의 역할은 변경 불가
+                    disabled={
+                      user.id === currentUser?.id ||
+                      user.email === 'syun4224@naver.com'
+                    } // 자신의 역할과 고정 슈퍼계정은 변경 불가
                   >
                     <option value="user">일반 사용자</option>
                     <option value="admin">운영진</option>
-                    <option value="super_admin">슈퍼 관리자</option>
+                    {user.email === 'syun4224@naver.com' && (
+                      <option value="super_admin">슈퍼 관리자</option>
+                    )}
                   </select>
                 </td>
                 <td>

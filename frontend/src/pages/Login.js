@@ -165,20 +165,6 @@ const Login = () => {
             />
           </div>
 
-          {!isLogin && (
-            <div className="form-group">
-              <label htmlFor="role">역할</label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-              >
-                <option value="user">일반 사용자</option>
-                <option value="admin">운영진</option>
-              </select>
-            </div>
-          )}
 
           <button type="submit" className="login-button" disabled={loading}>
             {loading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}

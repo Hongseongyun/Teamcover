@@ -54,7 +54,7 @@ def register():
         email = data.get('email', '').strip().lower()
         name = data.get('name', '').strip()
         password = data.get('password', '')
-        role = data.get('role', 'user')  # 기본값은 'user'
+        role = 'user'  # 회원가입 시 항상 일반 회원으로만 가입 가능
         
         if not email or not name or not password:
             return jsonify({'success': False, 'message': '이메일, 이름, 비밀번호는 필수 입력 항목입니다.'})
@@ -408,6 +408,10 @@ def update_user_role(user_id):
         user = User.query.get(user_id)
         if not user:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 고정 슈퍼계정은 역할 변경 불가
+        if user.email == 'syun4224@naver.com':
+            return jsonify({'success': False, 'message': '고정 슈퍼계정의 역할은 변경할 수 없습니다.'})
         
         user.role = new_role
         db.session.commit()
