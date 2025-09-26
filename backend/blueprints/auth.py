@@ -612,21 +612,26 @@ def test_email_simple():
         print(f"=== 간단한 이메일 테스트 시작 ===")
         
         # 기본 테스트 이메일로 발송
-        test_email = "test@example.com"
-        success = send_verification_email(test_email, '테스트 사용자')
+        test_email = "seongyun23@nate.com"
+        email_result = send_verification_email_with_debug(test_email, '테스트 사용자', 'testpassword123', 'user')
+        success = email_result['success']
+        debug_info = email_result['debug_info']
         
         print(f"이메일 테스트 결과: {success}")
+        print(f"디버그 정보: {debug_info}")
         
         if success:
             return jsonify({
                 'success': True,
                 'message': '테스트 이메일이 발송되었습니다.',
-                'email': test_email
+                'email': test_email,
+                'debug_info': debug_info
             })
         else:
             return jsonify({
                 'success': False,
-                'message': '이메일 발송에 실패했습니다.'
+                'message': '이메일 발송에 실패했습니다.',
+                'debug_info': debug_info
             })
             
     except Exception as e:
