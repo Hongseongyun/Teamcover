@@ -93,15 +93,120 @@ def send_verification_email_with_debug(email, name, password, role='user'):
             'frontend_base_url': current_app.config.get('FRONTEND_BASE_URL')
         }
         
-        # 인증 토큰 생성 (사용자 정보 포함)
-        debug_info['steps'].append("인증 토큰 생성 중")
+        # SendGrid API 방식 시도
+        debug_info['steps'].append("SendGrid API 방식 시도")
+        return send_via_sendgrid_api(email, name, password, role, debug_info)
+        
+    except Exception as e:
+        print(f"❌ 이메일 발송 실패: {e}")
+        print(f"오류 타입: {type(e)}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        
+        debug_info['error'] = {
+            'message': str(e),
+            'type': str(type(e)),
+            'traceback': traceback.format_exc()
+        }
+        debug_info['steps'].append(f"오류 발생: {str(e)}")
+        
+        return {
+            'success': False,
+            'debug_info': debug_info
+        }
+
+def send_via_sendgrid_api(email, name, password, role, debug_info):
+    """SendGrid API를 사용한 이메일 발송"""
+    try:
+        import requests
+        
+        debug_info['steps'].append("SendGrid API 요청 준비")
+        
+        # 인증 토큰 생성
         token = generate_verification_token(email, name, password, role)
         verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
-        print(f"인증 URL: {verification_url}")
         debug_info['verification_url'] = verification_url
         
-        # 이메일 내용
-        subject = "Teamcover 이메일 인증"
+        # SendGrid API 요청
+        api_key = current_app.config.get('MAIL_PASSWORD')
+        url = "https://api.sendgrid.com/v3/mail/send"
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "personalizations": [
+                {
+                    "to": [{"email": email}],
+                    "subject": "Teamcover 이메일 인증"
+                }
+            ],
+            "from": {
+                "email": "syun4224@gmail.com",
+                "name": "Teamcover"
+            },
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": f"""
+                    <html>
+                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                            <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                            <h2 style="color: #007bff; margin-bottom: 20px;">이메일 인증이 필요합니다</h2>
+                            
+                            <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                                안녕하세요 <strong>{name}</strong>님!<br>
+                                Teamcover 회원가입을 완료하려면 아래 버튼을 클릭하여 이메일을 인증해주세요.
+                            </p>
+                            
+                            <a href="{verification_url}" 
+                               style="display: inline-block; background-color: #007bff; color: white; 
+                                      padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                                      font-size: 16px; font-weight: bold; margin-bottom: 20px;">
+                                이메일 인증하기
+                            </a>
+                            
+                            <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                                이 링크는 1시간 후에 만료됩니다.<br>
+                                만약 버튼이 작동하지 않는다면 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br>
+                                <a href="{verification_url}" style="color: #007bff; word-break: break-all;">{verification_url}</a>
+                            </p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                }
+            ]
+        }
+        
+        debug_info['steps'].append("SendGrid API 요청 전송")
+        response = requests.post(url, headers=headers, json=data)
+        
+        if response.status_code == 202:
+            debug_info['steps'].append("SendGrid API 요청 성공")
+            print(f"✅ SendGrid API 이메일 발송 성공!")
+            return {
+                'success': True,
+                'debug_info': debug_info
+            }
+        else:
+            debug_info['steps'].append(f"SendGrid API 오류: {response.status_code}")
+            print(f"❌ SendGrid API 오류: {response.status_code} - {response.text}")
+            return {
+                'success': False,
+                'debug_info': debug_info
+            }
+            
+    except Exception as e:
+        debug_info['steps'].append(f"SendGrid API 오류: {str(e)}")
+        print(f"❌ SendGrid API 오류: {e}")
+        return {
+            'success': False,
+            'debug_info': debug_info
+        }
         html_body = f"""
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
