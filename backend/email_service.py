@@ -23,17 +23,17 @@ def init_mail(app):
     print(f"MAIL_USERNAME: {mail_username}")
     print(f"MAIL_PASSWORD: {'SET' if mail_password else 'NOT_SET'}")
     
-    # Gmail SMTP 설정
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
+    # SMTP 설정 (환경 변수 우선, 기본값은 Gmail)
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() == 'true'
+    app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'false').lower() == 'true'
     app.config['MAIL_USERNAME'] = mail_username
     app.config['MAIL_PASSWORD'] = mail_password
     app.config['MAIL_DEFAULT_SENDER'] = mail_username
     
-    # 추가 Gmail 설정
-    app.config['MAIL_USE_SSL'] = False
-    app.config['MAIL_DEBUG'] = True  # 디버그 모드 활성화
+    # 추가 설정
+    app.config['MAIL_DEBUG'] = os.getenv('MAIL_DEBUG', 'true').lower() == 'true'  # 디버그 모드
     
     mail.init_app(app)
     
