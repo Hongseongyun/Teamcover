@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { scoreAPI, sheetsAPI } from '../services/api';
+import { scoreAPI, sheetsAPI, memberAPI } from '../services/api';
 import './Scores.css';
 
 const Scores = () => {
@@ -112,10 +112,9 @@ const Scores = () => {
 
   const loadMembers = async () => {
     try {
-      const response = await fetch('/api/members');
-      const data = await response.json();
-      if (data.success) {
-        setMembers(data.members);
+      const response = await memberAPI.getMembers();
+      if (response.data.success) {
+        setMembers(response.data.members);
       }
     } catch (error) {
       console.error('회원 목록 로드 실패:', error);
