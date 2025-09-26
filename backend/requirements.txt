@@ -19,3 +19,7 @@ openai>=1.0.0
 google-generativeai>=0.3.0
 Pillow>=10.1.0
 requests>=2.31.0
+
+# Email verification
+flask-mail>=0.9.1
+itsdangerous>=2.1.2

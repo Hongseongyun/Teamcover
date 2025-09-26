@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAuthCallback from './components/GoogleAuthCallback';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import EmailVerification from './pages/EmailVerification';
 import Home from './pages/Home';
 import Members from './pages/Members';
 import Scores from './pages/Scores';
@@ -23,6 +24,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/google-callback" element={<GoogleAuthCallback />} />
             <Route
               path="/home"

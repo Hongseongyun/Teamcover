@@ -73,6 +73,16 @@
   font-size: 0.875rem;
 }
 
+.success-message {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;
@@ -198,6 +208,64 @@
   font-weight: 500;
   margin-left: 0.5rem;
   text-decoration: underline;
+}
+
+/* 비밀번호 조건 스타일 */
+.password-requirements {
+  margin-top: 5px;
+}
+
+.password-requirements small {
+  color: #666;
+  font-size: 12px;
+}
+
+.password-errors {
+  margin-top: 5px;
+}
+
+.password-errors .error-text {
+  color: #dc3545;
+  font-size: 11px;
+  display: block;
+  margin: 2px 0;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+.success-text {
+  color: #28a745;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+/* 입력 필드 오류 스타일 */
+.form-group input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* 입력 필드 성공 스타일 */
+.form-group input.success {
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* 비활성화된 버튼 스타일 */
+.login-button.disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.login-button.disabled:hover {
+  background-color: #6c757d;
 }
 
 .link-button:hover {

@@ -104,6 +104,8 @@ export const authAPI = {
     api.put(`/api/auth/users/${userId}/role`, data),
   updateUserStatus: (userId, data) =>
     api.put(`/api/auth/users/${userId}/status`, data),
+  verifyEmail: (data) => api.post('/api/auth/verify-email', data),
+  resendVerification: (data) => api.post('/api/auth/resend-verification', data),
 };
 
 // 구글시트 가져오기 API

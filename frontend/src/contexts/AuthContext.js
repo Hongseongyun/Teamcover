@@ -95,13 +95,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   // 회원가입
-  const register = async (email, name, password, role = 'user') => {
+  const register = async (
+    email,
+    name,
+    password,
+    passwordConfirm,
+    role = 'user'
+  ) => {
     try {
-      const response = await authAPI.register({ email, name, password, role });
+      const response = await authAPI.register({
+        email,
+        name,
+        password,
+        password_confirm: passwordConfirm,
+        role,
+      });
       if (response.data.success) {
-        return { success: true, message: response.data.message };
+        return {
+          success: true,
+          message: response.data.message,
+          data: response.data.data, // data 객체 전달
+        };
       } else {
-        return { success: false, message: response.data.message };
+        return {
+          success: false,
+          message: response.data.message,
+          data: response.data.data, // data 객체 전달
+        };
       }
     } catch (error) {
       return {

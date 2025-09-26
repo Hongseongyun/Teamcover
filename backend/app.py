@@ -6,6 +6,7 @@ from datetime import timedelta, datetime
 import os
 from models import db, User
 from config import Config
+from email_service import init_mail
 
 # Blueprint import (OCR 제외)
 from blueprints.auth import auth_bp
@@ -68,6 +69,9 @@ def handle_preflight():
 
 # 데이터베이스 초기화
 db.init_app(app)
+
+# 이메일 서비스 초기화
+init_mail(app)
 
 # Blueprint 등록 (OCR 제외)
 app.register_blueprint(auth_bp)

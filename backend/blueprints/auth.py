@@ -7,9 +7,27 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 import os
 import requests
+from email_service import send_verification_email, verify_email_token, resend_verification_email
+import re
 
 # 인증 관리 Blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+def validate_password(password):
+    """비밀번호 조건 검증"""
+    if len(password) < 6:
+        return {'valid': False, 'message': '비밀번호는 6글자 이상이어야 합니다.'}
+    
+    if not re.search(r'[a-z]', password):
+        return {'valid': False, 'message': '비밀번호는 소문자를 포함해야 합니다.'}
+    
+    if not re.search(r'[A-Z]', password):
+        return {'valid': False, 'message': '비밀번호는 대문자를 포함해야 합니다.'}
+    
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return {'valid': False, 'message': '비밀번호는 특수문자를 포함해야 합니다.'}
+    
+    return {'valid': True, 'message': '비밀번호가 유효합니다.'}
 
 # 구글 OAuth 설정 (app.config에서 가져오기)
 from flask import current_app
@@ -54,32 +72,57 @@ def register():
         email = data.get('email', '').strip().lower()
         name = data.get('name', '').strip()
         password = data.get('password', '')
+        password_confirm = data.get('password_confirm', '')
         role = 'user'  # 회원가입 시 항상 일반 회원으로만 가입 가능
         
-        if not email or not name or not password:
-            return jsonify({'success': False, 'message': '이메일, 이름, 비밀번호는 필수 입력 항목입니다.'})
+        if not email or not name or not password or not password_confirm:
+            return jsonify({'success': False, 'message': '이메일, 이름, 비밀번호, 비밀번호 확인은 필수 입력 항목입니다.'})
+        
+        # 비밀번호 확인 검증
+        if password != password_confirm:
+            return jsonify({'success': False, 'message': '비밀번호와 비밀번호 확인이 일치하지 않습니다.'})
+        
+        # 비밀번호 조건 검증
+        password_validation = validate_password(password)
+        if not password_validation['valid']:
+            return jsonify({'success': False, 'message': password_validation['message']})
         
         # 이메일 중복 확인
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return jsonify({'success': False, 'message': '이미 등록된 이메일입니다.'})
         
-        # 새 사용자 생성
-        new_user = User(
-            email=email,
-            name=name,
-            role=role
-        )
-        new_user.set_password(password)
-        
-        db.session.add(new_user)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': '회원가입이 완료되었습니다.',
-            'user': new_user.to_dict()
-        })
+        # 먼저 이메일 발송 시도 (사용자 정보 포함)
+        try:
+            email_sent = send_verification_email(email, name, password, role)
+            
+            if not email_sent:
+                return jsonify({
+                    'success': False,
+                    'message': '이메일 발송에 실패했습니다. Gmail SMTP 설정을 확인해주세요.',
+                    'data': {
+                        'email_sent': False
+                    }
+                })
+            
+            # 이메일 발송 성공 - DB에는 저장하지 않음 (인증 완료 후 저장)
+            return jsonify({
+                'success': True,
+                'message': f'{email}로 인증 이메일을 발송했습니다. 이메일을 확인하여 인증을 완료해주세요.',
+                'data': {
+                    'email_sent': True
+                }
+            })
+            
+        except Exception as email_error:
+            print(f"이메일 발송 오류: {email_error}")
+            return jsonify({
+                'success': False,
+                'message': f'이메일 발송 중 오류가 발생했습니다: {str(email_error)}',
+                'data': {
+                    'email_sent': False
+                }
+            })
         
     except Exception as e:
         db.session.rollback()
@@ -460,6 +503,89 @@ def update_user_status(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'상태 변경 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/verify-email', methods=['POST'])
+def verify_email():
+    """이메일 인증 처리"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        
+        if not token:
+            return jsonify({'success': False, 'message': '인증 토큰이 필요합니다.'})
+        
+        result = verify_email_token(token)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'이메일 인증 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    """인증 이메일 재발송"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        result = resend_verification_email(email)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'이메일 재발송 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/test-email', methods=['POST'])
+def test_email():
+    """이메일 발송 테스트"""
+    try:
+        data = request.get_json()
+        test_email = data.get('email', 'test@example.com')
+        
+        # 이메일 발송 테스트
+        success = send_verification_email(test_email, '테스트 사용자')
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '테스트 이메일이 발송되었습니다.',
+                'email': test_email
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '이메일 발송에 실패했습니다.'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'이메일 테스트 중 오류: {str(e)}'
+        })
+
+@auth_bp.route('/email-config', methods=['GET'])
+def get_email_config():
+    """이메일 설정 상태 확인"""
+    try:
+        from flask import current_app
+        
+        mail_username = current_app.config.get('MAIL_USERNAME')
+        mail_password = current_app.config.get('MAIL_PASSWORD')
+        
+        return jsonify({
+            'success': True,
+            'mail_username': mail_username,
+            'mail_password_set': bool(mail_password),
+            'mail_server': current_app.config.get('MAIL_SERVER'),
+            'mail_port': current_app.config.get('MAIL_PORT'),
+            'mail_use_tls': current_app.config.get('MAIL_USE_TLS')
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'이메일 설정 확인 중 오류: {str(e)}'
+        })
 
 @auth_bp.route('/google/config', methods=['GET'])
 def get_google_config():
