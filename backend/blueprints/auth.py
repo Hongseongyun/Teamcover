@@ -7,7 +7,7 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 import os
 import requests
-from email_service import send_verification_email, verify_email_token, resend_verification_email
+from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email
 import re
 
 # 인증 관리 Blueprint
@@ -99,8 +99,13 @@ def register():
             print(f"이름: {name}")
             print(f"역할: {role}")
             
-            email_sent = send_verification_email(email, name, password, role)
+            # 이메일 발송 결과와 상세 정보를 받아옴
+            email_result = send_verification_email_with_debug(email, name, password, role)
+            email_sent = email_result['success']
+            debug_info = email_result['debug_info']
+            
             print(f"이메일 발송 결과: {email_sent}")
+            print(f"디버그 정보: {debug_info}")
             
             if not email_sent:
                 print("❌ 이메일 발송 실패")
@@ -108,7 +113,8 @@ def register():
                     'success': False,
                     'message': '이메일 발송에 실패했습니다. Gmail SMTP 설정을 확인해주세요.',
                     'data': {
-                        'email_sent': False
+                        'email_sent': False,
+                        'debug_info': debug_info
                     }
                 })
             
@@ -118,7 +124,8 @@ def register():
                 'success': True,
                 'message': f'{email}로 인증 이메일을 발송했습니다. 이메일을 확인하여 인증을 완료해주세요.',
                 'data': {
-                    'email_sent': True
+                    'email_sent': True,
+                    'debug_info': debug_info
                 }
             })
             
@@ -131,7 +138,12 @@ def register():
                 'success': False,
                 'message': f'이메일 발송 중 오류가 발생했습니다: {str(email_error)}',
                 'data': {
-                    'email_sent': False
+                    'email_sent': False,
+                    'debug_info': {
+                        'error': str(email_error),
+                        'error_type': str(type(email_error)),
+                        'traceback': traceback.format_exc()
+                    }
                 }
             })
         

@@ -190,13 +190,20 @@ const Login = () => {
           // 이메일 인증이 필요한 경우 자동 로그인하지 않음
           if (result.data?.email_sent) {
             console.log('이메일 발송 성공 - 성공 메시지 표시');
+            console.log('디버그 정보:', result.data?.debug_info);
             setError(''); // 오류 메시지 초기화
             setSuccessMessage('이메일을 확인하여 인증을 완료해주세요.');
             setLoading(false); // 로딩 상태 해제
             return; // 자동 로그인하지 않음
           } else if (result.data?.email_sent === false) {
+            console.log(
+              '이메일 발송 실패 - 디버그 정보:',
+              result.data?.debug_info
+            );
             setError(
-              '회원가입이 완료되었지만 이메일 발송에 실패했습니다. 나중에 다시 시도해주세요.'
+              `회원가입이 완료되었지만 이메일 발송에 실패했습니다. 
+              ${result.data?.debug_info?.error?.message || ''} 
+              나중에 다시 시도해주세요.`
             );
             return;
           } else {
@@ -211,6 +218,7 @@ const Login = () => {
           }
         } else {
           // 회원가입 실패 시
+          console.log('회원가입 실패 - 디버그 정보:', result.data?.debug_info);
           setError(result.message);
           return;
         }
