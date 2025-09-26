@@ -94,9 +94,16 @@ def register():
         
         # 먼저 이메일 발송 시도 (사용자 정보 포함)
         try:
+            print(f"=== 회원가입 이메일 발송 시도 ===")
+            print(f"이메일: {email}")
+            print(f"이름: {name}")
+            print(f"역할: {role}")
+            
             email_sent = send_verification_email(email, name, password, role)
+            print(f"이메일 발송 결과: {email_sent}")
             
             if not email_sent:
+                print("❌ 이메일 발송 실패")
                 return jsonify({
                     'success': False,
                     'message': '이메일 발송에 실패했습니다. Gmail SMTP 설정을 확인해주세요.',
@@ -105,6 +112,7 @@ def register():
                     }
                 })
             
+            print("✅ 이메일 발송 성공")
             # 이메일 발송 성공 - DB에는 저장하지 않음 (인증 완료 후 저장)
             return jsonify({
                 'success': True,
@@ -115,7 +123,10 @@ def register():
             })
             
         except Exception as email_error:
-            print(f"이메일 발송 오류: {email_error}")
+            print(f"❌ 이메일 발송 오류: {email_error}")
+            print(f"오류 타입: {type(email_error)}")
+            import traceback
+            print(f"상세 오류: {traceback.format_exc()}")
             return jsonify({
                 'success': False,
                 'message': f'이메일 발송 중 오류가 발생했습니다: {str(email_error)}',
@@ -540,11 +551,26 @@ def resend_verification():
 def test_email():
     """이메일 발송 테스트"""
     try:
-        data = request.get_json()
+        print(f"=== 이메일 테스트 요청 수신 ===")
+        print(f"요청 메서드: {request.method}")
+        print(f"Content-Type: {request.content_type}")
+        print(f"요청 데이터: {request.get_data()}")
+        
+        # JSON 데이터 파싱
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form.to_dict()
+        
         test_email = data.get('email', 'test@example.com')
+        
+        print(f"=== 이메일 테스트 시작 ===")
+        print(f"테스트 이메일: {test_email}")
         
         # 이메일 발송 테스트
         success = send_verification_email(test_email, '테스트 사용자')
+        
+        print(f"이메일 테스트 결과: {success}")
         
         if success:
             return jsonify({
@@ -559,9 +585,91 @@ def test_email():
             })
             
     except Exception as e:
+        print(f"이메일 테스트 오류: {e}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'이메일 테스트 중 오류: {str(e)}'
+        })
+
+@auth_bp.route('/test-email-simple', methods=['GET'])
+def test_email_simple():
+    """간단한 이메일 발송 테스트 (GET 방식)"""
+    try:
+        print(f"=== 간단한 이메일 테스트 시작 ===")
+        
+        # 기본 테스트 이메일로 발송
+        test_email = "test@example.com"
+        success = send_verification_email(test_email, '테스트 사용자')
+        
+        print(f"이메일 테스트 결과: {success}")
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '테스트 이메일이 발송되었습니다.',
+                'email': test_email
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '이메일 발송에 실패했습니다.'
+            })
+            
+    except Exception as e:
+        print(f"이메일 테스트 오류: {e}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'이메일 테스트 중 오류: {str(e)}'
+        })
+
+@auth_bp.route('/test-email-debug', methods=['GET'])
+def test_email_debug():
+    """이메일 설정 디버깅"""
+    try:
+        from flask import current_app
+        
+        print(f"=== 이메일 설정 디버깅 ===")
+        
+        # 이메일 설정 확인
+        mail_username = current_app.config.get('MAIL_USERNAME')
+        mail_password = current_app.config.get('MAIL_PASSWORD')
+        mail_server = current_app.config.get('MAIL_SERVER')
+        mail_port = current_app.config.get('MAIL_PORT')
+        
+        print(f"MAIL_USERNAME: {mail_username}")
+        print(f"MAIL_PASSWORD: {'SET' if mail_password else 'NOT_SET'}")
+        print(f"MAIL_SERVER: {mail_server}")
+        print(f"MAIL_PORT: {mail_port}")
+        
+        # 실제 이메일 발송 테스트
+        test_email = "test@example.com"
+        print(f"이메일 발송 테스트 시작: {test_email}")
+        
+        success = send_verification_email(test_email, '테스트 사용자')
+        
+        print(f"이메일 발송 결과: {success}")
+        
+        return jsonify({
+            'success': True,
+            'message': '디버깅 완료',
+            'mail_username': mail_username,
+            'mail_password_set': bool(mail_password),
+            'mail_server': mail_server,
+            'mail_port': mail_port,
+            'email_sent': success
+        })
+        
+    except Exception as e:
+        print(f"디버깅 오류: {e}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'message': f'디버깅 중 오류: {str(e)}'
         })
 
 @auth_bp.route('/email-config', methods=['GET'])
@@ -579,7 +687,9 @@ def get_email_config():
             'mail_password_set': bool(mail_password),
             'mail_server': current_app.config.get('MAIL_SERVER'),
             'mail_port': current_app.config.get('MAIL_PORT'),
-            'mail_use_tls': current_app.config.get('MAIL_USE_TLS')
+            'mail_use_tls': current_app.config.get('MAIL_USE_TLS'),
+            'frontend_base_url': current_app.config.get('FRONTEND_BASE_URL'),
+            'environment': os.environ.get('FLASK_ENV', 'unknown')
         })
     except Exception as e:
         return jsonify({

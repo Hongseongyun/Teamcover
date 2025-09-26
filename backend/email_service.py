@@ -67,9 +67,15 @@ def verify_token(token, expiration=3600):
 def send_verification_email(email, name, password, role='user'):
     """인증 이메일 발송"""
     try:
+        print(f"=== send_verification_email 시작 ===")
+        print(f"이메일: {email}")
+        print(f"이름: {name}")
+        print(f"역할: {role}")
+        
         # 인증 토큰 생성 (사용자 정보 포함)
         token = generate_verification_token(email, name, password, role)
         verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
+        print(f"인증 URL: {verification_url}")
         
         # 이메일 내용
         subject = "Teamcover 이메일 인증"
@@ -109,17 +115,29 @@ def send_verification_email(email, name, password, role='user'):
         """
         
         # 이메일 발송
+        print(f"이메일 메시지 생성 중...")
         msg = Message(
             subject=subject,
             recipients=[email],
             html=html_body
         )
+        print(f"이메일 메시지 생성 완료")
+        
+        print(f"SMTP 서버 연결 시도 중...")
+        print(f"MAIL_SERVER: {current_app.config.get('MAIL_SERVER')}")
+        print(f"MAIL_PORT: {current_app.config.get('MAIL_PORT')}")
+        print(f"MAIL_USERNAME: {current_app.config.get('MAIL_USERNAME')}")
+        print(f"MAIL_PASSWORD: {'SET' if current_app.config.get('MAIL_PASSWORD') else 'NOT_SET'}")
         
         mail.send(msg)
+        print(f"✅ 이메일 발송 성공!")
         return True
         
     except Exception as e:
-        print(f"이메일 발송 실패: {e}")
+        print(f"❌ 이메일 발송 실패: {e}")
+        print(f"오류 타입: {type(e)}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
         return False
 
 def verify_email_token(token):
