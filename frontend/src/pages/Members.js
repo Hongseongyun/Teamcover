@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { memberAPI } from '../services/api';
+import { memberAPI, sheetsAPI } from '../services/api';
 import './Members.css';
 
 const Members = () => {
@@ -26,6 +26,13 @@ const Members = () => {
     level: '',
     email: '',
     note: '',
+  });
+
+  // 구글시트 가져오기 관련 상태
+  const [showImportForm, setShowImportForm] = useState(false);
+  const [importFormData, setImportFormData] = useState({
+    spreadsheetUrl: '',
+    worksheetName: '',
   });
 
   useEffect(() => {
@@ -138,6 +145,48 @@ const Members = () => {
     setShowAddForm(false);
   };
 
+  // 구글시트 가져오기
+  const handleImportFromSheets = async (e) => {
+    e.preventDefault();
+
+    if (!importFormData.spreadsheetUrl.trim()) {
+      alert('구글 시트 URL을 입력해주세요.');
+      return;
+    }
+
+    try {
+      const response = await sheetsAPI.importMembers(importFormData);
+      const { success, message, error_type } = response?.data || {};
+
+      if (success) {
+        alert('구글시트에서 회원을 성공적으로 가져왔습니다.');
+        setShowImportForm(false);
+        setImportFormData({
+          spreadsheetUrl: '',
+          worksheetName: '',
+        });
+        loadMembers();
+      } else {
+        let errorMessage = message || '구글시트 가져오기에 실패했습니다.';
+        if (error_type === 'authentication_failed') {
+          errorMessage += '\n\n환경변수 설정을 확인해주세요.';
+        } else if (error_type === 'data_fetch_failed') {
+          errorMessage += '\n\n구글 시트 URL과 권한을 확인해주세요.';
+        } else if (error_type === 'parsing_failed') {
+          errorMessage += '\n\n시트 형식을 확인해주세요.';
+        }
+        alert(errorMessage);
+      }
+    } catch (error) {
+      console.error('구글시트 가져오기 실패:', error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        '구글시트 가져오기에 실패했습니다.';
+      alert(`오류: ${errorMessage}`);
+    }
+  };
+
   // 인라인 편집 시작
   const startInlineEdit = (member) => {
     setInlineEditingId(member.id);
@@ -228,12 +277,20 @@ const Members = () => {
     <div className="members-page">
       <div className="page-header">
         <h1>팀커버 회원 관리</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowAddForm(true)}
-        >
-          회원 추가
-        </button>
+        <div className="header-actions">
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowImportForm(true)}
+          >
+            구글시트 가져오기
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAddForm(true)}
+          >
+            회원 추가
+          </button>
+        </div>
       </div>
 
       {/* 통계 섹션 */}
@@ -257,6 +314,62 @@ const Members = () => {
           </div>
         </div>
       </div>
+
+      {/* 구글시트 가져오기 폼 */}
+      {showImportForm && (
+        <div className="form-section">
+          <div className="section-card">
+            <h3 className="section-title">구글시트에서 회원 가져오기</h3>
+            <form onSubmit={handleImportFromSheets} className="member-form">
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label>구글 시트 URL *</label>
+                  <input
+                    type="url"
+                    value={importFormData.spreadsheetUrl}
+                    onChange={(e) =>
+                      setImportFormData({
+                        ...importFormData,
+                        spreadsheetUrl: e.target.value,
+                      })
+                    }
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    required
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group full-width">
+                  <label>워크시트 이름 (선택사항)</label>
+                  <input
+                    type="text"
+                    value={importFormData.worksheetName}
+                    onChange={(e) =>
+                      setImportFormData({
+                        ...importFormData,
+                        worksheetName: e.target.value,
+                      })
+                    }
+                    placeholder="워크시트 이름을 입력하세요 (비워두면 첫 번째 시트 사용)"
+                  />
+                </div>
+              </div>
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary">
+                  가져오기
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowImportForm(false)}
+                >
+                  취소
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* 회원 추가/수정 폼 */}
       {showAddForm && (

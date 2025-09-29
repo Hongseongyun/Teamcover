@@ -14,6 +14,12 @@
   color: var(--toss-gray-900);
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
 .stats-section {
   margin-bottom: 2rem;
 }
@@ -102,6 +108,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-group.full-width {
+  flex: 1 1 100%;
 }
 
 .form-group label {
