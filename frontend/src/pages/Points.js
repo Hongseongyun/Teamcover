@@ -160,6 +160,7 @@ const Points = () => {
 
     memberPoints.forEach((point) => {
       const amount = parseInt(point.amount) || 0;
+      // 포인트 내역과 동일하게 amount의 부호를 그대로 사용
       if (point.point_type === '적립' || point.point_type === '보너스') {
         totalEarned += Math.abs(amount);
       } else {
@@ -167,7 +168,13 @@ const Points = () => {
       }
     });
 
-    const currentBalance = totalEarned - totalUsed;
+    // 포인트 내역과 동일한 방식으로 계산 (날짜순 누적)
+    // calculateRemainingPoints 함수와 동일한 로직 사용
+    const currentBalance = calculateRemainingPoints(
+      points, // 전체 포인트 목록
+      memberName, // 검색된 회원명
+      new Date().toISOString().split('T')[0] // 현재 날짜 (가장 최근까지)
+    );
 
     // 전체 포인트 기록 (날짜순 정렬)
     const allPointsSorted = memberPoints.sort(
@@ -706,7 +713,7 @@ const Points = () => {
                       <div className="stat-number">
                         {memberStats.totalTransactions}
                       </div>
-                      <div className="stat-label">총 거래 수</div>
+                      <div className="stat-label">총 내역</div>
                     </div>
                     <div className="stat-card stat-success">
                       <div className="stat-number">
