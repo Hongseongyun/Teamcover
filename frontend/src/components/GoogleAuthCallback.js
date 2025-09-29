@@ -39,7 +39,7 @@ const GoogleAuthCallback = () => {
         // 백엔드로 코드를 전송하여 토큰 교환
         const response = await fetch(
           `${
-            process.env.REACT_APP_API_URL || 'http://localhost:5000'
+            process.env.REACT_APP_API_URL || 'https://api.hsyun.store'
           }/api/auth/google/callback`,
           {
             method: 'POST',
