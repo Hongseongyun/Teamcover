@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.hsyun.store';
+const API_BASE_URL = 'https://api.hsyun.store';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
