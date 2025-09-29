@@ -57,7 +57,7 @@ class GoogleSheetsManager:
                     else:
                         # 4. 환경 변수(json 필드)로 시도
                         creds_dict = {
-                            "type": os.environ.get('GOOGLE_TYPE'),
+                            "type": os.environ.get(''),
                             "project_id": os.environ.get('GOOGLE_PROJECT_ID'),
                             "private_key_id": os.environ.get('GOOGLE_PRIVATE_KEY_ID'),
                             "private_key": os.environ.get('GOOGLE_PRIVATE_KEY', '').replace('\\n', '\n'),
