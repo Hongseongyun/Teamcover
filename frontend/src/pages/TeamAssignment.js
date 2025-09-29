@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { teamAPI } from '../services/api';
+import { teamAPI, memberAPI, scoreAPI } from '../services/api';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -67,21 +67,21 @@ const TeamAssignment = () => {
 
   const loadMembers = async () => {
     try {
-      const response = await fetch('/api/members');
-      const data = await response.json();
-      if (data.success) {
-        setMembers(data.members);
+      const response = await memberAPI.getMembers();
+      if (response.data.success) {
+        setMembers(response.data.members);
       }
     } catch (error) {
       console.error('회원 목록 로드 실패:', error);
+      console.error('에러 상세:', error.response?.data);
     }
   };
 
   // 스코어 기록에서 평균 에버 계산 (표시용 미리보기)
   const calculateAverageFromScores = async (memberName) => {
     try {
-      const response = await fetch('/api/scores');
-      const data = await response.json();
+      const response = await scoreAPI.getScores();
+      const data = response.data;
 
       if (data.success) {
         const memberScores = data.scores.filter(
@@ -661,8 +661,8 @@ const TeamAssignment = () => {
   // 개별 회원의 평균 에버 계산 (선수 추가용)
   const calculateMemberAverage = async (memberName) => {
     try {
-      const response = await fetch('/api/scores');
-      const data = await response.json();
+      const response = await scoreAPI.getScores();
+      const data = response.data;
 
       if (data.success) {
         const memberScores = data.scores.filter(

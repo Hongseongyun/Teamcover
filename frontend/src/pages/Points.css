@@ -190,6 +190,47 @@
   margin-bottom: 0;
 }
 
+/* 회원 잔여 포인트 표시 */
+.member-balance-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  border: 2px solid var(--toss-gray-200);
+  min-width: 150px;
+  box-shadow: var(--toss-shadow-sm);
+}
+
+.balance-label {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.balance-amount {
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: var(--toss-radius);
+  min-width: 100px;
+  text-align: center;
+}
+
+.balance-amount.positive {
+  color: var(--toss-success);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.balance-amount.negative {
+  color: var(--toss-error);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* 기존 폼 스타일 */
 .form-section {
   margin-bottom: 2rem;

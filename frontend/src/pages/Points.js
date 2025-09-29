@@ -40,10 +40,22 @@ const Points = () => {
     monthlyStats: {},
   });
 
+  // 선택된 회원의 잔여 포인트
+  const [selectedMemberBalance, setSelectedMemberBalance] = useState(0);
+
   useEffect(() => {
     loadPoints();
     loadMembers();
   }, []);
+
+  // 필터가 변경될 때마다 선택된 회원의 잔여 포인트 계산
+  useEffect(() => {
+    if (filters.member) {
+      calculateMemberBalance(filters.member);
+    } else {
+      setSelectedMemberBalance(0);
+    }
+  }, [filters.member, points]);
 
   const loadPoints = async () => {
     try {
@@ -140,6 +152,31 @@ const Points = () => {
       activeMembers,
       monthlyStats,
     });
+  };
+
+  // 특정 회원의 잔여 포인트 계산
+  const calculateMemberBalance = (memberName) => {
+    if (!memberName || !points || points.length === 0) {
+      setSelectedMemberBalance(0);
+      return;
+    }
+
+    let earned = 0;
+    let used = 0;
+
+    points.forEach((point) => {
+      if (point.member_name === memberName) {
+        const amount = parseInt(point.amount) || 0;
+        if (point.point_type === '적립' || point.point_type === '보너스') {
+          earned += Math.abs(amount);
+        } else {
+          used += Math.abs(amount);
+        }
+      }
+    });
+
+    const balance = earned - used;
+    setSelectedMemberBalance(balance);
   };
 
   // 구글시트 가져오기
@@ -646,6 +683,20 @@ const Points = () => {
                   ))}
                 </select>
               </div>
+
+              {/* 선택된 회원의 잔여 포인트 표시 */}
+              {filters.member && (
+                <div className="member-balance-display">
+                  <div className="balance-label">잔여 포인트</div>
+                  <div
+                    className={`balance-amount ${
+                      selectedMemberBalance >= 0 ? 'positive' : 'negative'
+                    }`}
+                  >
+                    {formatNumber(selectedMemberBalance)}P
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
