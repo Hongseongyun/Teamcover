@@ -9,6 +9,51 @@ sheets_bp = Blueprint('sheets', __name__, url_prefix='/api')
 # 구글 시트 매니저 초기화
 sheets_manager = GoogleSheetsManager()
 
+@sheets_bp.route('/sheets/debug-auth', methods=['GET'])
+def debug_auth():
+    """구글 시트 인증 상태 디버그 엔드포인트"""
+    try:
+        import os
+        from google.oauth2.service_account import Credentials
+        
+        # 환경변수 상태 확인
+        env_status = {
+            'GOOGLE_TYPE': os.environ.get('GOOGLE_TYPE', 'NOT_SET'),
+            'GOOGLE_PROJECT_ID': os.environ.get('GOOGLE_PROJECT_ID', 'NOT_SET'),
+            'GOOGLE_PRIVATE_KEY_ID': os.environ.get('GOOGLE_PRIVATE_KEY_ID', 'NOT_SET'),
+            'GOOGLE_PRIVATE_KEY': 'SET' if os.environ.get('GOOGLE_PRIVATE_KEY') else 'NOT_SET',
+            'GOOGLE_CLIENT_EMAIL': os.environ.get('GOOGLE_CLIENT_EMAIL', 'NOT_SET'),
+            'GOOGLE_CLIENT_ID': os.environ.get('GOOGLE_CLIENT_ID', 'NOT_SET'),
+            'GOOGLE_AUTH_URI': os.environ.get('GOOGLE_AUTH_URI', 'NOT_SET'),
+            'GOOGLE_TOKEN_URI': os.environ.get('GOOGLE_TOKEN_URI', 'NOT_SET'),
+            'GOOGLE_AUTH_PROVIDER_X509_CERT_URL': os.environ.get('GOOGLE_AUTH_PROVIDER_X509_CERT_URL', 'NOT_SET'),
+            'GOOGLE_CLIENT_X509_CERT_URL': os.environ.get('GOOGLE_CLIENT_X509_CERT_URL', 'NOT_SET'),
+        }
+        
+        # 필수 필드 확인
+        required_fields = ['GOOGLE_TYPE', 'GOOGLE_PROJECT_ID', 'GOOGLE_PRIVATE_KEY', 'GOOGLE_CLIENT_EMAIL']
+        missing_fields = [field for field in required_fields if env_status.get(field) == 'NOT_SET']
+        
+        # 인증 시도
+        auth_result = sheets_manager.authenticate()
+        
+        return jsonify({
+            'success': True,
+            'environment_variables': env_status,
+            'missing_required_fields': missing_fields,
+            'authentication_result': auth_result,
+            'client_initialized': sheets_manager.client is not None,
+            'credentials_initialized': sheets_manager.credentials is not None
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'environment_variables': env_status if 'env_status' in locals() else {},
+            'authentication_result': False
+        })
+
 @sheets_bp.route('/scores/import-from-sheets', methods=['POST'])
 def import_scores_from_sheets():
     """구글 시트에서 스코어 데이터 가져오기 API"""
@@ -28,18 +73,31 @@ def import_scores_from_sheets():
             print(f"기존 스코어 {deleted_count}개 삭제됨")
         
         # 구글 시트 인증
-        if not sheets_manager.authenticate():
-            return jsonify({'success': False, 'message': '구글 시트 인증에 실패했습니다.'})
+        auth_result = sheets_manager.authenticate()
+        if not auth_result:
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트 인증에 실패했습니다. 환경변수 설정을 확인해주세요.',
+                'error_type': 'authentication_failed'
+            })
         
         # 시트 데이터 가져오기
         sheet_data = sheets_manager.get_sheet_data(spreadsheet_url, worksheet_name)
         if not sheet_data:
-            return jsonify({'success': False, 'message': '구글 시트에서 데이터를 가져올 수 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트에서 데이터를 가져올 수 없습니다. URL과 권한을 확인해주세요.',
+                'error_type': 'data_fetch_failed'
+            })
         
         # 데이터 파싱
         parsed_scores = sheets_manager.parse_score_data(sheet_data)
         if not parsed_scores:
-            return jsonify({'success': False, 'message': '파싱할 수 있는 스코어 데이터가 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '파싱할 수 있는 스코어 데이터가 없습니다. 시트 형식을 확인해주세요.',
+                'error_type': 'parsing_failed'
+            })
         
         # 데이터베이스에 저장
         imported_count = 0
@@ -127,18 +185,31 @@ def import_members_from_sheets():
             return jsonify({'success': False, 'message': '구글 시트 URL을 입력해주세요.'})
         
         # 구글 시트 인증
-        if not sheets_manager.authenticate():
-            return jsonify({'success': False, 'message': '구글 시트 인증에 실패했습니다.'})
+        auth_result = sheets_manager.authenticate()
+        if not auth_result:
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트 인증에 실패했습니다. 환경변수 설정을 확인해주세요.',
+                'error_type': 'authentication_failed'
+            })
         
         # 시트 데이터 가져오기
         sheet_data = sheets_manager.get_sheet_data(spreadsheet_url, worksheet_name)
         if not sheet_data:
-            return jsonify({'success': False, 'message': '구글 시트에서 데이터를 가져올 수 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트에서 데이터를 가져올 수 없습니다. URL과 권한을 확인해주세요.',
+                'error_type': 'data_fetch_failed'
+            })
         
         # 데이터 파싱
         parsed_members = sheets_manager.parse_member_data(sheet_data)
         if not parsed_members:
-            return jsonify({'success': False, 'message': '파싱할 수 있는 회원 데이터가 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '파싱할 수 있는 회원 데이터가 없습니다. 시트 형식을 확인해주세요.',
+                'error_type': 'parsing_failed'
+            })
         
         # 데이터베이스에 저장
         imported_count = 0
@@ -222,18 +293,31 @@ def import_points_from_sheets():
             print(f"기존 포인트 {deleted_count}개 삭제됨")
         
         # 구글 시트 인증
-        if not sheets_manager.authenticate():
-            return jsonify({'success': False, 'message': '구글 시트 인증에 실패했습니다.'})
+        auth_result = sheets_manager.authenticate()
+        if not auth_result:
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트 인증에 실패했습니다. 환경변수 설정을 확인해주세요.',
+                'error_type': 'authentication_failed'
+            })
         
         # 시트 데이터 가져오기
         sheet_data = sheets_manager.get_sheet_data(spreadsheet_url, worksheet_name)
         if not sheet_data:
-            return jsonify({'success': False, 'message': '구글 시트에서 데이터를 가져올 수 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '구글 시트에서 데이터를 가져올 수 없습니다. URL과 권한을 확인해주세요.',
+                'error_type': 'data_fetch_failed'
+            })
         
         # 데이터 파싱
         parsed_points = sheets_manager.parse_point_data(sheet_data)
         if not parsed_points:
-            return jsonify({'success': False, 'message': '파싱할 수 있는 포인트 데이터가 없습니다.'})
+            return jsonify({
+                'success': False, 
+                'message': '파싱할 수 있는 포인트 데이터가 없습니다. 시트 형식을 확인해주세요.',
+                'error_type': 'parsing_failed'
+            })
         
         # 데이터베이스에 저장
         imported_count = 0

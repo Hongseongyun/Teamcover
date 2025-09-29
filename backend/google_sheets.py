@@ -57,15 +57,15 @@ class GoogleSheetsManager:
                     else:
                         # 4. 환경 변수(json 필드)로 시도
                         creds_dict = {
-                            "type": os.environ.get(''),
+                            "type": os.environ.get('GOOGLE_TYPE', 'service_account'),
                             "project_id": os.environ.get('GOOGLE_PROJECT_ID'),
                             "private_key_id": os.environ.get('GOOGLE_PRIVATE_KEY_ID'),
                             "private_key": os.environ.get('GOOGLE_PRIVATE_KEY', '').replace('\\n', '\n'),
                             "client_email": os.environ.get('GOOGLE_CLIENT_EMAIL'),
                             "client_id": os.environ.get('GOOGLE_CLIENT_ID'),
-                            "auth_uri": os.environ.get('GOOGLE_AUTH_URI'),
-                            "token_uri": os.environ.get('GOOGLE_TOKEN_URI'),
-                            "auth_provider_x509_cert_url": os.environ.get('GOOGLE_AUTH_PROVIDER_X509_CERT_URL'),
+                            "auth_uri": os.environ.get('GOOGLE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth'),
+                            "token_uri": os.environ.get('GOOGLE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
+                            "auth_provider_x509_cert_url": os.environ.get('GOOGLE_AUTH_PROVIDER_X509_CERT_URL', 'https://www.googleapis.com/oauth2/v1/certs'),
                             "client_x509_cert_url": os.environ.get('GOOGLE_CLIENT_X509_CERT_URL')
                         }
 
@@ -75,6 +75,12 @@ class GoogleSheetsManager:
                         if missing_fields:
                             print("API_KEY 폴더와 GOOGLE_APPLICATION_CREDENTIALS 경로에서 자격 파일을 찾지 못했고, 환경 변수 필드도 부족합니다.")
                             print(f"누락된 필드: {missing_fields}")
+                            print(f"현재 설정된 환경변수들:")
+                            for key, value in creds_dict.items():
+                                if value:
+                                    print(f"  {key}: {'SET' if value else 'NOT_SET'}")
+                                else:
+                                    print(f"  {key}: NOT_SET")
                             return False
 
                         self.credentials = Credentials.from_service_account_info(creds_dict, scopes=self.scope)

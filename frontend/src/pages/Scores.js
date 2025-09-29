@@ -396,7 +396,7 @@ const Scores = () => {
 
     try {
       const response = await sheetsAPI.importScores(importFormData);
-      const { success, message } = response?.data || {};
+      const { success, message, error_type } = response?.data || {};
       if (success) {
         alert('구글시트에서 스코어를 성공적으로 가져왔습니다.');
         setShowImportForm(false);
@@ -407,11 +407,23 @@ const Scores = () => {
         });
         loadScores();
       } else {
-        alert(message || '구글시트 가져오기에 실패했습니다.');
+        let errorMessage = message || '구글시트 가져오기에 실패했습니다.';
+        if (error_type === 'authentication_failed') {
+          errorMessage += '\n\n환경변수 설정을 확인해주세요.';
+        } else if (error_type === 'data_fetch_failed') {
+          errorMessage += '\n\n구글 시트 URL과 권한을 확인해주세요.';
+        } else if (error_type === 'parsing_failed') {
+          errorMessage += '\n\n시트 형식을 확인해주세요.';
+        }
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('구글시트 가져오기 실패:', error);
-      alert('구글시트 가져오기에 실패했습니다.');
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        '구글시트 가져오기에 실패했습니다.';
+      alert(`오류: ${errorMessage}`);
     }
   };
 
