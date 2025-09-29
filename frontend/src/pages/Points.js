@@ -669,19 +669,22 @@ const Points = () => {
             <div className="filter-row">
               <div className="form-group">
                 <label>회원 필터</label>
-                <select
+                <input
+                  type="text"
                   value={filters.member}
                   onChange={(e) =>
                     setFilters({ ...filters, member: e.target.value })
                   }
-                >
-                  <option value="">전체 회원</option>
+                  onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()}
+                  placeholder="회원명을 입력하거나 선택하세요"
+                  list="member-filter-list"
+                  className="member-filter-input"
+                />
+                <datalist id="member-filter-list">
                   {members.map((member) => (
-                    <option key={member.id} value={member.name}>
-                      {member.name}
-                    </option>
+                    <option key={member.id} value={member.name} />
                   ))}
-                </select>
+                </datalist>
               </div>
 
               {/* 선택된 회원의 잔여 포인트 표시 */}

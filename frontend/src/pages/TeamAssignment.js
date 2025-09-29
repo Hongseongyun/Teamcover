@@ -812,11 +812,11 @@ const TeamAssignment = () => {
 
       if (maxDiff <= 10) {
         setBalancingResult(
-          `✅ 팀 구성 완료! 여성 인원 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점, 200회 시도)`
+          `✅ 팀 구성 완료! 여성 인원 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점)`
         );
       } else {
         setBalancingResult(
-          `⚠️ 팀 구성 완료. 여성 인원 균등 분배 완료, 점수 차이: ${maxDiff}점 (200회 시도)`
+          `⚠️ 팀 구성 완료. 여성 인원 균등 분배 완료, 점수 차이: ${maxDiff}점`
         );
       }
 
@@ -954,6 +954,18 @@ const TeamAssignment = () => {
     let bestMaxDiff = Number.MAX_SAFE_INTEGER;
     let bestAttempt = 0;
 
+    // 상위 시드 선수들 식별 (각 팀의 첫 번째 선수들)
+    const seedPlayers = new Set();
+    teams.forEach((team) => {
+      if (team.players.length > 0) {
+        const firstPlayer = team.players[0];
+        seedPlayers.add(
+          `${firstPlayer.name}-${firstPlayer.average}-${firstPlayer.gender}`
+        );
+      }
+    });
+    console.log('시드 선수들 (스위칭 제외):', Array.from(seedPlayers));
+
     // [규칙 2] 최대 점수 차이가 5점 이하가 될 때까지 반복 (안전 가드 포함)
     let attempt = 0;
     const hardLimit = 3000; // 무한 반복 방지를 위한 하드 가드
@@ -1003,9 +1015,17 @@ const TeamAssignment = () => {
       let bestSwap = null;
       let bestScoreImprovement = 0;
 
-      // 남자 회원만 필터링 (여성 인원 균등성 유지)
-      const highTeamMales = highTeam.players.filter((p) => p.gender === '남');
-      const lowTeamMales = lowTeam.players.filter((p) => p.gender === '남');
+      // 남자 회원만 필터링 (여성 인원 균등성 유지) + 시드 선수 제외
+      const highTeamMales = highTeam.players.filter(
+        (p) =>
+          p.gender === '남' &&
+          !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
+      );
+      const lowTeamMales = lowTeam.players.filter(
+        (p) =>
+          p.gender === '남' &&
+          !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
+      );
 
       // 모든 가능한 남자 회원 조합 시도
       for (const highPlayer of highTeamMales) {
@@ -1228,8 +1248,11 @@ const TeamAssignment = () => {
       let bestImprovement = 0;
 
       // 모든 가능한 선수 조합 시도
-      for (const highPlayer of highTeam.players) {
-        for (const lowPlayer of lowTeam.players) {
+      const highTeamNonSeeds = highTeam.players;
+      const lowTeamNonSeeds = lowTeam.players;
+
+      for (const highPlayer of highTeamNonSeeds) {
+        for (const lowPlayer of lowTeamNonSeeds) {
           // 스위칭 후 점수 차이 계산
           const highTeamNewTotal =
             highTeam.totalAverage - highPlayer.average + lowPlayer.average;

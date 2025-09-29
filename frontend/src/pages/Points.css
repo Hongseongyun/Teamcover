@@ -190,6 +190,10 @@
   margin-bottom: 0;
 }
 
+.member-filter-input {
+  max-width: 300px;
+}
+
 /* 회원 잔여 포인트 표시 */
 .member-balance-display {
   display: flex;

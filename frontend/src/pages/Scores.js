@@ -662,17 +662,22 @@ const Scores = () => {
             <div className="search-form">
               <div className="search-row">
                 <div className="form-group">
-                  <select
+                  <input
+                    type="text"
                     value={searchMember}
                     onChange={(e) => setSearchMember(e.target.value)}
-                  >
-                    <option value="">회원을 선택하세요</option>
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' && handleMemberSearch()
+                    }
+                    placeholder="회원명을 입력하거나 선택하세요"
+                    list="member-list"
+                    className="member-search-input"
+                  />
+                  <datalist id="member-list">
                     {members.map((member) => (
-                      <option key={member.id} value={member.name}>
-                        {member.name}
-                      </option>
+                      <option key={member.id} value={member.name} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
                 <button
                   className="btn btn-primary"
