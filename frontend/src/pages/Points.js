@@ -95,12 +95,12 @@ const Points = () => {
       // amount가 이미 올바른 부호를 가지고 있음
       const amount = parseInt(point.amount) || 0;
 
-      // 포인트 유형에 따라 적립/사용 분류
-      if (point.point_type === '적립' || point.point_type === '보너스') {
-        totalEarned += Math.abs(amount); // 적립은 양수로 처리
-      } else {
-        // 사용/차감은 절댓값으로 처리하여 총 사용량 계산
-        totalUsed += Math.abs(amount);
+      // 적립: +와 - 두 종류 모두 포함 (모든 포인트의 절댓값)
+      // 사용: 실제 사용된 포인트 (음수 포인트의 절댓값)
+      totalEarned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
+
+      if (amount < 0) {
+        totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
 
       // 회원별 포인트 계산
@@ -121,10 +121,10 @@ const Points = () => {
       if (!monthlyStats[monthKey]) {
         monthlyStats[monthKey] = { earned: 0, used: 0, count: 0 };
       }
-      if (point.point_type === '적립' || point.point_type === '보너스') {
-        monthlyStats[monthKey].earned += Math.abs(amount);
-      } else {
-        monthlyStats[monthKey].used += Math.abs(amount);
+      monthlyStats[monthKey].earned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
+
+      if (amount < 0) {
+        monthlyStats[monthKey].used += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
       monthlyStats[monthKey].count++;
     });
@@ -160,11 +160,12 @@ const Points = () => {
 
     memberPoints.forEach((point) => {
       const amount = parseInt(point.amount) || 0;
-      // 포인트 내역과 동일하게 amount의 부호를 그대로 사용
-      if (point.point_type === '적립' || point.point_type === '보너스') {
-        totalEarned += Math.abs(amount);
-      } else {
-        totalUsed += Math.abs(amount);
+      // 적립: +와 - 두 종류 모두 포함 (모든 포인트의 절댓값)
+      // 사용: 실제 사용된 포인트 (음수 포인트의 절댓값)
+      totalEarned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
+
+      if (amount < 0) {
+        totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
     });
 
