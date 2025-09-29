@@ -853,8 +853,29 @@ const TeamAssignment = () => {
       });
     }
 
-    // 여성 선수들을 먼저 균등 분배
-    const femalePlayers = sortedPlayers.filter((p) => p.gender === '여');
+    // [규칙 1] 상위 에버 선수들은 서로 다른 팀으로 시드 배치
+    const topSeedCount = Math.min(team_count, sortedPlayers.length);
+    const topByAverage = [...sortedPlayers].sort(
+      (a, b) => b.average - a.average
+    );
+    for (let i = 0; i < topSeedCount; i++) {
+      const seed = topByAverage[i];
+      const targetTeamIndex = i % team_count;
+      teams[targetTeamIndex].players.push(seed);
+      teams[targetTeamIndex].total_average += seed.average;
+    }
+    // 시드로 배정된 선수 제거 후 나머지 분배 로직 수행
+    const seededIds = new Set(
+      topByAverage
+        .slice(0, topSeedCount)
+        .map((p) => `${p.name}-${p.average}-${p.gender}`)
+    );
+    const remainingPlayers = sortedPlayers.filter(
+      (p) => !seededIds.has(`${p.name}-${p.average}-${p.gender}`)
+    );
+
+    // 여성 선수들을 먼저 균등 분배 (시드 제외 후 분배)
+    const femalePlayers = remainingPlayers.filter((p) => p.gender === '여');
     const femalePerTeam = Math.floor(femalePlayers.length / team_count);
     const remainingFemales = femalePlayers.length % team_count;
 
@@ -885,8 +906,8 @@ const TeamAssignment = () => {
       }
     }
 
-    // 남성 선수들을 남은 자리에 분배
-    const malePlayers = sortedPlayers.filter((p) => p.gender === '남');
+    // 남성 선수들을 남은 자리에 분배 (시드 제외 후 분배)
+    const malePlayers = remainingPlayers.filter((p) => p.gender === '남');
     let maleIndex = 0;
 
     for (let teamIndex = 0; teamIndex < team_count; teamIndex++) {
@@ -933,8 +954,11 @@ const TeamAssignment = () => {
     let bestMaxDiff = Number.MAX_SAFE_INTEGER;
     let bestAttempt = 0;
 
-    // 200번 시도해서 최적 결과 찾기
-    for (let attempt = 1; attempt <= 200; attempt++) {
+    // [규칙 2] 최대 점수 차이가 5점 이하가 될 때까지 반복 (안전 가드 포함)
+    let attempt = 0;
+    const hardLimit = 3000; // 무한 반복 방지를 위한 하드 가드
+    while (attempt < hardLimit) {
+      attempt++;
       console.log(`밸런싱 시도 ${attempt}/200`);
 
       // 현재 팀 상태 분석
@@ -964,10 +988,10 @@ const TeamAssignment = () => {
         );
       }
 
-      // 10점 이내면 충분히 좋은 결과
-      if (currentMaxDiff <= 10) {
+      // 목표: 5점 이하 달성 시 종료
+      if (currentMaxDiff <= 5) {
         console.log(
-          `시도 ${attempt}에서 10점 이내 달성! 최대 점수 차이 = ${currentMaxDiff}점`
+          `시도 ${attempt}에서 5점 이내 달성! 최대 점수 차이 = ${currentMaxDiff}점`
         );
         break;
       }
@@ -1100,11 +1124,8 @@ const TeamAssignment = () => {
         // 잠시 대기 (UI 업데이트를 위해)
         await new Promise((resolve) => setTimeout(resolve, 20));
       } else {
-        console.log(`시도 ${attempt}: 더 이상 개선할 수 있는 스위칭이 없음`);
-        // 랜덤하게 일부 선수를 섞어서 새로운 기회 생성
-        if (attempt < 200) {
-          await shuffleTeamsRandomly(teams);
-        }
+        // 개선 스왑이 없으면 랜덤 섞기로 새로운 기회 생성
+        await shuffleTeamsRandomly(teams);
       }
     }
 

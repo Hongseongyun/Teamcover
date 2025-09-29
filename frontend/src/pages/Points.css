@@ -181,7 +181,7 @@
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto;
+  grid-template-columns: 1fr auto; /* 이름 선택란(가변) | 잔여포인트(내용 크기) */
   gap: 1rem;
   align-items: end;
 }
@@ -195,12 +195,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   background: var(--toss-white);
   border-radius: var(--toss-radius);
   border: 2px solid var(--toss-gray-200);
-  min-width: 150px;
+  min-width: 140px;
   box-shadow: var(--toss-shadow-sm);
+  justify-self: start;
 }
 
 .balance-label {
@@ -229,6 +230,13 @@
   color: var(--toss-error);
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* 필터 초기화 버튼은 아래 한 줄 전체로 배치 */
+.filter-row > .btn {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 0.5rem;
 }
 
 /* 기존 폼 스타일 */
