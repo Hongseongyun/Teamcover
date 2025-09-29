@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import './Points.css';
 
@@ -26,11 +26,6 @@ const Points = () => {
     confirmDelete: false,
   });
 
-  // 필터링 상태
-  const [filters, setFilters] = useState({
-    member: '',
-  });
-
   // 통계 상태
   const [stats, setStats] = useState({
     totalEarned: 0,
@@ -40,24 +35,12 @@ const Points = () => {
     monthlyStats: {},
   });
 
-  // 선택된 회원의 잔여 포인트
-  const [selectedMemberBalance, setSelectedMemberBalance] = useState(0);
+  // 개인별 검색 상태
+  const [searchMember, setSearchMember] = useState('');
+  const [memberStats, setMemberStats] = useState(null);
+  const [showMemberSearch, setShowMemberSearch] = useState(true);
 
-  useEffect(() => {
-    loadPoints();
-    loadMembers();
-  }, []);
-
-  // 필터가 변경될 때마다 선택된 회원의 잔여 포인트 계산
-  useEffect(() => {
-    if (filters.member) {
-      calculateMemberBalance(filters.member);
-    } else {
-      setSelectedMemberBalance(0);
-    }
-  }, [filters.member, points]);
-
-  const loadPoints = async () => {
+  const loadPoints = useCallback(async () => {
     try {
       setLoading(true);
       console.log('포인트 목록 로드 시작');
@@ -82,7 +65,12 @@ const Points = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPoints();
+    loadMembers();
+  }, [loadPoints]);
 
   const loadMembers = async () => {
     try {
@@ -154,29 +142,63 @@ const Points = () => {
     });
   };
 
-  // 특정 회원의 잔여 포인트 계산
-  const calculateMemberBalance = (memberName) => {
-    if (!memberName || !points || points.length === 0) {
-      setSelectedMemberBalance(0);
+  // 개인별 통계 계산
+  const calculateMemberStats = (memberName) => {
+    if (!memberName || !points.length) return;
+
+    const memberPoints = points.filter(
+      (point) => point.member_name === memberName
+    );
+    if (memberPoints.length === 0) {
+      setMemberStats(null);
       return;
     }
 
-    let earned = 0;
-    let used = 0;
+    let totalEarned = 0;
+    let totalUsed = 0;
+    let totalTransactions = memberPoints.length;
 
-    points.forEach((point) => {
-      if (point.member_name === memberName) {
-        const amount = parseInt(point.amount) || 0;
-        if (point.point_type === '적립' || point.point_type === '보너스') {
-          earned += Math.abs(amount);
-        } else {
-          used += Math.abs(amount);
-        }
+    memberPoints.forEach((point) => {
+      const amount = parseInt(point.amount) || 0;
+      if (point.point_type === '적립' || point.point_type === '보너스') {
+        totalEarned += Math.abs(amount);
+      } else {
+        totalUsed += Math.abs(amount);
       }
     });
 
-    const balance = earned - used;
-    setSelectedMemberBalance(balance);
+    const currentBalance = totalEarned - totalUsed;
+
+    // 전체 포인트 기록 (날짜순 정렬)
+    const allPointsSorted = memberPoints.sort(
+      (a, b) =>
+        new Date(b.point_date || b.created_at) -
+        new Date(a.point_date || a.created_at)
+    );
+
+    setMemberStats({
+      memberName,
+      totalTransactions,
+      totalEarned,
+      totalUsed,
+      currentBalance,
+      allPoints: allPointsSorted,
+    });
+  };
+
+  // 개인별 검색 실행
+  const handleMemberSearch = () => {
+    if (searchMember.trim()) {
+      calculateMemberStats(searchMember.trim());
+      setShowMemberSearch(false);
+    }
+  };
+
+  // 검색 초기화
+  const resetMemberSearch = () => {
+    setSearchMember('');
+    setMemberStats(null);
+    setShowMemberSearch(true);
   };
 
   // 구글시트 가져오기
@@ -258,19 +280,6 @@ const Points = () => {
     return balance;
   };
 
-  // 필터링된 포인트 목록
-  const getFilteredPoints = () => {
-    return points.filter((point) => {
-      if (filters.member && point.member_name !== filters.member) return false;
-      return true;
-    });
-  };
-
-  // 필터 초기화
-  const clearFilters = () => {
-    setFilters({ member: '' });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -293,20 +302,6 @@ const Points = () => {
     } catch (error) {
       console.error('포인트 저장 실패:', error);
     }
-  };
-
-  const handleEdit = (point) => {
-    setEditingPoint(point);
-    setEditingId(point.id);
-    setFormData({
-      member_name: point.member_name,
-      point_type: point.point_type,
-      amount: point.amount,
-      reason: point.reason || '',
-      point_date: point.point_date,
-      note: point.note || '',
-    });
-    setShowAddForm(true);
   };
 
   const startInlineEdit = (point) => {
@@ -390,8 +385,6 @@ const Points = () => {
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
-
-  const filteredPoints = getFilteredPoints();
 
   return (
     <div className="points-page">
@@ -659,57 +652,145 @@ const Points = () => {
         </div>
       )}
 
+      {/* 개인별 검색 섹션 */}
+      <div className="member-search-section">
+        <div className="section-card">
+          <h3 className="section-title">개인별 포인트 검색</h3>
+
+          {showMemberSearch ? (
+            <div className="search-form">
+              <div className="search-row">
+                <div className="form-group">
+                  <input
+                    type="text"
+                    value={searchMember}
+                    onChange={(e) => setSearchMember(e.target.value)}
+                    onKeyPress={(e) =>
+                      e.key === 'Enter' && handleMemberSearch()
+                    }
+                    placeholder="회원명을 입력하거나 선택하세요"
+                    list="member-list"
+                    className="member-search-input"
+                  />
+                  <datalist id="member-list">
+                    {members.map((member) => (
+                      <option key={member.id} value={member.name} />
+                    ))}
+                  </datalist>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleMemberSearch}
+                  disabled={!searchMember.trim()}
+                >
+                  검색
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="member-stats">
+              {memberStats && (
+                <>
+                  <div className="member-header">
+                    <h4>{memberStats.memberName}님의 포인트 통계</h4>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={resetMemberSearch}
+                    >
+                      다른 회원 검색
+                    </button>
+                  </div>
+
+                  <div className="member-stats-grid">
+                    <div className="stat-card stat-primary">
+                      <div className="stat-number">
+                        {memberStats.totalTransactions}
+                      </div>
+                      <div className="stat-label">총 거래 수</div>
+                    </div>
+                    <div className="stat-card stat-success">
+                      <div className="stat-number">
+                        {formatNumber(memberStats.totalEarned)}
+                      </div>
+                      <div className="stat-label">총 적립</div>
+                    </div>
+                    <div className="stat-card stat-danger">
+                      <div className="stat-number">
+                        {formatNumber(memberStats.totalUsed)}
+                      </div>
+                      <div className="stat-label">총 사용</div>
+                    </div>
+                    <div className="stat-card stat-info">
+                      <div className="stat-number">
+                        {formatNumber(memberStats.currentBalance)}
+                      </div>
+                      <div className="stat-label">현재 잔여</div>
+                    </div>
+                  </div>
+
+                  {/* 전체 포인트 기록 */}
+                  <div className="all-games">
+                    <h5>
+                      전체 포인트 기록 ({memberStats.totalTransactions}건)
+                    </h5>
+                    <div className="all-games-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>날짜</th>
+                            <th>유형</th>
+                            <th>포인트</th>
+                            <th>사유</th>
+                            <th>메모</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {memberStats.allPoints.map((point, index) => (
+                            <tr key={index}>
+                              <td>{point.point_date || point.created_at}</td>
+                              <td>
+                                <span
+                                  className={`point-type ${
+                                    (point.point_type === '적립' ||
+                                      point.point_type === '보너스') &&
+                                    point.amount >= 0
+                                      ? 'positive'
+                                      : 'negative'
+                                  }`}
+                                >
+                                  {point.point_type}
+                                </span>
+                              </td>
+                              <td
+                                className={
+                                  (point.point_type === '적립' ||
+                                    point.point_type === '보너스') &&
+                                  point.amount >= 0
+                                    ? 'positive'
+                                    : 'negative'
+                                }
+                              >
+                                {formatNumber(point.amount)}P
+                              </td>
+                              <td>{point.reason || '-'}</td>
+                              <td>{point.note || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* 포인트 목록 */}
       <div className="points-section">
         <div className="section-card">
           <h3 className="section-title">포인트 내역</h3>
-
-          {/* 필터 섹션 */}
-          <div className="filter-section">
-            <div className="filter-row">
-              <div className="form-group">
-                <label>회원 필터</label>
-                <input
-                  type="text"
-                  value={filters.member}
-                  onChange={(e) =>
-                    setFilters({ ...filters, member: e.target.value })
-                  }
-                  onKeyPress={(e) => e.key === 'Enter' && e.preventDefault()}
-                  placeholder="회원명을 입력하거나 선택하세요"
-                  list="member-filter-list"
-                  className="member-filter-input"
-                />
-                <datalist id="member-filter-list">
-                  {members.map((member) => (
-                    <option key={member.id} value={member.name} />
-                  ))}
-                </datalist>
-              </div>
-
-              {/* 선택된 회원의 잔여 포인트 표시 */}
-              {filters.member && (
-                <div className="member-balance-display">
-                  <div className="balance-label">잔여 포인트</div>
-                  <div
-                    className={`balance-amount ${
-                      selectedMemberBalance >= 0 ? 'positive' : 'negative'
-                    }`}
-                  >
-                    {formatNumber(selectedMemberBalance)}P
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="btn btn-outline-secondary"
-                onClick={clearFilters}
-              >
-                필터 초기화
-              </button>
-            </div>
-          </div>
 
           <div className="points-table">
             <table>
@@ -726,7 +807,7 @@ const Points = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredPoints.map((point) => (
+                {points.map((point) => (
                   <tr
                     key={point.id}
                     className={editingId === point.id ? 'editing' : ''}
