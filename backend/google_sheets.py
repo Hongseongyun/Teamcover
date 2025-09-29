@@ -623,7 +623,9 @@ class GoogleSheetsManager:
                         point_type = '적립'
                         print(f"양수 금액({amount})으로 인해 포인트 유형을 '적립'으로 설정")
                     else:
-                        print(f"금액이 0이므로 유형 설정 건너뜀")
+                        # 금액이 0인 경우 기본적으로 '적립'으로 설정
+                        point_type = '적립'
+                        print(f"금액이 0이므로 기본적으로 '적립'으로 설정")
                 else:
                     print(f"유형이 이미 설정되어 있음: '{point_type}', 자동 설정 건너뜀")
                 
@@ -642,7 +644,9 @@ class GoogleSheetsManager:
                 # 메모 파싱
                 note = row.get('메모', row.get('note', row.get('Note', '')))
                 
-                if member_name and point_type and amount != 0:
+                print(f"최종 검증: member_name='{member_name}', point_type='{point_type}', amount={amount}")
+                
+                if member_name and point_type:
                     parsed_points.append({
                         'member_name': member_name,
                         'point_date': point_date,
@@ -651,7 +655,9 @@ class GoogleSheetsManager:
                         'reason': reason,
                         'note': note
                     })
-                    print(f"포인트 추가됨: {member_name} - {point_type} {amount}P")
+                    print(f"✅ 포인트 추가됨: {member_name} - {point_type} {amount}P")
+                else:
+                    print(f"❌ 포인트 건너뜀: member_name={bool(member_name)}, point_type={bool(point_type)}, amount={amount}")
                 
             except Exception as e:
                 print(f"포인트 행 파싱 오류: {e}, 데이터: {row}")

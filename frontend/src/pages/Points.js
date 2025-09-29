@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pointAPI, sheetsAPI } from '../services/api';
+import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import './Points.css';
 
 const Points = () => {
@@ -48,13 +48,25 @@ const Points = () => {
   const loadPoints = async () => {
     try {
       setLoading(true);
+      console.log('포인트 목록 로드 시작');
       const response = await pointAPI.getPoints();
+      console.log('포인트 응답:', response);
       if (response.data.success) {
         setPoints(response.data.points);
         calculateStats(response.data.points);
+        console.log(
+          '포인트 목록 로드 성공:',
+          response.data.points.length,
+          '개'
+        );
+      } else {
+        console.error('포인트 목록 로드 실패:', response.data.message);
       }
     } catch (error) {
       console.error('포인트 목록 로드 실패:', error);
+      console.error('에러 상세:', error.response?.data);
+      console.error('에러 코드:', error.code);
+      console.error('요청 URL:', error.config?.url);
     } finally {
       setLoading(false);
     }
@@ -62,10 +74,9 @@ const Points = () => {
 
   const loadMembers = async () => {
     try {
-      const response = await fetch('/api/members');
-      const data = await response.json();
-      if (data.success) {
-        setMembers(data.members);
+      const response = await memberAPI.getMembers();
+      if (response.data.success) {
+        setMembers(response.data.members);
       }
     } catch (error) {
       console.error('회원 목록 로드 실패:', error);

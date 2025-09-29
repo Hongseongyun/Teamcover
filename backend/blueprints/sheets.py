@@ -312,12 +312,17 @@ def import_points_from_sheets():
         
         # 데이터 파싱
         parsed_points = sheets_manager.parse_point_data(sheet_data)
+        print(f"파싱된 포인트 수: {len(parsed_points)}")
         if not parsed_points:
             return jsonify({
                 'success': False, 
                 'message': '파싱할 수 있는 포인트 데이터가 없습니다. 시트 형식을 확인해주세요.',
                 'error_type': 'parsing_failed'
             })
+        
+        print(f"파싱된 포인트 목록:")
+        for i, point in enumerate(parsed_points):
+            print(f"  {i+1}. {point.get('member_name', 'N/A')} - {point.get('point_type', 'N/A')} {point.get('amount', 0)}P - {point.get('point_date', 'N/A')}")
         
         # 데이터베이스에 저장
         imported_count = 0

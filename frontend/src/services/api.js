@@ -7,12 +7,27 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // 타임아웃 설정
+  timeout: 10000,
 });
 
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
     console.log('API 요청:', config.method?.toUpperCase(), config.url);
+    console.log('Base URL:', config.baseURL);
+
+    // Base URL이 HTTP로 시작하면 HTTPS로 변환
+    if (config.baseURL && config.baseURL.startsWith('http://')) {
+      config.baseURL = config.baseURL.replace('http://', 'https://');
+      console.log('Base URL을 HTTPS로 변환:', config.baseURL);
+    }
+
+    // URL이 HTTP로 시작하면 HTTPS로 변환
+    if (config.url && config.url.startsWith('http://')) {
+      config.url = config.url.replace('http://', 'https://');
+      console.log('URL을 HTTPS로 변환:', config.url);
+    }
 
     // JWT 토큰 추가
     const token = localStorage.getItem('token');
@@ -59,15 +74,15 @@ export const memberAPI = {
 export const scoreAPI = {
   getScores: () => api.get('/api/scores/'),
   addScore: (data) => api.post('/api/scores/', data),
-  updateScore: (id, data) => api.put(`/api/scores/${id}`, data),
-  deleteScore: (id) => api.delete(`/api/scores/${id}`),
+  updateScore: (id, data) => api.put(`/api/scores/${id}/`, data),
+  deleteScore: (id) => api.delete(`/api/scores/${id}/`),
   importFromSheets: (data) => api.post('/api/scores/import-from-sheets', data),
 };
 
 // 포인트 관리 API
 export const pointAPI = {
-  getPoints: () => api.get('/api/points'),
-  addPoint: (data) => api.post('/api/points', data),
+  getPoints: () => api.get('/api/points/'),
+  addPoint: (data) => api.post('/api/points/', data),
   updatePoint: (id, data) => api.put(`/api/points/${id}/`, data),
   deletePoint: (id) => api.delete(`/api/points/${id}/`),
   importFromSheets: (data) => api.post('/api/points/import-from-sheets', data),
