@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './Scores.css';
 
 const Scores = () => {
+  const { user } = useAuth(); // 현재 사용자 정보
+  const isAdmin =
+    user && (user.role === 'admin' || user.role === 'super_admin');
   const [scores, setScores] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -632,26 +636,28 @@ const Scores = () => {
     <div className="scores-page">
       <div className="page-header">
         <h1>2025 스코어 관리</h1>
-        <div className="header-actions">
-          <button
-            className="btn btn-info"
-            onClick={() => setShowImportForm(true)}
-          >
-            구글시트 가져오기
-          </button>
-          <button
-            className="btn btn-success"
-            onClick={() => setShowPhotoForm(true)}
-          >
-            AI로 스코어 인식
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddForm(true)}
-          >
-            스코어 추가
-          </button>
-        </div>
+        {isAdmin && (
+          <div className="header-actions">
+            <button
+              className="btn btn-info"
+              onClick={() => setShowImportForm(true)}
+            >
+              구글시트 가져오기
+            </button>
+            <button
+              className="btn btn-success"
+              onClick={() => setShowPhotoForm(true)}
+            >
+              AI로 스코어 인식
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAddForm(true)}
+            >
+              스코어 추가
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 개인별 검색 섹션 */}
@@ -774,8 +780,8 @@ const Scores = () => {
         </div>
       </div>
 
-      {/* 구글시트 가져오기 폼 */}
-      {showImportForm && (
+      {/* 구글시트 가져오기 폼 (관리자만) */}
+      {isAdmin && showImportForm && (
         <div className="import-section">
           <div className="section-card">
             <h3 className="section-title">구글시트에서 스코어 가져오기</h3>
@@ -848,8 +854,8 @@ const Scores = () => {
         </div>
       )}
 
-      {/* 사진으로 스코어 등록 폼 */}
-      {showPhotoForm && (
+      {/* 사진으로 스코어 등록 폼 (관리자만) */}
+      {isAdmin && showPhotoForm && (
         <div className="photo-section">
           <div className="section-card">
             <h3 className="section-title">AI 스코어 인식</h3>
@@ -958,8 +964,8 @@ const Scores = () => {
         </div>
       )}
 
-      {/* 스코어 추가/수정 폼 */}
-      {showAddForm && (
+      {/* 스코어 추가/수정 폼 (관리자만) */}
+      {isAdmin && showAddForm && (
         <div className="form-section">
           <div className="section-card">
             <h3 className="section-title">
@@ -1255,383 +1261,71 @@ const Scores = () => {
         </div>
       )}
 
-      {/* 스코어 목록 */}
-      <div className="scores-section">
-        <div className="section-card">
-          <div className="scores-header">
-            <h3 className="section-title">스코어 목록</h3>
-            <div className="view-toggle">
-              <button
-                className={`btn ${
-                  showAllDates ? 'btn-primary' : 'btn-secondary'
-                }`}
-                onClick={toggleDateView}
-              >
-                {showAllDates ? '단일 날짜 보기' : '전체 보기'}
-              </button>
+      {/* 스코어 목록 (관리자만) */}
+      {isAdmin && (
+        <div className="scores-section">
+          <div className="section-card">
+            <div className="scores-header">
+              <h3 className="section-title">스코어 목록</h3>
+              <div className="view-toggle">
+                <button
+                  className={`btn ${
+                    showAllDates ? 'btn-primary' : 'btn-secondary'
+                  }`}
+                  onClick={toggleDateView}
+                >
+                  {showAllDates ? '단일 날짜 보기' : '전체 보기'}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {showAllDates ? (
-            // 전체 날짜 보기
-            <div className="scores-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>회원명</th>
-                    <th>게임 날짜</th>
-                    <th>1게임</th>
-                    <th>2게임</th>
-                    <th>3게임</th>
-                    <th>총점</th>
-                    <th>평균</th>
-                    <th>비고</th>
-                    <th>작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {getPaginatedGroups().map((group) => (
-                    <React.Fragment key={group.date}>
-                      {/* 날짜 헤더 행 */}
-                      <tr className="date-header-row">
-                        <td colSpan="9" className="date-header">
-                          <div className="date-header-content">
-                            <span className="date-text">{group.date}</span>
-                            <div className="date-stats">
-                              <span className="stat-item">
-                                참여: {group.memberCount}명
-                              </span>
-                              <span className="stat-item">
-                                총점: {group.totalScore}
-                              </span>
-                              <span className="stat-item">
-                                평균: {group.averageScore}
-                              </span>
+            {showAllDates ? (
+              // 전체 날짜 보기
+              <div className="scores-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>회원명</th>
+                      <th>게임 날짜</th>
+                      <th>1게임</th>
+                      <th>2게임</th>
+                      <th>3게임</th>
+                      <th>총점</th>
+                      <th>평균</th>
+                      <th>비고</th>
+                      <th>작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getPaginatedGroups().map((group) => (
+                      <React.Fragment key={group.date}>
+                        {/* 날짜 헤더 행 */}
+                        <tr className="date-header-row">
+                          <td colSpan="9" className="date-header">
+                            <div className="date-header-content">
+                              <span className="date-text">{group.date}</span>
+                              <div className="date-stats">
+                                <span className="stat-item">
+                                  참여: {group.memberCount}명
+                                </span>
+                                <span className="stat-item">
+                                  총점: {group.totalScore}
+                                </span>
+                                <span className="stat-item">
+                                  평균: {group.averageScore}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                      {/* 해당 날짜의 스코어들 */}
-                      {group.scores.map((score) => (
-                        <tr key={score.id} className="score-row">
-                          {inlineEditingId === score.id ? (
-                            <>
-                              <td>
-                                <select
-                                  className="inline-select"
-                                  value={inlineEditData.member_name}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      member_name: e.target.value,
-                                    }))
-                                  }
-                                >
-                                  <option value="">회원 선택</option>
-                                  {members.map((m) => (
-                                    <option key={m.id} value={m.name}>
-                                      {m.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="date"
-                                  value={inlineEditData.game_date}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      game_date: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score1}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score1: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score2}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score2: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score3}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score3: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                {(parseInt(inlineEditData.score1) || 0) +
-                                  (parseInt(inlineEditData.score2) || 0) +
-                                  (parseInt(inlineEditData.score3) || 0)}
-                              </td>
-                              <td>
-                                {(() => {
-                                  const t =
-                                    (parseInt(inlineEditData.score1) || 0) +
-                                    (parseInt(inlineEditData.score2) || 0) +
-                                    (parseInt(inlineEditData.score3) || 0);
-                                  return t > 0 ? (t / 3).toFixed(1) : '0.0';
-                                })()}
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="text"
-                                  value={inlineEditData.note}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      note: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td className="inline-actions">
-                                <button
-                                  className="btn btn-sm btn-primary"
-                                  onClick={() => saveInlineEdit(score.id)}
-                                >
-                                  완료
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-secondary"
-                                  onClick={cancelInlineEdit}
-                                >
-                                  취소
-                                </button>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              <td>{score.member_name}</td>
-                              <td>{score.game_date}</td>
-                              <td>{score.score1}</td>
-                              <td>{score.score2}</td>
-                              <td>{score.score3}</td>
-                              <td>
-                                {score.score1 + score.score2 + score.score3}
-                              </td>
-                              <td>
-                                {(
-                                  (score.score1 + score.score2 + score.score3) /
-                                  3
-                                ).toFixed(1)}
-                              </td>
-                              <td>{score.note || '-'}</td>
-                              <td>
-                                <button
-                                  className="btn btn-sm btn-secondary"
-                                  onClick={() => startInlineEdit(score)}
-                                >
-                                  수정
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-danger"
-                                  onClick={() => handleDelete(score.id)}
-                                >
-                                  삭제
-                                </button>
-                              </td>
-                            </>
-                          )}
+                          </td>
                         </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-              {groupedScores.length > itemsPerPage && (
-                <div className="pagination-controls">
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    이전
-                  </button>
-                  <span>
-                    페이지 {currentPage} / {getTotalPages()}
-                  </span>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === getTotalPages()}
-                  >
-                    다음
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleSortOrderChange}
-                  >
-                    {sortOrder === 'desc' ? '오래된순' : '최신순'}
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            // 단일 날짜 보기 (좌우 화살표)
-            <div className="single-date-view">
-              {getCurrentDateGroup() && (
-                <>
-                  <div className="date-navigation">
-                    <button
-                      className="btn btn-outline-primary nav-btn"
-                      onClick={goToFirstDate}
-                      disabled={currentDateIndex === 0}
-                      title="첫 번째 날짜"
-                    >
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M18 17L13 12L18 7M11 17L6 12L11 7"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      className="btn btn-outline-primary nav-btn"
-                      onClick={goToPreviousDate}
-                      disabled={currentDateIndex === 0}
-                      title="이전 날짜"
-                    >
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M15 18L9 12L15 6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <div className="current-date-info">
-                      <span className="date-display">
-                        {getCurrentDateGroup().date}
-                      </span>
-                      <div className="date-details">
-                        <span className="participant-count">
-                          참여: {getCurrentDateGroup().memberCount}명
-                        </span>
-                        <span className="date-counter">
-                          {currentDateIndex + 1} / {groupedScores.length}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      className="btn btn-outline-primary nav-btn"
-                      onClick={goToNextDate}
-                      disabled={currentDateIndex === groupedScores.length - 1}
-                      title="다음 날짜"
-                    >
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M9 18L15 12L9 6"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      className="btn btn-outline-primary nav-btn"
-                      onClick={goToLastDate}
-                      disabled={currentDateIndex === groupedScores.length - 1}
-                      title="마지막 날짜"
-                    >
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M6 17L11 12L6 7M13 17L18 12L13 7"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="single-date-table">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>회원명</th>
-                          <th>1게임</th>
-                          <th>2게임</th>
-                          <th>3게임</th>
-                          <th>총점</th>
-                          <th>평균</th>
-                          <th>비고</th>
-                          <th>작업</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {getCurrentDateGroup().scores.map((score) => (
+                        {/* 해당 날짜의 스코어들 */}
+                        {group.scores.map((score) => (
                           <tr key={score.id} className="score-row">
                             {inlineEditingId === score.id ? (
                               <>
                                 <td>
                                   <select
+                                    className="inline-select"
                                     value={inlineEditData.member_name}
                                     onChange={(e) =>
                                       setInlineEditData((prev) => ({
@@ -1650,6 +1344,20 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
+                                    type="date"
+                                    value={inlineEditData.game_date}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        game_date: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -1664,6 +1372,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -1678,6 +1387,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -1706,6 +1416,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="text"
                                     value={inlineEditData.note}
                                     onChange={(e) =>
@@ -1716,7 +1427,7 @@ const Scores = () => {
                                     }
                                   />
                                 </td>
-                                <td>
+                                <td className="inline-actions">
                                   <button
                                     className="btn btn-sm btn-primary"
                                     onClick={() => saveInlineEdit(score.id)}
@@ -1734,6 +1445,7 @@ const Scores = () => {
                             ) : (
                               <>
                                 <td>{score.member_name}</td>
+                                <td>{score.game_date}</td>
                                 <td>{score.score1}</td>
                                 <td>{score.score2}</td>
                                 <td>{score.score3}</td>
@@ -1767,15 +1479,313 @@ const Scores = () => {
                             )}
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+                {groupedScores.length > itemsPerPage && (
+                  <div className="pagination-controls">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      이전
+                    </button>
+                    <span>
+                      페이지 {currentPage} / {getTotalPages()}
+                    </span>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === getTotalPages()}
+                    >
+                      다음
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleSortOrderChange}
+                    >
+                      {sortOrder === 'desc' ? '오래된순' : '최신순'}
+                    </button>
                   </div>
-                </>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            ) : (
+              // 단일 날짜 보기 (좌우 화살표)
+              <div className="single-date-view">
+                {getCurrentDateGroup() && (
+                  <>
+                    <div className="date-navigation">
+                      <button
+                        className="btn btn-outline-primary nav-btn"
+                        onClick={goToFirstDate}
+                        disabled={currentDateIndex === 0}
+                        title="첫 번째 날짜"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M18 17L13 12L18 7M11 17L6 12L11 7"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        className="btn btn-outline-primary nav-btn"
+                        onClick={goToPreviousDate}
+                        disabled={currentDateIndex === 0}
+                        title="이전 날짜"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M15 18L9 12L15 6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      <div className="current-date-info">
+                        <span className="date-display">
+                          {getCurrentDateGroup().date}
+                        </span>
+                        <div className="date-details">
+                          <span className="participant-count">
+                            참여: {getCurrentDateGroup().memberCount}명
+                          </span>
+                          <span className="date-counter">
+                            {currentDateIndex + 1} / {groupedScores.length}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-outline-primary nav-btn"
+                        onClick={goToNextDate}
+                        disabled={currentDateIndex === groupedScores.length - 1}
+                        title="다음 날짜"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M9 18L15 12L9 6"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        className="btn btn-outline-primary nav-btn"
+                        onClick={goToLastDate}
+                        disabled={currentDateIndex === groupedScores.length - 1}
+                        title="마지막 날짜"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M6 17L11 12L6 7M13 17L18 12L13 7"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="single-date-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>회원명</th>
+                            <th>1게임</th>
+                            <th>2게임</th>
+                            <th>3게임</th>
+                            <th>총점</th>
+                            <th>평균</th>
+                            <th>비고</th>
+                            <th>작업</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getCurrentDateGroup().scores.map((score) => (
+                            <tr key={score.id} className="score-row">
+                              {inlineEditingId === score.id ? (
+                                <>
+                                  <td>
+                                    <select
+                                      value={inlineEditData.member_name}
+                                      onChange={(e) =>
+                                        setInlineEditData((prev) => ({
+                                          ...prev,
+                                          member_name: e.target.value,
+                                        }))
+                                      }
+                                    >
+                                      <option value="">회원 선택</option>
+                                      {members.map((m) => (
+                                        <option key={m.id} value={m.name}>
+                                          {m.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="300"
+                                      value={inlineEditData.score1}
+                                      onChange={(e) =>
+                                        setInlineEditData((prev) => ({
+                                          ...prev,
+                                          score1: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="300"
+                                      value={inlineEditData.score2}
+                                      onChange={(e) =>
+                                        setInlineEditData((prev) => ({
+                                          ...prev,
+                                          score2: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="300"
+                                      value={inlineEditData.score3}
+                                      onChange={(e) =>
+                                        setInlineEditData((prev) => ({
+                                          ...prev,
+                                          score3: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    {(parseInt(inlineEditData.score1) || 0) +
+                                      (parseInt(inlineEditData.score2) || 0) +
+                                      (parseInt(inlineEditData.score3) || 0)}
+                                  </td>
+                                  <td>
+                                    {(() => {
+                                      const t =
+                                        (parseInt(inlineEditData.score1) || 0) +
+                                        (parseInt(inlineEditData.score2) || 0) +
+                                        (parseInt(inlineEditData.score3) || 0);
+                                      return t > 0 ? (t / 3).toFixed(1) : '0.0';
+                                    })()}
+                                  </td>
+                                  <td>
+                                    <input
+                                      type="text"
+                                      value={inlineEditData.note}
+                                      onChange={(e) =>
+                                        setInlineEditData((prev) => ({
+                                          ...prev,
+                                          note: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="btn btn-sm btn-primary"
+                                      onClick={() => saveInlineEdit(score.id)}
+                                    >
+                                      완료
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-secondary"
+                                      onClick={cancelInlineEdit}
+                                    >
+                                      취소
+                                    </button>
+                                  </td>
+                                </>
+                              ) : (
+                                <>
+                                  <td>{score.member_name}</td>
+                                  <td>{score.score1}</td>
+                                  <td>{score.score2}</td>
+                                  <td>{score.score3}</td>
+                                  <td>
+                                    {score.score1 + score.score2 + score.score3}
+                                  </td>
+                                  <td>
+                                    {(
+                                      (score.score1 +
+                                        score.score2 +
+                                        score.score3) /
+                                      3
+                                    ).toFixed(1)}
+                                  </td>
+                                  <td>{score.note || '-'}</td>
+                                  <td>
+                                    <button
+                                      className="btn btn-sm btn-secondary"
+                                      onClick={() => startInlineEdit(score)}
+                                    >
+                                      수정
+                                    </button>
+                                    <button
+                                      className="btn btn-sm btn-danger"
+                                      onClick={() => handleDelete(score.id)}
+                                    >
+                                      삭제
+                                    </button>
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

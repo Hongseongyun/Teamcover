@@ -16,7 +16,19 @@ class LLMImageAnalyzer:
         try:
             if api_key:
                 genai.configure(api_key=api_key)
-                self.model = genai.GenerativeModel('gemini-1.5-flash')
+                # Gemini 모델 이름 수정 (gemini-1.5-flash-latest 또는 gemini-pro-vision)
+                try:
+                    self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                    print("✅ Gemini 1.5 Flash (Latest) 모델 로드 성공")
+                except Exception as e1:
+                    print(f"Gemini 1.5 Flash Latest 로드 실패, Pro Vision 시도: {e1}")
+                    try:
+                        self.model = genai.GenerativeModel('gemini-pro-vision')
+                        print("✅ Gemini Pro Vision 모델 로드 성공")
+                    except Exception as e2:
+                        print(f"Gemini Pro Vision 로드 실패, 기본 모델 시도: {e2}")
+                        self.model = genai.GenerativeModel('gemini-pro')
+                        print("✅ Gemini Pro 모델 로드 성공 (텍스트 전용)")
             else:
                 self.model = None
                 print("경고: GOOGLE_API_KEY가 설정되지 않았습니다.")
