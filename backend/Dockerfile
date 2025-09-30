@@ -18,9 +18,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # 애플리케이션 코드 복사
 COPY . .
 
+# 시작 스크립트에 실행 권한 부여
+RUN chmod +x start.sh
+
 # 포트 노출 (Railway가 동적으로 포트를 할당하지만, 여기는 기본값 사용)
 EXPOSE 5000
 
-# Railway의 startCommand가 이 CMD를 덮어씁니다
-# 쉘 형식으로 변경하여 환경변수가 제대로 확장되도록 함
-CMD gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 2 --timeout 120 --log-level debug --access-logfile - --error-logfile - --capture-output
+# 시작 스크립트 실행
+CMD ["/bin/bash", "start.sh"]
