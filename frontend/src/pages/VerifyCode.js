@@ -8,6 +8,8 @@ const VerifyCode = () => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
 
   const navigate = useNavigate();
@@ -78,6 +80,41 @@ const VerifyCode = () => {
     if (value.length <= 6) {
       setCode(value);
       setError('');
+      setSuccessMessage('');
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!userInfo || !userInfo.email) {
+      setError('사용자 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    setResendLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const response = await api.post('/auth/resend-verification-code', {
+        email: userInfo.email,
+      });
+
+      if (response.data.success) {
+        setSuccessMessage(
+          '새로운 인증 코드를 발송했습니다. 이메일을 확인해주세요.'
+        );
+        setCode(''); // 입력된 코드 초기화
+      } else {
+        setError(response.data.message || '인증 코드 재발송에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('인증 코드 재발송 오류:', error);
+      setError(
+        error.response?.data?.message ||
+          '인증 코드 재발송 중 오류가 발생했습니다.'
+      );
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -110,6 +147,9 @@ const VerifyCode = () => {
         </div>
 
         {error && <div className="error-message">{error}</div>}
+        {successMessage && (
+          <div className="success-message">{successMessage}</div>
+        )}
 
         <form onSubmit={handleSubmit} className="verify-code-form">
           <div className="form-group">
@@ -136,6 +176,15 @@ const VerifyCode = () => {
             disabled={loading || code.length !== 6}
           >
             {loading ? '인증 중...' : '인증하기'}
+          </button>
+
+          <button
+            type="button"
+            className="resend-button"
+            onClick={handleResendCode}
+            disabled={resendLoading || loading}
+          >
+            {resendLoading ? '재발송 중...' : '📧 인증 코드 다시 받기'}
           </button>
         </form>
 

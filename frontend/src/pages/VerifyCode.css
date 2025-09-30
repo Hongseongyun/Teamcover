@@ -181,6 +181,42 @@
   transform: none;
 }
 
+.resend-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.resend-button:hover:not(:disabled) {
+  background: #f0f4ff;
+  transform: translateY(-1px);
+}
+
+.resend-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.success-message {
+  background-color: #e7f5e7;
+  color: #2d7a2d;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #9ed69e;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .verify-code-footer {
   text-align: center;
   padding-top: 20px;

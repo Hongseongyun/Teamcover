@@ -942,3 +942,58 @@ def regenerate_verification_code():
         db.session.rollback()
         print(f"Error regenerating verification code: {e}")
         return jsonify({'success': False, 'message': f'인증 코드 재생성 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/resend-verification-code', methods=['POST'])
+def resend_verification_code():
+    """인증 코드 재발송 (사용자용 - 인증 불필요)"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        if user.is_verified:
+            return jsonify({'success': False, 'message': '이미 인증된 계정입니다.'})
+        
+        # 새 인증 코드 생성
+        new_code = generate_verification_code()
+        new_expires = datetime.utcnow() + timedelta(hours=24)
+        
+        user.verification_code = new_code
+        user.verification_code_expires = new_expires
+        
+        db.session.commit()
+        
+        print(f"Resending verification code for {user.email}: {new_code}")
+        
+        # 이메일 재발송
+        email_sent = send_verification_code_email(user.email, user.name, new_code)
+        
+        if email_sent:
+            print(f"✅ 인증 코드 재발송 성공: {user.email}")
+            return jsonify({
+                'success': True,
+                'message': f'{user.email}로 새로운 인증 코드를 발송했습니다. 이메일을 확인해주세요.',
+                'email_sent': True
+            })
+        else:
+            print(f"⚠️ 인증 코드 재발송 실패: {user.email}")
+            return jsonify({
+                'success': False,
+                'message': '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+                'email_sent': False
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error resending verification code: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'인증 코드 재발송 중 오류가 발생했습니다: {str(e)}'})

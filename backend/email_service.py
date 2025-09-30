@@ -456,12 +456,17 @@ def send_verification_code_email(email, name, verification_code):
         
         # 이메일 발송
         print(f"이메일 메시지 생성 중...")
+        
+        # SendGrid용 발신자 이메일 설정
+        sender_email = current_app.config.get('MAIL_DEFAULT_SENDER') or 'syun4224@gmail.com'
+        
         msg = Message(
             subject=subject,
             recipients=[email],
+            sender=sender_email,
             html=html_body
         )
-        print(f"이메일 메시지 생성 완료")
+        print(f"이메일 메시지 생성 완료 (발신자: {sender_email})")
         
         print(f"SMTP 서버 연결 시도 중...")
         mail.send(msg)
