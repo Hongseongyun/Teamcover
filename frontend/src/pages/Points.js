@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './Points.css';
 
 const Points = () => {
+  const { user } = useAuth(); // 현재 사용자 정보
+  const isAdmin =
+    user && (user.role === 'admin' || user.role === 'super_admin');
   const [points, setPoints] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -398,83 +402,89 @@ const Points = () => {
     <div className="points-page">
       <div className="page-header">
         <h1>2025 포인트 관리</h1>
-        <div className="header-actions">
-          <button
-            className="btn btn-info"
-            onClick={() => setShowImportForm(true)}
-          >
-            구글시트 가져오기
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAddForm(true)}
-          >
-            포인트 추가
-          </button>
-        </div>
-      </div>
-
-      {/* 통계 섹션 */}
-      <div className="stats-section">
-        <div className="stats-grid">
-          <div className="stat-card stat-success">
-            <div className="stat-number">{formatNumber(stats.totalEarned)}</div>
-            <div className="stat-label">총 적립</div>
-          </div>
-          <div className="stat-card stat-danger">
-            <div className="stat-number">{formatNumber(stats.totalUsed)}</div>
-            <div className="stat-label">총 사용</div>
-          </div>
-          <div className="stat-card stat-primary">
-            <div className="stat-number">
-              {formatNumber(stats.totalBalance)}
-            </div>
-            <div className="stat-label">잔여 포인트</div>
-          </div>
-          <div className="stat-card stat-info">
-            <div className="stat-number">{stats.activeMembers}</div>
-            <div className="stat-label">활동 회원</div>
-          </div>
-        </div>
-
-        {/* 월별 통계 */}
-        {Object.keys(stats.monthlyStats).length > 0 && (
-          <div className="monthly-stats">
-            <h3>월별 포인트 현황</h3>
-            <div className="monthly-stats-grid">
-              {Object.entries(stats.monthlyStats)
-                .sort(([a], [b]) => b.localeCompare(a))
-                .slice(0, 6)
-                .map(([month, data]) => (
-                  <div key={month} className="monthly-stat-card">
-                    <h4>{month}</h4>
-                    <div className="monthly-stat-content">
-                      <div className="stat-item">
-                        <span className="stat-label">적립:</span>
-                        <span className="stat-value positive">
-                          +{formatNumber(data.earned)}
-                        </span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">사용:</span>
-                        <span className="stat-value negative">
-                          -{formatNumber(data.used)}
-                        </span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">건수:</span>
-                        <span className="stat-value">{data.count}건</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
+        {isAdmin && (
+          <div className="header-actions">
+            <button
+              className="btn btn-info"
+              onClick={() => setShowImportForm(true)}
+            >
+              구글시트 가져오기
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAddForm(true)}
+            >
+              포인트 추가
+            </button>
           </div>
         )}
       </div>
 
-      {/* 구글시트 가져오기 폼 */}
-      {showImportForm && (
+      {/* 통계 섹션 (관리자만) */}
+      {isAdmin && (
+        <div className="stats-section">
+          <div className="stats-grid">
+            <div className="stat-card stat-success">
+              <div className="stat-number">
+                {formatNumber(stats.totalEarned)}
+              </div>
+              <div className="stat-label">총 적립</div>
+            </div>
+            <div className="stat-card stat-danger">
+              <div className="stat-number">{formatNumber(stats.totalUsed)}</div>
+              <div className="stat-label">총 사용</div>
+            </div>
+            <div className="stat-card stat-primary">
+              <div className="stat-number">
+                {formatNumber(stats.totalBalance)}
+              </div>
+              <div className="stat-label">잔여 포인트</div>
+            </div>
+            <div className="stat-card stat-info">
+              <div className="stat-number">{stats.activeMembers}</div>
+              <div className="stat-label">활동 회원</div>
+            </div>
+          </div>
+
+          {/* 월별 통계 */}
+          {Object.keys(stats.monthlyStats).length > 0 && (
+            <div className="monthly-stats">
+              <h3>월별 포인트 현황</h3>
+              <div className="monthly-stats-grid">
+                {Object.entries(stats.monthlyStats)
+                  .sort(([a], [b]) => b.localeCompare(a))
+                  .slice(0, 6)
+                  .map(([month, data]) => (
+                    <div key={month} className="monthly-stat-card">
+                      <h4>{month}</h4>
+                      <div className="monthly-stat-content">
+                        <div className="stat-item">
+                          <span className="stat-label">적립:</span>
+                          <span className="stat-value positive">
+                            +{formatNumber(data.earned)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">사용:</span>
+                          <span className="stat-value negative">
+                            -{formatNumber(data.used)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">건수:</span>
+                          <span className="stat-value">{data.count}건</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 구글시트 가져오기 폼 (관리자만) */}
+      {isAdmin && showImportForm && (
         <div className="import-section">
           <div className="section-card">
             <h3 className="section-title">구글시트에서 포인트 가져오기</h3>
@@ -547,8 +557,8 @@ const Points = () => {
         </div>
       )}
 
-      {/* 포인트 추가/수정 폼 */}
-      {showAddForm && (
+      {/* 포인트 추가/수정 폼 (관리자만) */}
+      {isAdmin && showAddForm && (
         <div className="form-section">
           <div className="section-card">
             <h3 className="section-title">
@@ -795,214 +805,222 @@ const Points = () => {
         </div>
       </div>
 
-      {/* 포인트 목록 */}
-      <div className="points-section">
-        <div className="section-card">
-          <h3 className="section-title">포인트 내역</h3>
+      {/* 포인트 목록 (관리자만) */}
+      {isAdmin && (
+        <div className="points-section">
+          <div className="section-card">
+            <h3 className="section-title">포인트 내역</h3>
 
-          <div className="points-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>날짜</th>
-                  <th>회원</th>
-                  <th>유형</th>
-                  <th>포인트</th>
-                  <th>사유</th>
-                  <th>잔여 포인트</th>
-                  <th>메모</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody>
-                {points.map((point) => (
-                  <tr
-                    key={point.id}
-                    className={editingId === point.id ? 'editing' : ''}
-                  >
-                    <td>
-                      {editingId === point.id ? (
-                        <input
-                          type="date"
-                          value={formData.point_date}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              point_date: e.target.value,
-                            })
-                          }
-                          className="form-control"
-                        />
-                      ) : (
-                        point.point_date || point.created_at
-                      )}
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <select
-                          value={formData.member_name}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              member_name: e.target.value,
-                            })
-                          }
-                          className="form-control"
-                        >
-                          <option value="">회원 선택</option>
-                          {members.map((member) => (
-                            <option key={member.id} value={member.name}>
-                              {member.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        point.member_name
-                      )}
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <select
-                          value={formData.point_type}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              point_type: e.target.value,
-                            })
-                          }
-                          className="form-control"
-                        >
-                          <option value="">유형 선택</option>
-                          <option value="적립">적립</option>
-                          <option value="사용">사용</option>
-                          <option value="차감">차감</option>
-                          <option value="보너스">보너스</option>
-                        </select>
-                      ) : (
-                        <span
-                          className={`point-type ${
-                            (point.point_type === '적립' ||
-                              point.point_type === '보너스') &&
-                            point.amount >= 0
-                              ? 'positive'
-                              : 'negative'
-                          }`}
-                        >
-                          {point.point_type}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <input
-                          type="number"
-                          value={formData.amount}
-                          onChange={(e) =>
-                            setFormData({ ...formData, amount: e.target.value })
-                          }
-                          className="form-control"
-                          min="1"
-                        />
-                      ) : (
-                        <span
-                          className={
-                            (point.point_type === '적립' ||
-                              point.point_type === '보너스') &&
-                            point.amount >= 0
-                              ? 'positive'
-                              : 'negative'
-                          }
-                        >
-                          {formatNumber(point.amount)}P
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <select
-                          value={formData.reason}
-                          onChange={(e) =>
-                            setFormData({ ...formData, reason: e.target.value })
-                          }
-                          className="form-control"
-                        >
-                          <option value="">사유 선택</option>
-                          <option value="경기 참여">경기 참여</option>
-                          <option value="스트라이크">스트라이크</option>
-                          <option value="스페어">스페어</option>
-                          <option value="200점 이상">200점 이상</option>
-                          <option value="상품 교환">상품 교환</option>
-                          <option value="기타">기타</option>
-                        </select>
-                      ) : (
-                        point.reason || '-'
-                      )}
-                    </td>
-                    <td className="balance-cell">
-                      {formatNumber(
-                        calculateRemainingPoints(
-                          points,
-                          point.member_name,
-                          point.point_date || point.created_at
-                        )
-                      )}
-                      P
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <input
-                          type="text"
-                          value={formData.note}
-                          onChange={(e) =>
-                            setFormData({ ...formData, note: e.target.value })
-                          }
-                          className="form-control"
-                          placeholder="메모"
-                        />
-                      ) : (
-                        point.note || '-'
-                      )}
-                    </td>
-                    <td>
-                      {editingId === point.id ? (
-                        <div className="inline-edit-actions">
-                          <button
-                            className="btn btn-sm btn-success"
-                            onClick={saveInlineEdit}
-                          >
-                            완료
-                          </button>
-                          <button
-                            className="btn btn-sm btn-secondary"
-                            onClick={cancelInlineEdit}
-                          >
-                            취소
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="inline-edit-actions">
-                          <button
-                            className="btn btn-sm btn-primary"
-                            onClick={() => startInlineEdit(point)}
-                          >
-                            수정
-                          </button>
-                          <button
-                            className="btn btn-sm btn-danger"
-                            onClick={() => handleDelete(point.id)}
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      )}
-                    </td>
+            <div className="points-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>회원</th>
+                    <th>유형</th>
+                    <th>포인트</th>
+                    <th>사유</th>
+                    <th>잔여 포인트</th>
+                    <th>메모</th>
+                    <th>작업</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {points.map((point) => (
+                    <tr
+                      key={point.id}
+                      className={editingId === point.id ? 'editing' : ''}
+                    >
+                      <td>
+                        {editingId === point.id ? (
+                          <input
+                            type="date"
+                            value={formData.point_date}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                point_date: e.target.value,
+                              })
+                            }
+                            className="form-control"
+                          />
+                        ) : (
+                          point.point_date || point.created_at
+                        )}
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <select
+                            value={formData.member_name}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                member_name: e.target.value,
+                              })
+                            }
+                            className="form-control"
+                          >
+                            <option value="">회원 선택</option>
+                            {members.map((member) => (
+                              <option key={member.id} value={member.name}>
+                                {member.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          point.member_name
+                        )}
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <select
+                            value={formData.point_type}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                point_type: e.target.value,
+                              })
+                            }
+                            className="form-control"
+                          >
+                            <option value="">유형 선택</option>
+                            <option value="적립">적립</option>
+                            <option value="사용">사용</option>
+                            <option value="차감">차감</option>
+                            <option value="보너스">보너스</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={`point-type ${
+                              (point.point_type === '적립' ||
+                                point.point_type === '보너스') &&
+                              point.amount >= 0
+                                ? 'positive'
+                                : 'negative'
+                            }`}
+                          >
+                            {point.point_type}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <input
+                            type="number"
+                            value={formData.amount}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                amount: e.target.value,
+                              })
+                            }
+                            className="form-control"
+                            min="1"
+                          />
+                        ) : (
+                          <span
+                            className={
+                              (point.point_type === '적립' ||
+                                point.point_type === '보너스') &&
+                              point.amount >= 0
+                                ? 'positive'
+                                : 'negative'
+                            }
+                          >
+                            {formatNumber(point.amount)}P
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <select
+                            value={formData.reason}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                reason: e.target.value,
+                              })
+                            }
+                            className="form-control"
+                          >
+                            <option value="">사유 선택</option>
+                            <option value="경기 참여">경기 참여</option>
+                            <option value="스트라이크">스트라이크</option>
+                            <option value="스페어">스페어</option>
+                            <option value="200점 이상">200점 이상</option>
+                            <option value="상품 교환">상품 교환</option>
+                            <option value="기타">기타</option>
+                          </select>
+                        ) : (
+                          point.reason || '-'
+                        )}
+                      </td>
+                      <td className="balance-cell">
+                        {formatNumber(
+                          calculateRemainingPoints(
+                            points,
+                            point.member_name,
+                            point.point_date || point.created_at
+                          )
+                        )}
+                        P
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <input
+                            type="text"
+                            value={formData.note}
+                            onChange={(e) =>
+                              setFormData({ ...formData, note: e.target.value })
+                            }
+                            className="form-control"
+                            placeholder="메모"
+                          />
+                        ) : (
+                          point.note || '-'
+                        )}
+                      </td>
+                      <td>
+                        {editingId === point.id ? (
+                          <div className="inline-edit-actions">
+                            <button
+                              className="btn btn-sm btn-success"
+                              onClick={saveInlineEdit}
+                            >
+                              완료
+                            </button>
+                            <button
+                              className="btn btn-sm btn-secondary"
+                              onClick={cancelInlineEdit}
+                            >
+                              취소
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="inline-edit-actions">
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={() => startInlineEdit(point)}
+                            >
+                              수정
+                            </button>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => handleDelete(point.id)}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

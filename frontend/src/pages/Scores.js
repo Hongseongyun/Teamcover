@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { scoreAPI, sheetsAPI, memberAPI } from '../services/api';
+import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import './Scores.css';
 
 const Scores = () => {
@@ -344,19 +344,20 @@ const Scores = () => {
       const formData = new FormData();
       formData.append('image', selectedImage);
 
-      const response = await fetch('/api/ocr', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await ocrAPI.processImage(formData);
 
-      const data = await response.json();
-      if (data.success) {
-        setOcrResults(data.results);
+      if (response.data.success) {
+        setOcrResults(response.data.results);
         setCurrentStep('result');
+      } else {
+        alert(response.data.message || 'AI 스코어 인식에 실패했습니다.');
       }
     } catch (error) {
       console.error('AI 스코어 인식 실패:', error);
-      alert('AI 스코어 인식에 실패했습니다.');
+      alert(
+        error.response?.data?.message ||
+          'AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.'
+      );
     }
   };
 
