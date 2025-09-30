@@ -358,51 +358,22 @@ def google_callback():
                 user = existing_user
                 print(f"Linked existing user with Google ID: {user}")
             else:
-                # 새 사용자 생성 - 인증 코드 방식으로 인증 필요
-                verification_code = generate_verification_code()
-                verification_expires = datetime.utcnow() + timedelta(hours=24)  # 24시간 유효
-                
+                # 새 사용자 생성 - 구글 로그인은 바로 활성화
                 user = User(
                     google_id=google_id,
                     email=email,
                     name=name,
                     role='user',
-                    is_active=False,  # 인증 완료 전까지 비활성화
-                    is_verified=False,
-                    verification_method='code',
-                    verification_code=verification_code,
-                    verification_code_expires=verification_expires
+                    is_active=True,  # 구글 로그인은 바로 활성화
+                    is_verified=True,  # 구글 인증으로 간주
+                    verification_method='google',  # 구글 로그인
+                    verified_at=datetime.utcnow()  # 인증 완료 시간
                 )
                 db.session.add(user)
-                print(f"Created new user with verification code: {user}")
+                print(f"Created new user via Google login: {user}")
                 try:
                     db.session.commit()
-                    print(f"New user saved to database: {user.id}")
-                    print(f"Verification code: {verification_code} (expires: {verification_expires})")
-                    
-                    # 사용자 이메일로 인증 코드 발송
-                    email_sent = send_verification_code_email(email, name, verification_code)
-                    
-                    if email_sent:
-                        print(f"✅ 인증 코드 이메일 발송 성공: {email}")
-                        message = f'{email}로 인증 코드를 발송했습니다. 이메일을 확인하여 인증 코드를 입력해주세요.'
-                    else:
-                        print(f"⚠️ 인증 코드 이메일 발송 실패: {email}")
-                        message = '인증 코드가 생성되었습니다. 이메일 발송에 실패했으므로 관리자에게 문의하여 인증 코드를 받으세요.'
-                    
-                    # 인증 코드 입력 필요 메시지 반환
-                    return jsonify({
-                        'success': False,
-                        'needs_verification': True,
-                        'verification_method': 'code',
-                        'message': message,
-                        'email_sent': email_sent,
-                        'user': {
-                            'email': email,
-                            'name': name,
-                            'google_id': google_id
-                        }
-                    })
+                    print(f"New Google user saved to database: {user.id}")
                 except Exception as e:
                     print(f"Error saving new user: {e}")
                     db.session.rollback()
@@ -410,22 +381,6 @@ def google_callback():
         
         print(f"User before login: {user}")
         print(f"User is_active: {user.is_active}")
-        print(f"User is_verified: {user.is_verified}")
-        
-        # 인증되지 않은 사용자 체크
-        if not user.is_verified:
-            print(f"User is not verified, returning error")
-            return jsonify({
-                'success': False,
-                'needs_verification': True,
-                'verification_method': user.verification_method,
-                'message': '인증이 필요합니다. 인증 코드를 입력해주세요.',
-                'user': {
-                    'email': user.email,
-                    'name': user.name,
-                    'google_id': user.google_id
-                }
-            })
         
         if not user.is_active:
             print(f"User is inactive, returning error")

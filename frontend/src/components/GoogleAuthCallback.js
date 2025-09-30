@@ -71,18 +71,6 @@ const GoogleAuthCallback = () => {
           const redirectTo = state ? decodeURIComponent(state) : '/';
           console.log('Redirecting to:', redirectTo);
           navigate(redirectTo, { replace: true });
-        } else if (data.needs_verification) {
-          // 인증 필요 - 인증 코드 입력 페이지로 리디렉션
-          console.log('Verification required:', data);
-          setStatus('인증이 필요합니다. 인증 페이지로 이동 중...');
-          setTimeout(() => {
-            navigate(
-              `/verify-code?email=${encodeURIComponent(
-                data.user.email
-              )}&name=${encodeURIComponent(data.user.name)}`,
-              { replace: true }
-            );
-          }, 1000);
         } else {
           throw new Error(data.message || 'Google authentication failed');
         }
