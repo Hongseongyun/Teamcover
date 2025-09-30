@@ -49,6 +49,7 @@ const Scores = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [ocrResults, setOcrResults] = useState([]);
   const [currentStep, setCurrentStep] = useState('upload'); // upload, selection, result
+  const [aiAnalyzing, setAiAnalyzing] = useState(false); // AI 분석 중 로딩 상태
   const [selectionBox, setSelectionBox] = useState({
     x: 0,
     y: 0,
@@ -344,12 +345,14 @@ const Scores = () => {
   const handleAnalyzeImage = async () => {
     if (!selectedImage) return;
 
+    setAiAnalyzing(true); // 로딩 시작
+
     try {
       const formData = new FormData();
       formData.append('image', selectedImage);
 
       const response = await ocrAPI.processImage(formData);
-
+      
       if (response.data.success) {
         setOcrResults(response.data.results);
         setCurrentStep('result');
@@ -358,10 +361,19 @@ const Scores = () => {
       }
     } catch (error) {
       console.error('AI 스코어 인식 실패:', error);
-      alert(
-        error.response?.data?.message ||
+      
+      // 타임아웃 에러 처리
+      if (error.code === 'ECONNABORTED') {
+        alert('AI 분석 시간이 초과되었습니다. 이미지 크기를 줄이거나 다시 시도해주세요.');
+      } else {
+        alert(
+          error.response?.data?.message || 
+          error.response?.data?.error ||
           'AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.'
-      );
+        );
+      }
+    } finally {
+      setAiAnalyzing(false); // 로딩 종료
     }
   };
 
@@ -883,9 +895,29 @@ const Scores = () => {
                       type="button"
                       className="btn btn-primary"
                       onClick={handleAnalyzeImage}
+                      disabled={aiAnalyzing}
                     >
-                      AI 스코어 인식
+                      {aiAnalyzing ? (
+                        <>
+                          <span className="spinner"></span>
+                          AI 분석 중... (최대 2분 소요)
+                        </>
+                      ) : (
+                        'AI 스코어 인식'
+                      )}
                     </button>
+                  </div>
+                )}
+
+                {/* AI 분석 중 로딩 오버레이 */}
+                {aiAnalyzing && (
+                  <div className="ai-analyzing-overlay">
+                    <div className="ai-analyzing-content">
+                      <div className="spinner-large"></div>
+                      <h3>🤖 AI가 스코어를 분석하고 있습니다...</h3>
+                      <p>이미지 크기에 따라 최대 2분 정도 걸릴 수 있습니다.</p>
+                      <p className="please-wait">잠시만 기다려주세요 ⏳</p>
+                    </div>
                   </div>
                 )}
               </div>

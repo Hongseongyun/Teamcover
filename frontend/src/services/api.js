@@ -7,8 +7,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // 타임아웃 설정
-  timeout: 10000,
+  // 타임아웃 설정 (OCR/AI 분석은 시간이 오래 걸릴 수 있음)
+  timeout: 60000, // 60초
 });
 
 // 요청 인터셉터
@@ -104,6 +104,7 @@ export const ocrAPI = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 120000, // OCR은 더 길게 (120초 = 2분)
     }),
 };
 
