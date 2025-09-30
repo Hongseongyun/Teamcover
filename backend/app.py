@@ -193,4 +193,7 @@ if __name__ == '__main__':
     print(f"✓ 헬스체크 URL: http://0.0.0.0:{port}/health")
     print("=== 애플리케이션 시작 완료 ===")
     
-    app.run(debug=False, host='0.0.0.0', port=port) 
+    # 개발 환경에서만 Flask 개발 서버 실행
+    # Railway에서는 gunicorn을 사용하므로 이 부분은 실행되지 않음
+    if __name__ == '__main__' and os.environ.get('FLASK_ENV') != 'production':
+        app.run(debug=False, host='0.0.0.0', port=port) 
