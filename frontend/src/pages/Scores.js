@@ -352,7 +352,7 @@ const Scores = () => {
       formData.append('image', selectedImage);
 
       const response = await ocrAPI.processImage(formData);
-      
+
       if (response.data.success) {
         setOcrResults(response.data.results);
         setCurrentStep('result');
@@ -361,15 +361,17 @@ const Scores = () => {
       }
     } catch (error) {
       console.error('AI 스코어 인식 실패:', error);
-      
+
       // 타임아웃 에러 처리
       if (error.code === 'ECONNABORTED') {
-        alert('AI 분석 시간이 초과되었습니다. 이미지 크기를 줄이거나 다시 시도해주세요.');
+        alert(
+          'AI 분석 시간이 초과되었습니다. 이미지 크기를 줄이거나 다시 시도해주세요.'
+        );
       } else {
         alert(
-          error.response?.data?.message || 
-          error.response?.data?.error ||
-          'AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.'
+          error.response?.data?.message ||
+            error.response?.data?.error ||
+            'AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.'
         );
       }
     } finally {
@@ -380,18 +382,25 @@ const Scores = () => {
   // OCR 결과를 스코어로 저장
   const handleSaveOcrResults = async () => {
     try {
+      // 회원명이 비어있는 항목 체크
+      const emptyNames = ocrResults.filter(r => !r.member_name || r.member_name.trim() === '');
+      if (emptyNames.length > 0) {
+        alert('회원명을 모두 입력해주세요.');
+        return;
+      }
+
       for (const result of ocrResults) {
         await scoreAPI.addScore({
-          member_name: result.member_name,
+          member_name: result.member_name.trim(),
           game_date: result.game_date || new Date().toISOString().split('T')[0],
-          score1: result.score1,
-          score2: result.score2,
-          score3: result.score3,
-          note: 'AI로 자동 인식',
+          score1: parseInt(result.score1) || 0,
+          score2: parseInt(result.score2) || 0,
+          score3: parseInt(result.score3) || 0,
+          note: result.note || '', // 비고 추가
         });
       }
 
-      alert(`${ocrResults.length}개의 스코어가 저장되었습니다.`);
+      alert(`${ocrResults.length}명의 스코어가 저장되었습니다.`);
       setShowPhotoForm(false);
       setOcrResults([]);
       setSelectedImage(null);
@@ -971,6 +980,8 @@ const Scores = () => {
                         <th>3게임</th>
                         <th>총점</th>
                         <th>평균</th>
+                        <th>비고</th>
+                        <th>작업</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1044,11 +1055,61 @@ const Scores = () => {
                             </td>
                             <td className="total-cell">{total}</td>
                             <td className="average-cell">{average}</td>
+                            <td>
+                              <input
+                                type="text"
+                                value={result.note || ''}
+                                onChange={(e) => {
+                                  const newResults = [...ocrResults];
+                                  newResults[index].note = e.target.value;
+                                  setOcrResults(newResults);
+                                }}
+                                className="editable-input note-input"
+                                placeholder="비고 입력"
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                onClick={() => {
+                                  const newResults = ocrResults.filter(
+                                    (_, i) => i !== index
+                                  );
+                                  setOcrResults(newResults);
+                                }}
+                                title="삭제"
+                              >
+                                🗑️
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
+
+                  {/* 인원 추가 버튼 */}
+                  <div className="add-person-row">
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-add-person"
+                      onClick={() => {
+                        const newPerson = {
+                          member_name: '',
+                          game_date:
+                            ocrResults[0]?.game_date ||
+                            new Date().toISOString().split('T')[0],
+                          score1: 0,
+                          score2: 0,
+                          score3: 0,
+                        };
+                        setOcrResults([...ocrResults, newPerson]);
+                      }}
+                    >
+                      ➕ 인원 추가
+                    </button>
+                  </div>
                 </div>
 
                 <div className="ocr-actions">

@@ -65,6 +65,12 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.date-hint {
+  color: var(--toss-gray-500);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .image-preview-result {
   margin: 1.5rem 0;
   padding: 1rem;
@@ -121,6 +127,11 @@
   color: var(--toss-primary);
 }
 
+.note-input {
+  min-width: 150px;
+  text-align: left;
+}
+
 .total-cell,
 .average-cell {
   font-weight: 700;
@@ -131,6 +142,34 @@
 
 .ocr-actions {
   margin-top: 1.5rem;
+}
+
+/* 인원 추가/삭제 버튼 */
+.add-person-row {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.btn-add-person {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 1.2rem;
+  min-width: 40px;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
 }
 
 /* AI 분석 로딩 */
