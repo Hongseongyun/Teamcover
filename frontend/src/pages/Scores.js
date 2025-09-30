@@ -896,7 +896,38 @@ const Scores = () => {
                 <h4>AI 인식 결과</h4>
                 <div className="ocr-summary">
                   <p>인식된 회원 수: {ocrResults.length}명</p>
+                  <p className="edit-hint">
+                    💡 숫자와 날짜를 클릭하여 수정할 수 있습니다
+                  </p>
                 </div>
+
+                {/* 게임 날짜 선택 */}
+                <div className="game-date-selector">
+                  <label>게임 날짜:</label>
+                  <input
+                    type="date"
+                    value={
+                      ocrResults[0]?.game_date ||
+                      new Date().toISOString().split('T')[0]
+                    }
+                    onChange={(e) => {
+                      const newResults = ocrResults.map((result) => ({
+                        ...result,
+                        game_date: e.target.value,
+                      }));
+                      setOcrResults(newResults);
+                    }}
+                    className="date-input-large"
+                  />
+                </div>
+
+                {/* 원본 이미지 표시 */}
+                {imagePreview && (
+                  <div className="image-preview-result">
+                    <h5>원본 이미지</h5>
+                    <img src={imagePreview} alt="원본 이미지" />
+                  </div>
+                )}
 
                 <div className="ocr-results-table">
                   <table>
@@ -911,23 +942,79 @@ const Scores = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {ocrResults.map((result, index) => (
-                        <tr key={index}>
-                          <td>{result.member_name}</td>
-                          <td>{result.score1}</td>
-                          <td>{result.score2}</td>
-                          <td>{result.score3}</td>
-                          <td>
-                            {result.score1 + result.score2 + result.score3}
-                          </td>
-                          <td>
-                            {(
-                              (result.score1 + result.score2 + result.score3) /
-                              3
-                            ).toFixed(1)}
-                          </td>
-                        </tr>
-                      ))}
+                      {ocrResults.map((result, index) => {
+                        const total =
+                          (parseInt(result.score1) || 0) +
+                          (parseInt(result.score2) || 0) +
+                          (parseInt(result.score3) || 0);
+                        const average =
+                          total > 0 ? (total / 3).toFixed(1) : '0.0';
+
+                        return (
+                          <tr key={index}>
+                            <td>
+                              <input
+                                type="text"
+                                value={result.member_name}
+                                onChange={(e) => {
+                                  const newResults = [...ocrResults];
+                                  newResults[index].member_name =
+                                    e.target.value;
+                                  setOcrResults(newResults);
+                                }}
+                                className="editable-input name-input"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={result.score1}
+                                onChange={(e) => {
+                                  const newResults = [...ocrResults];
+                                  newResults[index].score1 =
+                                    parseInt(e.target.value) || 0;
+                                  setOcrResults(newResults);
+                                }}
+                                min="0"
+                                max="300"
+                                className="editable-input score-input"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={result.score2}
+                                onChange={(e) => {
+                                  const newResults = [...ocrResults];
+                                  newResults[index].score2 =
+                                    parseInt(e.target.value) || 0;
+                                  setOcrResults(newResults);
+                                }}
+                                min="0"
+                                max="300"
+                                className="editable-input score-input"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={result.score3}
+                                onChange={(e) => {
+                                  const newResults = [...ocrResults];
+                                  newResults[index].score3 =
+                                    parseInt(e.target.value) || 0;
+                                  setOcrResults(newResults);
+                                }}
+                                min="0"
+                                max="300"
+                                className="editable-input score-input"
+                              />
+                            </td>
+                            <td className="total-cell">{total}</td>
+                            <td className="average-cell">{average}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
