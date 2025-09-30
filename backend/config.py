@@ -26,13 +26,20 @@ class Config:
 
     # SQLAlchemy 설정 (psycopg2 드라이버 사용)
     if DATABASE_URL:
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+        # Railway의 postgres:// URL을 postgresql://로 변환
+        if DATABASE_URL.startswith('postgres://'):
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+        else:
+            SQLALCHEMY_DATABASE_URI = DATABASE_URL
     else:
         SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
+        'connect_args': {
+            'connect_timeout': 10,
+        }
     }
     
     # Google OAuth 2.0 설정

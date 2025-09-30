@@ -172,24 +172,26 @@ def create_super_admin():
         
         print(f"슈퍼 관리자 계정이 생성되었습니다: {email}")
 
+# 데이터베이스 초기화 (애플리케이션 시작 시)
+with app.app_context():
+    try:
+        # 데이터베이스 연결 테스트
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        # 데이터베이스 테이블 생성
+        db.create_all()
+        print("✓ 데이터베이스 테이블이 생성되었습니다.")
+    except Exception as e:
+        print(f"⚠ 데이터베이스 초기화 경고: {e}")
+        print("⚠ 서버는 계속 실행되지만 데이터베이스 기능은 제한될 수 있습니다.")
+
 if __name__ == '__main__':
-    print("=== Teamcover 애플리케이션 시작 ===")
-    
-    with app.app_context():
-        try:
-            # 데이터베이스 테이블 생성
-            db.create_all()
-            print("✓ 데이터베이스 테이블이 생성되었습니다.")
-        except Exception as e:
-            print(f"✗ 데이터베이스 연결 오류: {e}")
-    
     # Railway 환경에서는 PORT 환경변수를 사용
     port = int(os.environ.get('PORT', 5000))
     print(f"✓ 서버가 포트 {port}에서 시작됩니다.")
     print(f"✓ 헬스체크 URL: http://0.0.0.0:{port}/health")
-    print("=== 애플리케이션 시작 완료 ===")
     
     # 개발 환경에서만 Flask 개발 서버 실행
     # Railway에서는 gunicorn을 사용하므로 이 부분은 실행되지 않음
-    if __name__ == '__main__' and os.environ.get('FLASK_ENV') != 'production':
+    if os.environ.get('FLASK_ENV') != 'production':
         app.run(debug=False, host='0.0.0.0', port=port) 

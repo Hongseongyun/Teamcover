@@ -18,8 +18,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # 애플리케이션 코드 복사
 COPY . .
 
-# 포트 노출
+# 포트 노출 (Railway가 동적으로 포트를 할당하지만, 여기는 기본값 사용)
 EXPOSE 5000
 
-# 애플리케이션 실행
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "120", "app:app"]
+# Railway의 startCommand가 이 CMD를 덮어씁니다
+# 기본 명령 (로컬 테스트용 - Railway에서는 railway.json의 startCommand가 사용됨)
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "--log-level", "info"]
