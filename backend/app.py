@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, make_response
+from flask import Flask, request, jsonify, session, redirect, url_for, make_response
 from flask_cors import CORS
 from flask_login import LoginManager, current_user
 from flask_jwt_extended import JWTManager
@@ -117,31 +117,27 @@ def health_check_db():
             'database': 'disconnected'
         }), 500
 
-# 페이지 라우트
+# API 정보 엔드포인트
 @app.route('/')
 def index():
-    """메인 페이지"""
-    return render_template('index.html')
-
-@app.route('/members')
-def members():
-    """팀커버 회원 페이지"""
-    return render_template('members.html')
-
-@app.route('/scores')
-def scores():
-    """2025 스코어 페이지"""
-    return render_template('scores.html')
-
-@app.route('/points')
-def points():
-    """2025 포인트 페이지"""
-    return render_template('points.html')
-
-@app.route('/team-assignment')
-def team_assignment():
-    """팀 배정 페이지"""
-    return render_template('team_assignment.html')
+    """API 서버 정보"""
+    return jsonify({
+        'service': 'Teamcover API Server',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/health',
+            'health_db': '/health/db',
+            'auth': '/api/auth/*',
+            'members': '/api/members/*',
+            'scores': '/api/scores/*',
+            'points': '/api/points/*',
+            'teams': '/api/teams/*',
+            'ocr': '/api/ocr/*',
+            'sheets': '/api/sheets/*' if SHEETS_AVAILABLE else 'disabled'
+        },
+        'timestamp': str(datetime.utcnow())
+    }), 200
 
 # 데이터베이스 초기화 명령
 @app.cli.command('init-db')
