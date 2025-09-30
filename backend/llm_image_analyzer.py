@@ -17,12 +17,13 @@ class LLMImageAnalyzer:
             if api_key:
                 genai.configure(api_key=api_key)
                 # Gemini 모델 우선순위대로 시도
+                # API 응답에서 확인된 사용 가능한 모델들
                 model_attempts = [
-                    'gemini-1.5-pro-latest',    # 최신 Pro 모델 (이미지 지원)
-                    'gemini-1.5-flash-latest',  # 최신 Flash 모델 (이미지 지원)
-                    'gemini-1.5-pro',           # Pro 모델
-                    'gemini-1.5-flash',         # Flash 모델
-                    'gemini-pro-vision',        # 구버전 이미지 모델 (가장 안정적)
+                    'gemini-2.5-flash',         # 최신 2.5 Flash (빠르고 효율적)
+                    'gemini-2.5-pro',           # 최신 2.5 Pro (고성능)
+                    'gemini-2.0-flash',         # 2.0 Flash
+                    'gemini-flash-latest',      # 최신 Flash
+                    'gemini-pro-latest',        # 최신 Pro
                 ]
                 
                 self.model = None
