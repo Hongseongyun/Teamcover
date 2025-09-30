@@ -51,4 +51,5 @@ class Config:
         CORS_ALLOWED_ORIGINS = [FRONTEND_BASE_URL]
 
     # Google OAuth Redirect URI
+    # 환경변수에서 설정하거나 기본값으로 프론트엔드 도메인 사용
     GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI') or f"{FRONTEND_BASE_URL}/google-callback"

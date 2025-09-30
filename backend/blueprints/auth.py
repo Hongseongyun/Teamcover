@@ -293,6 +293,9 @@ def google_callback():
         # Google OAuth 설정 가져오기
         google_creds = get_google_credentials()
         print(f"Google OAuth credentials: {google_creds}")
+        print(f"Client ID: {google_creds['client_id']}")
+        print(f"Client Secret set: {bool(google_creds['client_secret'])}")
+        print(f"Redirect URI: {current_app.config.get('GOOGLE_REDIRECT_URI')}")
         
         # Google OAuth2 토큰 교환
         token_url = 'https://oauth2.googleapis.com/token'
