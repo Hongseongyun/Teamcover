@@ -41,22 +41,28 @@ def process_ocr():
 def ocr_status():
     """LLM 키 및 모델 상태 점검"""
     try:
-        from google.generativeai import list_models
+        import google.generativeai as genai
         import os
 
         api_key = os.getenv('GOOGLE_API_KEY', '')
         masked = f"{api_key[:6]}..." if api_key else 'NOT_SET'
 
-        if not llm_analyzer.model:
+        if not api_key:
             return jsonify({
                 'success': False,
-                'message': 'LLM 모델이 초기화되지 않았습니다.',
+                'message': 'GOOGLE_API_KEY가 설정되지 않았습니다.',
                 'google_api_key': masked
             }), 200
 
-        # 모형 목록 조회로 키 유효성 간단 검증
+        # API 키 설정
+        genai.configure(api_key=api_key)
+
+        # 사용 가능한 모델 목록 조회
         try:
-            models = [m.name for m in list_models()]
+            available_models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    available_models.append(m.name)
         except Exception as e:
             return jsonify({
                 'success': False,
@@ -64,11 +70,18 @@ def ocr_status():
                 'google_api_key': masked
             }), 200
 
+        # 현재 로드된 모델 확인
+        current_model = None
+        if llm_analyzer.model:
+            current_model = llm_analyzer.model._model_name if hasattr(llm_analyzer.model, '_model_name') else 'Unknown'
+
         return jsonify({
             'success': True,
-            'message': 'LLM 모델이 준비되었습니다.',
+            'message': 'LLM 모델이 준비되었습니다.' if llm_analyzer.model else 'LLM 모델 초기화 실패',
             'google_api_key': masked,
-            'models_sample': models[:5]
+            'current_model': current_model,
+            'available_models': available_models,
+            'model_initialized': bool(llm_analyzer.model)
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'상태 점검 오류: {str(e)}'}), 500

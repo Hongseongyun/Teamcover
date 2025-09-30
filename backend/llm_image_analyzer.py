@@ -16,19 +16,28 @@ class LLMImageAnalyzer:
         try:
             if api_key:
                 genai.configure(api_key=api_key)
-                # Gemini 모델 이름 수정 (gemini-1.5-flash-latest 또는 gemini-pro-vision)
-                try:
-                    self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                    print("✅ Gemini 1.5 Flash (Latest) 모델 로드 성공")
-                except Exception as e1:
-                    print(f"Gemini 1.5 Flash Latest 로드 실패, Pro Vision 시도: {e1}")
+                # Gemini 모델 우선순위대로 시도
+                model_attempts = [
+                    'gemini-1.5-pro-latest',    # 최신 Pro 모델 (이미지 지원)
+                    'gemini-1.5-flash-latest',  # 최신 Flash 모델 (이미지 지원)
+                    'gemini-1.5-pro',           # Pro 모델
+                    'gemini-1.5-flash',         # Flash 모델
+                    'gemini-pro-vision',        # 구버전 이미지 모델 (가장 안정적)
+                ]
+                
+                self.model = None
+                for model_name in model_attempts:
                     try:
-                        self.model = genai.GenerativeModel('gemini-pro-vision')
-                        print("✅ Gemini Pro Vision 모델 로드 성공")
-                    except Exception as e2:
-                        print(f"Gemini Pro Vision 로드 실패, 기본 모델 시도: {e2}")
-                        self.model = genai.GenerativeModel('gemini-pro')
-                        print("✅ Gemini Pro 모델 로드 성공 (텍스트 전용)")
+                        self.model = genai.GenerativeModel(model_name)
+                        # 간단한 테스트로 모델 유효성 확인
+                        print(f"✅ {model_name} 모델 초기화 성공")
+                        break
+                    except Exception as e:
+                        print(f"⚠️ {model_name} 모델 로드 실패: {str(e)}")
+                        continue
+                
+                if not self.model:
+                    print("❌ 사용 가능한 Gemini 모델을 찾을 수 없습니다.")
             else:
                 self.model = None
                 print("경고: GOOGLE_API_KEY가 설정되지 않았습니다.")
