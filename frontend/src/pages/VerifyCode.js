@@ -96,9 +96,17 @@ const VerifyCode = () => {
 
         <div className="verify-code-description">
           <p>
-            관리자에게 발급받은 <strong>6자리 인증 코드</strong>를 입력해주세요.
+            📧 <strong>{userInfo?.email}</strong> 로<br />
+            인증 코드를 발송했습니다.
           </p>
-          <p className="small-text">인증 코드는 24시간 동안 유효합니다.</p>
+          <p>
+            이메일에서 <strong>6자리 인증 코드</strong>를 확인하여 입력해주세요.
+          </p>
+          <p className="small-text">
+            인증 코드는 24시간 동안 유효합니다.
+            <br />
+            이메일이 보이지 않으면 스팸 메일함을 확인하세요.
+          </p>
         </div>
 
         {error && <div className="error-message">{error}</div>}
@@ -133,9 +141,9 @@ const VerifyCode = () => {
 
         <div className="verify-code-footer">
           <p>
-            인증 코드가 없으신가요?
+            이메일을 받지 못하셨나요?
             <br />
-            관리자에게 문의하여 인증 코드를 받으세요.
+            스팸 메일함을 확인하거나 관리자에게 문의하세요.
           </p>
           <button
             type="button"

@@ -7,7 +7,7 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 import os
 import requests
-from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email
+from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email, send_verification_code_email
 import re
 import random
 import string
@@ -380,12 +380,23 @@ def google_callback():
                     print(f"New user saved to database: {user.id}")
                     print(f"Verification code: {verification_code} (expires: {verification_expires})")
                     
+                    # 사용자 이메일로 인증 코드 발송
+                    email_sent = send_verification_code_email(email, name, verification_code)
+                    
+                    if email_sent:
+                        print(f"✅ 인증 코드 이메일 발송 성공: {email}")
+                        message = f'{email}로 인증 코드를 발송했습니다. 이메일을 확인하여 인증 코드를 입력해주세요.'
+                    else:
+                        print(f"⚠️ 인증 코드 이메일 발송 실패: {email}")
+                        message = '인증 코드가 생성되었습니다. 이메일 발송에 실패했으므로 관리자에게 문의하여 인증 코드를 받으세요.'
+                    
                     # 인증 코드 입력 필요 메시지 반환
                     return jsonify({
                         'success': False,
                         'needs_verification': True,
                         'verification_method': 'code',
-                        'message': '인증 코드가 생성되었습니다. 관리자에게 문의하여 인증 코드를 받으세요.',
+                        'message': message,
+                        'email_sent': email_sent,
                         'user': {
                             'email': email,
                             'name': name,

@@ -410,6 +410,71 @@ def verify_email_token(token):
         db.session.rollback()
         return {'success': False, 'message': f'인증 처리 중 오류가 발생했습니다: {str(e)}'}
 
+def send_verification_code_email(email, name, verification_code):
+    """인증 코드 이메일 발송 (구글 로그인용)"""
+    try:
+        print(f"=== 인증 코드 이메일 발송 시작 ===")
+        print(f"이메일: {email}")
+        print(f"이름: {name}")
+        print(f"인증 코드: {verification_code}")
+        
+        # 이메일 내용
+        subject = "Teamcover 인증 코드"
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                <h2 style="color: #007bff; margin-bottom: 20px;">인증 코드가 발급되었습니다</h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                    안녕하세요 <strong>{name}</strong>님!<br>
+                    구글 로그인 인증을 완료하려면 아래 인증 코드를 입력해주세요.
+                </p>
+                
+                <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 30px 0;">
+                    <p style="font-size: 14px; color: #999; margin: 0 0 10px 0;">인증 코드</p>
+                    <p style="font-size: 48px; font-weight: bold; color: #007bff; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                        {verification_code}
+                    </p>
+                </div>
+                
+                <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                    이 코드는 <strong>24시간</strong> 동안 유효합니다.<br>
+                    인증 페이지에서 위 코드를 입력하여 가입을 완료하세요.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="font-size: 12px; color: #999;">
+                    이 이메일은 Teamcover 시스템에서 자동으로 발송되었습니다.<br>
+                    만약 구글 로그인을 시도하지 않으셨다면 이 이메일을 무시하셔도 됩니다.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # 이메일 발송
+        print(f"이메일 메시지 생성 중...")
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html_body
+        )
+        print(f"이메일 메시지 생성 완료")
+        
+        print(f"SMTP 서버 연결 시도 중...")
+        mail.send(msg)
+        print(f"✅ 인증 코드 이메일 발송 성공!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 인증 코드 이메일 발송 실패: {e}")
+        print(f"오류 타입: {type(e)}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        return False
+
 def resend_verification_email(email):
     """인증 이메일 재발송"""
     try:
