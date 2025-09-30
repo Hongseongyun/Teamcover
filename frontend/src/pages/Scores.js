@@ -383,7 +383,9 @@ const Scores = () => {
   const handleSaveOcrResults = async () => {
     try {
       // 회원명이 비어있는 항목 체크
-      const emptyNames = ocrResults.filter(r => !r.member_name || r.member_name.trim() === '');
+      const emptyNames = ocrResults.filter(
+        (r) => !r.member_name || r.member_name.trim() === ''
+      );
       if (emptyNames.length > 0) {
         alert('회원명을 모두 입력해주세요.');
         return;
