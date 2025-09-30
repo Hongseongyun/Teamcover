@@ -9,6 +9,8 @@ import os
 import requests
 from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email
 import re
+import random
+import string
 
 # 인증 관리 Blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -38,6 +40,10 @@ def get_google_credentials():
         'client_id': current_app.config.get('GOOGLE_CLIENT_ID', 'your-google-client-id'),
         'client_secret': current_app.config.get('GOOGLE_CLIENT_SECRET', 'your-google-client-secret')
     }
+
+def generate_verification_code():
+    """6자리 인증 코드 생성"""
+    return ''.join(random.choices(string.digits, k=6))
 
 @auth_bp.before_request
 def handle_preflight():
@@ -352,19 +358,40 @@ def google_callback():
                 user = existing_user
                 print(f"Linked existing user with Google ID: {user}")
             else:
-                # 새 사용자 생성 (기본 역할: user)
+                # 새 사용자 생성 - 인증 코드 방식으로 인증 필요
+                verification_code = generate_verification_code()
+                verification_expires = datetime.utcnow() + timedelta(hours=24)  # 24시간 유효
+                
                 user = User(
                     google_id=google_id,
                     email=email,
                     name=name,
                     role='user',
-                    is_active=True
+                    is_active=False,  # 인증 완료 전까지 비활성화
+                    is_verified=False,
+                    verification_method='code',
+                    verification_code=verification_code,
+                    verification_code_expires=verification_expires
                 )
                 db.session.add(user)
-                print(f"Created new user: {user}")
+                print(f"Created new user with verification code: {user}")
                 try:
                     db.session.commit()
                     print(f"New user saved to database: {user.id}")
+                    print(f"Verification code: {verification_code} (expires: {verification_expires})")
+                    
+                    # 인증 코드 입력 필요 메시지 반환
+                    return jsonify({
+                        'success': False,
+                        'needs_verification': True,
+                        'verification_method': 'code',
+                        'message': '인증 코드가 생성되었습니다. 관리자에게 문의하여 인증 코드를 받으세요.',
+                        'user': {
+                            'email': email,
+                            'name': name,
+                            'google_id': google_id
+                        }
+                    })
                 except Exception as e:
                     print(f"Error saving new user: {e}")
                     db.session.rollback()
@@ -372,6 +399,22 @@ def google_callback():
         
         print(f"User before login: {user}")
         print(f"User is_active: {user.is_active}")
+        print(f"User is_verified: {user.is_verified}")
+        
+        # 인증되지 않은 사용자 체크
+        if not user.is_verified:
+            print(f"User is not verified, returning error")
+            return jsonify({
+                'success': False,
+                'needs_verification': True,
+                'verification_method': user.verification_method,
+                'message': '인증이 필요합니다. 인증 코드를 입력해주세요.',
+                'user': {
+                    'email': user.email,
+                    'name': user.name,
+                    'google_id': user.google_id
+                }
+            })
         
         if not user.is_active:
             print(f"User is inactive, returning error")
@@ -730,3 +773,161 @@ def get_google_config():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'설정 확인 중 오류: {str(e)}'})
+
+@auth_bp.route('/verify-code', methods=['POST'])
+def verify_code():
+    """인증 코드 검증 (구글 로그인용)"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        code = data.get('code', '').strip()
+        
+        if not email or not code:
+            return jsonify({'success': False, 'message': '이메일과 인증 코드를 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 이미 인증된 사용자
+        if user.is_verified:
+            return jsonify({'success': False, 'message': '이미 인증된 계정입니다.'})
+        
+        # 인증 코드 검증
+        if user.verification_code != code:
+            return jsonify({'success': False, 'message': '인증 코드가 올바르지 않습니다.'})
+        
+        # 인증 코드 만료 확인
+        if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
+            return jsonify({'success': False, 'message': '인증 코드가 만료되었습니다. 다시 로그인해주세요.'})
+        
+        # 인증 완료 처리
+        user.is_verified = True
+        user.is_active = True
+        user.verified_at = datetime.utcnow()
+        user.verification_code = None  # 보안을 위해 코드 삭제
+        user.verification_code_expires = None
+        
+        db.session.commit()
+        
+        # 로그인 처리
+        login_user(user, remember=True)
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        # JWT 토큰 생성
+        access_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(days=7)
+        )
+        
+        print(f"User verified and logged in: {user.email}")
+        
+        return jsonify({
+            'success': True,
+            'message': '인증이 완료되었습니다. 로그인되었습니다.',
+            'user': user.to_dict(),
+            'access_token': access_token
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error verifying code: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'인증 코드 검증 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/get-verification-code/<string:email>', methods=['GET'])
+@jwt_required()
+def get_verification_code(email):
+    """인증 코드 조회 (관리자 전용)"""
+    try:
+        # 현재 사용자 확인
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj or current_user_obj.role not in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': '권한이 없습니다.'})
+        
+        # 이메일로 사용자 찾기
+        user = User.query.filter_by(email=email.lower()).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        if user.is_verified:
+            return jsonify({'success': False, 'message': '이미 인증된 계정입니다.'})
+        
+        if not user.verification_code:
+            return jsonify({'success': False, 'message': '인증 코드가 생성되지 않았습니다.'})
+        
+        # 만료 여부 확인
+        is_expired = user.verification_code_expires and user.verification_code_expires < datetime.utcnow()
+        
+        return jsonify({
+            'success': True,
+            'verification_code': user.verification_code,
+            'expires_at': user.verification_code_expires.strftime('%Y-%m-%d %H:%M:%S') if user.verification_code_expires else None,
+            'is_expired': is_expired,
+            'user': {
+                'email': user.email,
+                'name': user.name,
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting verification code: {e}")
+        return jsonify({'success': False, 'message': f'인증 코드 조회 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/regenerate-verification-code', methods=['POST'])
+@jwt_required()
+def regenerate_verification_code():
+    """인증 코드 재생성 (관리자 전용)"""
+    try:
+        # 현재 사용자 확인
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj or current_user_obj.role not in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': '권한이 없습니다.'})
+        
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        if user.is_verified:
+            return jsonify({'success': False, 'message': '이미 인증된 계정입니다.'})
+        
+        # 새 인증 코드 생성
+        new_code = generate_verification_code()
+        new_expires = datetime.utcnow() + timedelta(hours=24)
+        
+        user.verification_code = new_code
+        user.verification_code_expires = new_expires
+        
+        db.session.commit()
+        
+        print(f"Regenerated verification code for {user.email}: {new_code}")
+        
+        return jsonify({
+            'success': True,
+            'message': '새로운 인증 코드가 생성되었습니다.',
+            'verification_code': new_code,
+            'expires_at': new_expires.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error regenerating verification code: {e}")
+        return jsonify({'success': False, 'message': f'인증 코드 재생성 중 오류가 발생했습니다: {str(e)}'})

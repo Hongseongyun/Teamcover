@@ -380,6 +380,10 @@ def verify_email_token(token):
         if existing_user:
             if not existing_user.is_active:
                 existing_user.is_active = True
+                existing_user.is_verified = True
+                existing_user.verified_at = datetime.utcnow()
+                if not existing_user.verification_method:
+                    existing_user.verification_method = 'email'
                 db.session.commit()
                 return {'success': True, 'message': '이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.'}
             else:
@@ -390,7 +394,10 @@ def verify_email_token(token):
             email=email,
             name=name,
             role=role,
-            is_active=True  # 인증 완료로 바로 활성화
+            is_active=True,  # 인증 완료로 바로 활성화
+            is_verified=True,  # 이메일 인증 완료
+            verification_method='email',  # 이메일 인증 방식
+            verified_at=datetime.utcnow()  # 인증 완료 시간
         )
         new_user.set_password(password)
         

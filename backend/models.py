@@ -19,6 +19,13 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
     
+    # 인증 관련 필드
+    is_verified = db.Column(db.Boolean, default=False)  # 인증 완료 여부
+    verification_method = db.Column(db.String(20), nullable=True)  # 'email', 'code', 'auto'
+    verification_code = db.Column(db.String(10), nullable=True)  # 인증 코드
+    verification_code_expires = db.Column(db.DateTime, nullable=True)  # 인증 코드 만료 시간
+    verified_at = db.Column(db.DateTime, nullable=True)  # 인증 완료 시간
+    
     def __repr__(self):
         return f'<User {self.email}>'
     
@@ -38,8 +45,11 @@ class User(UserMixin, db.Model):
             'name': self.name,
             'role': self.role,
             'is_active': self.is_active,
+            'is_verified': self.is_verified,
+            'verification_method': self.verification_method,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
-            'last_login': self.last_login.strftime('%Y-%m-%d %H:%M:%S') if self.last_login else None
+            'last_login': self.last_login.strftime('%Y-%m-%d %H:%M:%S') if self.last_login else None,
+            'verified_at': self.verified_at.strftime('%Y-%m-%d %H:%M:%S') if self.verified_at else None
         }
 
 class Member(db.Model):
