@@ -22,5 +22,5 @@ COPY . .
 EXPOSE 5000
 
 # Railway의 startCommand가 이 CMD를 덮어씁니다
-# 기본 명령 (로컬 테스트용 - Railway에서는 railway.json의 startCommand가 사용됨)
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "--log-level", "info"]
+# 쉘 형식으로 변경하여 환경변수가 제대로 확장되도록 함
+CMD gunicorn app:app --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 2 --timeout 120 --log-level debug --access-logfile - --error-logfile - --capture-output
