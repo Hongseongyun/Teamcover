@@ -354,7 +354,17 @@ const Scores = () => {
       const response = await ocrAPI.processImage(formData);
 
       if (response.data.success) {
-        setOcrResults(response.data.results);
+        // 결과에 오늘 날짜를 기본값으로 설정 (AI 인식 날짜 무시)
+        const todayDate = new Date().toISOString().split('T')[0];
+        const resultsWithDate = response.data.results.map((result) => ({
+          member_name: result.member_name || '',
+          game_date: todayDate, // 항상 오늘 날짜 사용
+          score1: parseInt(result.score1) || 0,
+          score2: parseInt(result.score2) || 0,
+          score3: parseInt(result.score3) || 0,
+          note: '', // 비고 필드 초기화
+        }));
+        setOcrResults(resultsWithDate);
         setCurrentStep('result');
       } else {
         alert(response.data.message || 'AI 스코어 인식에 실패했습니다.');
@@ -387,22 +397,54 @@ const Scores = () => {
         (r) => !r.member_name || r.member_name.trim() === ''
       );
       if (emptyNames.length > 0) {
-        alert('회원명을 모두 입력해주세요.');
+        alert(
+          '모든 회원을 선택해주세요. (선택되지 않은 인원: ' +
+            emptyNames.length +
+            '명)'
+        );
         return;
       }
 
-      for (const result of ocrResults) {
-        await scoreAPI.addScore({
-          member_name: result.member_name.trim(),
-          game_date: result.game_date || new Date().toISOString().split('T')[0],
-          score1: parseInt(result.score1) || 0,
-          score2: parseInt(result.score2) || 0,
-          score3: parseInt(result.score3) || 0,
-          note: result.note || '', // 비고 추가
-        });
+      let successCount = 0;
+      let failCount = 0;
+      const errors = [];
+
+      for (let i = 0; i < ocrResults.length; i++) {
+        const result = ocrResults[i];
+        try {
+          await scoreAPI.addScore({
+            member_name: result.member_name.trim(),
+            game_date:
+              result.game_date || new Date().toISOString().split('T')[0],
+            score1: parseInt(result.score1) || 0,
+            score2: parseInt(result.score2) || 0,
+            score3: parseInt(result.score3) || 0,
+            note: result.note || '', // 비고 추가
+          });
+          successCount++;
+        } catch (error) {
+          failCount++;
+          const errorMsg = error.response?.data?.message || error.message;
+          errors.push(`${result.member_name || '(이름없음)'}: ${errorMsg}`);
+          console.error(
+            `스코어 저장 실패 [${i + 1}/${ocrResults.length}]:`,
+            error
+          );
+        }
       }
 
-      alert(`${ocrResults.length}명의 스코어가 저장되었습니다.`);
+      if (successCount > 0 && failCount === 0) {
+        alert(`✅ ${successCount}명의 스코어가 저장되었습니다.`);
+      } else if (successCount > 0 && failCount > 0) {
+        alert(
+          `일부 저장 완료\n성공: ${successCount}명\n실패: ${failCount}명\n\n실패 내역:\n${errors.join(
+            '\n'
+          )}`
+        );
+      } else {
+        alert(`❌ 스코어 저장에 실패했습니다.\n\n${errors.join('\n')}`);
+        return; // 모두 실패하면 폼을 닫지 않음
+      }
       setShowPhotoForm(false);
       setOcrResults([]);
       setSelectedImage(null);
@@ -998,8 +1040,7 @@ const Scores = () => {
                         return (
                           <tr key={index}>
                             <td>
-                              <input
-                                type="text"
+                              <select
                                 value={result.member_name}
                                 onChange={(e) => {
                                   const newResults = [...ocrResults];
@@ -1007,8 +1048,15 @@ const Scores = () => {
                                     e.target.value;
                                   setOcrResults(newResults);
                                 }}
-                                className="editable-input name-input"
-                              />
+                                className="editable-input name-select"
+                              >
+                                <option value="">회원 선택</option>
+                                {members.map((member) => (
+                                  <option key={member.id} value={member.name}>
+                                    {member.name}
+                                  </option>
+                                ))}
+                              </select>
                             </td>
                             <td>
                               <input
