@@ -361,6 +361,74 @@
   margin-bottom: 2rem;
 }
 
+/* 포인트 헤더 (제목 + 뷰 전환 버튼) */
+.points-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* 월별 네비게이션 */
+.date-navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(0.3rem, 0.2rem + 0.8vw, 1rem);
+  margin-bottom: 2rem;
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.nav-btn {
+  padding: clamp(0.4rem, 0.3rem + 0.5vw, 0.75rem) !important;
+  min-width: clamp(40px, 8vw, 60px) !important;
+  height: clamp(40px, 8vw, 60px);
+  border-radius: 50% !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: clamp(0.9rem, 0.8rem + 0.3vw, 1.2rem);
+}
+
+.nav-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.current-date-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
+  min-width: clamp(120px, 30vw, 200px);
+}
+
+.date-display {
+  font-size: clamp(1rem, 0.8rem + 1vw, 1.5rem);
+  font-weight: 700;
+  color: var(--toss-primary);
+}
+
+.participant-count {
+  font-size: clamp(0.7rem, 0.65rem + 0.3vw, 0.9rem);
+  color: var(--toss-gray-700);
+  background: var(--toss-success-light);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-success);
+  font-weight: 600;
+}
+
 .points-table {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

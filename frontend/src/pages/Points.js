@@ -44,6 +44,10 @@ const Points = () => {
   const [memberStats, setMemberStats] = useState(null);
   const [showMemberSearch, setShowMemberSearch] = useState(true);
 
+  // 월별 뷰 상태
+  const [viewMode, setViewMode] = useState('all'); // 'all' 또는 'monthly'
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
   const loadPoints = useCallback(async () => {
     try {
       setLoading(true);
@@ -145,6 +149,40 @@ const Points = () => {
       monthlyStats,
     });
   };
+
+  // 월 네비게이션 함수
+  const goToPreviousMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() - 1);
+    setCurrentMonth(newMonth);
+  };
+
+  const goToNextMonth = () => {
+    const newMonth = new Date(currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + 1);
+    setCurrentMonth(newMonth);
+  };
+
+  const goToLatestMonth = () => {
+    setCurrentMonth(new Date());
+  };
+
+  // 현재 선택된 월의 포인트만 가져오기
+  const getCurrentMonthPoints = () => {
+    const yearMonth = `${currentMonth.getFullYear()}-${String(
+      currentMonth.getMonth() + 1
+    ).padStart(2, '0')}`;
+
+    return points.filter((point) => {
+      const pointDate = point.point_date || point.created_at;
+      if (!pointDate) return false;
+      return pointDate.startsWith(yearMonth);
+    });
+  };
+
+  // 표시할 포인트 목록
+  const displayPoints =
+    viewMode === 'monthly' ? getCurrentMonthPoints() : points;
 
   // 개인별 통계 계산
   const calculateMemberStats = (memberName) => {
@@ -809,7 +847,74 @@ const Points = () => {
       {isAdmin && (
         <div className="points-section">
           <div className="section-card">
-            <h3 className="section-title">포인트 내역</h3>
+            <div className="points-header">
+              <h3 className="section-title">포인트 내역</h3>
+              <div className="view-toggle">
+                <button
+                  className={`btn btn-sm ${
+                    viewMode === 'all' ? 'btn-primary' : 'btn-outline-secondary'
+                  }`}
+                  onClick={() => setViewMode('all')}
+                >
+                  전체 보기
+                </button>
+                <button
+                  className={`btn btn-sm ${
+                    viewMode === 'monthly'
+                      ? 'btn-primary'
+                      : 'btn-outline-secondary'
+                  }`}
+                  onClick={() => setViewMode('monthly')}
+                >
+                  월별 보기
+                </button>
+              </div>
+            </div>
+
+            {/* 월별 네비게이션 */}
+            {viewMode === 'monthly' && (
+              <div className="date-navigation">
+                <button
+                  className="btn btn-primary nav-btn"
+                  onClick={() => {
+                    setCurrentMonth(new Date());
+                  }}
+                  title="최신 월로 이동"
+                >
+                  《《
+                </button>
+                <button
+                  className="btn btn-primary nav-btn"
+                  onClick={goToPreviousMonth}
+                  title="이전 월"
+                >
+                  《
+                </button>
+                <div className="current-date-info">
+                  <div className="date-display">
+                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}
+                    월
+                  </div>
+                  <div className="participant-count">
+                    총 {displayPoints.length}건
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary nav-btn"
+                  onClick={goToNextMonth}
+                  title="다음 월"
+                >
+                  》
+                </button>
+                <button
+                  className="btn btn-outline-primary nav-btn"
+                  onClick={goToLatestMonth}
+                  title="최신 월"
+                >
+                  》》
+                </button>
+              </div>
+            )}
 
             <div className="points-table">
               <table>
@@ -826,7 +931,7 @@ const Points = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {points.map((point) => (
+                  {displayPoints.map((point) => (
                     <tr
                       key={point.id}
                       className={editingId === point.id ? 'editing' : ''}
