@@ -45,11 +45,15 @@ const Scores = () => {
   ]);
 
   // 이미지 업로드 관련 상태
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]); // 다중 이미지
+  const [imagePreviews, setImagePreviews] = useState([]); // 다중 미리보기
   const [ocrResults, setOcrResults] = useState([]);
   const [currentStep, setCurrentStep] = useState('upload'); // upload, selection, result
   const [aiAnalyzing, setAiAnalyzing] = useState(false); // AI 분석 중 로딩 상태
+  const [analyzingProgress, setAnalyzingProgress] = useState({
+    current: 0,
+    total: 0,
+  }); // 분석 진행률
   const [selectionBox, setSelectionBox] = useState({
     x: 0,
     y: 0,
@@ -322,52 +326,78 @@ const Scores = () => {
     }
   }, [scores, sortOrder]);
 
-  // 이미지 업로드 처리
+  // 이미지 업로드 처리 (다중 이미지 지원)
   const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setSelectedImages(files);
+
+      // 각 파일의 미리보기 생성
+      const previewPromises = files.map((file) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(previewPromises).then((previews) => {
+        setImagePreviews(previews);
         setCurrentStep('upload');
-      };
-      reader.readAsDataURL(file);
+      });
     }
   };
 
-  // 이미지 분석 시작
+  // 이미지 분석 시작 (다중 이미지 지원)
   const handleAnalyzeImage = async () => {
-    if (!selectedImage) return;
+    if (!selectedImages || selectedImages.length === 0) {
+      alert('이미지를 선택해주세요.');
+      return;
+    }
 
-    setAiAnalyzing(true); // 로딩 시작
+    setAiAnalyzing(true);
+    setAnalyzingProgress({ current: 0, total: selectedImages.length });
+
+    const allResults = [];
 
     try {
-      const formData = new FormData();
-      formData.append('image', selectedImage);
+      // 각 이미지를 순차적으로 분석
+      for (let i = 0; i < selectedImages.length; i++) {
+        setAnalyzingProgress({ current: i + 1, total: selectedImages.length });
 
-      const response = await ocrAPI.processImage(formData);
+        const formData = new FormData();
+        formData.append('image', selectedImages[i]);
 
-      if (response.data.success) {
-        // 결과에 오늘 날짜를 기본값으로 설정 (AI 인식 날짜 무시)
-        const todayDate = new Date().toISOString().split('T')[0];
-        const resultsWithDate = response.data.results.map((result) => ({
-          member_name: result.member_name || '',
-          game_date: todayDate, // 항상 오늘 날짜 사용
-          score1: parseInt(result.score1) || 0,
-          score2: parseInt(result.score2) || 0,
-          score3: parseInt(result.score3) || 0,
-          note: '', // 비고 필드 초기화
-        }));
-        setOcrResults(resultsWithDate);
+        const response = await ocrAPI.processImage(formData);
+
+        if (response.data.success && response.data.results) {
+          const todayDate = new Date().toISOString().split('T')[0];
+          const resultsWithDate = response.data.results.map((result) => ({
+            member_name: result.member_name || '',
+            game_date: todayDate,
+            score1: parseInt(result.score1) || 0,
+            score2: parseInt(result.score2) || 0,
+            score3: parseInt(result.score3) || 0,
+            note: '',
+          }));
+
+          allResults.push(...resultsWithDate);
+        } else {
+          console.warn(`이미지 ${i + 1} 분석 실패:`, response.data.message);
+        }
+      }
+
+      if (allResults.length > 0) {
+        setOcrResults(allResults);
         setCurrentStep('result');
       } else {
-        alert(response.data.message || 'AI 스코어 인식에 실패했습니다.');
+        alert('AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.');
       }
     } catch (error) {
       console.error('AI 스코어 인식 실패:', error);
 
-      // 타임아웃 에러 처리
       if (error.code === 'ECONNABORTED') {
         alert(
           'AI 분석 시간이 초과되었습니다. 이미지 크기를 줄이거나 다시 시도해주세요.'
@@ -380,7 +410,8 @@ const Scores = () => {
         );
       }
     } finally {
-      setAiAnalyzing(false); // 로딩 종료
+      setAiAnalyzing(false);
+      setAnalyzingProgress({ current: 0, total: 0 });
     }
   };
 
@@ -442,8 +473,9 @@ const Scores = () => {
       }
       setShowPhotoForm(false);
       setOcrResults([]);
-      setSelectedImage(null);
-      setImagePreview(null);
+      setSelectedImages([]);
+      setImagePreviews([]);
+      setCurrentStep('upload');
       loadScores();
     } catch (error) {
       console.error('OCR 결과 저장 실패:', error);
@@ -957,33 +989,59 @@ const Scores = () => {
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageUpload}
                     className="file-input"
                   />
                   <div className="form-text">
-                    JPG, PNG, GIF 파일을 선택해주세요. AI가 자동으로 스코어를
-                    인식합니다.
+                    JPG, PNG, GIF 파일을 여러 개 선택할 수 있습니다. AI가
+                    자동으로 모든 스코어를 인식합니다.
                   </div>
                 </div>
 
-                {imagePreview && (
-                  <div className="image-preview">
-                    <img src={imagePreview} alt="미리보기" />
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleAnalyzeImage}
-                      disabled={aiAnalyzing}
-                    >
-                      {aiAnalyzing ? (
-                        <>
-                          <span className="spinner"></span>
-                          AI 분석 중... (최대 2분 소요)
-                        </>
-                      ) : (
-                        'AI 스코어 인식'
-                      )}
-                    </button>
+                {imagePreviews.length > 0 && (
+                  <div className="image-preview-section">
+                    <div className="images-grid">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="image-preview-wrapper">
+                          <img src={preview} alt={`미리보기 ${index + 1}`} />
+                          <button
+                            type="button"
+                            className="image-remove-btn"
+                            onClick={() => {
+                              setImagePreviews(
+                                imagePreviews.filter((_, i) => i !== index)
+                              );
+                              setSelectedImages(
+                                selectedImages.filter((_, i) => i !== index)
+                              );
+                            }}
+                            title="이미지 제거"
+                          >
+                            ✕
+                          </button>
+                          <div className="image-number">{index + 1}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="preview-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-lg"
+                        onClick={handleAnalyzeImage}
+                        disabled={aiAnalyzing}
+                      >
+                        {aiAnalyzing ? (
+                          <>
+                            <span className="spinner"></span>
+                            AI 분석 중... ({analyzingProgress.current}/
+                            {analyzingProgress.total})
+                          </>
+                        ) : (
+                          `AI 스코어 인식 (${selectedImages.length}개 사진)`
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -994,6 +1052,12 @@ const Scores = () => {
                       <div className="spinner-large"></div>
                       <h3>🤖 AI가 스코어를 분석하고 있습니다...</h3>
                       <p>이미지 크기에 따라 최대 2분 정도 걸릴 수 있습니다.</p>
+                      {analyzingProgress.total > 1 && (
+                        <p className="progress-text">
+                          📸 {analyzingProgress.current} /{' '}
+                          {analyzingProgress.total} 사진 분석 중
+                        </p>
+                      )}
                       <p className="please-wait">잠시만 기다려주세요 ⏳</p>
                     </div>
                   </div>
@@ -1032,10 +1096,18 @@ const Scores = () => {
                 </div>
 
                 {/* 원본 이미지 표시 */}
-                {imagePreview && (
+                {imagePreviews.length > 0 && (
                   <div className="image-preview-result">
-                    <h5>원본 이미지</h5>
-                    <img src={imagePreview} alt="원본 이미지" />
+                    <h5>원본 이미지 ({imagePreviews.length}개)</h5>
+                    <div className="result-images-grid">
+                      {imagePreviews.map((preview, index) => (
+                        <img
+                          key={index}
+                          src={preview}
+                          alt={`원본 이미지 ${index + 1}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
 

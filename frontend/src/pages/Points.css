@@ -415,8 +415,34 @@
 }
 
 .view-toggle {
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  background: var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 0.25rem;
+  gap: 0;
+}
+
+.view-toggle .btn {
+  border-radius: var(--toss-radius);
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: none;
+}
+
+.view-toggle .btn-primary {
+  background-color: white;
+  color: var(--toss-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-toggle .btn-outline-secondary {
+  background-color: transparent;
+  color: var(--toss-gray-600);
+  border: none;
+}
+
+.view-toggle .btn:hover {
+  opacity: 0.9;
 }
 
 /* 월별 네비게이션 */
