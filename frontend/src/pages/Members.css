@@ -353,10 +353,11 @@
 
 /* 개인정보 셀 래퍼 (데스크톱) */
 .privacy-cell-wrapper {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .privacy-text {
@@ -645,10 +646,11 @@
 
   /* 개인정보 셀 래퍼 (모바일) */
   .privacy-cell-wrapper {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    width: 100%;
   }
 
   .privacy-text {
