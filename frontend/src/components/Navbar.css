@@ -192,6 +192,47 @@
   background: #f9fafb;
 }
 
+/* 햄버거 메뉴 버튼 (기본은 숨김) */
+.mobile-menu-button {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  z-index: 1001;
+}
+
+.hamburger {
+  width: 24px;
+  height: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger span {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: white;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+/* 햄버거 메뉴 활성화 상태 (X 모양) */
+.hamburger.active span:nth-child(1) {
+  transform: translateY(8.5px) rotate(45deg);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: translateY(-8.5px) rotate(-45deg);
+}
+
 /* 반응형 디자인 (1000px 이하) */
 @media (max-width: 1000px) {
   .navbar {
@@ -206,17 +247,25 @@
     height: auto;
     min-height: 60px;
     align-items: center;
+    position: relative;
   }
 
-  /* 로고를 왼쪽에 고정 */
+  /* 햄버거 메뉴 버튼 표시 */
+  .mobile-menu-button {
+    display: block;
+    order: 1;
+    margin-right: 10px;
+  }
+
+  /* 로고를 햄버거 옆에 배치 */
   .navbar-brand {
     flex: 0 0 auto;
-    order: 1;
+    order: 2;
     padding: 10px 0;
-    font-size: 18px;
+    font-size: 20px;
   }
 
-  /* 계정 정보를 오른쪽 위에 고정 */
+  /* 계정 정보를 오른쪽에 고정 */
   .navbar-actions {
     flex: 0 0 auto;
     order: 3;
@@ -224,40 +273,85 @@
   }
 
   .user-button {
-    padding: 0.4rem 0.8rem;
-    font-size: 12px;
+    padding: 0.5rem 1rem;
+    font-size: 14px;
   }
 
   .user-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 
   .user-name,
   .user-role {
-    font-size: 11px;
+    font-size: 14px;
   }
 
   .dropdown-arrow {
-    font-size: 8px;
+    font-size: 10px;
   }
 
-  /* 메뉴를 가운데에 배치하고 한 줄로 유지 */
+  /* 모바일 메뉴 - 기본은 숨김 */
   .navbar-nav {
-    flex: 0 1 auto;
-    order: 2;
-    justify-content: center;
-    flex-wrap: nowrap;
-    margin: 0;
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    order: 4;
+    margin-top: 10px;
     padding: 0;
-    border-top: none;
+    background: #34495e;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 모바일 메뉴 활성화 */
+  .navbar-nav.mobile-active {
+    display: flex;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .nav-item {
+    width: 100%;
+    margin: 0;
+    border-bottom: 1px solid #2c3e50;
+  }
+
+  .nav-item:last-child {
+    border-bottom: none;
   }
 
   .nav-link {
-    padding: 10px 8px;
-    font-size: 12px;
-    white-space: nowrap;
+    display: block;
+    padding: 15px 20px;
+    font-size: 16px;
+    color: #bdc3c7;
+    width: 100%;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+
+  .nav-link:hover {
+    background-color: #2c3e50;
+    color: white;
+    padding-left: 25px;
+  }
+
+  .nav-link.active {
+    background-color: #3498db;
+    color: white;
   }
 }
 

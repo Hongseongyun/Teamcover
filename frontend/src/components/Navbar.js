@@ -8,6 +8,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout, hasRole, isAuthenticated } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -35,17 +36,33 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
+        {/* 햄버거 메뉴 버튼 (모바일) */}
+        {isAuthenticated && (
+          <button
+            className="mobile-menu-button"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            aria-label="메뉴"
+          >
+            <span className={`hamburger ${showMobileMenu ? 'active' : ''}`}>
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </button>
+        )}
+
         <Link to="/" className="navbar-brand">
           Teamcover
         </Link>
 
         {isAuthenticated && (
-          <ul className="navbar-nav">
+          <ul className={`navbar-nav ${showMobileMenu ? 'mobile-active' : ''}`}>
             {canAccessPage('/members') && (
               <li className="nav-item">
                 <Link
                   to="/members"
                   className={`nav-link ${isActive('/members')}`}
+                  onClick={() => setShowMobileMenu(false)}
                 >
                   회원
                 </Link>
@@ -56,6 +73,7 @@ const Navbar = () => {
                 <Link
                   to="/scores"
                   className={`nav-link ${isActive('/scores')}`}
+                  onClick={() => setShowMobileMenu(false)}
                 >
                   스코어
                 </Link>
@@ -66,6 +84,7 @@ const Navbar = () => {
                 <Link
                   to="/points"
                   className={`nav-link ${isActive('/points')}`}
+                  onClick={() => setShowMobileMenu(false)}
                 >
                   포인트
                 </Link>
@@ -76,6 +95,7 @@ const Navbar = () => {
                 <Link
                   to="/team-assignment"
                   className={`nav-link ${isActive('/team-assignment')}`}
+                  onClick={() => setShowMobileMenu(false)}
                 >
                   팀 배정
                 </Link>
@@ -86,6 +106,7 @@ const Navbar = () => {
                 <Link
                   to="/user-management"
                   className={`nav-link ${isActive('/user-management')}`}
+                  onClick={() => setShowMobileMenu(false)}
                 >
                   사용자 관리
                 </Link>
