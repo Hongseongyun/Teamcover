@@ -334,17 +334,16 @@
 /* 전화번호, 이메일 데이터는 중앙 정렬 */
 .members-table td:nth-child(2),
 .members-table td:nth-child(5) {
-  text-align: center;
   padding-left: 1rem;
   padding-right: 1rem;
 }
 
-/* 전화번호, 이메일 셀 내용이 밖으로 넘치지 않도록 */
-.members-table td:nth-child(2) .privacy-cell-wrapper,
-.members-table td:nth-child(5) .privacy-cell-wrapper {
+/* 전화번호, 이메일 셀을 flex container로 만들어 중앙 정렬 */
+.members-table td:nth-child(2),
+.members-table td:nth-child(5) {
+  display: flex;
   justify-content: center;
-  width: 100%;
-  max-width: 100%;
+  align-items: center;
 }
 
 .members-table tbody tr:hover {
@@ -353,11 +352,10 @@
 
 /* 개인정보 셀 래퍼 (데스크톱) */
 .privacy-cell-wrapper {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  width: 100%;
 }
 
 .privacy-text {
@@ -584,18 +582,13 @@
     text-align: center;
   }
 
-  /* 모바일에서 전화번호는 중앙 정렬 */
+  /* 모바일에서 전화번호 셀을 flex container로 중앙 정렬 */
   .members-table td:nth-child(2) {
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     padding-left: 0.75rem;
     padding-right: 0.75rem;
-  }
-
-  /* 모바일에서 전화번호 셀 래퍼도 중앙 정렬 */
-  .members-table td:nth-child(2) .privacy-cell-wrapper {
-    justify-content: center;
-    width: 100%;
-    max-width: 100%;
   }
 
   /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
@@ -646,11 +639,10 @@
 
   /* 개인정보 셀 래퍼 (모바일) */
   .privacy-cell-wrapper {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    width: 100%;
   }
 
   .privacy-text {
