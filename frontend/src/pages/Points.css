@@ -845,28 +845,64 @@
 
 /* 모바일 반응형 (800px 이하) - 포인트 내역 글씨 70%로 축소 */
 @media (max-width: 800px) {
+  /* 테이블 최소 너비 축소 */
+  .points-table table {
+    min-width: 500px;
+  }
+
   .points-table th,
   .points-table td {
     font-size: 0.7rem;
-    padding: 0.5rem 0.3rem;
+    padding: 0.4rem 0.2rem;
   }
 
   .all-games-table th,
   .all-games-table td {
     font-size: 0.7rem;
-    padding: 0.5rem 0.3rem;
+    padding: 0.4rem 0.2rem;
+  }
+
+  /* 각 컬럼 최소 너비 축소 (공백 최소화) */
+  .points-table th:nth-child(1),
+  .points-table td:nth-child(1) {
+    min-width: 70px;
+  }
+
+  .points-table th:nth-child(2),
+  .points-table td:nth-child(2) {
+    min-width: 60px;
+  }
+
+  .points-table th:nth-child(3),
+  .points-table td:nth-child(3) {
+    min-width: 50px;
+  }
+
+  .points-table th:nth-child(4),
+  .points-table td:nth-child(4) {
+    min-width: 60px;
+  }
+
+  .points-table th:nth-child(6),
+  .points-table td:nth-child(6) {
+    min-width: 70px;
+  }
+
+  .points-table th:nth-child(8),
+  .points-table td:nth-child(8) {
+    min-width: 100px;
   }
 
   /* 버튼도 함께 축소 */
   .points-table .btn-sm {
     font-size: 0.65rem;
-    padding: 0.3rem 0.5rem;
+    padding: 0.25rem 0.4rem;
   }
 
   /* 포인트 타입 배지 크기 축소 */
   .point-type {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
+    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
   }
 
   /* 통계 카드 크기 축소 */
