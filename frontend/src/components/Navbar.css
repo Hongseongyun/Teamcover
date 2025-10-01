@@ -121,11 +121,11 @@
 
 .user-name {
   font-weight: 500;
-  color: #bdc3c7; /* (admin)과 동일한 색상 */
+  color: #bdc3c7 !important; /* (admin)과 동일한 색상 */
 }
 
 .user-role {
-  color: #bdc3c7;
+  color: #bdc3c7 !important;
   font-size: 12px;
 }
 

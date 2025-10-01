@@ -3,23 +3,49 @@
 }
 
 /* 개인정보 보호 */
-.privacy-cell {
-  cursor: pointer;
+.privacy-cell-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.privacy-text {
   color: #666;
-  transition: all 0.2s ease;
 }
 
-.privacy-cell:hover {
-  background-color: #f0f4ff;
-  color: #3498db;
+.privacy-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-.privacy-cell:not(:hover)::after {
-  content: '🔒';
-  margin-left: 0.5rem;
-  font-size: 0.9rem;
-  opacity: 0.5;
+.privacy-lock-btn:hover {
+  transform: scale(1.2);
+}
+
+.privacy-lock-btn .lock-icon {
+  display: inline-block;
+  transition: opacity 0.2s ease;
+}
+
+.privacy-lock-btn .unlock-icon {
+  display: none;
+  transition: opacity 0.2s ease;
+}
+
+.privacy-lock-btn:hover .lock-icon {
+  display: none;
+}
+
+.privacy-lock-btn:hover .unlock-icon {
+  display: inline-block;
 }
 
 /* 모달 */

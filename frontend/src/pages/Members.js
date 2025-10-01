@@ -709,25 +709,37 @@ const Members = () => {
                     ) : (
                       <>
                         <td>{member.name}</td>
-                        <td
-                          className="privacy-cell"
-                          onClick={handlePrivacyClick}
-                          title={
-                            privacyUnlocked ? '' : '클릭하여 개인정보 보기'
-                          }
-                        >
-                          {maskPhone(member.phone)}
+                        <td className="privacy-cell-wrapper">
+                          <span className="privacy-text">
+                            {maskPhone(member.phone)}
+                          </span>
+                          {!privacyUnlocked && (
+                            <button
+                              className="privacy-lock-btn"
+                              onClick={handlePrivacyClick}
+                              title="클릭하여 개인정보 보기"
+                            >
+                              <span className="lock-icon">🔒</span>
+                              <span className="unlock-icon">🔓</span>
+                            </button>
+                          )}
                         </td>
                         <td>{member.gender || '-'}</td>
                         <td>{member.level || '-'}</td>
-                        <td
-                          className="privacy-cell"
-                          onClick={handlePrivacyClick}
-                          title={
-                            privacyUnlocked ? '' : '클릭하여 개인정보 보기'
-                          }
-                        >
-                          {maskEmail(member.email)}
+                        <td className="privacy-cell-wrapper">
+                          <span className="privacy-text">
+                            {maskEmail(member.email)}
+                          </span>
+                          {!privacyUnlocked && (
+                            <button
+                              className="privacy-lock-btn"
+                              onClick={handlePrivacyClick}
+                              title="클릭하여 개인정보 보기"
+                            >
+                              <span className="lock-icon">🔒</span>
+                              <span className="unlock-icon">🔓</span>
+                            </button>
+                          )}
                         </td>
                         <td>
                           {new Date(member.created_at)
