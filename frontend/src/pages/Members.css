@@ -3,19 +3,9 @@
 }
 
 /* 개인정보 보호 */
-.privacy-cell-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 24px;
-  vertical-align: middle;
-}
-
 .privacy-text {
   color: #666;
-  display: inline-block;
-  line-height: 1.5;
+  white-space: nowrap;
 }
 
 .privacy-lock-btn {
