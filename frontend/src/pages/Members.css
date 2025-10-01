@@ -331,7 +331,7 @@
 /* 전화번호, 이메일 셀을 flex container로 만들어 중앙 정렬 */
 .members-table td:nth-child(2),
 .members-table td:nth-child(5) {
-  display: flex;
+  /* display: flex; */
   justify-content: center;
   align-items: center;
 }
