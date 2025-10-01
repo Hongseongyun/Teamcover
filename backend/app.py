@@ -46,7 +46,12 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # CORS 설정 (환경변수 기반)
-allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', ["http://localhost:3000", "http://localhost:8080", "https://hsyun.store"]) 
+allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [
+    "http://localhost:3000", 
+    "http://localhost:8080", 
+    "https://hsyun.store",
+    "https://teamcover-frontend.vercel.app"
+]) 
 CORS(app,
      origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

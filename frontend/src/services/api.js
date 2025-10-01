@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.hsyun.store';
+// 환경변수 또는 기본값 사용
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.hsyun.store';
+
+console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
