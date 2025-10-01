@@ -134,4 +134,17 @@ class Point(db.Model):
     member = db.relationship('Member', backref=db.backref('points', lazy=True))
     
     def __repr__(self):
-        return f'<Point {self.member.name} {self.point_type} {self.amount}>' 
+        return f'<Point {self.member.name} {self.point_type} {self.amount}>'
+
+class AppSetting(db.Model):
+    """앱 설정 모델 (전역 설정)"""
+    __tablename__ = 'app_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    setting_key = db.Column(db.String(50), unique=True, nullable=False)
+    setting_value = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    
+    def __repr__(self):
+        return f'<AppSetting {self.setting_key}>' 

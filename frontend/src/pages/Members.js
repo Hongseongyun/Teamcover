@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import './Members.css';
 
 const Members = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user && user.role === 'super_admin';
+
   // 개인정보 보호 상태
   const [privacyUnlocked, setPrivacyUnlocked] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -379,13 +383,15 @@ const Members = () => {
       <div className="page-header">
         <h1>팀커버 회원 관리</h1>
         <div className="header-actions">
-          <button
-            className="btn btn-info"
-            onClick={() => setShowPasswordSetting(true)}
-            title="개인정보 보호 비밀번호 설정"
-          >
-            🔒 비밀번호 설정
-          </button>
+          {isSuperAdmin && (
+            <button
+              className="btn btn-info"
+              onClick={() => setShowPasswordSetting(true)}
+              title="개인정보 보호 비밀번호 설정 (슈퍼관리자 전용)"
+            >
+              🔒 비밀번호 설정
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => setShowImportForm(true)}

@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify, make_response, session
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from datetime import datetime, timedelta
-from models import db, User
+from models import db, User, AppSetting
+from werkzeug.security import generate_password_hash, check_password_hash
 import google.auth.transport.requests
 from google.oauth2 import id_token
 import os
@@ -901,13 +902,13 @@ def regenerate_verification_code():
 @auth_bp.route('/set-privacy-password', methods=['POST'])
 @jwt_required()
 def set_privacy_password():
-    """개인정보 보호 비밀번호 설정 (관리자 전용)"""
+    """개인정보 보호 비밀번호 설정 (슈퍼관리자 전용) - 전역 설정"""
     try:
         current_user_id = get_jwt_identity()
         current_user_obj = User.query.get(int(current_user_id))
         
-        if not current_user_obj or current_user_obj.role not in ['admin', 'super_admin']:
-            return jsonify({'success': False, 'message': '권한이 없습니다.'})
+        if not current_user_obj or current_user_obj.role != 'super_admin':
+            return jsonify({'success': False, 'message': '슈퍼관리자만 설정할 수 있습니다.'})
         
         data = request.get_json()
         password = data.get('password', '').strip()
@@ -918,13 +919,28 @@ def set_privacy_password():
         if len(password) < 4:
             return jsonify({'success': False, 'message': '비밀번호는 4자리 이상이어야 합니다.'})
         
-        # 현재 사용자(관리자)의 개인정보 보호 비밀번호 설정
-        current_user_obj.set_privacy_password(password)
+        # 전역 개인정보 보호 비밀번호 설정
+        password_hash = generate_password_hash(password)
+        
+        setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+        if setting:
+            setting.setting_value = password_hash
+            setting.updated_by = current_user_obj.id
+        else:
+            setting = AppSetting(
+                setting_key='privacy_password',
+                setting_value=password_hash,
+                updated_by=current_user_obj.id
+            )
+            db.session.add(setting)
+        
         db.session.commit()
+        
+        print(f"Privacy password set by {current_user_obj.email}")
         
         return jsonify({
             'success': True,
-            'message': '개인정보 보호 비밀번호가 설정되었습니다.'
+            'message': '개인정보 보호 비밀번호가 설정되었습니다. (전체 관리자에게 적용)'
         })
         
     except Exception as e:
@@ -935,7 +951,7 @@ def set_privacy_password():
 @auth_bp.route('/verify-privacy-password', methods=['POST'])
 @jwt_required()
 def verify_privacy_password():
-    """개인정보 보호 비밀번호 검증"""
+    """개인정보 보호 비밀번호 검증 - 전역 비밀번호 사용"""
     try:
         current_user_id = get_jwt_identity()
         current_user_obj = User.query.get(int(current_user_id))
@@ -949,8 +965,11 @@ def verify_privacy_password():
         if not password:
             return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
         
+        # 전역 개인정보 보호 비밀번호 조회
+        setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+        
         # 비밀번호가 설정되지 않았으면 자동 승인
-        if not current_user_obj.privacy_password_hash:
+        if not setting or not setting.setting_value:
             return jsonify({
                 'success': True,
                 'message': '개인정보 보호 비밀번호가 설정되지 않았습니다.',
@@ -958,7 +977,7 @@ def verify_privacy_password():
             })
         
         # 비밀번호 검증
-        if current_user_obj.check_privacy_password(password):
+        if check_password_hash(setting.setting_value, password):
             return jsonify({
                 'success': True,
                 'message': '비밀번호가 확인되었습니다.'
@@ -976,7 +995,7 @@ def verify_privacy_password():
 @auth_bp.route('/check-privacy-password-status', methods=['GET'])
 @jwt_required()
 def check_privacy_password_status():
-    """개인정보 보호 비밀번호 설정 여부 확인"""
+    """개인정보 보호 비밀번호 설정 여부 확인 - 전역 설정"""
     try:
         current_user_id = get_jwt_identity()
         current_user_obj = User.query.get(int(current_user_id))
@@ -984,9 +1003,12 @@ def check_privacy_password_status():
         if not current_user_obj:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
         
+        # 전역 비밀번호 설정 확인
+        setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+        
         return jsonify({
             'success': True,
-            'password_set': bool(current_user_obj.privacy_password_hash)
+            'password_set': bool(setting and setting.setting_value)
         })
         
     except Exception as e:
