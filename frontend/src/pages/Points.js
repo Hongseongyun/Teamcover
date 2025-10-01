@@ -881,14 +881,14 @@ const Points = () => {
                   }}
                   title="최신 월로 이동"
                 >
-                  ≪≪
+                  ‹‹
                 </button>
                 <button
-                  className="btn btn-outline-primary nav-btn"
+                  className="btn btn-primary nav-btn"
                   onClick={goToPreviousMonth}
                   title="이전 월"
                 >
-                  ≪
+                  ‹
                 </button>
                 <div className="current-date-info">
                   <div className="date-display">
@@ -900,18 +900,18 @@ const Points = () => {
                   </div>
                 </div>
                 <button
-                  className="btn btn-outline-primary nav-btn"
+                  className="btn btn-primary nav-btn"
                   onClick={goToNextMonth}
                   title="다음 월"
                 >
-                  ≫
+                  ›
                 </button>
                 <button
                   className="btn btn-outline-primary nav-btn"
                   onClick={goToLatestMonth}
                   title="최신 월"
                 >
-                  ≫≫
+                  ››
                 </button>
               </div>
             )}
