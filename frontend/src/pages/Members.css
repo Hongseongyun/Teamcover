@@ -476,16 +476,21 @@
   .members-table table {
     width: 100%;
     min-width: auto;
-    table-layout: auto;
+    table-layout: fixed;
   }
 
   .members-table th,
   .members-table td {
-    padding: 0.5rem 0.3rem;
-    font-size: 0.8rem;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.875rem;
+    vertical-align: middle;
   }
 
-  /* 등록일 컬럼 숨기기 (모바일에서) */
+  /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
+  .members-table th:nth-child(4),
+  .members-table td:nth-child(4),
+  .members-table th:nth-child(5),
+  .members-table td:nth-child(5),
   .members-table th:nth-child(6),
   .members-table td:nth-child(6) {
     display: none;
@@ -494,52 +499,38 @@
   /* 이름 컬럼 */
   .members-table th:nth-child(1),
   .members-table td:nth-child(1) {
-    min-width: 60px;
-    max-width: 80px;
+    width: 25%;
   }
 
   /* 전화번호 컬럼 */
   .members-table th:nth-child(2),
   .members-table td:nth-child(2) {
-    min-width: 80px;
-    max-width: 100px;
+    width: 30%;
   }
 
-  /* 성별, 레벨 컬럼 */
+  /* 성별 컬럼 */
   .members-table th:nth-child(3),
-  .members-table td:nth-child(3),
-  .members-table th:nth-child(4),
-  .members-table td:nth-child(4) {
-    min-width: 45px;
-    max-width: 60px;
-  }
-
-  /* 이메일 컬럼 */
-  .members-table th:nth-child(5),
-  .members-table td:nth-child(5) {
-    min-width: 80px;
-    max-width: 120px;
-    word-break: break-all;
+  .members-table td:nth-child(3) {
+    width: 15%;
+    text-align: center;
   }
 
   /* 작업 컬럼 */
   .members-table th:nth-child(7),
   .members-table td:nth-child(7) {
-    min-width: 90px;
+    width: 30%;
+    text-align: center;
   }
 
   .members-table td:nth-child(7) {
-    display: flex;
-    flex-direction: row;
-    gap: 0.3rem;
-    justify-content: center;
-    border-bottom: none;
+    display: table-cell;
   }
 
   .members-table td:nth-child(7) .btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
     white-space: nowrap;
+    margin: 0 0.2rem;
   }
 
   /* 인라인 편집 액션 버튼 */
@@ -548,12 +539,13 @@
     flex-direction: row !important;
     gap: 0.3rem;
     justify-content: center;
+    align-items: center;
   }
 
   .inline-actions .btn {
     width: auto;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   /* 개인정보 잠금 버튼 크기 조정 */
@@ -566,7 +558,9 @@
   /* 인라인 input, select 크기 조정 */
   .inline-input,
   .inline-select {
-    font-size: 0.75rem;
-    padding: 0.3rem;
+    font-size: 0.8rem;
+    padding: 0.4rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
