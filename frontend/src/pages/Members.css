@@ -291,6 +291,11 @@
 
 .members-table {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.members-table table {
+  min-width: 600px;
 }
 
 .members-table table {
@@ -314,6 +319,7 @@
   height: auto;
   min-height: clamp(50px, 10vw, 70px);
   font-size: var(--responsive-table-font, 0.875rem);
+  white-space: nowrap;
 }
 
 .members-table th {
@@ -334,9 +340,10 @@
 /* 전화번호, 이메일 셀을 flex container로 만들어 중앙 정렬 */
 .members-table td:nth-child(2),
 .members-table td:nth-child(5) {
-  /* display: flex; */
+  display: flex;
   justify-content: center;
   align-items: center;
+  min-width: max-content;
 }
 
 .members-table tbody tr:hover {
@@ -393,6 +400,11 @@
 .members-table th:nth-child(7),
 .members-table td:nth-child(7) {
   width: 15%;
+}
+
+/* 작업 컬럼은 overflow visible로 버튼이 잘리지 않도록 */
+.members-table td:nth-child(7) {
+  overflow: visible;
 }
 
 .btn {
@@ -564,11 +576,12 @@
 
   /* 모바일에서 전화번호 셀을 flex container로 중앙 정렬 */
   .members-table td:nth-child(2) {
-    /* display: flex; */
+    display: flex;
     justify-content: center;
     align-items: center;
     padding-left: 0.75rem;
     padding-right: 0.75rem;
+    min-width: max-content;
   }
 
   /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
@@ -608,6 +621,7 @@
   .members-table td:nth-child(7) {
     display: table-cell;
     white-space: nowrap;
+    overflow: visible;
   }
 
   .members-table td:nth-child(7) .btn {

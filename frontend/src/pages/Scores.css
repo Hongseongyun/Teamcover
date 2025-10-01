@@ -1071,6 +1071,11 @@
 
 .scores-table {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scores-table table {
+  min-width: 800px;
 }
 
 .scores-table table {
@@ -1085,6 +1090,7 @@
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
   font-size: var(--responsive-table-font, 0.875rem);
+  white-space: nowrap;
 }
 
 .scores-table th {
@@ -1095,6 +1101,11 @@
 
 .scores-table tr:hover {
   background-color: var(--toss-gray-50);
+}
+
+/* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
+.scores-table td:last-child {
+  overflow: visible;
 }
 
 .btn {
@@ -1110,6 +1121,7 @@
   align-items: center;
   justify-content: center;
   gap: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
+  white-space: nowrap;
 }
 
 .btn-primary {

@@ -50,6 +50,7 @@ code {
   border-bottom: 1px solid #e5e7eb;
   text-align: center;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .responsive-table th {

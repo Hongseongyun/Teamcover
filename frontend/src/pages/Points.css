@@ -363,6 +363,11 @@
 
 .points-table {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.points-table table {
+  min-width: 700px;
 }
 
 .points-table table {
@@ -377,6 +382,7 @@
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
   font-size: var(--responsive-table-font, 0.875rem);
+  white-space: nowrap;
 }
 
 .points-table th {
@@ -387,6 +393,11 @@
 
 .points-table tr:hover {
   background-color: var(--toss-gray-50);
+}
+
+/* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
+.points-table td:last-child {
+  overflow: visible;
 }
 
 .point-type {
@@ -429,6 +440,7 @@
   align-items: center;
   justify-content: center;
   gap: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
+  white-space: nowrap;
 }
 
 .btn-primary {
