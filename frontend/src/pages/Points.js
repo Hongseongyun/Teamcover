@@ -875,43 +875,43 @@ const Points = () => {
             {viewMode === 'monthly' && (
               <div className="date-navigation">
                 <button
-                  className="btn btn-primary nav-btn"
+                  className="btn btn-outline-primary nav-btn"
                   onClick={() => {
                     setCurrentMonth(new Date());
                   }}
                   title="최신 월로 이동"
                 >
-                  《《
+                  ≪≪
                 </button>
                 <button
-                  className="btn btn-primary nav-btn"
+                  className="btn btn-outline-primary nav-btn"
                   onClick={goToPreviousMonth}
                   title="이전 월"
                 >
-                  《
+                  ≪
                 </button>
                 <div className="current-date-info">
                   <div className="date-display">
-                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}
-                    월
+                    {currentMonth.getFullYear()}-
+                    {String(currentMonth.getMonth() + 1).padStart(2, '0')}
                   </div>
-                  <div className="participant-count">
+                  <div className="date-counter">
                     총 {displayPoints.length}건
                   </div>
                 </div>
                 <button
-                  className="btn btn-primary nav-btn"
+                  className="btn btn-outline-primary nav-btn"
                   onClick={goToNextMonth}
                   title="다음 월"
                 >
-                  》
+                  ≫
                 </button>
                 <button
                   className="btn btn-outline-primary nav-btn"
                   onClick={goToLatestMonth}
                   title="최신 월"
                 >
-                  》》
+                  ≫≫
                 </button>
               </div>
             )}

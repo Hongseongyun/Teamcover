@@ -258,13 +258,6 @@ const Scores = () => {
     setCurrentDateIndex(groupedScores.length - 1);
   };
 
-  const toggleDateView = () => {
-    setShowAllDates(!showAllDates);
-    if (!showAllDates) {
-      setCurrentDateIndex(0); // 단일 날짜 보기로 전환 시 첫 번째 날짜로
-    }
-  };
-
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1498,12 +1491,23 @@ const Scores = () => {
             <h3 className="section-title">스코어 목록</h3>
             <div className="view-toggle">
               <button
-                className={`btn ${
-                  showAllDates ? 'btn-primary' : 'btn-secondary'
+                className={`btn btn-sm ${
+                  showAllDates ? 'btn-primary' : 'btn-outline-secondary'
                 }`}
-                onClick={toggleDateView}
+                onClick={() => setShowAllDates(true)}
               >
-                {showAllDates ? '단일 날짜 보기' : '전체 보기'}
+                전체 보기
+              </button>
+              <button
+                className={`btn btn-sm ${
+                  !showAllDates ? 'btn-primary' : 'btn-outline-secondary'
+                }`}
+                onClick={() => {
+                  setShowAllDates(false);
+                  setCurrentDateIndex(0);
+                }}
+              >
+                단일 날짜 보기
               </button>
             </div>
           </div>
