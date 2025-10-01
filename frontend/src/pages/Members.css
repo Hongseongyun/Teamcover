@@ -303,8 +303,10 @@
 
 .members-table table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 1rem;
+  table-layout: fixed;
 }
 
 .members-table th,
@@ -312,6 +314,9 @@
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
+  vertical-align: middle;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .members-table th {
@@ -322,6 +327,45 @@
 
 .members-table tr:hover {
   background-color: var(--toss-gray-50);
+}
+
+/* 데스크톱 컬럼 너비 설정 */
+.members-table th:nth-child(1),
+.members-table td:nth-child(1) {
+  width: 10%;
+}
+
+.members-table th:nth-child(2),
+.members-table td:nth-child(2) {
+  width: 15%;
+}
+
+.members-table th:nth-child(3),
+.members-table td:nth-child(3) {
+  width: 8%;
+  text-align: center;
+}
+
+.members-table th:nth-child(4),
+.members-table td:nth-child(4) {
+  width: 10%;
+  text-align: center;
+}
+
+.members-table th:nth-child(5),
+.members-table td:nth-child(5) {
+  width: 18%;
+}
+
+.members-table th:nth-child(6),
+.members-table td:nth-child(6) {
+  width: 12%;
+}
+
+.members-table th:nth-child(7),
+.members-table td:nth-child(7) {
+  width: 17%;
+  text-align: center;
 }
 
 .btn {
@@ -477,13 +521,18 @@
     width: 100%;
     min-width: auto;
     table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
   .members-table th,
   .members-table td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem;
     font-size: 0.875rem;
     vertical-align: middle;
+    border-bottom: 1px solid var(--toss-gray-200);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
@@ -496,56 +545,72 @@
     display: none;
   }
 
-  /* 이름 컬럼 */
+  /* 이름 컬럼 - 15% */
   .members-table th:nth-child(1),
   .members-table td:nth-child(1) {
-    width: 25%;
+    width: 15%;
   }
 
-  /* 전화번호 컬럼 */
+  /* 전화번호 컬럼 - 35% (더 넓게) */
   .members-table th:nth-child(2),
   .members-table td:nth-child(2) {
-    width: 30%;
+    width: 35%;
   }
 
-  /* 성별 컬럼 */
+  /* 성별 컬럼 - 12% */
   .members-table th:nth-child(3),
   .members-table td:nth-child(3) {
-    width: 15%;
+    width: 12%;
     text-align: center;
   }
 
-  /* 작업 컬럼 */
+  /* 작업 컬럼 - 38% */
   .members-table th:nth-child(7),
   .members-table td:nth-child(7) {
-    width: 30%;
+    width: 38%;
     text-align: center;
   }
 
   .members-table td:nth-child(7) {
     display: table-cell;
+    white-space: nowrap;
   }
 
   .members-table td:nth-child(7) .btn {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.75rem;
     white-space: nowrap;
-    margin: 0 0.2rem;
+    margin: 0 0.15rem;
+  }
+
+  /* 개인정보 셀 래퍼 */
+  .privacy-cell-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .privacy-text {
+    flex: 1;
+    word-break: keep-all;
+    white-space: nowrap;
   }
 
   /* 인라인 편집 액션 버튼 */
   .inline-actions {
     display: flex;
     flex-direction: row !important;
-    gap: 0.3rem;
+    gap: 0.25rem;
     justify-content: center;
     align-items: center;
   }
 
   .inline-actions .btn {
     width: auto;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.75rem;
   }
 
   /* 개인정보 잠금 버튼 크기 조정 */
@@ -553,6 +618,7 @@
     width: 20px;
     height: 20px;
     font-size: 0.85rem;
+    flex-shrink: 0;
   }
 
   /* 인라인 input, select 크기 조정 */
