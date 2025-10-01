@@ -295,15 +295,12 @@
 }
 
 .members-table table {
-  min-width: 600px;
-}
-
-.members-table table {
   width: 100%;
+  min-width: 700px;
   border-collapse: separate;
   border-spacing: 0;
   margin-top: 1rem;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .members-table tbody tr {
@@ -340,7 +337,7 @@
 /* 전화번호, 이메일 셀을 flex container로 만들어 중앙 정렬 */
 .members-table td:nth-child(2),
 .members-table td:nth-child(5) {
-  display: flex;
+  /* display: flex; */
   justify-content: center;
   align-items: center;
   min-width: max-content;
@@ -405,6 +402,42 @@
 /* 작업 컬럼은 overflow visible로 버튼이 잘리지 않도록 */
 .members-table td:nth-child(7) {
   overflow: visible;
+}
+
+/* 회원 테이블 각 셀 최소 너비 보장 */
+.members-table th:nth-child(1),
+.members-table td:nth-child(1) {
+  min-width: 70px;
+}
+
+.members-table th:nth-child(2),
+.members-table td:nth-child(2) {
+  min-width: 150px;
+}
+
+.members-table th:nth-child(3),
+.members-table td:nth-child(3) {
+  min-width: 50px;
+}
+
+.members-table th:nth-child(4),
+.members-table td:nth-child(4) {
+  min-width: 60px;
+}
+
+.members-table th:nth-child(5),
+.members-table td:nth-child(5) {
+  min-width: 150px;
+}
+
+.members-table th:nth-child(6),
+.members-table td:nth-child(6) {
+  min-width: 100px;
+}
+
+.members-table th:nth-child(7),
+.members-table td:nth-child(7) {
+  min-width: 120px;
 }
 
 .btn {
@@ -576,7 +609,7 @@
 
   /* 모바일에서 전화번호 셀을 flex container로 중앙 정렬 */
   .members-table td:nth-child(2) {
-    display: flex;
+    /* display: flex; */
     justify-content: center;
     align-items: center;
     padding-left: 0.75rem;

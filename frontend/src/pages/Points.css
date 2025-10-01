@@ -367,11 +367,8 @@
 }
 
 .points-table table {
-  min-width: 700px;
-}
-
-.points-table table {
   width: 100%;
+  min-width: 850px;
   border-collapse: collapse;
   margin-top: 1rem;
 }
@@ -398,6 +395,47 @@
 /* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
 .points-table td:last-child {
   overflow: visible;
+}
+
+/* 포인트 테이블 각 셀 최소 너비 보장 */
+.points-table th:nth-child(1),
+.points-table td:nth-child(1) {
+  min-width: 90px;
+}
+
+.points-table th:nth-child(2),
+.points-table td:nth-child(2) {
+  min-width: 80px;
+}
+
+.points-table th:nth-child(3),
+.points-table td:nth-child(3) {
+  min-width: 80px;
+}
+
+.points-table th:nth-child(4),
+.points-table td:nth-child(4) {
+  min-width: 80px;
+}
+
+.points-table th:nth-child(5),
+.points-table td:nth-child(5) {
+  min-width: 100px;
+}
+
+.points-table th:nth-child(6),
+.points-table td:nth-child(6) {
+  min-width: 100px;
+}
+
+.points-table th:nth-child(7),
+.points-table td:nth-child(7) {
+  min-width: 120px;
+}
+
+.points-table th:nth-child(8),
+.points-table td:nth-child(8) {
+  min-width: 150px;
 }
 
 .point-type {

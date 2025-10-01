@@ -535,9 +535,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.3rem, 0.2rem + 0.8vw, 1rem);
   margin-bottom: 2rem;
-  padding: 1rem;
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
   background: var(--toss-white);
   border-radius: var(--toss-radius);
   box-shadow: var(--toss-shadow);
@@ -552,9 +552,9 @@
 
 /* 네비게이션 버튼 스타일 */
 .nav-btn {
-  padding: 0.75rem !important;
-  min-width: 60px !important;
-  height: 60px;
+  padding: clamp(0.4rem, 0.3rem + 0.5vw, 0.75rem) !important;
+  min-width: clamp(40px, 8vw, 60px) !important;
+  height: clamp(40px, 8vw, 60px);
   border-radius: 50% !important;
   display: flex;
   align-items: center;
@@ -568,20 +568,20 @@
 }
 
 .nav-btn svg {
-  width: 24px;
-  height: 24px;
+  width: clamp(16px, 3vw, 24px);
+  height: clamp(16px, 3vw, 24px);
 }
 
 .current-date-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 200px;
+  gap: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
+  min-width: clamp(120px, 30vw, 200px);
 }
 
 .date-display {
-  font-size: 1.5rem;
+  font-size: clamp(1rem, 0.8rem + 1vw, 1.5rem);
   font-weight: 700;
   color: var(--toss-primary);
 }
@@ -612,8 +612,14 @@
   font-weight: 600;
 }
 
+.single-date-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .single-date-table table {
   width: 100%;
+  min-width: 650px;
   border-collapse: collapse;
   background: var(--toss-white);
   border-radius: var(--toss-radius);
@@ -624,9 +630,11 @@
 
 .single-date-table th,
 .single-date-table td {
-  padding: 1rem;
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
   text-align: center;
   border-bottom: 1px solid var(--toss-gray-200);
+  font-size: var(--responsive-table-font, 0.875rem);
+  white-space: nowrap;
 }
 
 .single-date-table th {
@@ -637,6 +645,43 @@
 
 .single-date-table tr:hover {
   background: var(--toss-gray-50);
+}
+
+/* 회원명 셀 최소 너비 보장 */
+.single-date-table th:first-child,
+.single-date-table td:first-child {
+  min-width: 70px;
+}
+
+/* 점수 셀 최소 너비 */
+.single-date-table th:nth-child(2),
+.single-date-table td:nth-child(2),
+.single-date-table th:nth-child(3),
+.single-date-table td:nth-child(3),
+.single-date-table th:nth-child(4),
+.single-date-table td:nth-child(4) {
+  min-width: 60px;
+}
+
+/* 총점, 평균 셀 최소 너비 */
+.single-date-table th:nth-child(5),
+.single-date-table td:nth-child(5),
+.single-date-table th:nth-child(6),
+.single-date-table td:nth-child(6) {
+  min-width: 65px;
+}
+
+/* 비고 셀 최소 너비 */
+.single-date-table th:nth-child(7),
+.single-date-table td:nth-child(7) {
+  min-width: 80px;
+}
+
+/* 작업 버튼 셀 최소 너비 */
+.single-date-table th:last-child,
+.single-date-table td:last-child {
+  min-width: 120px;
+  overflow: visible;
 }
 
 /* 아웃라인 버튼 스타일 */
@@ -1075,11 +1120,8 @@
 }
 
 .scores-table table {
-  min-width: 800px;
-}
-
-.scores-table table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
   margin-top: 1rem;
 }
@@ -1106,6 +1148,43 @@
 /* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
 .scores-table td:last-child {
   overflow: visible;
+}
+
+/* 스코어 테이블 각 셀 최소 너비 보장 */
+.scores-table th:nth-child(1),
+.scores-table td:nth-child(1) {
+  min-width: 80px;
+}
+
+.scores-table th:nth-child(2),
+.scores-table td:nth-child(2) {
+  min-width: 90px;
+}
+
+.scores-table th:nth-child(3),
+.scores-table td:nth-child(3),
+.scores-table th:nth-child(4),
+.scores-table td:nth-child(4),
+.scores-table th:nth-child(5),
+.scores-table td:nth-child(5),
+.scores-table th:nth-child(6),
+.scores-table td:nth-child(6) {
+  min-width: 60px;
+}
+
+.scores-table th:nth-child(7),
+.scores-table td:nth-child(7) {
+  min-width: 70px;
+}
+
+.scores-table th:nth-child(8),
+.scores-table td:nth-child(8) {
+  min-width: 80px;
+}
+
+.scores-table th:last-child,
+.scores-table td:last-child {
+  min-width: 120px;
 }
 
 .btn {
