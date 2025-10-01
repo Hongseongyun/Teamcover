@@ -142,54 +142,181 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(52, 152, 219, 0.1);
+  min-width: 280px;
   z-index: 1001;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
-.user-info {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.user-email {
-  font-size: 14px;
-  color: #374151;
+/* 드롭다운 헤더 (아바타 + 정보) */
+.user-dropdown-header {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-dropdown-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-20px, 20px) scale(1.1);
+  }
+}
+
+.user-dropdown-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff 0%, #ecf0f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 22px;
+  color: #3498db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  position: relative;
+  z-index: 1;
+}
+
+.user-dropdown-info {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.user-dropdown-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
   margin-bottom: 0.25rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.user-role-badge {
-  font-size: 12px;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  display: inline-block;
+.user-dropdown-email {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Role Badge */
+.user-dropdown-role {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(52, 152, 219, 0.05);
+  border-left: 3px solid #3498db;
+  margin: 0.5rem 0;
+}
+
+.role-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.role-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  letter-spacing: 0.3px;
 }
 
 .dropdown-divider {
   height: 1px;
-  background: #e2e8f0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 152, 219, 0.2) 50%,
+    transparent 100%
+  );
+  margin: 0.5rem 0;
 }
 
+/* Logout Button */
 .dropdown-item {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   border: none;
   background: none;
   color: #374151;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+}
+
+.logout-item {
+  color: #e74c3c;
+  margin: 0.5rem 0;
+}
+
+.logout-icon {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.3s ease;
 }
 
 .dropdown-item:hover {
-  background: #f9fafb;
+  background: linear-gradient(
+    90deg,
+    rgba(231, 76, 60, 0.08) 0%,
+    rgba(231, 76, 60, 0.12) 100%
+  );
+  padding-left: 2rem;
+}
+
+.dropdown-item:hover .logout-icon {
+  transform: translateX(5px);
+}
+
+.dropdown-item:active {
+  transform: scale(0.98);
 }
 
 /* 햄버거 메뉴 버튼 (기본은 숨김) */

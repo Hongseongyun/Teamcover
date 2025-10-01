@@ -132,13 +132,38 @@ const Navbar = () => {
 
               {showUserMenu && (
                 <div className="user-dropdown">
-                  <div className="user-info">
-                    <div className="user-email">{user?.email}</div>
-                    <div className="user-role-badge">{user?.role}</div>
+                  <div className="user-dropdown-header">
+                    <div className="user-dropdown-avatar">
+                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                    <div className="user-dropdown-info">
+                      <div className="user-dropdown-name">{user?.name}</div>
+                      <div className="user-dropdown-email">{user?.email}</div>
+                    </div>
+                  </div>
+                  <div className="user-dropdown-role">
+                    <span className="role-icon">
+                      {user?.role === 'super_admin'
+                        ? '👑'
+                        : user?.role === 'admin'
+                        ? '⭐'
+                        : '👤'}
+                    </span>
+                    <span className="role-text">
+                      {user?.role === 'super_admin'
+                        ? '슈퍼관리자'
+                        : user?.role === 'admin'
+                        ? '관리자'
+                        : '사용자'}
+                    </span>
                   </div>
                   <div className="dropdown-divider"></div>
-                  <button className="dropdown-item" onClick={handleLogout}>
-                    로그아웃
+                  <button
+                    className="dropdown-item logout-item"
+                    onClick={handleLogout}
+                  >
+                    <span className="logout-icon">🚪</span>
+                    <span>로그아웃</span>
                   </button>
                 </div>
               )}
