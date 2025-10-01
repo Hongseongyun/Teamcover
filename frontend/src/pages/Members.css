@@ -1,5 +1,6 @@
 .members-page {
-  padding: 2rem;
+  padding: var(--responsive-padding, 2rem);
+  font-size: var(--responsive-font-base, 1rem);
 }
 
 /* 개인정보 보호 */
@@ -153,6 +154,7 @@
 .page-header h1 {
   margin: 0;
   color: var(--toss-gray-900);
+  font-size: var(--responsive-font-h1, 2rem);
 }
 
 .header-actions {
@@ -305,12 +307,13 @@
 
 .members-table th,
 .members-table td {
-  padding: 1rem;
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
   text-align: center;
   border-bottom: 1px solid var(--toss-gray-200);
   vertical-align: middle;
-  height: 70px;
-  max-height: 70px;
+  height: auto;
+  min-height: clamp(50px, 10vw, 70px);
+  font-size: var(--responsive-table-font, 0.875rem);
 }
 
 .members-table th {
@@ -393,10 +396,10 @@
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: var(--responsive-button-padding, 0.75rem 1.5rem);
   border: none;
   border-radius: var(--toss-radius);
-  font-size: 1rem;
+  font-size: var(--responsive-button-font, 1rem);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -474,10 +477,6 @@
 
 /* 모바일 반응형 (1000px 이하) */
 @media (max-width: 1000px) {
-  .members-page {
-    padding: 1rem;
-  }
-
   /* 페이지 헤더 - 제목과 버튼을 세로로 배치 */
   .page-header {
     flex-direction: column;
@@ -487,7 +486,6 @@
 
   .page-header h1 {
     width: 100%;
-    font-size: 1.5rem;
   }
 
   /* 버튼들을 가로로 배치하되 줄바꿈 허용 */
@@ -550,17 +548,12 @@
   }
 
   .members-table tbody tr {
-    height: 60px;
+    height: auto;
+    min-height: clamp(45px, 8vw, 60px);
   }
 
   .members-table th,
   .members-table td {
-    padding: 0.75rem;
-    font-size: 0.875rem;
-    vertical-align: middle;
-    border-bottom: 1px solid var(--toss-gray-200);
-    height: 60px;
-    max-height: 60px;
     text-align: center;
   }
 
@@ -571,7 +564,7 @@
 
   /* 모바일에서 전화번호 셀을 flex container로 중앙 정렬 */
   .members-table td:nth-child(2) {
-    display: flex;
+    /* display: flex; */
     justify-content: center;
     align-items: center;
     padding-left: 0.75rem;

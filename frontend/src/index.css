@@ -11,3 +11,104 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 화면 크기에 따라 자동으로 조정되는 반응형 설정 */
+:root {
+  /* 기본 폰트 크기: 화면 너비에 따라 자동 조정 (최소 12px, 최대 16px) */
+  --responsive-font-base: clamp(0.75rem, 0.5rem + 1vw, 1rem);
+
+  /* 제목 크기 */
+  --responsive-font-h1: clamp(1.25rem, 1rem + 2vw, 2rem);
+  --responsive-font-h2: clamp(1.1rem, 0.9rem + 1.5vw, 1.5rem);
+  --responsive-font-h3: clamp(1rem, 0.85rem + 1vw, 1.25rem);
+
+  /* 테이블 폰트 크기 */
+  --responsive-table-font: clamp(0.7rem, 0.6rem + 0.5vw, 0.875rem);
+
+  /* 버튼 폰트 크기 */
+  --responsive-button-font: clamp(0.75rem, 0.65rem + 0.5vw, 1rem);
+
+  /* 패딩/여백 */
+  --responsive-padding: clamp(0.5rem, 0.3rem + 1vw, 2rem);
+  --responsive-gap: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
+
+  /* 버튼 크기 */
+  --responsive-button-padding: clamp(0.4rem, 0.3rem + 0.5vw, 0.75rem)
+    clamp(0.8rem, 0.6rem + 1vw, 1.5rem);
+}
+
+/* 전역 반응형 테이블 스타일 */
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--responsive-table-font);
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.responsive-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 반응형 페이지 컨테이너 */
+.responsive-page {
+  padding: var(--responsive-padding);
+  font-size: var(--responsive-font-base);
+}
+
+.responsive-page h1 {
+  font-size: var(--responsive-font-h1);
+}
+
+.responsive-page h2 {
+  font-size: var(--responsive-font-h2);
+}
+
+.responsive-page h3 {
+  font-size: var(--responsive-font-h3);
+}
+
+/* 반응형 버튼 */
+.responsive-btn {
+  font-size: var(--responsive-button-font);
+  padding: var(--responsive-button-padding);
+  white-space: nowrap;
+}
+
+/* 반응형 카드 그리드 */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(clamp(150px, 40vw, 200px), 1fr)
+  );
+  gap: var(--responsive-gap);
+}
+
+/* 테이블 자동 너비 조정 */
+.responsive-table {
+  table-layout: auto;
+}
+
+/* 화면이 좁을 때 테이블 스크롤 */
+.responsive-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 매우 작은 화면 (480px 이하)에서 추가 조정 */
+@media (max-width: 480px) {
+  :root {
+    --responsive-font-base: 0.7rem;
+    --responsive-table-font: 0.65rem;
+    --responsive-button-font: 0.7rem;
+  }
+}
