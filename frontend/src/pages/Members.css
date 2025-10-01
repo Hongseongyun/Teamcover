@@ -337,7 +337,9 @@
   background-color: var(--toss-gray-50);
 }
 
-/* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
+/* 전화번호, 이메일, 작업 컬럼은 overflow visible */
+.members-table td:nth-child(2),
+.members-table td:nth-child(5),
 .members-table td:nth-child(7) {
   overflow: visible;
 }
@@ -357,7 +359,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: calc(100% - 30px);
 }
 
 /* 인라인 편집 중일 때는 높이 제한 해제 (데스크톱) */
@@ -600,6 +601,7 @@
   .members-table th:nth-child(2),
   .members-table td:nth-child(2) {
     width: 45%;
+    overflow: visible;
   }
 
   /* 성별 컬럼 - 15% */
@@ -629,7 +631,7 @@
     margin: 0 0.1rem;
   }
 
-  /* 개인정보 셀 래퍼 */
+  /* 개인정보 셀 래퍼 (모바일) */
   .privacy-cell-wrapper {
     display: flex;
     align-items: center;
@@ -640,11 +642,10 @@
   }
 
   .privacy-text {
-    flex: 0 0 auto;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: calc(100% - 30px);
   }
 
   /* 인라인 편집 액션 버튼 */
