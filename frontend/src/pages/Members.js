@@ -52,7 +52,7 @@ const Members = () => {
   // 비밀번호 설정 여부 확인
   const checkPasswordStatus = async () => {
     try {
-      const response = await api.get('/auth/check-privacy-password-status');
+      const response = await api.get('/api/auth/check-privacy-password-status');
       if (response.data.success) {
         setPasswordSetStatus(response.data.password_set);
       }
@@ -90,7 +90,7 @@ const Members = () => {
   const handleVerifyPassword = async () => {
     try {
       setPasswordError('');
-      const response = await api.post('/auth/verify-privacy-password', {
+      const response = await api.post('/api/auth/verify-privacy-password', {
         password: privacyPassword,
       });
 
@@ -123,7 +123,7 @@ const Members = () => {
         return;
       }
 
-      const response = await api.post('/auth/set-privacy-password', {
+      const response = await api.post('/api/auth/set-privacy-password', {
         password: newPrivacyPassword,
       });
 
