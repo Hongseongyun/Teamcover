@@ -567,3 +567,79 @@
   --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+
+/* 반응형 (1150px 이하) - 사유와 메모 컬럼 숨기기 */
+@media (max-width: 1150px) {
+  /* 포인트 내역 테이블 - 사유(5번째)와 메모(7번째) 컬럼 숨기기 */
+  .points-table th:nth-child(5),
+  .points-table td:nth-child(5),
+  .points-table th:nth-child(7),
+  .points-table td:nth-child(7) {
+    display: none;
+  }
+
+  /* 개인별 포인트 테이블 - 사유(4번째)와 메모(5번째) 컬럼 숨기기 */
+  .all-games-table th:nth-child(4),
+  .all-games-table td:nth-child(4),
+  .all-games-table th:nth-child(5),
+  .all-games-table td:nth-child(5) {
+    display: none;
+  }
+
+  /* 남은 컬럼들의 너비 재분배 */
+  .points-table table {
+    table-layout: fixed;
+  }
+
+  /* 포인트 내역 테이블 컬럼 너비 */
+  .points-table th:nth-child(1),
+  .points-table td:nth-child(1) {
+    width: 12%;
+  }
+
+  .points-table th:nth-child(2),
+  .points-table td:nth-child(2) {
+    width: 15%;
+  }
+
+  .points-table th:nth-child(3),
+  .points-table td:nth-child(3) {
+    width: 12%;
+  }
+
+  .points-table th:nth-child(4),
+  .points-table td:nth-child(4) {
+    width: 15%;
+  }
+
+  .points-table th:nth-child(6),
+  .points-table td:nth-child(6) {
+    width: 18%;
+  }
+
+  .points-table th:nth-child(8),
+  .points-table td:nth-child(8) {
+    width: 28%;
+  }
+
+  /* 개인별 포인트 테이블 너비 재분배 */
+  .all-games-table th:nth-child(1),
+  .all-games-table td:nth-child(1) {
+    width: 25%;
+  }
+
+  .all-games-table th:nth-child(2),
+  .all-games-table td:nth-child(2) {
+    width: 25%;
+  }
+
+  .all-games-table th:nth-child(3),
+  .all-games-table td:nth-child(3) {
+    width: 25%;
+  }
+
+  .all-games-table th:nth-child(6),
+  .all-games-table td:nth-child(6) {
+    width: 25%;
+  }
+}
