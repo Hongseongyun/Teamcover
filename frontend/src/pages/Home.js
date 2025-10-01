@@ -39,7 +39,7 @@ const Home = () => {
           textAlign: 'center',
           padding: '120px 20px',
           background: `
-             url('http://localhost:3000/teamcover.jpg') center/cover no-repeat
+             url('/teamcover.jpg') center/cover no-repeat
            `,
           color: 'white',
           borderRadius: '20px',

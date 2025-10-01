@@ -50,13 +50,23 @@ allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [
     "http://localhost:3000", 
     "http://localhost:8080", 
     "https://hsyun.store",
+    "https://www.hsyun.store",
     "https://teamcover-frontend.vercel.app"
-]) 
+])
+
+# 시작 시 CORS 설정 출력
+print("=" * 50)
+print("CORS Allowed Origins:")
+for origin in allowed_origins:
+    print(f"  - {origin}")
+print("=" * 50)
+
 CORS(app,
      origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     supports_credentials=True)
+     supports_credentials=True,
+     expose_headers=["Content-Type", "Authorization"])
 
 # CORS preflight 요청을 위한 명시적 핸들러
 @app.before_request
@@ -65,11 +75,16 @@ def handle_preflight():
         response = make_response()
         # 요청 Origin을 그대로 반영하되, 허용 목록에 있는 경우에만 설정
         request_origin = request.headers.get('Origin')
+        print(f"[CORS] Preflight request from: {request_origin}")
+        print(f"[CORS] Allowed origins: {allowed_origins}")
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
-        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+            response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            print(f"[CORS] Allowed: {request_origin}")
+        else:
+            print(f"[CORS] Rejected: {request_origin}")
         return response
 
 # 데이터베이스 초기화
