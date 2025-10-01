@@ -79,6 +79,8 @@ const Scores = () => {
   const [searchMember, setSearchMember] = useState('');
   const [memberStats, setMemberStats] = useState(null);
   const [showMemberSearch, setShowMemberSearch] = useState(true);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredMembers, setFilteredMembers] = useState([]);
 
   // 페이징 상태
   const [currentPage, setCurrentPage] = useState(1);
@@ -726,23 +728,53 @@ const Scores = () => {
           {showMemberSearch ? (
             <div className="search-form">
               <div className="search-row">
-                <div className="form-group">
+                <div className="form-group autocomplete-wrapper">
                   <input
                     type="text"
                     value={searchMember}
-                    onChange={(e) => setSearchMember(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSearchMember(value);
+                      // 검색어로 회원 필터링
+                      const filtered = members.filter((member) =>
+                        member.name.toLowerCase().includes(value.toLowerCase())
+                      );
+                      setFilteredMembers(filtered);
+                      setShowDropdown(value.length > 0 && filtered.length > 0);
+                    }}
+                    onFocus={() => {
+                      if (searchMember) {
+                        const filtered = members.filter((member) =>
+                          member.name
+                            .toLowerCase()
+                            .includes(searchMember.toLowerCase())
+                        );
+                        setFilteredMembers(filtered);
+                        setShowDropdown(filtered.length > 0);
+                      }
+                    }}
                     onKeyPress={(e) =>
                       e.key === 'Enter' && handleMemberSearch()
                     }
                     placeholder="회원명을 입력하거나 선택하세요"
-                    list="member-list"
                     className="member-search-input"
                   />
-                  <datalist id="member-list">
-                    {members.map((member) => (
-                      <option key={member.id} value={member.name} />
-                    ))}
-                  </datalist>
+                  {showDropdown && (
+                    <div className="autocomplete-dropdown">
+                      {filteredMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="autocomplete-item"
+                          onClick={() => {
+                            setSearchMember(member.name);
+                            setShowDropdown(false);
+                          }}
+                        >
+                          {member.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   className="btn btn-primary"
