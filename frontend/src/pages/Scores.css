@@ -1016,6 +1016,66 @@
   align-items: center; /* 행 내부 요소 수직 중앙 정렬 */
 }
 
+/* 모바일 반응형 - 입력 폼 레이아웃 조정 */
+@media (max-width: 1000px) {
+  .entry-row {
+    grid-template-columns: 1fr 0.8fr 0.6fr 0.6fr 0.6fr 1fr auto;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .entry-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .entry-row .form-group {
+    width: 100%;
+  }
+
+  .entry-actions {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+
+  /* 라벨 표시 */
+  .sr-only {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0 0 0.25rem 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--toss-gray-700);
+  }
+
+  .editable-input,
+  .name-select,
+  .score-input,
+  .note-input {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .entry-row {
+    gap: 0.5rem;
+  }
+
+  .entry-card {
+    padding: 1rem;
+    background: var(--toss-gray-50);
+    border-radius: var(--toss-radius);
+    margin-bottom: 1rem;
+  }
+}
+
 /* 화면에서는 라벨 숨김 (접근성 유지) */
 .sr-only {
   position: absolute;
