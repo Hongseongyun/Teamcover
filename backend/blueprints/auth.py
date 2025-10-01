@@ -413,11 +413,18 @@ def google_callback():
         return jsonify({'success': False, 'message': f'구글 로그인 중 오류가 발생했습니다: {str(e)}'})
 
 @auth_bp.route('/logout', methods=['POST'])
-@login_required
+@jwt_required(optional=True)
 def logout():
     """로그아웃"""
     try:
-        logout_user()
+        # JWT 방식에서는 클라이언트에서 토큰을 삭제하면 되므로 서버에서 특별한 처리 불필요
+        # Flask-Login 세션도 정리
+        try:
+            if current_user and current_user.is_authenticated:
+                logout_user()
+        except:
+            pass
+        
         return jsonify({
             'success': True,
             'message': '로그아웃되었습니다.'
