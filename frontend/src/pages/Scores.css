@@ -1024,7 +1024,7 @@
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .entry-row {
     grid-template-columns: 1fr;
     gap: 0.75rem;
