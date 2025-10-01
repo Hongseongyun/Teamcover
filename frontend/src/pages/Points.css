@@ -1,5 +1,6 @@
 .points-page {
-  padding: 2rem;
+  padding: var(--responsive-padding, 2rem);
+  font-size: var(--responsive-font-base, 1rem);
 }
 
 .page-header {
@@ -12,6 +13,7 @@
 .page-header h1 {
   margin: 0;
   color: var(--toss-gray-900);
+  font-size: var(--responsive-font-h1, 2rem);
 }
 
 .header-actions {
@@ -303,7 +305,7 @@
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: var(--responsive-font-h2, 1.5rem);
   font-weight: 600;
   color: var(--toss-gray-900);
   margin-bottom: 1.5rem;
@@ -371,9 +373,10 @@
 
 .points-table th,
 .points-table td {
-  padding: 1rem;
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
+  font-size: var(--responsive-table-font, 0.875rem);
 }
 
 .points-table th {
@@ -414,10 +417,10 @@
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: var(--responsive-button-padding, 0.75rem 1.5rem);
   border: none;
   border-radius: var(--toss-radius);
-  font-size: 1rem;
+  font-size: var(--responsive-button-font, 1rem);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -425,7 +428,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: clamp(0.25rem, 0.2rem + 0.3vw, 0.5rem);
 }
 
 .btn-primary {
@@ -476,8 +479,9 @@
 }
 
 .btn-sm {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  padding: clamp(0.3rem, 0.2rem + 0.3vw, 0.5rem)
+    clamp(0.6rem, 0.4rem + 0.5vw, 1rem);
+  font-size: clamp(0.7rem, 0.6rem + 0.3vw, 0.875rem);
 }
 
 .loading {
@@ -641,5 +645,50 @@
   .all-games-table th:nth-child(6),
   .all-games-table td:nth-child(6) {
     width: 25%;
+  }
+}
+
+/* 모바일 반응형 (800px 이하) - 포인트 내역 글씨 70%로 축소 */
+@media (max-width: 800px) {
+  .points-table th,
+  .points-table td {
+    font-size: 0.7rem;
+    padding: 0.5rem 0.3rem;
+  }
+
+  .all-games-table th,
+  .all-games-table td {
+    font-size: 0.7rem;
+    padding: 0.5rem 0.3rem;
+  }
+
+  /* 버튼도 함께 축소 */
+  .points-table .btn-sm {
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* 포인트 타입 배지 크기 축소 */
+  .point-type {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* 통계 카드 크기 축소 */
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  /* 페이지 헤더 */
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
   }
 }
