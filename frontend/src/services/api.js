@@ -57,9 +57,9 @@ api.interceptors.response.use(
 export const memberAPI = {
   getMembers: () => api.get('/api/members/'),
   addMember: (data) => api.post('/api/members/', data),
-  updateMember: (id, data) => api.put(`/api/members/${id}/`, data),
-  deleteMember: (id) => api.delete(`/api/members/${id}/`),
-  getMemberAverage: (id) => api.get(`/api/members/${id}/average/`),
+  updateMember: (id, data) => api.put(`/api/members/${id}`, data), // 마지막 슬래시 제거
+  deleteMember: (id) => api.delete(`/api/members/${id}`), // 마지막 슬래시 제거
+  getMemberAverage: (id) => api.get(`/api/members/${id}/average`), // 마지막 슬래시 제거
   getAllMembersAverages: () => api.get('/api/members/averages/'),
   importFromSheets: (data) => {
     const payload = {
@@ -74,8 +74,8 @@ export const memberAPI = {
 export const scoreAPI = {
   getScores: () => api.get('/api/scores/'),
   addScore: (data) => api.post('/api/scores/', data),
-  updateScore: (id, data) => api.put(`/api/scores/${id}/`, data),
-  deleteScore: (id) => api.delete(`/api/scores/${id}/`),
+  updateScore: (id, data) => api.put(`/api/scores/${id}`, data), // 마지막 슬래시 제거
+  deleteScore: (id) => api.delete(`/api/scores/${id}`), // 마지막 슬래시 제거
   importFromSheets: (data) => api.post('/api/scores/import-from-sheets', data),
 };
 
@@ -83,8 +83,8 @@ export const scoreAPI = {
 export const pointAPI = {
   getPoints: () => api.get('/api/points/'),
   addPoint: (data) => api.post('/api/points/', data),
-  updatePoint: (id, data) => api.put(`/api/points/${id}/`, data),
-  deletePoint: (id) => api.delete(`/api/points/${id}/`),
+  updatePoint: (id, data) => api.put(`/api/points/${id}`, data), // 마지막 슬래시 제거
+  deletePoint: (id) => api.delete(`/api/points/${id}`), // 마지막 슬래시 제거
   importFromSheets: (data) => api.post('/api/points/import-from-sheets', data),
 };
 

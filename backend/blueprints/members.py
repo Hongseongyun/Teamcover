@@ -106,6 +106,7 @@ def add_member():
         return jsonify({'success': False, 'message': f'회원 등록 중 오류가 발생했습니다: {str(e)}'})
 
 @members_bp.route('/<int:member_id>/', methods=['PUT'])
+@members_bp.route('/<int:member_id>', methods=['PUT'])
 def update_member(member_id):
     """회원 정보 수정 API"""
     try:
@@ -159,6 +160,7 @@ def update_member(member_id):
         return jsonify({'success': False, 'message': f'회원 정보 수정 중 오류가 발생했습니다: {str(e)}'})
 
 @members_bp.route('/<int:member_id>/', methods=['DELETE'])
+@members_bp.route('/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
     """회원 삭제 API"""
     try:

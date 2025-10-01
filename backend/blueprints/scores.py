@@ -94,6 +94,7 @@ def add_score():
         db.session.rollback()
         return jsonify({'success': False, 'message': f'스코어 등록 중 오류가 발생했습니다: {str(e)}'})
 
+@scores_bp.route('/<int:score_id>/', methods=['DELETE'])
 @scores_bp.route('/<int:score_id>', methods=['DELETE'])
 def delete_score(score_id):
     """스코어 삭제 API"""
@@ -114,6 +115,7 @@ def delete_score(score_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'스코어 삭제 중 오류가 발생했습니다: {str(e)}'})
 
+@scores_bp.route('/<int:score_id>/', methods=['PUT'])
 @scores_bp.route('/<int:score_id>', methods=['PUT'])
 def update_score(score_id):
     """스코어 수정 API"""

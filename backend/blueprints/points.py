@@ -112,6 +112,7 @@ def add_point():
         return jsonify({'success': False, 'message': f'포인트 등록 중 오류가 발생했습니다: {str(e)}'})
 
 @points_bp.route('/<int:point_id>/', methods=['DELETE'])
+@points_bp.route('/<int:point_id>', methods=['DELETE'])
 def delete_point(point_id):
     """포인트 삭제 API"""
     try:
@@ -132,6 +133,7 @@ def delete_point(point_id):
         return jsonify({'success': False, 'message': f'포인트 삭제 중 오류가 발생했습니다: {str(e)}'})
 
 @points_bp.route('/<int:point_id>/', methods=['PUT'])
+@points_bp.route('/<int:point_id>', methods=['PUT'])
 def update_point(point_id):
     """포인트 수정 API"""
     try:
