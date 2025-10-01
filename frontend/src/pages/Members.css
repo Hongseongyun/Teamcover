@@ -328,6 +328,12 @@
   font-weight: 600;
   color: var(--toss-gray-700);
   height: auto;
+  text-align: center;
+}
+
+/* 전화번호, 이메일 데이터는 왼쪽 정렬 */
+.members-table td:nth-child(2),
+.members-table td:nth-child(5) {
   text-align: left;
 }
 
@@ -562,8 +568,13 @@
     text-align: center;
   }
 
-  /* 헤더는 왼쪽 정렬 유지 */
+  /* 헤더는 중앙 정렬 */
   .members-table th {
+    text-align: center;
+  }
+
+  /* 전화번호 데이터는 왼쪽 정렬 */
+  .members-table td:nth-child(2) {
     text-align: left;
   }
 
