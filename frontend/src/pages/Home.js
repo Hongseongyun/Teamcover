@@ -2,6 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './Home-new.css';
 
+// 이미지 import (public 폴더에서 직접 참조)
+const teamcoverImage = `${process.env.PUBLIC_URL}/teamcover.jpg`;
+
 const Home = () => {
   const featureRefs = useRef([]);
 
@@ -38,9 +41,7 @@ const Home = () => {
           position: 'relative',
           textAlign: 'center',
           padding: '120px 20px',
-          background: `
-             url('${process.env.PUBLIC_URL}/teamcover.jpg') center/cover no-repeat
-          `,
+          background: `url('${teamcoverImage}') center/cover no-repeat`,
           color: 'white',
           borderRadius: '20px',
           marginBottom: '60px',
