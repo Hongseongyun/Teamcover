@@ -286,6 +286,7 @@ def google_callback():
     try:
         data = request.get_json()
         code = data.get('code')
+        origin = data.get('origin')  # 프론트엔드에서 전송한 origin
         
         if not code:
             return jsonify({'success': False, 'message': 'Authorization code가 필요합니다.'})
@@ -299,10 +300,22 @@ def google_callback():
         
         # Google OAuth 설정 가져오기
         google_creds = get_google_credentials()
+        
+        # Origin에 따라 redirect_uri를 동적으로 설정
+        allowed_origins = {
+            'http://localhost:3000': 'http://localhost:3000/google-callback',
+            'https://hsyun.store': 'https://hsyun.store/google-callback',
+            'https://teamcover-frontend.vercel.app': 'https://teamcover-frontend.vercel.app/google-callback'
+        }
+        
+        # origin이 제공되지 않았거나 허용되지 않은 origin인 경우 기본값 사용
+        redirect_uri = allowed_origins.get(origin, current_app.config.get('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google-callback'))
+        
         print(f"Google OAuth credentials: {google_creds}")
         print(f"Client ID: {google_creds['client_id']}")
         print(f"Client Secret set: {bool(google_creds['client_secret'])}")
-        print(f"Redirect URI: {current_app.config.get('GOOGLE_REDIRECT_URI')}")
+        print(f"Request Origin: {origin}")
+        print(f"Redirect URI: {redirect_uri}")
         
         # Google OAuth2 토큰 교환
         token_url = 'https://oauth2.googleapis.com/token'
@@ -311,7 +324,7 @@ def google_callback():
             'client_secret': google_creds['client_secret'],
             'code': code,
             'grant_type': 'authorization_code',
-            'redirect_uri': current_app.config.get('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google-callback')
+            'redirect_uri': redirect_uri
         }
         
         token_response = requests.post(token_url, data=token_data)

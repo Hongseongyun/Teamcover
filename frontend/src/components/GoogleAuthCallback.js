@@ -36,7 +36,11 @@ const GoogleAuthCallback = () => {
         console.log('Processing code:', code.substring(0, 10) + '...');
         setStatus('토큰 교환 중...');
 
-        // 백엔드로 코드를 전송하여 토큰 교환
+        // 현재 origin 가져오기
+        const currentOrigin = window.location.origin;
+        console.log('Current origin:', currentOrigin);
+
+        // 백엔드로 코드를 전송하여 토큰 교환 (origin도 함께 전송)
         const response = await fetch(
           `${
             process.env.REACT_APP_API_URL || 'https://api.hsyun.store'
@@ -46,7 +50,10 @@ const GoogleAuthCallback = () => {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ code }),
+            body: JSON.stringify({
+              code,
+              origin: currentOrigin, // origin 정보 추가
+            }),
           }
         );
 
