@@ -877,41 +877,106 @@ const Points = () => {
                 <button
                   className="btn btn-outline-primary nav-btn"
                   onClick={() => {
-                    setCurrentMonth(new Date());
+                    const oldestMonth = new Date(
+                      Math.min(
+                        ...points.map(
+                          (p) => new Date(p.point_date || p.created_at)
+                        )
+                      )
+                    );
+                    setCurrentMonth(oldestMonth);
                   }}
-                  title="최신 월로 이동"
+                  title="첫 번째 월"
                 >
-                  ‹‹
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M18 17L13 12L18 7M11 17L6 12L11 7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
                 <button
-                  className="btn btn-primary nav-btn"
+                  className="btn btn-outline-primary nav-btn"
                   onClick={goToPreviousMonth}
                   title="이전 월"
                 >
-                  ‹
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M15 18L9 12L15 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
                 <div className="current-date-info">
-                  <div className="date-display">
+                  <span className="date-display">
                     {currentMonth.getFullYear()}-
                     {String(currentMonth.getMonth() + 1).padStart(2, '0')}
-                  </div>
-                  <div className="date-counter">
-                    총 {displayPoints.length}건
+                  </span>
+                  <div className="date-details">
+                    <span className="participant-count">
+                      총 {displayPoints.length}건
+                    </span>
                   </div>
                 </div>
                 <button
-                  className="btn btn-primary nav-btn"
+                  className="btn btn-outline-primary nav-btn"
                   onClick={goToNextMonth}
                   title="다음 월"
                 >
-                  ›
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 18L15 12L9 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
                 <button
                   className="btn btn-outline-primary nav-btn"
                   onClick={goToLatestMonth}
                   title="최신 월"
                 >
-                  ››
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 17L11 12L6 7M13 17L18 12L13 7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               </div>
             )}
