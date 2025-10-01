@@ -898,6 +898,101 @@ def regenerate_verification_code():
         print(f"Error regenerating verification code: {e}")
         return jsonify({'success': False, 'message': f'인증 코드 재생성 중 오류가 발생했습니다: {str(e)}'})
 
+@auth_bp.route('/set-privacy-password', methods=['POST'])
+@jwt_required()
+def set_privacy_password():
+    """개인정보 보호 비밀번호 설정 (관리자 전용)"""
+    try:
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj or current_user_obj.role not in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': '권한이 없습니다.'})
+        
+        data = request.get_json()
+        password = data.get('password', '').strip()
+        
+        if not password:
+            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+        
+        if len(password) < 4:
+            return jsonify({'success': False, 'message': '비밀번호는 4자리 이상이어야 합니다.'})
+        
+        # 현재 사용자(관리자)의 개인정보 보호 비밀번호 설정
+        current_user_obj.set_privacy_password(password)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '개인정보 보호 비밀번호가 설정되었습니다.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error setting privacy password: {e}")
+        return jsonify({'success': False, 'message': f'비밀번호 설정 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/verify-privacy-password', methods=['POST'])
+@jwt_required()
+def verify_privacy_password():
+    """개인정보 보호 비밀번호 검증"""
+    try:
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        data = request.get_json()
+        password = data.get('password', '').strip()
+        
+        if not password:
+            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+        
+        # 비밀번호가 설정되지 않았으면 자동 승인
+        if not current_user_obj.privacy_password_hash:
+            return jsonify({
+                'success': True,
+                'message': '개인정보 보호 비밀번호가 설정되지 않았습니다.',
+                'password_not_set': True
+            })
+        
+        # 비밀번호 검증
+        if current_user_obj.check_privacy_password(password):
+            return jsonify({
+                'success': True,
+                'message': '비밀번호가 확인되었습니다.'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '비밀번호가 올바르지 않습니다.'
+            })
+        
+    except Exception as e:
+        print(f"Error verifying privacy password: {e}")
+        return jsonify({'success': False, 'message': f'비밀번호 검증 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/check-privacy-password-status', methods=['GET'])
+@jwt_required()
+def check_privacy_password_status():
+    """개인정보 보호 비밀번호 설정 여부 확인"""
+    try:
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        return jsonify({
+            'success': True,
+            'password_set': bool(current_user_obj.privacy_password_hash)
+        })
+        
+    except Exception as e:
+        print(f"Error checking privacy password status: {e}")
+        return jsonify({'success': False, 'message': f'상태 확인 중 오류가 발생했습니다: {str(e)}'})
+
 @auth_bp.route('/resend-verification-code', methods=['POST'])
 def resend_verification_code():
     """인증 코드 재발송 (사용자용 - 인증 불필요)"""

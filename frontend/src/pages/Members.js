@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
+import api from '../services/api';
 import './Members.css';
 
 const Members = () => {
+  // 개인정보 보호 상태
+  const [privacyUnlocked, setPrivacyUnlocked] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [privacyPassword, setPrivacyPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showPasswordSetting, setShowPasswordSetting] = useState(false);
+  const [newPrivacyPassword, setNewPrivacyPassword] = useState('');
+  const [passwordSetStatus, setPasswordSetStatus] = useState(false);
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -37,7 +46,99 @@ const Members = () => {
 
   useEffect(() => {
     loadMembers();
+    checkPasswordStatus();
   }, []);
+
+  // 비밀번호 설정 여부 확인
+  const checkPasswordStatus = async () => {
+    try {
+      const response = await api.get('/auth/check-privacy-password-status');
+      if (response.data.success) {
+        setPasswordSetStatus(response.data.password_set);
+      }
+    } catch (error) {
+      console.error('비밀번호 상태 확인 실패:', error);
+    }
+  };
+
+  // 개인정보 마스킹
+  const maskPhone = (phone) => {
+    if (!phone) return '-';
+    if (privacyUnlocked) return phone;
+    return '***-****-****';
+  };
+
+  const maskEmail = (email) => {
+    if (!email) return '-';
+    if (privacyUnlocked) return email;
+    const [local, domain] = email.split('@');
+    if (local && domain) {
+      return `${local.charAt(0)}***@${domain}`;
+    }
+    return '***@***';
+  };
+
+  // 개인정보 클릭 핸들러
+  const handlePrivacyClick = (e) => {
+    e.preventDefault();
+    if (!privacyUnlocked) {
+      setShowPasswordModal(true);
+    }
+  };
+
+  // 비밀번호 검증
+  const handleVerifyPassword = async () => {
+    try {
+      setPasswordError('');
+      const response = await api.post('/auth/verify-privacy-password', {
+        password: privacyPassword,
+      });
+
+      if (response.data.success) {
+        setPrivacyUnlocked(true);
+        setShowPasswordModal(false);
+        setPrivacyPassword('');
+
+        // 비밀번호가 설정되지 않은 경우 알림
+        if (response.data.password_not_set) {
+          alert(
+            '개인정보 보호 비밀번호가 설정되지 않았습니다. 설정을 권장합니다.'
+          );
+        }
+      } else {
+        setPasswordError(response.data.message);
+      }
+    } catch (error) {
+      setPasswordError(
+        error.response?.data?.message || '비밀번호 검증에 실패했습니다.'
+      );
+    }
+  };
+
+  // 비밀번호 설정
+  const handleSetPassword = async () => {
+    try {
+      if (newPrivacyPassword.length < 4) {
+        alert('비밀번호는 4자리 이상이어야 합니다.');
+        return;
+      }
+
+      const response = await api.post('/auth/set-privacy-password', {
+        password: newPrivacyPassword,
+      });
+
+      if (response.data.success) {
+        alert(response.data.message);
+        setShowPasswordSetting(false);
+        setNewPrivacyPassword('');
+        setPasswordSetStatus(true);
+      } else {
+        alert(response.data.message);
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || '비밀번호 설정에 실패했습니다.');
+    }
+  };
 
   const loadMembers = async () => {
     try {
@@ -278,6 +379,13 @@ const Members = () => {
       <div className="page-header">
         <h1>팀커버 회원 관리</h1>
         <div className="header-actions">
+          <button
+            className="btn btn-info"
+            onClick={() => setShowPasswordSetting(true)}
+            title="개인정보 보호 비밀번호 설정"
+          >
+            🔒 비밀번호 설정
+          </button>
           <button
             className="btn btn-secondary"
             onClick={() => setShowImportForm(true)}
@@ -595,10 +703,26 @@ const Members = () => {
                     ) : (
                       <>
                         <td>{member.name}</td>
-                        <td>{member.phone || '-'}</td>
+                        <td
+                          className="privacy-cell"
+                          onClick={handlePrivacyClick}
+                          title={
+                            privacyUnlocked ? '' : '클릭하여 개인정보 보기'
+                          }
+                        >
+                          {maskPhone(member.phone)}
+                        </td>
                         <td>{member.gender || '-'}</td>
                         <td>{member.level || '-'}</td>
-                        <td>{member.email || '-'}</td>
+                        <td
+                          className="privacy-cell"
+                          onClick={handlePrivacyClick}
+                          title={
+                            privacyUnlocked ? '' : '클릭하여 개인정보 보기'
+                          }
+                        >
+                          {maskEmail(member.email)}
+                        </td>
                         <td>
                           {new Date(member.created_at)
                             .toLocaleDateString('ko-KR', {
@@ -632,6 +756,98 @@ const Members = () => {
           </div>
         </div>
       </div>
+
+      {/* 개인정보 보호 비밀번호 입력 모달 */}
+      {showPasswordModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowPasswordModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>🔒 개인정보 보호</h3>
+            <p>전화번호와 이메일을 보려면 비밀번호를 입력하세요.</p>
+
+            {passwordError && (
+              <div className="error-message">{passwordError}</div>
+            )}
+
+            <div className="form-group">
+              <label>비밀번호</label>
+              <input
+                type="password"
+                value={privacyPassword}
+                onChange={(e) => setPrivacyPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleVerifyPassword()}
+                placeholder="비밀번호 입력"
+                autoFocus
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="btn btn-primary"
+                onClick={handleVerifyPassword}
+              >
+                확인
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPrivacyPassword('');
+                  setPasswordError('');
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 비밀번호 설정 모달 */}
+      {showPasswordSetting && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowPasswordSetting(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>🔒 개인정보 보호 비밀번호 설정</h3>
+            <p>
+              {passwordSetStatus
+                ? '비밀번호를 변경하려면 새 비밀번호를 입력하세요.'
+                : '개인정보(전화번호, 이메일) 열람 시 필요한 비밀번호를 설정하세요.'}
+            </p>
+
+            <div className="form-group">
+              <label>비밀번호 (4자리 이상)</label>
+              <input
+                type="password"
+                value={newPrivacyPassword}
+                onChange={(e) => setNewPrivacyPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSetPassword()}
+                placeholder="비밀번호 입력"
+                autoFocus
+              />
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-primary" onClick={handleSetPassword}>
+                저장
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowPasswordSetting(false);
+                  setNewPrivacyPassword('');
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -26,6 +26,9 @@ class User(UserMixin, db.Model):
     verification_code_expires = db.Column(db.DateTime, nullable=True)  # 인증 코드 만료 시간
     verified_at = db.Column(db.DateTime, nullable=True)  # 인증 완료 시간
     
+    # 개인정보 보호 비밀번호
+    privacy_password_hash = db.Column(db.String(128), nullable=True)  # 개인정보 열람 비밀번호
+    
     def __repr__(self):
         return f'<User {self.email}>'
     
@@ -36,6 +39,16 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """비밀번호 확인"""
         return check_password_hash(self.password_hash, password)
+    
+    def set_privacy_password(self, password):
+        """개인정보 보호 비밀번호 해시화"""
+        self.privacy_password_hash = generate_password_hash(password)
+    
+    def check_privacy_password(self, password):
+        """개인정보 보호 비밀번호 확인"""
+        if not self.privacy_password_hash:
+            return False
+        return check_password_hash(self.privacy_password_hash, password)
     
     def to_dict(self):
         """딕셔너리 형태로 변환"""
