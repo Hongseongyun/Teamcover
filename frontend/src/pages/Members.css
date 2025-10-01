@@ -331,10 +331,20 @@
   text-align: center;
 }
 
-/* 전화번호, 이메일 데이터는 왼쪽 정렬 */
+/* 전화번호, 이메일 데이터는 중앙 정렬 */
 .members-table td:nth-child(2),
 .members-table td:nth-child(5) {
-  text-align: left;
+  text-align: center;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* 전화번호, 이메일 셀 내용이 밖으로 넘치지 않도록 */
+.members-table td:nth-child(2) .privacy-cell-wrapper,
+.members-table td:nth-child(5) .privacy-cell-wrapper {
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
 }
 
 .members-table tbody tr:hover {
@@ -573,9 +583,18 @@
     text-align: center;
   }
 
-  /* 전화번호 데이터는 왼쪽 정렬 */
+  /* 모바일에서 전화번호는 중앙 정렬 */
   .members-table td:nth-child(2) {
-    text-align: left;
+    text-align: center;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  /* 모바일에서 전화번호 셀 래퍼도 중앙 정렬 */
+  .members-table td:nth-child(2) .privacy-cell-wrapper {
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
   }
 
   /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
