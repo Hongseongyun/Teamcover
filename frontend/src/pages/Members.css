@@ -309,24 +309,62 @@
   table-layout: fixed;
 }
 
+.members-table tbody tr {
+  height: 70px;
+}
+
 .members-table th,
 .members-table td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
   vertical-align: middle;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  height: 70px;
+  max-height: 70px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .members-table th {
   background-color: var(--toss-gray-50);
   font-weight: 600;
   color: var(--toss-gray-700);
+  height: auto;
 }
 
-.members-table tr:hover {
+.members-table tbody tr:hover {
   background-color: var(--toss-gray-50);
+}
+
+/* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
+.members-table td:nth-child(7) {
+  overflow: visible;
+}
+
+/* 개인정보 셀 래퍼 (데스크톱) */
+.privacy-cell-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+}
+
+.privacy-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 30px);
+}
+
+/* 인라인 편집 중일 때는 높이 제한 해제 (데스크톱) */
+.members-table tbody tr:has(.inline-input),
+.members-table tbody tr:has(.inline-select) {
+  height: auto;
+  min-height: 70px;
 }
 
 /* 데스크톱 컬럼 너비 설정 */
@@ -525,14 +563,21 @@
     border-spacing: 0;
   }
 
+  .members-table tbody tr {
+    height: 60px;
+  }
+
   .members-table th,
   .members-table td {
     padding: 0.75rem;
     font-size: 0.875rem;
     vertical-align: middle;
     border-bottom: 1px solid var(--toss-gray-200);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    height: 60px;
+    max-height: 60px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   /* 레벨, 이메일, 등록일 컬럼 숨기기 (모바일에서) */
@@ -545,42 +590,43 @@
     display: none;
   }
 
-  /* 이름 컬럼 - 15% */
+  /* 이름 컬럼 - 20% */
   .members-table th:nth-child(1),
   .members-table td:nth-child(1) {
-    width: 15%;
+    width: 20%;
   }
 
-  /* 전화번호 컬럼 - 35% (더 넓게) */
+  /* 전화번호 컬럼 - 45% (더 넓게) */
   .members-table th:nth-child(2),
   .members-table td:nth-child(2) {
-    width: 35%;
+    width: 45%;
   }
 
-  /* 성별 컬럼 - 12% */
+  /* 성별 컬럼 - 15% */
   .members-table th:nth-child(3),
   .members-table td:nth-child(3) {
-    width: 12%;
+    width: 15%;
     text-align: center;
   }
 
-  /* 작업 컬럼 - 38% */
+  /* 작업 컬럼 - 20% */
   .members-table th:nth-child(7),
   .members-table td:nth-child(7) {
-    width: 38%;
+    width: 20%;
     text-align: center;
   }
 
   .members-table td:nth-child(7) {
     display: table-cell;
     white-space: nowrap;
+    overflow: visible;
   }
 
   .members-table td:nth-child(7) .btn {
-    padding: 0.5rem 0.7rem;
+    padding: 0.5rem 0.6rem;
     font-size: 0.75rem;
     white-space: nowrap;
-    margin: 0 0.15rem;
+    margin: 0 0.1rem;
   }
 
   /* 개인정보 셀 래퍼 */
@@ -590,12 +636,15 @@
     justify-content: flex-start;
     gap: 0.5rem;
     width: 100%;
+    height: 100%;
   }
 
   .privacy-text {
-    flex: 1;
-    word-break: keep-all;
+    flex: 0 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: calc(100% - 30px);
   }
 
   /* 인라인 편집 액션 버튼 */
@@ -628,5 +677,13 @@
     padding: 0.4rem;
     width: 100%;
     box-sizing: border-box;
+    height: auto;
+  }
+
+  /* 인라인 편집 중일 때는 높이 제한 해제 */
+  .members-table tbody tr:has(.inline-input),
+  .members-table tbody tr:has(.inline-select) {
+    height: auto;
+    min-height: 60px;
   }
 }
