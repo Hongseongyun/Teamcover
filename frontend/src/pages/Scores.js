@@ -98,6 +98,10 @@ const Scores = () => {
   const [currentDateIndex, setCurrentDateIndex] = useState(0);
   const [showAllDates, setShowAllDates] = useState(false);
 
+  // 일괄 삭제 관련 상태
+  const [selectedScores, setSelectedScores] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
 
@@ -605,6 +609,86 @@ const Scores = () => {
         loadScores();
       } catch (error) {
         console.error('스코어 삭제 실패:', error);
+      }
+    }
+  };
+
+  // 전체 선택/해제
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedScores([]);
+    } else {
+      // 전체 날짜 보기와 단일 날짜 보기에 따라 다르게 처리
+      let allIds = [];
+      if (showAllDates) {
+        // 전체 날짜 보기: 현재 페이지의 모든 스코어
+        const currentPageGroups = getPaginatedGroups();
+        currentPageGroups.forEach((group) => {
+          allIds.push(...group.scores.map((s) => s.id));
+        });
+      } else {
+        // 단일 날짜 보기: 현재 날짜의 모든 스코어
+        const currentGroup = getCurrentDateGroup();
+        if (currentGroup) {
+          allIds = currentGroup.scores.map((s) => s.id);
+        }
+      }
+      setSelectedScores(allIds);
+    }
+    setSelectAll(!selectAll);
+  };
+
+  // 개별 선택/해제
+  const handleSelectScore = (id) => {
+    if (selectedScores.includes(id)) {
+      setSelectedScores(selectedScores.filter((scoreId) => scoreId !== id));
+      setSelectAll(false);
+    } else {
+      setSelectedScores([...selectedScores, id]);
+    }
+  };
+
+  // 선택된 항목 일괄 삭제
+  const handleDeleteSelected = async () => {
+    if (selectedScores.length === 0) {
+      alert('삭제할 스코어를 선택해주세요.');
+      return;
+    }
+
+    if (
+      window.confirm(
+        `선택한 ${selectedScores.length}개의 스코어를 삭제하시겠습니까?`
+      )
+    ) {
+      try {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const id of selectedScores) {
+          try {
+            await scoreAPI.deleteScore(id);
+            successCount++;
+          } catch (error) {
+            console.error(`스코어 ${id} 삭제 실패:`, error);
+            failCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          alert(
+            `${successCount}개 삭제 완료${
+              failCount > 0 ? `, ${failCount}개 실패` : ''
+            }`
+          );
+          setSelectedScores([]);
+          setSelectAll(false);
+          loadScores();
+        } else {
+          alert('스코어 삭제에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('일괄 삭제 실패:', error);
+        alert('스코어 삭제에 실패했습니다.');
       }
     }
   };
@@ -1227,7 +1311,7 @@ const Scores = () => {
                                 }}
                                 title="삭제"
                               >
-                                🗑️
+                                ❌
                               </button>
                             </td>
                           </tr>
@@ -1592,7 +1676,17 @@ const Scores = () => {
       <div className="scores-section">
         <div className="section-card">
           <div className="scores-header">
-            <h3 className="section-title">스코어 목록</h3>
+            <div className="header-left">
+              <h3 className="section-title">스코어 목록</h3>
+              {selectedScores.length > 0 && (
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={handleDeleteSelected}
+                >
+                  선택 삭제 ({selectedScores.length})
+                </button>
+              )}
+            </div>
             <div className="view-toggle">
               <button
                 className={`btn btn-sm ${
@@ -1622,6 +1716,16 @@ const Scores = () => {
               <table>
                 <thead>
                   <tr>
+                    {isAdmin && (
+                      <th style={{ width: '50px' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectAll}
+                          onChange={handleSelectAll}
+                          className="select-checkbox"
+                        />
+                      </th>
+                    )}
                     <th>회원명</th>
                     <th>게임 날짜</th>
                     <th>1게임</th>
@@ -1663,6 +1767,16 @@ const Scores = () => {
                         <tr key={score.id} className="score-row">
                           {inlineEditingId === score.id ? (
                             <>
+                              {isAdmin && (
+                                <td>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedScores.includes(score.id)}
+                                    onChange={() => handleSelectScore(score.id)}
+                                    className="select-checkbox"
+                                  />
+                                </td>
+                              )}
                               <td>
                                 <select
                                   className="inline-select"
@@ -1784,6 +1898,16 @@ const Scores = () => {
                             </>
                           ) : (
                             <>
+                              {isAdmin && (
+                                <td>
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedScores.includes(score.id)}
+                                    onChange={() => handleSelectScore(score.id)}
+                                    className="select-checkbox"
+                                  />
+                                </td>
+                              )}
                               <td>{score.member_name}</td>
                               <td>{score.game_date}</td>
                               <td>{score.score1}</td>
@@ -1964,6 +2088,16 @@ const Scores = () => {
                     <table>
                       <thead>
                         <tr>
+                          {isAdmin && (
+                            <th style={{ width: '50px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectAll}
+                                onChange={handleSelectAll}
+                                className="select-checkbox"
+                              />
+                            </th>
+                          )}
                           <th>회원명</th>
                           <th>1게임</th>
                           <th>2게임</th>
@@ -1979,6 +2113,20 @@ const Scores = () => {
                           <tr key={score.id} className="score-row">
                             {inlineEditingId === score.id ? (
                               <>
+                                {isAdmin && (
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedScores.includes(
+                                        score.id
+                                      )}
+                                      onChange={() =>
+                                        handleSelectScore(score.id)
+                                      }
+                                      className="select-checkbox"
+                                    />
+                                  </td>
+                                )}
                                 <td>
                                   <select
                                     value={inlineEditData.member_name}
@@ -2082,6 +2230,20 @@ const Scores = () => {
                               </>
                             ) : (
                               <>
+                                {isAdmin && (
+                                  <td>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedScores.includes(
+                                        score.id
+                                      )}
+                                      onChange={() =>
+                                        handleSelectScore(score.id)
+                                      }
+                                      className="select-checkbox"
+                                    />
+                                  </td>
+                                )}
                                 <td>{score.member_name}</td>
                                 <td>{score.score1}</td>
                                 <td>{score.score2}</td>

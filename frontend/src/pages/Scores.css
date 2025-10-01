@@ -576,6 +576,27 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-left .section-title {
+  margin-bottom: 0;
+}
+
+/* 체크박스 스타일 */
+.select-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--toss-primary);
 }
 
 .view-toggle {
@@ -594,19 +615,21 @@
 }
 
 .view-toggle .btn-primary {
-  background-color: white;
-  color: var(--toss-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: var(--toss-primary);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  font-weight: 600;
 }
 
 .view-toggle .btn-outline-secondary {
   background-color: transparent;
-  color: var(--toss-gray-600);
+  color: var(--toss-gray-700);
   border: none;
+  font-weight: 500;
 }
 
 .view-toggle .btn:hover {
-  opacity: 0.9;
+  transform: scale(1.02);
 }
 
 /* 단일 날짜 보기 */
