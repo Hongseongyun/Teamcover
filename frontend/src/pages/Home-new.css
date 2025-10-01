@@ -11,7 +11,7 @@
   position: relative;
   text-align: center;
   padding: 120px 20px;
-  background: url('/teamcover.jpg') center/cover no-repeat;
+  background: url('%PUBLIC_URL%/teamcover.jpg') center/cover no-repeat;
   color: white;
   border-radius: 20px;
   margin-bottom: 60px;
