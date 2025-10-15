@@ -64,6 +64,9 @@ export const memberAPI = {
   deleteMember: (id) => api.delete(`/api/members/${id}`), // 마지막 슬래시 제거
   getMemberAverage: (id) => api.get(`/api/members/${id}/average`), // 마지막 슬래시 제거
   getAllMembersAverages: () => api.get('/api/members/averages/'),
+  verifyPrivacyAccess: (password) =>
+    api.post('/api/members/privacy-verify/', { password }),
+  checkPrivacyStatus: () => api.get('/api/members/privacy-status/'),
   importFromSheets: (data) => {
     const payload = {
       spreadsheet_url: data?.spreadsheetUrl || data?.spreadsheet_url || '',

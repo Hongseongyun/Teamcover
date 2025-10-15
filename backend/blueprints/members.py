@@ -1,6 +1,8 @@
-from flask import Blueprint, request, jsonify, make_response
-from datetime import datetime
-from models import db, Member, Score
+from flask import Blueprint, request, jsonify, make_response, session
+from datetime import datetime, timedelta
+from models import db, Member, Score, User, AppSetting
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.security import check_password_hash
 
 # 회원 관리 Blueprint
 members_bp = Blueprint('members', __name__, url_prefix='/api/members')
@@ -20,11 +22,51 @@ def handle_preflight():
         return response
 
 @members_bp.route('/', methods=['GET'])
+@jwt_required(optional=True)
 def get_members():
     """회원 목록 조회 API"""
     try:
-        # 기본적으로 개인정보 마스킹 (프론트엔드에서 개인정보 보호 비밀번호 검증 후 처리)
+        # 기본적으로 개인정보 마스킹
         hide_privacy = True
+        
+        # JWT 토큰에서 사용자 정보 가져오기
+        current_user_obj = None
+        try:
+            user_id = get_jwt_identity()
+            if user_id:
+                current_user_obj = User.query.get(int(user_id))
+        except:
+            pass
+        
+        # 슈퍼관리자인 경우 개인정보 보호 비밀번호 검증 확인
+        if current_user_obj and current_user_obj.role == 'super_admin':
+            # 전역 개인정보 보호 비밀번호 설정 확인
+            privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+            if not privacy_setting or not privacy_setting.setting_value:
+                # 비밀번호가 설정되지 않은 경우 원본 데이터 허용
+                hide_privacy = False
+            else:
+                # 세션에서 개인정보 접근 허용 상태 확인
+                privacy_access_granted = session.get('privacy_access_granted', False)
+                if privacy_access_granted:
+                    # 접근 시간 확인 (30분 유효)
+                    access_time_str = session.get('privacy_access_time')
+                    if access_time_str:
+                        try:
+                            access_time = datetime.fromisoformat(access_time_str)
+                            if datetime.utcnow() - access_time < timedelta(minutes=30):
+                                hide_privacy = False  # 원본 데이터 허용
+                            else:
+                                # 시간 만료된 경우 세션 정리
+                                session.pop('privacy_access_granted', None)
+                                session.pop('privacy_access_time', None)
+                                hide_privacy = True
+                        except:
+                            hide_privacy = True
+                    else:
+                        hide_privacy = True
+                else:
+                    hide_privacy = True  # 기본적으로 마스킹
         
         members = Member.query.order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
@@ -284,4 +326,96 @@ def get_all_members_averages():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'회원별 에버 조회 중 오류가 발생했습니다: {str(e)}'})
+
+@members_bp.route('/privacy-verify/', methods=['POST'])
+@jwt_required()
+def verify_privacy_access():
+    """개인정보 보호 비밀번호 검증 API"""
+    try:
+        user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(user_id))
+        
+        if not current_user_obj:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        if current_user_obj.role != 'super_admin':
+            return jsonify({'success': False, 'message': '슈퍼관리자만 접근 가능합니다.'})
+        
+        data = request.get_json()
+        password = data.get('password', '')
+        
+        if not password:
+            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+        
+        # 전역 개인정보 보호 비밀번호 검증
+        privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+        if not privacy_setting or not privacy_setting.setting_value:
+            return jsonify({'success': False, 'message': '개인정보 보호 비밀번호가 설정되지 않았습니다.'})
+        
+        if check_password_hash(privacy_setting.setting_value, password):
+            # 세션에 개인정보 접근 허용 상태 저장 (30분간 유효)
+            session['privacy_access_granted'] = True
+            session['privacy_access_time'] = datetime.utcnow().isoformat()
+            session.permanent = True
+            
+            return jsonify({
+                'success': True, 
+                'message': '개인정보 접근이 허용되었습니다.',
+                'access_granted': True
+            })
+        else:
+            return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'비밀번호 검증 중 오류가 발생했습니다: {str(e)}'})
+
+@members_bp.route('/privacy-status/', methods=['GET'])
+@jwt_required(optional=True)
+def check_privacy_status():
+    """개인정보 보호 상태 확인 API"""
+    try:
+        user_id = get_jwt_identity()
+        current_user_obj = None
+        if user_id:
+            current_user_obj = User.query.get(int(user_id))
+        
+        # 기본적으로 마스킹된 상태
+        privacy_unlocked = False
+        
+        if current_user_obj and current_user_obj.role == 'super_admin':
+            # 전역 개인정보 보호 비밀번호 설정 확인
+            privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+            if not privacy_setting or not privacy_setting.setting_value:
+                # 비밀번호가 설정되지 않은 경우 자동으로 해제
+                privacy_unlocked = True
+            else:
+                # 세션에서 개인정보 접근 허용 상태 확인
+                privacy_access_granted = session.get('privacy_access_granted', False)
+                if privacy_access_granted:
+                    # 접근 시간 확인 (30분 유효)
+                    access_time_str = session.get('privacy_access_time')
+                    if access_time_str:
+                        try:
+                            access_time = datetime.fromisoformat(access_time_str)
+                            if datetime.utcnow() - access_time < timedelta(minutes=30):
+                                privacy_unlocked = True
+                            else:
+                                # 시간 만료된 경우 세션 정리
+                                session.pop('privacy_access_granted', None)
+                                session.pop('privacy_access_time', None)
+                                privacy_unlocked = False
+                        except:
+                            privacy_unlocked = False
+                    else:
+                        privacy_unlocked = False
+                else:
+                    privacy_unlocked = False
+        
+        return jsonify({
+            'success': True,
+            'privacy_unlocked': privacy_unlocked
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'개인정보 보호 상태 확인 중 오류가 발생했습니다: {str(e)}'})
 

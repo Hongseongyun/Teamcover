@@ -51,12 +51,7 @@ const Members = () => {
   useEffect(() => {
     loadMembers();
     checkPasswordStatus();
-
-    // 세션 스토리지에서 개인정보 보호 상태 복원
-    const savedPrivacyUnlocked = sessionStorage.getItem('privacyUnlocked');
-    if (savedPrivacyUnlocked === 'true') {
-      setPrivacyUnlocked(true);
-    }
+    checkPrivacyStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 개인정보 보호 상태가 변경될 때마다 세션 스토리지에 저장
@@ -76,11 +71,24 @@ const Members = () => {
     }
   };
 
+  // 개인정보 보호 상태 확인
+  const checkPrivacyStatus = async () => {
+    try {
+      const response = await memberAPI.checkPrivacyStatus();
+      if (response.data.success) {
+        setPrivacyUnlocked(response.data.privacy_unlocked);
+      }
+    } catch (error) {
+      console.error('개인정보 보호 상태 확인 실패:', error);
+    }
+  };
+
   // 개인정보 마스킹 (백엔드에서 이미 마스킹된 경우 고려)
   const maskPhone = (phone) => {
     if (!phone) return '-';
     // 이미 마스킹된 형태인지 확인
     if (phone.includes('***')) return phone;
+    // 개인정보 보호 비밀번호가 해제된 경우 원본 표시
     if (privacyUnlocked) return phone;
     return '***-****-****';
   };
@@ -89,6 +97,7 @@ const Members = () => {
     if (!email) return '-';
     // 이미 마스킹된 형태인지 확인
     if (email.includes('***')) return email;
+    // 개인정보 보호 비밀번호가 해제된 경우 원본 표시
     if (privacyUnlocked) return email;
     const [local, domain] = email.split('@');
     if (local && domain) {
@@ -109,9 +118,7 @@ const Members = () => {
   const handleVerifyPassword = async () => {
     try {
       setPasswordError('');
-      const response = await api.post('/api/auth/verify-privacy-password', {
-        password: privacyPassword,
-      });
+      const response = await memberAPI.verifyPrivacyAccess(privacyPassword);
 
       if (response.data.success) {
         setPrivacyUnlocked(true);
