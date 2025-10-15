@@ -28,6 +28,7 @@ const Navbar = () => {
       '/scores': hasRole('user'),
       '/points': hasRole('user'),
       '/team-assignment': hasRole('admin'),
+      '/user-management': hasRole('super_admin'),
     };
 
     return pagePermissions[page] || false;

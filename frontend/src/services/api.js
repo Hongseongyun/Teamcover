@@ -123,6 +123,7 @@ export const authAPI = {
     api.put(`/api/auth/users/${userId}/role`, data),
   updateUserStatus: (userId, data) =>
     api.put(`/api/auth/users/${userId}/status`, data),
+  deleteUser: (userId) => api.delete(`/api/auth/users/${userId}`),
   verifyEmail: (data) => api.post('/api/auth/verify-email', data),
   resendVerification: (data) => api.post('/api/auth/resend-verification', data),
 };

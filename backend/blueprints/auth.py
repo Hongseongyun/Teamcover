@@ -560,6 +560,45 @@ def update_user_status(user_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'상태 변경 중 오류가 발생했습니다: {str(e)}'})
 
+@auth_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(user_id):
+    """사용자 삭제 (슈퍼 관리자만)"""
+    try:
+        current_user_id = get_jwt_identity()
+        current_user_obj = User.query.get(int(current_user_id))
+        
+        if not current_user_obj or current_user_obj.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'})
+        
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 자신을 삭제하는 것 방지
+        if user.id == current_user_obj.id:
+            return jsonify({'success': False, 'message': '자신의 계정은 삭제할 수 없습니다.'})
+        
+        # 고정 슈퍼계정 삭제 방지
+        if user.email == 'syun4224@naver.com':
+            return jsonify({'success': False, 'message': '고정 슈퍼계정은 삭제할 수 없습니다.'})
+        
+        user_name = user.name
+        user_email = user.email
+        
+        # 사용자 삭제
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_name}({user_email}) 사용자가 삭제되었습니다.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'사용자 삭제 중 오류가 발생했습니다: {str(e)}'})
+
 @auth_bp.route('/verify-email', methods=['POST'])
 def verify_email():
     """이메일 인증 처리"""

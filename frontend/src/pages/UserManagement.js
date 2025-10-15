@@ -8,6 +8,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
 
   useEffect(() => {
     loadUsers();
@@ -69,13 +70,28 @@ const UserManagement = () => {
     }
   };
 
-  const getRoleDisplayName = (role) => {
-    const roleNames = {
-      user: '일반 사용자',
-      admin: '운영진',
-      super_admin: '슈퍼 관리자',
-    };
-    return roleNames[role] || role;
+  const handleDeleteClick = (user) => {
+    setDeleteModal({ isOpen: true, user });
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await authAPI.deleteUser(deleteModal.user.id);
+      if (response.data.success) {
+        setUsers(users.filter((user) => user.id !== deleteModal.user.id));
+        setDeleteModal({ isOpen: false, user: null });
+        setError(''); // 성공 시 에러 메시지 초기화
+      } else {
+        setError(response.data.message);
+      }
+    } catch (error) {
+      setError('사용자 삭제에 실패했습니다.');
+      console.error('사용자 삭제 실패:', error);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({ isOpen: false, user: null });
   };
 
   const getRoleBadgeClass = (role) => {
@@ -175,8 +191,18 @@ const UserManagement = () => {
                     : '-'}
                 </td>
                 <td className="actions-cell">
-                  {user.id === currentUser?.id && (
+                  {user.id === currentUser?.id ? (
                     <span className="current-user-badge">현재 사용자</span>
+                  ) : user.email === 'syun4224@naver.com' ? (
+                    <span className="protected-user-badge">보호된 계정</span>
+                  ) : (
+                    <button
+                      className="delete-user-btn"
+                      onClick={() => handleDeleteClick(user)}
+                      title="사용자 삭제"
+                    >
+                      삭제
+                    </button>
                   )}
                 </td>
               </tr>
@@ -207,6 +233,41 @@ const UserManagement = () => {
           <div className="stat-label">관리자</div>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {deleteModal.isOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>사용자 삭제 확인</h3>
+            </div>
+            <div className="modal-body">
+              <p>
+                <strong>{deleteModal.user?.name}</strong>(
+                {deleteModal.user?.email}) 사용자를 삭제하시겠습니까?
+              </p>
+              <p className="warning-text">
+                ⚠️ 이 작업은 되돌릴 수 없습니다. 모든 사용자 데이터가 영구적으로
+                삭제됩니다.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="modal-btn modal-btn-cancel"
+                onClick={handleDeleteCancel}
+              >
+                취소
+              </button>
+              <button
+                className="modal-btn modal-btn-danger"
+                onClick={handleDeleteConfirm}
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
