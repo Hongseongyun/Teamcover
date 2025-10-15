@@ -11,12 +11,10 @@ const Home = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry, index) => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // 각 카드가 순차적으로 나타나도록 지연 시간 설정
-            setTimeout(() => {
-              entry.target.classList.add('visible');
-            }, index * 200);
+            // 카드가 화면에 나타나면 즉시 애니메이션 적용
+            entry.target.classList.add('visible');
           }
         });
       },
@@ -180,7 +178,8 @@ const Home = () => {
       </div>
 
       <div className="features-grid">
-        <div
+        <Link
+          to="/members"
           className="feature-card"
           ref={(el) => (featureRefs.current[0] = el)}
         >
@@ -188,13 +187,12 @@ const Home = () => {
           <div className="feature-content">
             <h3>회원 관리</h3>
             <p>팀커버 회원들의 정보를 체계적으로 관리하고 추적합니다.</p>
-            <Link to="/members" className="btn btn-primary">
-              회원 관리하기
-            </Link>
+            <div className="btn btn-primary">회원 관리하기</div>
           </div>
-        </div>
+        </Link>
 
-        <div
+        <Link
+          to="/scores"
           className="feature-card"
           ref={(el) => (featureRefs.current[1] = el)}
         >
@@ -202,13 +200,12 @@ const Home = () => {
           <div className="feature-content">
             <h3>스코어 관리</h3>
             <p>볼링 게임 결과를 기록하고 개인별 통계를 확인합니다.</p>
-            <Link to="/scores" className="btn btn-primary">
-              스코어 관리하기
-            </Link>
+            <div className="btn btn-primary">스코어 관리하기</div>
           </div>
-        </div>
+        </Link>
 
-        <div
+        <Link
+          to="/points"
           className="feature-card"
           ref={(el) => (featureRefs.current[2] = el)}
         >
@@ -216,13 +213,12 @@ const Home = () => {
           <div className="feature-content">
             <h3>포인트 관리</h3>
             <p>회원들의 포인트 적립과 사용 내역을 관리합니다.</p>
-            <Link to="/points" className="btn btn-primary">
-              포인트 관리하기
-            </Link>
+            <div className="btn btn-primary">포인트 관리하기</div>
           </div>
-        </div>
+        </Link>
 
-        <div
+        <Link
+          to="/team-assignment"
           className="feature-card"
           ref={(el) => (featureRefs.current[3] = el)}
         >
@@ -230,11 +226,9 @@ const Home = () => {
           <div className="feature-content">
             <h3>팀 배정</h3>
             <p>공정하고 균형잡힌 팀을 자동으로 구성합니다.</p>
-            <Link to="/team-assignment" className="btn btn-primary">
-              팀 배정하기
-            </Link>
+            <div className="btn btn-primary">팀 배정하기</div>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );
