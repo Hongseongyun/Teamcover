@@ -35,12 +35,14 @@ def get_members():
             user_id = get_jwt_identity()
             if user_id:
                 current_user_obj = User.query.get(int(user_id))
-        except:
+                print(f"JWT 토큰에서 사용자 정보 가져옴: {current_user_obj.email if current_user_obj else 'None'}")
+        except Exception as e:
+            print(f"JWT 토큰 검증 오류: {e}")
             pass
         
-        # 슈퍼관리자인 경우 개인정보 보호 비밀번호 검증 확인
-        if current_user_obj and current_user_obj.role == 'super_admin':
-            print(f"슈퍼관리자 확인: {current_user_obj.email}")
+        # 관리자(슈퍼관리자 또는 운영진)인 경우 개인정보 보호 비밀번호 검증 확인
+        if current_user_obj and current_user_obj.role in ['super_admin', 'admin']:
+            print(f"관리자 확인: {current_user_obj.email} (역할: {current_user_obj.role})")
             # 전역 개인정보 보호 비밀번호 설정 확인
             privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
             if not privacy_setting or not privacy_setting.setting_value:
@@ -48,46 +50,86 @@ def get_members():
                 print("개인정보 보호 비밀번호가 설정되지 않음 - 원본 데이터 허용")
                 hide_privacy = False
             else:
-                print("개인정보 보호 비밀번호가 설정됨 - 세션 확인")
-                # 세션에서 개인정보 접근 허용 상태 확인
-                privacy_access_granted = session.get('privacy_access_granted', False)
-                privacy_access_user_id = session.get('privacy_access_user_id')
-                
-                print(f"세션 상태 - 접근허용: {privacy_access_granted}, 사용자ID: {privacy_access_user_id}, 현재사용자ID: {current_user_obj.id}")
-                
-                # 현재 사용자와 세션의 사용자가 일치하는지 확인
-                if privacy_access_granted and privacy_access_user_id == current_user_obj.id:
-                    # 접근 시간 확인 (30분 유효)
-                    access_time_str = session.get('privacy_access_time')
-                    if access_time_str:
-                        try:
-                            access_time = datetime.fromisoformat(access_time_str)
-                            if datetime.utcnow() - access_time < timedelta(minutes=30):
-                                print("세션 유효 - 원본 데이터 허용")
-                                hide_privacy = False  # 원본 데이터 허용
-                            else:
-                                print("세션 만료 - 세션 정리")
-                                # 시간 만료된 경우 세션 정리
-                                session.pop('privacy_access_granted', None)
-                                session.pop('privacy_access_user_id', None)
-                                session.pop('privacy_access_time', None)
-                                hide_privacy = True
-                        except:
-                            print("세션 시간 파싱 오류")
-                            hide_privacy = True
-                    else:
-                        print("세션 시간 정보 없음")
-                        hide_privacy = True
+                print("개인정보 보호 비밀번호가 설정됨 - 개인정보 접근 토큰 확인")
+                # 헤더에서 개인정보 접근 토큰 확인
+                privacy_token = request.headers.get('X-Privacy-Token')
+                if privacy_token:
+                    try:
+                        from flask_jwt_extended import decode_token
+                        import time
+                        # 개인정보 접근 토큰 디코딩
+                        decoded_token = decode_token(privacy_token)
+                        jwt_claims = decoded_token
+                        privacy_access_granted = jwt_claims.get('privacy_access_granted', False)
+                        user_role = jwt_claims.get('user_role')
+                        exp_time = jwt_claims.get('exp', 0)
+                        current_time = int(time.time())
+                        
+                        print(f"토큰 디코딩 성공 - 클레임: {jwt_claims}")
+                        print(f"토큰 만료 시간: {exp_time}, 현재 시간: {current_time}")
+                        
+                        print(f"개인정보 접근 토큰 - 접근허용: {privacy_access_granted}, 사용자역할: {user_role}")
+                        
+                        # 토큰 사용자 ID와 현재 사용자 ID 비교
+                        token_user_id = jwt_claims.get('sub', '')
+                        current_user_id = str(current_user_obj.id)
+                        
+                        print(f"토큰 사용자 ID: {token_user_id}, 현재 사용자 ID: {current_user_id}")
+                        
+                        # 토큰 만료 시간 체크 및 사용자 ID 체크
+                        if current_time >= exp_time:
+                            print("개인정보 접근 토큰 만료됨")
+                            hide_privacy = True  # 기본적으로 마스킹
+                        elif token_user_id != current_user_id:
+                            print("개인정보 접근 토큰 사용자 불일치")
+                            hide_privacy = True  # 기본적으로 마스킹
+                        elif privacy_access_granted and user_role in ['super_admin', 'admin']:
+                            print("개인정보 접근 토큰 유효 - 원본 데이터 허용")
+                            hide_privacy = False  # 원본 데이터 허용
+                        else:
+                            print("개인정보 접근 토큰에 권한 없음")
+                            hide_privacy = True  # 기본적으로 마스킹
+                    except Exception as e:
+                        print(f"개인정보 접근 토큰 검증 오류: {e}")
+                        hide_privacy = True  # 기본적으로 마스킹
                 else:
-                    print("세션 불일치 또는 접근 허용 안됨")
+                    print("개인정보 접근 토큰이 없음")
                     hide_privacy = True  # 기본적으로 마스킹
         
         members = Member.query.order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
         
+        # 안전망: hide_privacy=True일 때 강제 마스킹 적용
+        if hide_privacy:
+            print("강제 마스킹 적용 중...")
+            for member_data in members_data:
+                # 전화번호 강제 마스킹
+                if member_data.get('phone'):
+                    member_data['phone'] = '***-****-****'
+                # 이메일 강제 마스킹
+                if member_data.get('email'):
+                    email = member_data['email']
+                    if '@' in email:
+                        local, domain = email.split('@', 1)
+                        if local and domain:
+                            member_data['email'] = f'{local[0]}***@{domain}'
+                        else:
+                            member_data['email'] = '***@***'
+                    else:
+                        member_data['email'] = '***@***'
+        else:
+            print("개인정보 접근 허용됨 - 원본 데이터 반환")
+        
         print(f"최종 hide_privacy 상태: {hide_privacy}")
         if members_data and len(members_data) > 0:
             print(f"첫 번째 회원 전화번호 예시: {members_data[0].get('phone', 'None')}")
+            print(f"첫 번째 회원 이메일 예시: {members_data[0].get('email', 'None')}")
+            # 원본 데이터와 마스킹된 데이터 비교를 위한 로그
+            first_member = members[0]
+            print(f"원본 전화번호: {first_member.phone}")
+            print(f"원본 이메일: {first_member.email}")
+            print(f"최종 응답 전화번호: {members_data[0].get('phone', 'None')}")
+            print(f"최종 응답 이메일: {members_data[0].get('email', 'None')}")
         
         total_members = len(members)
         new_members = len([m for m in members if (datetime.utcnow() - m.created_at).days <= 30])
@@ -346,18 +388,19 @@ def get_all_members_averages():
         return jsonify({'success': False, 'message': f'회원별 에버 조회 중 오류가 발생했습니다: {str(e)}'})
 
 @members_bp.route('/privacy-verify/', methods=['POST'])
-@jwt_required()
+@jwt_required(optional=True)
 def verify_privacy_access():
     """개인정보 보호 비밀번호 검증 API"""
     try:
+        print("=== 개인정보 보호 비밀번호 검증 API 호출됨 ===")
         user_id = get_jwt_identity()
         current_user_obj = User.query.get(int(user_id))
         
         if not current_user_obj:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
         
-        if current_user_obj.role != 'super_admin':
-            return jsonify({'success': False, 'message': '슈퍼관리자만 접근 가능합니다.'})
+        if current_user_obj.role not in ['super_admin', 'admin']:
+            return jsonify({'success': False, 'message': '관리자만 접근 가능합니다.'})
         
         data = request.get_json()
         password = data.get('password', '')
@@ -371,23 +414,42 @@ def verify_privacy_access():
             return jsonify({'success': False, 'message': '개인정보 보호 비밀번호가 설정되지 않았습니다.'})
         
         if check_password_hash(privacy_setting.setting_value, password):
-            # 세션에 개인정보 접근 허용 상태 저장 (30분간 유효)
-            # 사용자 ID도 함께 저장하여 다른 사용자와 구분
-            session['privacy_access_granted'] = True
-            session['privacy_access_user_id'] = current_user_obj.id
-            session['privacy_access_time'] = datetime.utcnow().isoformat()
-            session.permanent = True
+            # JWT 토큰에 개인정보 접근 권한 추가
+            from flask_jwt_extended import create_access_token
+            from datetime import timedelta
+            
+            # 1분간 유효한 개인정보 접근 토큰 생성 (테스트용)
+            privacy_token = create_access_token(
+                identity=str(current_user_obj.id),  # 문자열로 변환
+                expires_delta=timedelta(minutes=1),
+                additional_claims={
+                    'privacy_access_granted': True,
+                    'user_role': current_user_obj.role
+                }
+            )
+            
+            print(f"토큰 생성 정보 - 사용자ID: {current_user_obj.id} (타입: {type(current_user_obj.id)})")
+            print(f"토큰 생성 정보 - 사용자역할: {current_user_obj.role}")
+            
+            print(f"개인정보 접근 토큰 생성 완료 - 사용자ID: {current_user_obj.id}")
             
             return jsonify({
                 'success': True, 
                 'message': '개인정보 접근이 허용되었습니다.',
-                'access_granted': True
+                'access_granted': True,
+                'privacy_token': privacy_token
             })
         else:
             return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
             
     except Exception as e:
         return jsonify({'success': False, 'message': f'비밀번호 검증 중 오류가 발생했습니다: {str(e)}'})
+
+@members_bp.route('/test/', methods=['GET'])
+def test_api():
+    """테스트 API"""
+    print("=== 테스트 API 호출됨 ===")
+    return jsonify({'success': True, 'message': '테스트 API 작동 중'})
 
 @members_bp.route('/privacy-status/', methods=['GET'])
 @jwt_required(optional=True)

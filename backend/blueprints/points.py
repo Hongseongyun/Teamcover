@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from models import db, Member, Point
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # 포인트 관리 Blueprint
 points_bp = Blueprint('points', __name__, url_prefix='/api/points')
 
 @points_bp.route('/', methods=['GET'])
+@jwt_required(optional=True)
 def get_points():
     """포인트 목록 조회 API"""
     try:

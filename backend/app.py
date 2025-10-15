@@ -28,6 +28,14 @@ except ImportError as e:
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Flask 세션 설정 (메모리 기반으로 단순화)
+app.config['SECRET_KEY'] = 'your-secret-key-change-this-in-production-12345'
+app.config['SESSION_COOKIE_NAME'] = 'teamcover_session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # HTTP에서도 작동하도록
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+
 # JWT 설정
 app.config['JWT_SECRET_KEY'] = app.config.get('JWT_SECRET_KEY', 'your-secret-key-change-this-in-production')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)  # 토큰 만료 시간 설정
@@ -64,7 +72,7 @@ print("=" * 50)
 CORS(app,
      origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Privacy-Token"],
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"])
 
@@ -79,7 +87,7 @@ def handle_preflight():
         print(f"[CORS] Allowed origins: {allowed_origins}")
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-            response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+            response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
             response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
             response.headers.add('Access-Control-Allow-Credentials', 'true')
             print(f"[CORS] Allowed: {request_origin}")
@@ -89,6 +97,8 @@ def handle_preflight():
 
 # 데이터베이스 초기화
 db.init_app(app)
+
+# 세션은 메모리 기반으로 사용 (단순화)
 
 # 이메일 서비스 초기화
 init_mail(app)

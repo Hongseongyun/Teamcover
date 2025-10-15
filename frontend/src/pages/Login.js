@@ -38,11 +38,16 @@ const Login = () => {
       navigate(from, { replace: true });
     }
 
-    // URL 파라미터에서 에러 메시지 확인
+    // URL 파라미터에서 에러 메시지 확인 (안전한 디코딩)
     const urlParams = new URLSearchParams(window.location.search);
     const errorMessage = urlParams.get('error');
     if (errorMessage) {
-      setError(decodeURIComponent(errorMessage));
+      try {
+        setError(decodeURIComponent(errorMessage));
+      } catch (error) {
+        console.warn('Failed to decode error message:', error);
+        setError('Authentication failed');
+      }
     }
 
     // 교차-탭: 이메일 인증 완료 신호를 수신하면 로그인 탭으로 전환
@@ -242,14 +247,22 @@ const Login = () => {
     setError('');
 
     try {
-      // Google OAuth URL 생성
+      // Google OAuth URL 생성 (안전한 인코딩)
+      let redirectUri, stateParam;
+      try {
+        redirectUri = encodeURIComponent(
+          `${window.location.origin}/google-callback`
+        );
+        stateParam = encodeURIComponent(from || '/');
+      } catch (error) {
+        console.warn('Failed to encode URI components:', error);
+        redirectUri = encodeURIComponent('/google-callback');
+        stateParam = encodeURIComponent('/');
+      }
+
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${
         process.env.REACT_APP_GOOGLE_CLIENT_ID || 'your-google-client-id'
-      }&redirect_uri=${encodeURIComponent(
-        `${window.location.origin}/google-callback`
-      )}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(
-        from
-      )}`;
+      }&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&state=${stateParam}`;
 
       // 현재 창에서 Google OAuth 페이지로 리디렉션
       window.location.href = googleAuthUrl;

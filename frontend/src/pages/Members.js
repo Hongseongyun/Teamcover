@@ -120,7 +120,9 @@ const Members = () => {
       setPasswordError('');
       const response = await memberAPI.verifyPrivacyAccess(privacyPassword);
 
-      if (response.data.success) {
+      if (response.data.success && response.data.privacy_token) {
+        // 개인정보 접근 토큰을 localStorage에 저장
+        localStorage.setItem('privacy_token', response.data.privacy_token);
         setPrivacyUnlocked(true);
         setShowPasswordModal(false);
         setPrivacyPassword('');
@@ -135,6 +137,13 @@ const Members = () => {
         error.response?.data?.message || '비밀번호 검증에 실패했습니다.'
       );
     }
+  };
+
+  // 개인정보 접근 토큰 초기화 (테스트용)
+  const resetPrivacyToken = () => {
+    localStorage.removeItem('privacy_token');
+    setPrivacyUnlocked(false);
+    console.log('개인정보 접근 토큰 초기화됨');
   };
 
   // 비밀번호 설정

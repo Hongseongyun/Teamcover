@@ -18,11 +18,11 @@ class Config:
     # 우선순위: DATABASE_URL(풀 URI) > 개별 항목(DB_HOST 등)
     # Railway에서는 DATABASE_URL 또는 DATABASE_PUBLIC_URL을 제공합니다
     DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_PUBLIC_URL')
-    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
-    DB_PORT = os.environ.get('DB_PORT') or '5432'
-    DB_NAME = os.environ.get('DB_NAME') or 'teamcover_db'
-    DB_USER = os.environ.get('DB_USER') or 'postgres'
-    DB_PASSWORD = os.environ.get('DB_PASSWORD') or 'teamcover123'
+    DB_HOST = os.environ.get('DB_HOST')
+    DB_PORT = os.environ.get('DB_PORT')
+    DB_NAME = os.environ.get('DB_NAME')
+    DB_USER = os.environ.get('DB_USER')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD')
 
     # SQLAlchemy 설정 (psycopg2 드라이버 사용)
     if DATABASE_URL:

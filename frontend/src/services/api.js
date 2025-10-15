@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 환경변수 또는 기본값 사용
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.hsyun.store';
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 
 console.log('API Base URL:', API_BASE_URL);
 
@@ -20,14 +20,22 @@ api.interceptors.request.use(
     console.log('API 요청:', config.method?.toUpperCase(), config.url);
     console.log('Base URL:', config.baseURL);
 
-    // Base URL이 HTTP로 시작하면 HTTPS로 변환
-    if (config.baseURL && config.baseURL.startsWith('http://')) {
+    // Base URL이 HTTP로 시작하면 HTTPS로 변환 (로컬 개발 환경 제외)
+    if (
+      config.baseURL &&
+      config.baseURL.startsWith('http://') &&
+      !config.baseURL.includes('localhost')
+    ) {
       config.baseURL = config.baseURL.replace('http://', 'https://');
       console.log('Base URL을 HTTPS로 변환:', config.baseURL);
     }
 
-    // URL이 HTTP로 시작하면 HTTPS로 변환
-    if (config.url && config.url.startsWith('http://')) {
+    // URL이 HTTP로 시작하면 HTTPS로 변환 (로컬 개발 환경 제외)
+    if (
+      config.url &&
+      config.url.startsWith('http://') &&
+      !config.url.includes('localhost')
+    ) {
       config.url = config.url.replace('http://', 'https://');
       console.log('URL을 HTTPS로 변환:', config.url);
     }
@@ -36,6 +44,12 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // 개인정보 접근 토큰 추가 (있는 경우)
+    const privacyToken = localStorage.getItem('privacy_token');
+    if (privacyToken) {
+      config.headers['X-Privacy-Token'] = privacyToken;
     }
 
     return config;

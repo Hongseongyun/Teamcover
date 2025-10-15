@@ -24,10 +24,16 @@ const GoogleAuthCallback = () => {
       try {
         console.log('Starting Google callback processing...');
 
-        // URL에서 authorization code와 state 추출
+        // URL에서 authorization code와 state 추출 (안전한 처리)
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const state = urlParams.get('state');
+
+        console.log('URL params - code:', code ? 'present' : 'missing');
+        console.log(
+          'URL params - state:',
+          state ? state.substring(0, 20) + '...' : 'missing'
+        );
 
         if (!code) {
           throw new Error('Authorization code not found');
@@ -42,9 +48,7 @@ const GoogleAuthCallback = () => {
 
         // 백엔드로 코드를 전송하여 토큰 교환 (origin도 함께 전송)
         const response = await fetch(
-          `${
-            process.env.REACT_APP_API_URL || 'https://api.hsyun.store'
-          }/api/auth/google/callback`,
+          `${process.env.REACT_APP_API_URL}/api/auth/google/callback`,
           {
             method: 'POST',
             headers: {
@@ -74,8 +78,16 @@ const GoogleAuthCallback = () => {
           console.log('User logged in successfully:', userData);
           setStatus('리디렉션 중...');
 
-          // state에 저장된 원래 페이지로 리디렉션
-          const redirectTo = state ? decodeURIComponent(state) : '/';
+          // state에 저장된 원래 페이지로 리디렉션 (안전한 디코딩)
+          let redirectTo = '/';
+          if (state) {
+            try {
+              redirectTo = decodeURIComponent(state);
+            } catch (error) {
+              console.warn('Failed to decode state, using default:', error);
+              redirectTo = '/';
+            }
+          }
           console.log('Redirecting to:', redirectTo);
           navigate(redirectTo, { replace: true });
         } else {
@@ -84,11 +96,19 @@ const GoogleAuthCallback = () => {
       } catch (error) {
         console.error('Google authentication error:', error);
         setStatus('오류 발생: ' + error.message);
-        // 에러 페이지로 리디렉션
+        // 에러 페이지로 리디렉션 (안전한 인코딩)
         setTimeout(() => {
-          navigate('/login?error=' + encodeURIComponent(error.message), {
-            replace: true,
-          });
+          try {
+            const errorMessage = error.message || 'Unknown error';
+            navigate('/login?error=' + encodeURIComponent(errorMessage), {
+              replace: true,
+            });
+          } catch (encodeError) {
+            console.error('Failed to encode error message:', encodeError);
+            navigate('/login?error=Authentication failed', {
+              replace: true,
+            });
+          }
         }, 2000);
       }
     };

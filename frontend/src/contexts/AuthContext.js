@@ -50,6 +50,10 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setToken(access_token);
         localStorage.setItem('token', access_token);
+
+        // 개인정보 접근 토큰 삭제 (새로운 로그인 시 이전 토큰 무효화)
+        localStorage.removeItem('privacy_token');
+
         return { success: true, message: response.data.message };
       } else {
         return { success: false, message: response.data.message };

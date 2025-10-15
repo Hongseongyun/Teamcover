@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from models import db, Member, Score
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # 스코어 관리 Blueprint
 scores_bp = Blueprint('scores', __name__, url_prefix='/api/scores')
 
 @scores_bp.route('/', methods=['GET'])
+@jwt_required(optional=True)
 def get_scores():
     """스코어 목록 조회 API"""
     try:
