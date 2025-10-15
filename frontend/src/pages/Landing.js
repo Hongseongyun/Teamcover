@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Landing.css';
@@ -6,37 +6,29 @@ import './Landing.css';
 const Landing = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const featureRefs = useRef([]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
-      const featuresSection = document.querySelector('.features-section');
-
-      if (featuresSection) {
-        const sectionTop = featuresSection.offsetTop;
-        // const sectionHeight = featuresSection.offsetHeight;
-        const windowHeight = window.innerHeight;
-
-        // 섹션이 화면에 보이기 시작할 때
-        if (scrollTop + windowHeight > sectionTop + 100) {
-          setIsScrolled(true);
-
-          // 각 카드에 순차적으로 애니메이션 적용
-          const cards = featuresSection.querySelectorAll('.feature-card');
-          cards.forEach((card, index) => {
-            setTimeout(() => {
-              card.style.opacity = '1';
-              card.style.transform = 'translateY(0)';
-            }, index * 200); // 200ms 간격으로 순차 애니메이션
-          });
-        }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // 카드가 화면에 나타나면 즉시 애니메이션 적용
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px',
       }
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    featureRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
   }, []);
 
   const handleGetStarted = () => {
@@ -48,6 +40,16 @@ const Landing = () => {
         navigate('/scores');
       }
     } else {
+      navigate('/login');
+    }
+  };
+
+  const handleCardClick = (page) => {
+    if (isAuthenticated) {
+      // 로그인된 사용자는 해당 페이지로 직접 이동
+      navigate(page);
+    } else {
+      // 로그인되지 않은 사용자는 로그인 페이지로 이동
       navigate('/login');
     }
   };
@@ -90,10 +92,14 @@ const Landing = () => {
         </div>
       </div>
 
-      <div className={`features-section ${isScrolled ? 'visible' : ''}`}>
+      <div className="features-section">
         <div className="container">
           <div className="features-grid">
-            <div className="feature-card" onClick={() => navigate('/login')}>
+            <div
+              className="feature-card"
+              ref={(el) => (featureRefs.current[0] = el)}
+              onClick={() => handleCardClick('/members')}
+            >
               <div className="feature-icon">👥</div>
               <h3>회원</h3>
               <p>
@@ -104,7 +110,11 @@ const Landing = () => {
               <div className="feature-link">회원 페이지 →</div>
             </div>
 
-            <div className="feature-card" onClick={() => navigate('/login')}>
+            <div
+              className="feature-card"
+              ref={(el) => (featureRefs.current[1] = el)}
+              onClick={() => handleCardClick('/scores')}
+            >
               <div className="feature-icon">🎯</div>
               <h3>스코어</h3>
               <p>
@@ -115,7 +125,11 @@ const Landing = () => {
               <div className="feature-link">스코어 페이지 →</div>
             </div>
 
-            <div className="feature-card" onClick={() => navigate('/login')}>
+            <div
+              className="feature-card"
+              ref={(el) => (featureRefs.current[2] = el)}
+              onClick={() => handleCardClick('/points')}
+            >
               <div className="feature-icon">🏆</div>
               <h3>포인트</h3>
               <p>
@@ -126,7 +140,11 @@ const Landing = () => {
               <div className="feature-link">포인트 페이지 →</div>
             </div>
 
-            <div className="feature-card">
+            <div
+              className="feature-card"
+              ref={(el) => (featureRefs.current[3] = el)}
+              onClick={() => handleCardClick('/team-assignment')}
+            >
               <div className="feature-icon">⚡</div>
               <h3>팀 배정</h3>
               <p>
@@ -134,6 +152,7 @@ const Landing = () => {
                 <br />
                 균형잡힌 매치를 만들어보세요
               </p>
+              <div className="feature-link">팀 배정 페이지 →</div>
             </div>
           </div>
         </div>

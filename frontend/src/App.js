@@ -9,7 +9,6 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import EmailVerification from './pages/EmailVerification';
 import VerifyCode from './pages/VerifyCode';
-import Home from './pages/Home';
 import Members from './pages/Members';
 import Scores from './pages/Scores';
 import Points from './pages/Points';
@@ -28,14 +27,6 @@ function App() {
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/verify-code" element={<VerifyCode />} />
             <Route path="/google-callback" element={<GoogleAuthCallback />} />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute requiredRole="user">
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/members"
               element={

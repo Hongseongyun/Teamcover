@@ -283,7 +283,8 @@
   color: #1f2937;
 }
 
-.features-section.visible .feature-card {
+/* 카드 등장 애니메이션 */
+.feature-card.visible {
   opacity: 1;
   transform: translateY(0);
 }

@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
   }
 
   if (!hasRole(requiredRole)) {
-    // 권한이 없는 사용자는 홈으로 리다이렉트
+    // 권한이 없는 사용자는 Landing 페이지로 리다이렉트
     return <Navigate to="/" replace />;
   }
 
