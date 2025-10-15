@@ -443,6 +443,29 @@
     width: 300px;
     height: 300px;
   }
+
+  /* 볼링 일러스트레이션 내부 요소들을 75% 크기로 축소 (300/400 = 0.75) */
+  .bowling-pin {
+    width: 18px; /* 24px * 0.75 */
+    height: 60px; /* 80px * 0.75 */
+    top: 22.5px; /* 30px * 0.75 */
+  }
+
+  .bowling-ball {
+    width: 37.5px; /* 50px * 0.75 */
+    height: 37.5px; /* 50px * 0.75 */
+    bottom: 37.5px; /* 50px * 0.75 */
+    right: 37.5px; /* 50px * 0.75 */
+  }
+
+  .score-board {
+    padding: 1.125rem 1.5rem; /* 1.5rem 2rem * 0.75 */
+    border-radius: 0.75rem; /* 1rem * 0.75 */
+  }
+
+  .score {
+    font-size: 2.25rem; /* 3rem * 0.75 */
+  }
 }
 
 @media (max-width: 768px) {
@@ -469,6 +492,29 @@
   .bowling-illustration {
     width: 250px;
     height: 250px;
+  }
+
+  /* 볼링 일러스트레이션 내부 요소들을 62.5% 크기로 축소 (250/400 = 0.625) */
+  .bowling-pin {
+    width: 15px; /* 24px * 0.625 */
+    height: 50px; /* 80px * 0.625 */
+    top: 18.75px; /* 30px * 0.625 */
+  }
+
+  .bowling-ball {
+    width: 31.25px; /* 50px * 0.625 */
+    height: 31.25px; /* 50px * 0.625 */
+    bottom: 31.25px; /* 50px * 0.625 */
+    right: 31.25px; /* 50px * 0.625 */
+  }
+
+  .score-board {
+    padding: 0.9375rem 1.25rem; /* 1.5rem 2rem * 0.625 */
+    border-radius: 0.625rem; /* 1rem * 0.625 */
+  }
+
+  .score {
+    font-size: 1.875rem; /* 3rem * 0.625 */
   }
 
   .features-title {
@@ -516,6 +562,29 @@
   .bowling-illustration {
     width: 200px;
     height: 200px;
+  }
+
+  /* 볼링 일러스트레이션 내부 요소들을 50% 크기로 축소 (200/400 = 0.5) */
+  .bowling-pin {
+    width: 12px; /* 24px * 0.5 */
+    height: 40px; /* 80px * 0.5 */
+    top: 15px; /* 30px * 0.5 */
+  }
+
+  .bowling-ball {
+    width: 25px; /* 50px * 0.5 */
+    height: 25px; /* 50px * 0.5 */
+    bottom: 25px; /* 50px * 0.5 */
+    right: 25px; /* 50px * 0.5 */
+  }
+
+  .score-board {
+    padding: 0.75rem 1rem; /* 1.5rem 2rem * 0.5 */
+    border-radius: 0.5rem; /* 1rem * 0.5 */
+  }
+
+  .score {
+    font-size: 1.5rem; /* 3rem * 0.5 */
   }
 
   .features-title {
