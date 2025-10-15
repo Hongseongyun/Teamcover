@@ -1,7 +1,6 @@
-from flask import Blueprint, request, jsonify, make_response, session
-from datetime import datetime, timedelta
-from models import db, Member, Score, User
-from flask_login import current_user
+from flask import Blueprint, request, jsonify, make_response
+from datetime import datetime
+from models import db, Member, Score
 
 # 회원 관리 Blueprint
 members_bp = Blueprint('members', __name__, url_prefix='/api/members')
@@ -24,46 +23,8 @@ def handle_preflight():
 def get_members():
     """회원 목록 조회 API"""
     try:
-        # 개인정보 보호 비밀번호 검증 여부 확인
-        hide_privacy = True  # 기본적으로 개인정보 마스킹
-        
-        # 요청 헤더에서 개인정보 보호 상태 확인
-        privacy_unlocked = request.headers.get('X-Privacy-Unlocked', '').lower() == 'true'
-        
-        if privacy_unlocked and current_user.is_authenticated:
-            # 슈퍼관리자인 경우 개인정보 보호 비밀번호 검증
-            if current_user.role == 'super_admin':
-                # 개인정보 보호 비밀번호가 설정되어 있지 않은 경우 허용
-                if not current_user.privacy_password_hash:
-                    hide_privacy = False  # 비밀번호가 설정되지 않은 경우 허용
-                else:
-                    # 세션에서 개인정보 접근 허용 상태 확인
-                    privacy_access_granted = session.get('privacy_access_granted', False)
-                    if privacy_access_granted:
-                        # 접근 시간 확인 (30분 유효)
-                        access_time_str = session.get('privacy_access_time')
-                        if access_time_str:
-                            try:
-                                access_time = datetime.fromisoformat(access_time_str)
-                                if datetime.utcnow() - access_time < timedelta(minutes=30):
-                                    hide_privacy = False  # 접근 허용
-                                else:
-                                    # 시간 만료된 경우 세션 정리
-                                    session.pop('privacy_access_granted', None)
-                                    session.pop('privacy_access_time', None)
-                                    hide_privacy = True
-                            except:
-                                hide_privacy = True
-                        else:
-                            hide_privacy = True
-                    else:
-                        hide_privacy = True  # 기본적으로 마스킹
-            else:
-                # 일반 관리자나 사용자는 항상 마스킹
-                hide_privacy = True
-        else:
-            # 인증되지 않았거나 개인정보 보호 상태가 false인 경우 마스킹
-            hide_privacy = True
+        # 기본적으로 개인정보 마스킹 (프론트엔드에서 개인정보 보호 비밀번호 검증 후 처리)
+        hide_privacy = True
         
         members = Member.query.order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
@@ -81,7 +42,6 @@ def get_members():
         return jsonify({
             'success': True,
             'members': members_data,
-            'privacy_protected': hide_privacy,
             'stats': {
                 'total_members': total_members,
                 'new_members': new_members,
@@ -325,36 +285,3 @@ def get_all_members_averages():
     except Exception as e:
         return jsonify({'success': False, 'message': f'회원별 에버 조회 중 오류가 발생했습니다: {str(e)}'})
 
-@members_bp.route('/privacy-verify/', methods=['POST'])
-def verify_privacy_access():
-    """개인정보 보호 비밀번호 검증 API"""
-    try:
-        if not current_user.is_authenticated:
-            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
-        
-        if current_user.role != 'super_admin':
-            return jsonify({'success': False, 'message': '슈퍼관리자만 접근 가능합니다.'})
-        
-        data = request.get_json()
-        password = data.get('password', '')
-        
-        if not password:
-            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
-        
-        # 개인정보 보호 비밀번호 검증
-        if current_user.check_privacy_password(password):
-            # 세션에 개인정보 접근 허용 상태 저장 (30분간 유효)
-            session['privacy_access_granted'] = True
-            session['privacy_access_time'] = datetime.utcnow().isoformat()
-            session.permanent = True
-            
-            return jsonify({
-                'success': True, 
-                'message': '개인정보 접근이 허용되었습니다.',
-                'access_granted': True
-            })
-        else:
-            return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
-            
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'비밀번호 검증 중 오류가 발생했습니다: {str(e)}'})

@@ -109,7 +109,9 @@ const Members = () => {
   const handleVerifyPassword = async () => {
     try {
       setPasswordError('');
-      const response = await memberAPI.verifyPrivacyAccess(privacyPassword);
+      const response = await api.post('/api/auth/verify-privacy-password', {
+        password: privacyPassword,
+      });
 
       if (response.data.success) {
         setPrivacyUnlocked(true);
@@ -157,13 +159,12 @@ const Members = () => {
     try {
       setLoading(true);
       console.log('회원 목록 로드 시작');
-      const response = await memberAPI.getMembers(privacyUnlocked);
+      const response = await memberAPI.getMembers();
       console.log('회원 목록 응답:', response);
       if (response.data.success) {
         setMembers(response.data.members);
         setStats(response.data.stats);
         console.log('회원 목록 로드 성공:', response.data.members.length, '명');
-        console.log('개인정보 보호 상태:', response.data.privacy_protected);
       } else {
         console.error('회원 목록 로드 실패:', response.data.message);
       }

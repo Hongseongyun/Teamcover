@@ -58,20 +58,12 @@ api.interceptors.response.use(
 
 // 회원 관리 API
 export const memberAPI = {
-  getMembers: (privacyUnlocked = false) => {
-    const headers = {};
-    if (privacyUnlocked) {
-      headers['X-Privacy-Unlocked'] = 'true';
-    }
-    return api.get('/api/members/', { headers });
-  },
+  getMembers: () => api.get('/api/members/'),
   addMember: (data) => api.post('/api/members/', data),
   updateMember: (id, data) => api.put(`/api/members/${id}`, data), // 마지막 슬래시 제거
   deleteMember: (id) => api.delete(`/api/members/${id}`), // 마지막 슬래시 제거
   getMemberAverage: (id) => api.get(`/api/members/${id}/average`), // 마지막 슬래시 제거
   getAllMembersAverages: () => api.get('/api/members/averages/'),
-  verifyPrivacyAccess: (password) =>
-    api.post('/api/members/privacy-verify/', { password }),
   importFromSheets: (data) => {
     const payload = {
       spreadsheet_url: data?.spreadsheetUrl || data?.spreadsheet_url || '',
