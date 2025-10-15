@@ -51,7 +51,18 @@ const Members = () => {
   useEffect(() => {
     loadMembers();
     checkPasswordStatus();
-  }, []);
+
+    // 세션 스토리지에서 개인정보 보호 상태 복원
+    const savedPrivacyUnlocked = sessionStorage.getItem('privacyUnlocked');
+    if (savedPrivacyUnlocked === 'true') {
+      setPrivacyUnlocked(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 개인정보 보호 상태가 변경될 때마다 세션 스토리지에 저장
+  useEffect(() => {
+    sessionStorage.setItem('privacyUnlocked', privacyUnlocked.toString());
+  }, [privacyUnlocked]);
 
   // 비밀번호 설정 여부 확인
   const checkPasswordStatus = async () => {
@@ -65,15 +76,19 @@ const Members = () => {
     }
   };
 
-  // 개인정보 마스킹
+  // 개인정보 마스킹 (백엔드에서 이미 마스킹된 경우 고려)
   const maskPhone = (phone) => {
     if (!phone) return '-';
+    // 이미 마스킹된 형태인지 확인
+    if (phone.includes('***')) return phone;
     if (privacyUnlocked) return phone;
     return '***-****-****';
   };
 
   const maskEmail = (email) => {
     if (!email) return '-';
+    // 이미 마스킹된 형태인지 확인
+    if (email.includes('***')) return email;
     if (privacyUnlocked) return email;
     const [local, domain] = email.split('@');
     if (local && domain) {
@@ -94,21 +109,15 @@ const Members = () => {
   const handleVerifyPassword = async () => {
     try {
       setPasswordError('');
-      const response = await api.post('/api/auth/verify-privacy-password', {
-        password: privacyPassword,
-      });
+      const response = await memberAPI.verifyPrivacyAccess(privacyPassword);
 
       if (response.data.success) {
         setPrivacyUnlocked(true);
         setShowPasswordModal(false);
         setPrivacyPassword('');
 
-        // 비밀번호가 설정되지 않은 경우 알림
-        if (response.data.password_not_set) {
-          alert(
-            '개인정보 보호 비밀번호가 설정되지 않았습니다. 설정을 권장합니다.'
-          );
-        }
+        // 회원 목록 다시 로드하여 개인정보 표시
+        loadMembers();
       } else {
         setPasswordError(response.data.message);
       }
@@ -148,12 +157,13 @@ const Members = () => {
     try {
       setLoading(true);
       console.log('회원 목록 로드 시작');
-      const response = await memberAPI.getMembers();
+      const response = await memberAPI.getMembers(privacyUnlocked);
       console.log('회원 목록 응답:', response);
       if (response.data.success) {
         setMembers(response.data.members);
         setStats(response.data.stats);
         console.log('회원 목록 로드 성공:', response.data.members.length, '명');
+        console.log('개인정보 보호 상태:', response.data.privacy_protected);
       } else {
         console.error('회원 목록 로드 실패:', response.data.message);
       }

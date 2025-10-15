@@ -82,19 +82,35 @@ class Member(db.Model):
     def __repr__(self):
         return f'<Member {self.name}>'
     
-    def to_dict(self):
+    def to_dict(self, hide_privacy=False):
         """딕셔너리 형태로 변환"""
-        return {
+        data = {
             'id': self.id,
             'name': self.name,
-            'phone': self.phone,
             'gender': self.gender,
             'level': self.level,
-            'email': self.email,
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None
         }
+        
+        if hide_privacy:
+            # 개인정보 마스킹
+            data['phone'] = '***-****-****' if self.phone else None
+            if self.email:
+                local, domain = self.email.split('@') if '@' in self.email else ('', '')
+                if local and domain:
+                    data['email'] = f'{local[0]}***@{domain}'
+                else:
+                    data['email'] = '***@***'
+            else:
+                data['email'] = None
+        else:
+            # 원본 데이터 반환
+            data['phone'] = self.phone
+            data['email'] = self.email
+            
+        return data
 
 class Score(db.Model):
     """스코어 모델"""
