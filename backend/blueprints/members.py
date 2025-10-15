@@ -40,36 +40,54 @@ def get_members():
         
         # 슈퍼관리자인 경우 개인정보 보호 비밀번호 검증 확인
         if current_user_obj and current_user_obj.role == 'super_admin':
+            print(f"슈퍼관리자 확인: {current_user_obj.email}")
             # 전역 개인정보 보호 비밀번호 설정 확인
             privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
             if not privacy_setting or not privacy_setting.setting_value:
                 # 비밀번호가 설정되지 않은 경우 원본 데이터 허용
+                print("개인정보 보호 비밀번호가 설정되지 않음 - 원본 데이터 허용")
                 hide_privacy = False
             else:
+                print("개인정보 보호 비밀번호가 설정됨 - 세션 확인")
                 # 세션에서 개인정보 접근 허용 상태 확인
                 privacy_access_granted = session.get('privacy_access_granted', False)
-                if privacy_access_granted:
+                privacy_access_user_id = session.get('privacy_access_user_id')
+                
+                print(f"세션 상태 - 접근허용: {privacy_access_granted}, 사용자ID: {privacy_access_user_id}, 현재사용자ID: {current_user_obj.id}")
+                
+                # 현재 사용자와 세션의 사용자가 일치하는지 확인
+                if privacy_access_granted and privacy_access_user_id == current_user_obj.id:
                     # 접근 시간 확인 (30분 유효)
                     access_time_str = session.get('privacy_access_time')
                     if access_time_str:
                         try:
                             access_time = datetime.fromisoformat(access_time_str)
                             if datetime.utcnow() - access_time < timedelta(minutes=30):
+                                print("세션 유효 - 원본 데이터 허용")
                                 hide_privacy = False  # 원본 데이터 허용
                             else:
+                                print("세션 만료 - 세션 정리")
                                 # 시간 만료된 경우 세션 정리
                                 session.pop('privacy_access_granted', None)
+                                session.pop('privacy_access_user_id', None)
                                 session.pop('privacy_access_time', None)
                                 hide_privacy = True
                         except:
+                            print("세션 시간 파싱 오류")
                             hide_privacy = True
                     else:
+                        print("세션 시간 정보 없음")
                         hide_privacy = True
                 else:
+                    print("세션 불일치 또는 접근 허용 안됨")
                     hide_privacy = True  # 기본적으로 마스킹
         
         members = Member.query.order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
+        
+        print(f"최종 hide_privacy 상태: {hide_privacy}")
+        if members_data and len(members_data) > 0:
+            print(f"첫 번째 회원 전화번호 예시: {members_data[0].get('phone', 'None')}")
         
         total_members = len(members)
         new_members = len([m for m in members if (datetime.utcnow() - m.created_at).days <= 30])
@@ -354,7 +372,9 @@ def verify_privacy_access():
         
         if check_password_hash(privacy_setting.setting_value, password):
             # 세션에 개인정보 접근 허용 상태 저장 (30분간 유효)
+            # 사용자 ID도 함께 저장하여 다른 사용자와 구분
             session['privacy_access_granted'] = True
+            session['privacy_access_user_id'] = current_user_obj.id
             session['privacy_access_time'] = datetime.utcnow().isoformat()
             session.permanent = True
             
@@ -391,7 +411,10 @@ def check_privacy_status():
             else:
                 # 세션에서 개인정보 접근 허용 상태 확인
                 privacy_access_granted = session.get('privacy_access_granted', False)
-                if privacy_access_granted:
+                privacy_access_user_id = session.get('privacy_access_user_id')
+                
+                # 현재 사용자와 세션의 사용자가 일치하는지 확인
+                if privacy_access_granted and privacy_access_user_id == current_user_obj.id:
                     # 접근 시간 확인 (30분 유효)
                     access_time_str = session.get('privacy_access_time')
                     if access_time_str:
@@ -402,6 +425,7 @@ def check_privacy_status():
                             else:
                                 # 시간 만료된 경우 세션 정리
                                 session.pop('privacy_access_granted', None)
+                                session.pop('privacy_access_user_id', None)
                                 session.pop('privacy_access_time', None)
                                 privacy_unlocked = False
                         except:
