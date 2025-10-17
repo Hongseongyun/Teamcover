@@ -11,7 +11,7 @@ scores_bp = Blueprint('scores', __name__, url_prefix='/api/scores')
 def get_scores():
     """스코어 목록 조회 API"""
     try:
-        scores = Score.query.order_by(Score.game_date.desc()).all()
+        scores = Score.query.order_by(Score.game_date.desc(), Score.average_score.desc()).all()
         scores_data = []
         
         for score in scores:
