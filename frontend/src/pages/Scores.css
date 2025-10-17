@@ -708,6 +708,26 @@
   gap: 0.5rem;
 }
 
+/* 인라인 날짜 편집 크기 조정 */
+.inline-date-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-date-editor .inline-input[type='date'] {
+  height: 36px;
+  padding: 4px 10px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.inline-date-editor .btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
 .participant-count {
   font-size: 0.9rem;
   color: var(--toss-gray-700);

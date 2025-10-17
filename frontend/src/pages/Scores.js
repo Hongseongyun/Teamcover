@@ -7,6 +7,7 @@ const Scores = () => {
   const { user } = useAuth(); // 현재 사용자 정보
   const isAdmin =
     user && (user.role === 'admin' || user.role === 'super_admin');
+  const isSuperAdmin = user && user.role === 'super_admin';
   const [scores, setScores] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +102,10 @@ const Scores = () => {
   // 일괄 삭제 관련 상태
   const [selectedScores, setSelectedScores] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
+
+  // 날짜 그룹 인라인 편집 상태 (슈퍼계정만 사용)
+  const [editingGroupDate, setEditingGroupDate] = useState(null); // 기존 날짜 문자열 (yyyy-MM-dd)
+  const [newGroupDate, setNewGroupDate] = useState('');
 
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
@@ -321,6 +326,61 @@ const Scores = () => {
 
     setGroupedScores(sortedGroups);
     return sortedGroups;
+  };
+
+  // 날짜 그룹 인라인 편집 시작
+  const startGroupDateEdit = (dateStr) => {
+    if (!isSuperAdmin) return;
+    setEditingGroupDate(dateStr);
+    setNewGroupDate(dateStr);
+  };
+
+  // 날짜 그룹 인라인 편집 취소
+  const cancelGroupDateEdit = () => {
+    setEditingGroupDate(null);
+    setNewGroupDate('');
+  };
+
+  // 날짜 그룹 저장: 해당 날짜의 모든 스코어를 새 날짜로 업데이트
+  const saveGroupDateEdit = async (oldDate) => {
+    if (!isSuperAdmin) return;
+    const targetGroup = groupedScores.find((g) => g.date === oldDate);
+    if (!targetGroup) {
+      cancelGroupDateEdit();
+      return;
+    }
+
+    const newDate = newGroupDate;
+    try {
+      // 백엔드 업데이트 (필수 필드 모두 포함)
+      await Promise.all(
+        targetGroup.scores.map((s) =>
+          scoreAPI.updateScore(s.id, {
+            member_name: s.member_name,
+            game_date: newDate,
+            score1: s.score1 || 0,
+            score2: s.score2 || 0,
+            score3: s.score3 || 0,
+            note: s.note || '',
+          })
+        )
+      );
+
+      // 로컬 상태 갱신
+      setScores((prev) => {
+        const updated = prev.map((s) =>
+          (s.game_date || s.created_at) === oldDate
+            ? { ...s, game_date: newDate }
+            : s
+        );
+        groupScoresByDate(updated);
+        return updated;
+      });
+
+      cancelGroupDateEdit();
+    } catch (e) {
+      alert('날짜 변경에 실패했습니다.');
+    }
   };
 
   // 스코어 로드 시 그룹화 실행
@@ -1792,7 +1852,42 @@ const Scores = () => {
                           className="date-header"
                         >
                           <div className="date-header-content">
-                            <span className="date-text">{group.date}</span>
+                            {isSuperAdmin && editingGroupDate === group.date ? (
+                              <div className="inline-date-editor">
+                                <input
+                                  type="date"
+                                  className="inline-input"
+                                  value={newGroupDate}
+                                  onChange={(e) =>
+                                    setNewGroupDate(e.target.value)
+                                  }
+                                />
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  onClick={() => saveGroupDateEdit(group.date)}
+                                >
+                                  저장
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-secondary"
+                                  onClick={cancelGroupDateEdit}
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            ) : (
+                              <span
+                                className="date-text"
+                                onClick={() =>
+                                  isSuperAdmin && startGroupDateEdit(group.date)
+                                }
+                                style={{
+                                  cursor: isSuperAdmin ? 'pointer' : 'default',
+                                }}
+                              >
+                                {group.date}
+                              </span>
+                            )}
                             <div className="date-stats">
                               <span className="stat-item">
                                 참여: {group.memberCount}명
@@ -2071,9 +2166,44 @@ const Scores = () => {
                       </svg>
                     </button>
                     <div className="current-date-info">
-                      <span className="date-display">
-                        {getCurrentDateGroup().date}
-                      </span>
+                      {isSuperAdmin &&
+                      editingGroupDate === getCurrentDateGroup().date ? (
+                        <div className="inline-date-editor">
+                          <input
+                            type="date"
+                            className="inline-input"
+                            value={newGroupDate}
+                            onChange={(e) => setNewGroupDate(e.target.value)}
+                          />
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() =>
+                              saveGroupDateEdit(getCurrentDateGroup().date)
+                            }
+                          >
+                            저장
+                          </button>
+                          <button
+                            className="btn btn-sm btn-secondary"
+                            onClick={cancelGroupDateEdit}
+                          >
+                            취소
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          className="date-display"
+                          onClick={() =>
+                            isSuperAdmin &&
+                            startGroupDateEdit(getCurrentDateGroup().date)
+                          }
+                          style={{
+                            cursor: isSuperAdmin ? 'pointer' : 'default',
+                          }}
+                        >
+                          {getCurrentDateGroup().date}
+                        </span>
+                      )}
                       <div className="date-details">
                         <span className="participant-count">
                           참여: {getCurrentDateGroup().memberCount}명
