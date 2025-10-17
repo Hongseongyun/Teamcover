@@ -20,9 +20,7 @@ from blueprints.ocr import ocr_bp
 try:
     from blueprints.sheets import sheets_bp
     SHEETS_AVAILABLE = True
-    print("Google Sheets 기능이 활성화되었습니다.")
 except ImportError as e:
-    print(f"Google Sheets 기능을 로드할 수 없습니다: {e}")
     SHEETS_AVAILABLE = False
 
 app = Flask(__name__)
@@ -62,12 +60,7 @@ allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [
     "https://teamcover-frontend.vercel.app"
 ])
 
-# 시작 시 CORS 설정 출력
-print("=" * 50)
-print("CORS Allowed Origins:")
-for origin in allowed_origins:
-    print(f"  - {origin}")
-print("=" * 50)
+# CORS 설정
 
 CORS(app,
      origins=allowed_origins,
@@ -83,16 +76,11 @@ def handle_preflight():
         response = make_response()
         # 요청 Origin을 그대로 반영하되, 허용 목록에 있는 경우에만 설정
         request_origin = request.headers.get('Origin')
-        print(f"[CORS] Preflight request from: {request_origin}")
-        print(f"[CORS] Allowed origins: {allowed_origins}")
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
             response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
             response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
             response.headers.add('Access-Control-Allow-Credentials', 'true')
-            print(f"[CORS] Allowed: {request_origin}")
-        else:
-            print(f"[CORS] Rejected: {request_origin}")
         return response
 
 # 데이터베이스 초기화
@@ -114,9 +102,6 @@ app.register_blueprint(ocr_bp)
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:
     app.register_blueprint(sheets_bp)
-    print("Google Sheets Blueprint가 등록되었습니다.")
-else:
-    print("Google Sheets Blueprint를 건너뛰었습니다.")
 
 # 헬스체크 엔드포인트
 @app.route('/health')
@@ -186,7 +171,6 @@ def create_super_admin():
         # 기존 슈퍼 관리자 확인
         existing_admin = User.query.filter_by(email=email).first()
         if existing_admin:
-            print("이미 존재하는 이메일입니다.")
             return
         
         # 슈퍼 관리자 생성
@@ -200,7 +184,7 @@ def create_super_admin():
         db.session.add(admin)
         db.session.commit()
         
-        print(f"슈퍼 관리자 계정이 생성되었습니다: {email}")
+        # 슈퍼 관리자 계정 생성 완료
 
 # 데이터베이스 초기화 (애플리케이션 시작 시)
 with app.app_context():
@@ -210,16 +194,12 @@ with app.app_context():
         db.session.execute(text('SELECT 1'))
         # 데이터베이스 테이블 생성
         db.create_all()
-        print("✓ 데이터베이스 테이블이 생성되었습니다.")
     except Exception as e:
-        print(f"⚠ 데이터베이스 초기화 경고: {e}")
-        print("⚠ 서버는 계속 실행되지만 데이터베이스 기능은 제한될 수 있습니다.")
+        # 데이터베이스 초기화 경고
 
 if __name__ == '__main__':
     # Railway 환경에서는 PORT 환경변수를 사용
     port = int(os.environ.get('PORT', 5000))
-    print(f"✓ 서버가 포트 {port}에서 시작됩니다.")
-    print(f"✓ 헬스체크 URL: http://0.0.0.0:{port}/health")
     
     # 개발 환경에서만 Flask 개발 서버 실행
     # Railway에서는 gunicorn을 사용하므로 이 부분은 실행되지 않음

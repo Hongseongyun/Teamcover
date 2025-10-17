@@ -33,7 +33,6 @@ def process_ocr():
         return jsonify(result)
         
     except Exception as e:
-        print(f"LLM 이미지 분석 오류: {e}")
         return jsonify({'success': False, 'error': f'이미지 분석 중 오류가 발생했습니다: {str(e)}'}), 500
 
 

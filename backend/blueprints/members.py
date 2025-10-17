@@ -35,22 +35,17 @@ def get_members():
             user_id = get_jwt_identity()
             if user_id:
                 current_user_obj = User.query.get(int(user_id))
-                print(f"JWT 토큰에서 사용자 정보 가져옴: {current_user_obj.email if current_user_obj else 'None'}")
         except Exception as e:
-            print(f"JWT 토큰 검증 오류: {e}")
             pass
         
         # 관리자(슈퍼관리자 또는 운영진)인 경우 개인정보 보호 비밀번호 검증 확인
         if current_user_obj and current_user_obj.role in ['super_admin', 'admin']:
-            print(f"관리자 확인: {current_user_obj.email} (역할: {current_user_obj.role})")
             # 전역 개인정보 보호 비밀번호 설정 확인
             privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
             if not privacy_setting or not privacy_setting.setting_value:
                 # 비밀번호가 설정되지 않은 경우 원본 데이터 허용
-                print("개인정보 보호 비밀번호가 설정되지 않음 - 원본 데이터 허용")
                 hide_privacy = False
             else:
-                print("개인정보 보호 비밀번호가 설정됨 - 개인정보 접근 토큰 확인")
                 # 헤더에서 개인정보 접근 토큰 확인
                 privacy_token = request.headers.get('X-Privacy-Token')
                 if privacy_token:
@@ -65,35 +60,22 @@ def get_members():
                         exp_time = jwt_claims.get('exp', 0)
                         current_time = int(time.time())
                         
-                        print(f"토큰 디코딩 성공 - 클레임: {jwt_claims}")
-                        print(f"토큰 만료 시간: {exp_time}, 현재 시간: {current_time}")
-                        
-                        print(f"개인정보 접근 토큰 - 접근허용: {privacy_access_granted}, 사용자역할: {user_role}")
-                        
                         # 토큰 사용자 ID와 현재 사용자 ID 비교
                         token_user_id = jwt_claims.get('sub', '')
                         current_user_id = str(current_user_obj.id)
                         
-                        print(f"토큰 사용자 ID: {token_user_id}, 현재 사용자 ID: {current_user_id}")
-                        
                         # 토큰 만료 시간 체크 및 사용자 ID 체크
                         if current_time >= exp_time:
-                            print("개인정보 접근 토큰 만료됨")
                             hide_privacy = True  # 기본적으로 마스킹
                         elif token_user_id != current_user_id:
-                            print("개인정보 접근 토큰 사용자 불일치")
                             hide_privacy = True  # 기본적으로 마스킹
                         elif privacy_access_granted and user_role in ['super_admin', 'admin']:
-                            print("개인정보 접근 토큰 유효 - 원본 데이터 허용")
                             hide_privacy = False  # 원본 데이터 허용
                         else:
-                            print("개인정보 접근 토큰에 권한 없음")
                             hide_privacy = True  # 기본적으로 마스킹
                     except Exception as e:
-                        print(f"개인정보 접근 토큰 검증 오류: {e}")
                         hide_privacy = True  # 기본적으로 마스킹
                 else:
-                    print("개인정보 접근 토큰이 없음")
                     hide_privacy = True  # 기본적으로 마스킹
         
         members = Member.query.order_by(Member.name.asc()).all()
@@ -101,7 +83,6 @@ def get_members():
         
         # 안전망: hide_privacy=True일 때 강제 마스킹 적용
         if hide_privacy:
-            print("강제 마스킹 적용 중...")
             for member_data in members_data:
                 # 전화번호 강제 마스킹
                 if member_data.get('phone'):
@@ -118,18 +99,7 @@ def get_members():
                     else:
                         member_data['email'] = '***@***'
         else:
-            print("개인정보 접근 허용됨 - 원본 데이터 반환")
-        
-        print(f"최종 hide_privacy 상태: {hide_privacy}")
-        if members_data and len(members_data) > 0:
-            print(f"첫 번째 회원 전화번호 예시: {members_data[0].get('phone', 'None')}")
-            print(f"첫 번째 회원 이메일 예시: {members_data[0].get('email', 'None')}")
-            # 원본 데이터와 마스킹된 데이터 비교를 위한 로그
-            first_member = members[0]
-            print(f"원본 전화번호: {first_member.phone}")
-            print(f"원본 이메일: {first_member.email}")
-            print(f"최종 응답 전화번호: {members_data[0].get('phone', 'None')}")
-            print(f"최종 응답 이메일: {members_data[0].get('email', 'None')}")
+            pass
         
         total_members = len(members)
         new_members = len([m for m in members if (datetime.utcnow() - m.created_at).days <= 30])
@@ -159,25 +129,19 @@ def get_members():
 def add_member():
     """회원 등록 API"""
     try:
-        print("회원 등록 API 호출됨")
         data = request.get_json()
-        print(f"받은 데이터: {data}")
         
         if not data:
             return jsonify({'success': False, 'message': '요청 데이터가 없습니다.'})
         
         name = data.get('name', '').strip()
-        print(f"이름: '{name}'")
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
-        print("중복 검사 시작")
         existing_member = Member.query.filter_by(name=name).first()
         if existing_member:
-            print(f"중복 회원 발견: {existing_member}")
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
-        print("새 회원 객체 생성")
         new_member = Member(
             name=name,
             phone=data.get('phone', '').strip(),
@@ -186,27 +150,18 @@ def add_member():
             email=data.get('email', '').strip(),
             note=data.get('note', '').strip()
         )
-        print(f"생성된 회원 객체: {new_member}")
         
-        print("데이터베이스에 추가 시작")
         db.session.add(new_member)
-        print("커밋 시작")
         db.session.commit()
-        print("커밋 완료")
         
         result = {
             'success': True, 
             'message': f'{name} 회원이 등록되었습니다.',
             'member': new_member.to_dict()
         }
-        print(f"응답 데이터: {result}")
         return jsonify(result)
         
     except Exception as e:
-        print(f"에러 발생: {str(e)}")
-        print(f"에러 타입: {type(e)}")
-        import traceback
-        print(f"스택 트레이스: {traceback.format_exc()}")
         db.session.rollback()
         return jsonify({'success': False, 'message': f'회원 등록 중 오류가 발생했습니다: {str(e)}'})
 
@@ -215,27 +170,21 @@ def add_member():
 def update_member(member_id):
     """회원 정보 수정 API"""
     try:
-        print(f"회원 수정 API 호출됨 - ID: {member_id}")
         data = request.get_json()
-        print(f"받은 데이터: {data}")
         
         if not data:
             return jsonify({'success': False, 'message': '요청 데이터가 없습니다.'})
         
         member = Member.query.get_or_404(member_id)
-        print(f"찾은 회원: {member}")
         
         name = data.get('name', '').strip()
-        print(f"수정할 이름: '{name}'")
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
         existing_member = Member.query.filter_by(name=name).filter(Member.id != member_id).first()
         if existing_member:
-            print(f"중복 회원 발견: {existing_member}")
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
-        print("회원 정보 업데이트 시작")
         member.name = name
         member.phone = data.get('phone', '').strip()
         member.gender = data.get('gender', '').strip()
@@ -244,23 +193,16 @@ def update_member(member_id):
         member.note = data.get('note', '').strip()
         member.updated_at = datetime.utcnow()
         
-        print("데이터베이스 커밋 시작")
         db.session.commit()
-        print("커밋 완료")
         
         result = {
             'success': True, 
             'message': f'{name} 회원 정보가 수정되었습니다.',
             'member': member.to_dict()
         }
-        print(f"응답 데이터: {result}")
         return jsonify(result)
         
     except Exception as e:
-        print(f"에러 발생: {str(e)}")
-        print(f"에러 타입: {type(e)}")
-        import traceback
-        print(f"스택 트레이스: {traceback.format_exc()}")
         db.session.rollback()
         return jsonify({'success': False, 'message': f'회원 정보 수정 중 오류가 발생했습니다: {str(e)}'})
 
@@ -392,7 +334,6 @@ def get_all_members_averages():
 def verify_privacy_access():
     """개인정보 보호 비밀번호 검증 API"""
     try:
-        print("=== 개인정보 보호 비밀번호 검증 API 호출됨 ===")
         user_id = get_jwt_identity()
         current_user_obj = User.query.get(int(user_id))
         
@@ -428,10 +369,7 @@ def verify_privacy_access():
                 }
             )
             
-            print(f"토큰 생성 정보 - 사용자ID: {current_user_obj.id} (타입: {type(current_user_obj.id)})")
-            print(f"토큰 생성 정보 - 사용자역할: {current_user_obj.role}")
-            
-            print(f"개인정보 접근 토큰 생성 완료 - 사용자ID: {current_user_obj.id}")
+            # 토큰 생성 완료
             
             return jsonify({
                 'success': True, 
@@ -448,7 +386,6 @@ def verify_privacy_access():
 @members_bp.route('/test/', methods=['GET'])
 def test_api():
     """테스트 API"""
-    print("=== 테스트 API 호출됨 ===")
     return jsonify({'success': True, 'message': '테스트 API 작동 중'})
 
 @members_bp.route('/privacy-status/', methods=['GET'])

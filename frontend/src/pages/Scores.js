@@ -119,7 +119,7 @@ const Scores = () => {
         calculateStats(response.data.scores);
       }
     } catch (error) {
-      console.error('스코어 목록 로드 실패:', error);
+      // 에러 처리
     } finally {
       setLoading(false);
     }
@@ -132,7 +132,7 @@ const Scores = () => {
         setMembers(response.data.members);
       }
     } catch (error) {
-      console.error('회원 목록 로드 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -389,7 +389,7 @@ const Scores = () => {
 
           allResults.push(...resultsWithDate);
         } else {
-          console.warn(`이미지 ${i + 1} 분석 실패:`, response.data.message);
+          // 이미지 분석 실패
         }
       }
 
@@ -400,8 +400,6 @@ const Scores = () => {
         alert('AI 스코어 인식에 실패했습니다. 이미지를 확인해주세요.');
       }
     } catch (error) {
-      console.error('AI 스코어 인식 실패:', error);
-
       if (error.code === 'ECONNABORTED') {
         alert(
           'AI 분석 시간이 초과되었습니다. 이미지 크기를 줄이거나 다시 시도해주세요.'
@@ -456,10 +454,6 @@ const Scores = () => {
           failCount++;
           const errorMsg = error.response?.data?.message || error.message;
           errors.push(`${result.member_name || '(이름없음)'}: ${errorMsg}`);
-          console.error(
-            `스코어 저장 실패 [${i + 1}/${ocrResults.length}]:`,
-            error
-          );
         }
       }
 
@@ -482,7 +476,6 @@ const Scores = () => {
       setCurrentStep('upload');
       loadScores();
     } catch (error) {
-      console.error('OCR 결과 저장 실패:', error);
       alert('스코어 저장에 실패했습니다.');
     }
   };
@@ -519,7 +512,6 @@ const Scores = () => {
         alert(errorMessage);
       }
     } catch (error) {
-      console.error('구글시트 가져오기 실패:', error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -555,7 +547,6 @@ const Scores = () => {
             });
             successCount++;
           } catch (err) {
-            console.error('행 저장 실패:', entry, err);
             failCount++;
           }
         }
@@ -585,7 +576,7 @@ const Scores = () => {
       ]);
       loadScores();
     } catch (error) {
-      console.error('스코어 저장 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -608,7 +599,7 @@ const Scores = () => {
         await scoreAPI.deleteScore(id);
         loadScores();
       } catch (error) {
-        console.error('스코어 삭제 실패:', error);
+        // 에러 처리
       }
     }
   };
@@ -669,7 +660,6 @@ const Scores = () => {
             await scoreAPI.deleteScore(id);
             successCount++;
           } catch (error) {
-            console.error(`스코어 ${id} 삭제 실패:`, error);
             failCount++;
           }
         }
@@ -687,7 +677,6 @@ const Scores = () => {
           alert('스코어 삭제에 실패했습니다.');
         }
       } catch (error) {
-        console.error('일괄 삭제 실패:', error);
         alert('스코어 삭제에 실패했습니다.');
       }
     }
@@ -764,7 +753,6 @@ const Scores = () => {
 
       cancelInlineEdit();
     } catch (error) {
-      console.error('인라인 수정 실패:', error);
       alert('수정에 실패했습니다.');
     }
   };

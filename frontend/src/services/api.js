@@ -3,8 +3,6 @@ import axios from 'axios';
 // 환경변수 또는 기본값 사용
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
-console.log('API Base URL:', API_BASE_URL);
-
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -17,9 +15,6 @@ const api = axios.create({
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
-    console.log('API 요청:', config.method?.toUpperCase(), config.url);
-    console.log('Base URL:', config.baseURL);
-
     // Base URL이 HTTP로 시작하면 HTTPS로 변환 (로컬 개발 환경 제외)
     if (
       config.baseURL &&
@@ -27,7 +22,6 @@ api.interceptors.request.use(
       !config.baseURL.includes('localhost')
     ) {
       config.baseURL = config.baseURL.replace('http://', 'https://');
-      console.log('Base URL을 HTTPS로 변환:', config.baseURL);
     }
 
     // URL이 HTTP로 시작하면 HTTPS로 변환 (로컬 개발 환경 제외)
@@ -37,7 +31,6 @@ api.interceptors.request.use(
       !config.url.includes('localhost')
     ) {
       config.url = config.url.replace('http://', 'https://');
-      console.log('URL을 HTTPS로 변환:', config.url);
     }
 
     // JWT 토큰 추가
@@ -65,7 +58,6 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('API 오류:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -103,6 +95,7 @@ export const scoreAPI = {
 export const pointAPI = {
   getPoints: () => api.get('/api/points/'),
   addPoint: (data) => api.post('/api/points/', data),
+  addPointsBatch: (data) => api.post('/api/points/batch', data),
   updatePoint: (id, data) => api.put(`/api/points/${id}`, data), // 마지막 슬래시 제거
   deletePoint: (id) => api.delete(`/api/points/${id}`), // 마지막 슬래시 제거
   importFromSheets: (data) => api.post('/api/points/import-from-sheets', data),

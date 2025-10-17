@@ -72,8 +72,7 @@ const TeamAssignment = () => {
         setMembers(response.data.members);
       }
     } catch (error) {
-      console.error('회원 목록 로드 실패:', error);
-      console.error('에러 상세:', error.response?.data);
+      // 에러 처리
     }
   };
 
@@ -149,15 +148,13 @@ const TeamAssignment = () => {
                 memberName: memberName,
               });
 
-              console.log(
-                `${memberName}님의 ${periodInfo} 평균 에버: ${averageScore}`
-              );
+              // 평균 에버 계산
             }
           }
         }
       }
     } catch (error) {
-      console.error('스코어 기록 로드 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -307,7 +304,7 @@ const TeamAssignment = () => {
         scrollToPlayersSection();
       }, 100);
     } catch (error) {
-      console.error('회원 추가 실패:', error);
+      // 에러 처리
     } finally {
       setIsLoading(false);
       setLoadingType('');
@@ -456,7 +453,6 @@ const TeamAssignment = () => {
             gender: member.gender || '',
           };
 
-          console.log('추가할 선수 데이터:', playerData);
           await teamAPI.addPlayer(playerData);
         }
       }
@@ -480,7 +476,7 @@ const TeamAssignment = () => {
         scrollToPlayersSection();
       }, 100);
     } catch (error) {
-      console.error('전체 회원 추가 실패:', error);
+      // 에러 처리
     } finally {
       setIsLoading(false);
       setLoadingType('');
@@ -491,8 +487,6 @@ const TeamAssignment = () => {
     try {
       const response = await teamAPI.getPlayers();
       if (response.data.success) {
-        console.log('API에서 받은 선수 데이터:', response.data.players);
-
         // 선수 데이터 구조 변환 (필요한 경우)
         const formattedPlayers = response.data.players.map((player) => {
           if (Array.isArray(player)) {
@@ -519,12 +513,11 @@ const TeamAssignment = () => {
           }
         });
 
-        console.log('변환된 선수 데이터:', formattedPlayers);
         setPlayers(formattedPlayers);
         calculateStats(formattedPlayers);
       }
     } catch (error) {
-      console.error('선수 목록 로드 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -627,7 +620,6 @@ const TeamAssignment = () => {
             gender: member.gender || '',
           };
 
-          console.log('추가할 선수 데이터:', playerData);
           await teamAPI.addPlayer(playerData);
         }
       }
@@ -651,7 +643,7 @@ const TeamAssignment = () => {
         scrollToPlayersSection();
       }, 100);
     } catch (error) {
-      console.error('대량 추가 실패:', error);
+      // 에러 처리
     } finally {
       setIsLoading(false);
       setLoadingType('');
@@ -719,7 +711,7 @@ const TeamAssignment = () => {
         }
       }
     } catch (error) {
-      console.error('에버 계산 실패:', error);
+      // 에러 처리
     }
 
     // 기본값 반환 (스코어 기록이 없는 경우)
@@ -731,7 +723,7 @@ const TeamAssignment = () => {
       await teamAPI.deletePlayer({ name });
       loadPlayers();
     } catch (error) {
-      console.error('선수 삭제 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -742,7 +734,7 @@ const TeamAssignment = () => {
         loadPlayers();
         setTeams([]);
       } catch (error) {
-        console.error('선수 삭제 실패:', error);
+        // 에러 처리
       }
     }
   };
@@ -757,10 +749,9 @@ const TeamAssignment = () => {
       setLoading(true);
       setIsBalancing(true);
 
-      console.log('팀 구성 및 밸런싱 시작...');
+      // 팀 구성 및 밸런싱 시작
 
       // 1단계: 여성 인원 균등 분배를 위한 선수 정렬
-      console.log('원본 선수 데이터:', players);
 
       // 선수 데이터 유효성 검사
       if (!players || players.length === 0) {
@@ -776,7 +767,7 @@ const TeamAssignment = () => {
         throw new Error('유효한 선수 데이터가 없습니다.');
       }
 
-      console.log('유효한 선수 데이터:', validPlayers.length, '명');
+      // 유효한 선수 데이터 확인
 
       const sortedPlayers = [...validPlayers].sort((a, b) => {
         // 여성 선수를 우선으로 정렬
@@ -786,10 +777,8 @@ const TeamAssignment = () => {
         return b.average - a.average;
       });
 
-      console.log(
-        '선수 정렬 완료 (여성 우선):',
-        sortedPlayers.map((p) => `${p.name}(${p.gender}, ${p.average})`)
-      );
+      // 선수 정렬 완료 (여성 우선)
+      sortedPlayers.map((p) => `${p.name}(${p.gender}, ${p.average})`);
 
       // 2단계: 여성 인원 균등 분배로 팀 구성
       const balancedTeams = createBalancedTeams(sortedPlayers);
@@ -803,7 +792,7 @@ const TeamAssignment = () => {
       );
       setTeams(sortedTeams);
 
-      console.log('팀 구성 및 밸런싱 완료:', sortedTeams);
+      // 팀 구성 및 밸런싱 완료
 
       // 5단계: 결과 메시지 설정
       const maxDiff =
@@ -823,7 +812,6 @@ const TeamAssignment = () => {
       // 5초 후 메시지 자동 제거
       setTimeout(() => setBalancingResult(''), 5000);
     } catch (error) {
-      console.error('팀 구성 실패:', error);
       setBalancingResult('❌ 팀 구성 실패');
       setTimeout(() => setBalancingResult(''), 3000);
     } finally {
@@ -834,8 +822,6 @@ const TeamAssignment = () => {
 
   // 여성 인원 균등 분배로 팀 구성하는 함수
   const createBalancedTeams = (sortedPlayers) => {
-    console.log('createBalancedTeams 호출됨, 선수 데이터:', sortedPlayers);
-
     if (!sortedPlayers || sortedPlayers.length === 0) {
       throw new Error('정렬된 선수 데이터가 없습니다.');
     }
@@ -879,9 +865,7 @@ const TeamAssignment = () => {
     const femalePerTeam = Math.floor(femalePlayers.length / team_count);
     const remainingFemales = femalePlayers.length % team_count;
 
-    console.log(
-      `여성 선수 분배: 총 ${femalePlayers.length}명, 팀당 ${femalePerTeam}명, 남은 ${remainingFemales}명`
-    );
+    // 여성 선수 분배
 
     let femaleIndex = 0;
     for (let teamIndex = 0; teamIndex < team_count; teamIndex++) {
@@ -930,15 +914,13 @@ const TeamAssignment = () => {
         team.players.length > 0 ? team.total_average / team.players.length : 0;
     });
 
-    console.log(
-      '여성 인원 균등 분배 완료:',
-      teams.map((t) => ({
-        teamNumber: t.team_number,
-        femaleCount: t.players.filter((p) => p.gender === '여').length,
-        maleCount: t.players.filter((p) => p.gender === '남').length,
-        totalAverage: t.total_average,
-      }))
-    );
+    // 여성 인원 균등 분배 완료
+    teams.map((t) => ({
+      teamNumber: t.team_number,
+      femaleCount: t.players.filter((p) => p.gender === '여').length,
+      maleCount: t.players.filter((p) => p.gender === '남').length,
+      totalAverage: t.total_average,
+    }));
 
     return teams;
   };
@@ -947,7 +929,7 @@ const TeamAssignment = () => {
   const balanceTeamsByScore = async (teamsToBalance) => {
     if (teamsToBalance.length < 2) return teamsToBalance;
 
-    console.log('점수 밸런싱 시작 (근소한 차이의 남자 회원 스위칭)...');
+    // 점수 밸런싱 시작 (근소한 차이의 남자 회원 스위칭)
 
     const teams = [...teamsToBalance];
     let bestTeams = [...teams]; // 최적 결과 저장
@@ -964,14 +946,13 @@ const TeamAssignment = () => {
         );
       }
     });
-    console.log('시드 선수들 (스위칭 제외):', Array.from(seedPlayers));
+    // 시드 선수들 (스위칭 제외)
 
     // [규칙 2] 최대 점수 차이가 5점 이하가 될 때까지 반복 (안전 가드 포함)
     let attempt = 0;
     const hardLimit = 3000; // 무한 반복 방지를 위한 하드 가드
     while (attempt < hardLimit) {
       attempt++;
-      console.log(`밸런싱 시도 ${attempt}/200`);
 
       // 현재 팀 상태 분석
       const teamStats = teams.map((team) => ({
@@ -995,16 +976,10 @@ const TeamAssignment = () => {
         bestMaxDiff = currentMaxDiff;
         bestTeams = JSON.parse(JSON.stringify(teams)); // 깊은 복사
         bestAttempt = attempt;
-        console.log(
-          `새로운 최적 결과 발견! (시도 ${attempt}): 최대 점수 차이 = ${bestMaxDiff}점`
-        );
       }
 
       // 목표: 5점 이하 달성 시 종료
       if (currentMaxDiff <= 5) {
-        console.log(
-          `시도 ${attempt}에서 5점 이내 달성! 최대 점수 차이 = ${currentMaxDiff}점`
-        );
         break;
       }
 
@@ -1081,11 +1056,6 @@ const TeamAssignment = () => {
       }
 
       if (bestSwap && bestScoreImprovement > 0) {
-        console.log(
-          `스위칭 실행: ${bestSwap.player1.name}(${bestSwap.player1.average}) ↔ ${bestSwap.player2.name}(${bestSwap.player2.average})`
-        );
-        console.log(`개선 효과: ${bestScoreImprovement}점`);
-
         // 스위칭 실행 (팀 데이터 직접 업데이트)
         const updatedTeams = teams.map((team) => {
           if (team.team_number === bestSwap.player1.sourceTeam) {
@@ -1152,16 +1122,12 @@ const TeamAssignment = () => {
     // 최적 결과로 복원
     Object.assign(teams, bestTeams);
 
-    console.log(
-      `점수 밸런싱 완료! 최적 결과 (시도 ${bestAttempt}): 최대 점수 차이 = ${bestMaxDiff}점`
-    );
+    // 점수 밸런싱 완료
     return teams;
   };
 
   // 팀을 랜덤하게 섞는 함수 (새로운 기회 생성)
   const shuffleTeamsRandomly = async (teams) => {
-    console.log('팀을 랜덤하게 섞어서 새로운 기회 생성...');
-
     // 여성 인원 균등성 유지하면서 남성 선수들만 랜덤하게 섞기
     const allTeams = [...teams];
 
@@ -1201,7 +1167,7 @@ const TeamAssignment = () => {
         team.players.length > 0 ? team.total_average / team.players.length : 0;
     });
 
-    console.log('팀 랜덤 섞기 완료');
+    // 팀 랜덤 섞기 완료
   };
 
   // 자동 팀 밸런싱 함수
@@ -1209,7 +1175,6 @@ const TeamAssignment = () => {
     if (teamsToBalance.length < 2) return;
 
     setIsBalancing(true);
-    console.log('자동 팀 밸런싱 시작...');
 
     let maxDiff = 0;
     let attempts = 0;
@@ -1233,10 +1198,9 @@ const TeamAssignment = () => {
         teamStats[0].totalAverage -
         teamStats[teamStats.length - 1].totalAverage;
 
-      console.log(`밸런싱 시도 ${attempts + 1}: 최대 점수 차이 = ${maxDiff}점`);
+      // 밸런싱 시도
 
       if (maxDiff <= 10) {
-        console.log('팀 밸런싱 완료! 10점 이내로 조정됨');
         break;
       }
 
@@ -1274,18 +1238,12 @@ const TeamAssignment = () => {
       }
 
       if (bestSwap && bestImprovement > 0) {
-        console.log(
-          `최적 스위칭 발견: ${bestSwap.player1.name} ↔ ${bestSwap.player2.name}`
-        );
-        console.log(`개선 효과: ${bestImprovement}점`);
-
         // 스위칭 실행
         switchPlayers(bestSwap.player1, bestSwap.player2);
 
         // 잠시 대기 (UI 업데이트를 위해)
         await new Promise((resolve) => setTimeout(resolve, 100));
       } else {
-        console.log('더 이상 개선할 수 있는 스위칭이 없음');
         break;
       }
 
@@ -1293,7 +1251,7 @@ const TeamAssignment = () => {
     } while (maxDiff > 10 && attempts < maxAttempts);
 
     if (attempts >= maxAttempts) {
-      console.log('최대 시도 횟수 도달. 밸런싱 중단');
+      // 최대 시도 횟수 도달. 밸런싱 중단
     }
 
     // 최종 밸런싱 결과 출력
@@ -1307,12 +1265,6 @@ const TeamAssignment = () => {
     const finalMaxDiff =
       finalTeamStats[0].totalAverage -
       finalTeamStats[finalTeamStats.length - 1].totalAverage;
-
-    console.log('최종 밸런싱 결과:', {
-      maxDiff: finalMaxDiff,
-      attempts: attempts,
-      teams: finalTeamStats,
-    });
 
     // 밸런싱 결과 메시지 설정
     if (finalMaxDiff <= 10) {
@@ -1361,39 +1313,31 @@ const TeamAssignment = () => {
     setSelectedPlayer(playerData);
     setIsPlayerSelected(true);
 
-    console.log('선수 선택:', playerData);
+    // 선수 선택
   };
 
   const deselectPlayer = () => {
     setSelectedPlayer(null);
     setIsPlayerSelected(false);
 
-    console.log('선수 선택 해제');
+    // 선수 선택 해제
   };
 
   const switchPlayers = (player1, player2) => {
-    console.log('선수 스위칭 시도:', {
+    const switchData = {
       player1: player1.player.name,
       team1: player1.sourceTeam,
       player2: player2.player.name,
       team2: player2.sourceTeam,
-    });
+    };
 
     // 같은 팀 내에서의 스위칭은 의미가 없음
     if (player1.sourceTeam === player2.sourceTeam) {
-      console.log('같은 팀 내에서는 스위칭 불가');
       deselectPlayer();
       return;
     }
 
     // 두 선수를 서로 다른 팀으로 정확히 스위칭
-    console.log('스위칭 시작:');
-    console.log(
-      `- ${player1.player.name}을 팀 ${player1.sourceTeam}에서 팀 ${player2.sourceTeam}으로 이동`
-    );
-    console.log(
-      `- ${player2.player.name}을 팀 ${player2.sourceTeam}에서 팀 ${player1.sourceTeam}으로 이동`
-    );
 
     // 스위칭을 한 번에 처리
     const updatedTeams = teams.map((team) => {
@@ -1414,15 +1358,7 @@ const TeamAssignment = () => {
         const newAveragePerPlayer =
           newPlayers.length > 0 ? newTotalAverage / newPlayers.length : 0;
 
-        console.log(
-          `팀 ${player1.sourceTeam}에서 ${player1.player.name} 제거하고 ${player2.player.name} 추가됨`
-        );
-        console.log(
-          `- 기존 인원: ${team.players.length}명, 새로운 인원: ${newPlayers.length}명`
-        );
-        console.log(
-          `- 기존 총점: ${team.total_average}, 새로운 총점: ${newTotalAverage}`
-        );
+        // 팀 업데이트
 
         return {
           ...team,
@@ -1447,15 +1383,7 @@ const TeamAssignment = () => {
         const newAveragePerPlayer =
           newPlayers.length > 0 ? newTotalAverage / newPlayers.length : 0;
 
-        console.log(
-          `팀 ${player2.sourceTeam}에서 ${player2.player.name} 제거하고 ${player1.player.name} 추가됨`
-        );
-        console.log(
-          `- 기존 인원: ${team.players.length}명, 새로운 인원: ${newPlayers.length}명`
-        );
-        console.log(
-          `- 기존 총점: ${team.total_average}, 새로운 총점: ${newTotalAverage}`
-        );
+        // 팀 업데이트
 
         return {
           ...team,
@@ -1473,18 +1401,13 @@ const TeamAssignment = () => {
     );
     setTeams(sortedTeams);
 
-    console.log('선수 스위칭 완료!');
-    console.log('업데이트된 팀 상태:', sortedTeams);
+    // 선수 스위칭 완료
 
     // 선택 상태 초기화
     deselectPlayer();
   };
 
   const movePlayerToTeam = (playerData, targetTeam) => {
-    console.log(
-      `선수 이동: ${playerData.player.name}을 팀 ${playerData.sourceTeam}에서 팀 ${targetTeam}으로`
-    );
-
     const updatedTeams = teams.map((team) => {
       if (team.team_number === playerData.sourceTeam) {
         // 원본 팀에서 선수 제거
@@ -1505,15 +1428,7 @@ const TeamAssignment = () => {
             ? newTotalAverage / filteredPlayers.length
             : 0;
 
-        console.log(
-          `팀 ${playerData.sourceTeam}에서 ${playerData.player.name} 제거됨`
-        );
-        console.log(
-          `- 기존 인원: ${team.players.length}명, 새로운 인원: ${filteredPlayers.length}명`
-        );
-        console.log(
-          `- 기존 총점: ${team.total_average}, 새로운 총점: ${newTotalAverage}`
-        );
+        // 팀에서 선수 제거
 
         return {
           ...team,
@@ -1530,13 +1445,7 @@ const TeamAssignment = () => {
         );
         const newAveragePerPlayer = newTotalAverage / newPlayers.length;
 
-        console.log(`팀 ${targetTeam}에 ${playerData.player.name} 추가됨`);
-        console.log(
-          `- 기존 인원: ${team.players.length}명, 새로운 인원: ${newPlayers.length}명`
-        );
-        console.log(
-          `- 기존 총점: ${team.total_average}, 새로운 총점: ${newTotalAverage}`
-        );
+        // 팀에 선수 추가
 
         return {
           ...team,
@@ -1553,7 +1462,6 @@ const TeamAssignment = () => {
       (a, b) => a.team_number - b.team_number
     );
     setTeams(sortedTeams);
-    console.log('팀 업데이트 완료 (순서 유지됨):', sortedTeams);
   };
 
   return (

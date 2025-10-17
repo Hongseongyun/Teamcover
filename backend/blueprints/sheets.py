@@ -70,7 +70,6 @@ def import_scores_from_sheets():
         if clear_existing:
             deleted_count = Score.query.delete()
             db.session.commit()
-            print(f"기존 스코어 {deleted_count}개 삭제됨")
         
         # 구글 시트 인증
         auth_result = sheets_manager.authenticate()
@@ -107,8 +106,7 @@ def import_scores_from_sheets():
         
         # 등록된 회원 목록 미리 조회
         registered_members = {member.name: member for member in Member.query.all()}
-        print(f"등록된 회원 수: {len(registered_members)}")
-        print(f"등록된 회원 목록: {list(registered_members.keys())}")
+        # 등록된 회원 정보
         
         for score_data in parsed_scores:
             try:
@@ -121,7 +119,7 @@ def import_scores_from_sheets():
                 if member_name not in registered_members:
                     if member_name not in unregistered_members:
                         unregistered_members.append(member_name)
-                        print(f"등록되지 않은 회원 무시: {member_name}")
+                        # 등록되지 않은 회원 무시
                     skipped_count += 1
                     continue
                 
@@ -141,10 +139,10 @@ def import_scores_from_sheets():
                 
                 db.session.add(new_score)
                 imported_count += 1
-                print(f"스코어 추가됨: {member_name} - 총점: {score_data['total_score']}")
+                # 스코어 추가됨
                 
             except Exception as e:
-                print(f"스코어 저장 오류: {e}")
+                # 스코어 저장 오류
                 errors.append(f'스코어 저장 오류: {str(e)}')
                 skipped_count += 1
                 continue
@@ -290,7 +288,6 @@ def import_points_from_sheets():
         if clear_existing:
             deleted_count = Point.query.delete()
             db.session.commit()
-            print(f"기존 포인트 {deleted_count}개 삭제됨")
         
         # 구글 시트 인증
         auth_result = sheets_manager.authenticate()
@@ -312,7 +309,6 @@ def import_points_from_sheets():
         
         # 데이터 파싱
         parsed_points = sheets_manager.parse_point_data(sheet_data)
-        print(f"파싱된 포인트 수: {len(parsed_points)}")
         if not parsed_points:
             return jsonify({
                 'success': False, 
@@ -320,9 +316,7 @@ def import_points_from_sheets():
                 'error_type': 'parsing_failed'
             })
         
-        print(f"파싱된 포인트 목록:")
-        for i, point in enumerate(parsed_points):
-            print(f"  {i+1}. {point.get('member_name', 'N/A')} - {point.get('point_type', 'N/A')} {point.get('amount', 0)}P - {point.get('point_date', 'N/A')}")
+        # 파싱된 포인트 목록
         
         # 데이터베이스에 저장
         imported_count = 0
@@ -332,8 +326,7 @@ def import_points_from_sheets():
         
         # 등록된 회원 목록 미리 조회
         registered_members = {member.name: member for member in Member.query.all()}
-        print(f"등록된 회원 수: {len(registered_members)}")
-        print(f"등록된 회원 목록: {list(registered_members.keys())}")
+        # 등록된 회원 정보
         
         for point_data in parsed_points:
             try:
@@ -346,7 +339,7 @@ def import_points_from_sheets():
                 if member_name not in registered_members:
                     if member_name not in unregistered_members:
                         unregistered_members.append(member_name)
-                        print(f"등록되지 않은 회원 무시: {member_name}")
+                        # 등록되지 않은 회원 무시
                     skipped_count += 1
                     continue
                 
@@ -364,10 +357,10 @@ def import_points_from_sheets():
                 
                 db.session.add(new_point)
                 imported_count += 1
-                print(f"포인트 추가됨: {member_name} - {point_data['point_type']} {point_data['amount']}P")
+                # 포인트 추가됨
                 
             except Exception as e:
-                print(f"포인트 저장 오류: {e}")
+                # 포인트 저장 오류
                 errors.append(f'포인트 저장 오류: {str(e)}')
                 skipped_count += 1
                 continue

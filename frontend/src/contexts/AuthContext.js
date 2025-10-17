@@ -69,28 +69,19 @@ export const AuthProvider = ({ children }) => {
   // 구글 로그인 (JWT 토큰을 직접 처리)
   const googleLogin = async (jwtToken) => {
     try {
-      console.log('AuthContext googleLogin called with JWT token:', jwtToken);
-
       // JWT 토큰을 사용하여 사용자 정보 가져오기
       const response = await authAPI.getCurrentUser();
-      console.log('AuthContext getCurrentUser response:', response.data);
 
       if (response.data.success) {
         const userData = response.data.user;
-        console.log('AuthContext setting user:', userData);
         setUser(userData);
         setToken(jwtToken);
         localStorage.setItem('token', jwtToken);
         return { success: true, message: '구글 로그인이 완료되었습니다.' };
       } else {
-        console.log(
-          'AuthContext getCurrentUser failed:',
-          response.data.message
-        );
         return { success: false, message: response.data.message };
       }
     } catch (error) {
-      console.log('AuthContext googleLogin error:', error);
       return {
         success: false,
         message: error.response?.data?.message || '구글 로그인에 실패했습니다.',

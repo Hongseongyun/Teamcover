@@ -23,6 +23,36 @@ const Points = () => {
     note: '',
   });
 
+  // 사유 옵션 목록과 기본 금액 (상태로 관리하여 수정 가능)
+  const [reasonOptions, setReasonOptions] = useState([
+    { name: '오름', amount: 1000 },
+    { name: '내림', amount: -1000 },
+    { name: '5배가', amount: 500 },
+    { name: '7배가', amount: 1000 },
+    { name: '9배가', amount: 2000 },
+    { name: '퍼팩트', amount: 5000 },
+    { name: '올커버', amount: 1000 },
+    { name: '팀승리', amount: 1000 },
+    { name: '기타', amount: 0 },
+  ]);
+
+  // 사유 설정 모달 관련 상태
+  const [showReasonSettings, setShowReasonSettings] = useState(false);
+  const [editingReasons, setEditingReasons] = useState([...reasonOptions]);
+
+  // 표 형식 포인트 등록을 위한 상태
+  const [pointRows, setPointRows] = useState([
+    {
+      id: 1,
+      member_name: '',
+      point_type: '',
+      amount: '',
+      reasons: [],
+      point_date: '',
+      note: '',
+    },
+  ]);
+
   // 구글시트 가져오기 관련 상태
   const [importFormData, setImportFormData] = useState({
     spreadsheetUrl: '',
@@ -53,25 +83,13 @@ const Points = () => {
   const loadPoints = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('포인트 목록 로드 시작');
       const response = await pointAPI.getPoints();
-      console.log('포인트 응답:', response);
       if (response.data.success) {
         setPoints(response.data.points);
         calculateStats(response.data.points);
-        console.log(
-          '포인트 목록 로드 성공:',
-          response.data.points.length,
-          '개'
-        );
-      } else {
-        console.error('포인트 목록 로드 실패:', response.data.message);
       }
     } catch (error) {
-      console.error('포인트 목록 로드 실패:', error);
-      console.error('에러 상세:', error.response?.data);
-      console.error('에러 코드:', error.code);
-      console.error('요청 URL:', error.config?.url);
+      // 에러 처리
     } finally {
       setLoading(false);
     }
@@ -89,7 +107,7 @@ const Points = () => {
         setMembers(response.data.members);
       }
     } catch (error) {
-      console.error('회원 목록 로드 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -117,7 +135,7 @@ const Points = () => {
       if (!memberPoints[point.member_name]) {
         memberPoints[point.member_name] = 0;
       }
-      if (point.point_type === '적립' || point.point_type === '보너스') {
+      if (point.point_type === '적립' || point.point_type === '기타') {
         memberPoints[point.member_name] += Math.abs(amount);
       } else {
         memberPoints[point.member_name] -= Math.abs(amount);
@@ -285,7 +303,6 @@ const Points = () => {
         alert(errorMessage);
       }
     } catch (error) {
-      console.error('구글시트 가져오기 실패:', error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -332,14 +349,243 @@ const Points = () => {
     return balance;
   };
 
+  // 표 형식 포인트 등록 관련 함수들
+  const addPointRow = () => {
+    const newId = Math.max(...pointRows.map((row) => row.id), 0) + 1;
+
+    // 첫 번째 행의 날짜를 가져와서 새 행에 적용
+    const firstRowDate = pointRows.length > 0 ? pointRows[0].point_date : '';
+
+    setPointRows([
+      ...pointRows,
+      {
+        id: newId,
+        member_name: '',
+        point_type: '',
+        amount: '',
+        reasons: [],
+        point_date: firstRowDate,
+        note: '',
+      },
+    ]);
+  };
+
+  const removePointRow = (id) => {
+    if (pointRows.length > 1) {
+      setPointRows(pointRows.filter((row) => row.id !== id));
+    }
+  };
+
+  const updatePointRow = (id, field, value) => {
+    setPointRows(
+      pointRows.map((row) => (row.id === id ? { ...row, [field]: value } : row))
+    );
+
+    // 첫 번째 행의 날짜가 변경되면 모든 행의 날짜를 동기화
+    if (field === 'point_date' && id === pointRows[0]?.id) {
+      setPointRows((prevRows) =>
+        prevRows.map((row, index) =>
+          index === 0 ? row : { ...row, point_date: value }
+        )
+      );
+    }
+  };
+
+  const toggleReasonForRow = (rowId, reasonName) => {
+    setPointRows(
+      pointRows.map((row) => {
+        if (row.id === rowId) {
+          const isSelected = row.reasons.includes(reasonName);
+          let newReasons, newAmount;
+
+          if (isSelected) {
+            // 사유 해제
+            newReasons = row.reasons.filter((r) => r !== reasonName);
+
+            // 해제된 사유의 금액만큼 차감
+            const reasonData = reasonOptions.find((r) => r.name === reasonName);
+            const currentAmount = parseInt(row.amount) || 0;
+            const amountToSubtract = reasonData?.amount || 0;
+
+            if (reasonName === '기타') {
+              // 기타 해제 시 반올림 없이 차감
+              newAmount = currentAmount - amountToSubtract;
+            } else {
+              // 다른 사유 해제 시 500단위로 반올림
+              newAmount =
+                Math.round((currentAmount - amountToSubtract) / 500) * 500;
+            }
+          } else {
+            // 사유 추가
+            newReasons = [...row.reasons, reasonName];
+
+            if (reasonName === '기타') {
+              // 기타 선택 시 현재 금액 유지 (사용자가 직접 입력할 예정)
+              newAmount = parseInt(row.amount) || 0;
+            } else {
+              // 다른 사유 선택 시 금액 추가
+              const reasonData = reasonOptions.find(
+                (r) => r.name === reasonName
+              );
+              const currentAmount = parseInt(row.amount) || 0;
+              const amountToAdd = reasonData?.amount || 0;
+
+              // 500단위로 반올림 (음수 허용)
+              newAmount = Math.round((currentAmount + amountToAdd) / 500) * 500;
+            }
+          }
+
+          return {
+            ...row,
+            reasons: newReasons,
+            amount: newAmount.toString(),
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const clearReasonsForRow = (rowId) => {
+    setPointRows(
+      pointRows.map((row) =>
+        row.id === rowId ? { ...row, reasons: [], amount: '' } : row
+      )
+    );
+  };
+
+  // 기타 항목의 현재 금액 계산 함수
+  const getOtherAmount = (row) => {
+    if (!row.reasons.includes('기타')) return 0;
+
+    // otherAmount가 있으면 우선 사용 (입력 중인 상태)
+    if (row.otherAmount !== undefined) {
+      return row.otherAmount;
+    }
+
+    const currentAmount = parseInt(row.amount) || 0;
+    let otherReasonsAmount = 0;
+
+    row.reasons.forEach((reasonName) => {
+      if (reasonName !== '기타') {
+        const reasonData = reasonOptions.find((r) => r.name === reasonName);
+        if (reasonData) {
+          otherReasonsAmount += reasonData.amount;
+        }
+      }
+    });
+
+    return currentAmount - otherReasonsAmount;
+  };
+
+  // 기타 항목 금액 업데이트 함수
+  const updateOtherAmount = (rowId, amount) => {
+    setPointRows(
+      pointRows.map((row) => {
+        if (row.id === rowId) {
+          // 입력 중인 상태(빈 문자열, '-')는 그대로 유지
+          if (amount === '' || amount === '-') {
+            return { ...row, otherAmount: amount };
+          }
+
+          const otherAmount = parseInt(amount) || 0;
+
+          // 기타가 선택되어 있으면 기타 금액을 반영
+          if (row.reasons.includes('기타')) {
+            // 다른 사유들의 금액 계산
+            let otherReasonsAmount = 0;
+            row.reasons.forEach((reasonName) => {
+              if (reasonName !== '기타') {
+                const reasonData = reasonOptions.find(
+                  (r) => r.name === reasonName
+                );
+                if (reasonData) {
+                  otherReasonsAmount += reasonData.amount;
+                }
+              }
+            });
+
+            // 기타 금액 + 다른 사유 금액
+            const newAmount = otherReasonsAmount + otherAmount;
+            return {
+              ...row,
+              amount: newAmount.toString(),
+              otherAmount: amount,
+            };
+          }
+          return row;
+        }
+        return row;
+      })
+    );
+  };
+
+  // 사유 설정 관련 함수들
+  const openReasonSettings = () => {
+    setEditingReasons([...reasonOptions]);
+    setShowReasonSettings(true);
+  };
+
+  const updateEditingReason = (index, field, value) => {
+    setEditingReasons((prev) =>
+      prev.map((reason, i) =>
+        i === index ? { ...reason, [field]: value } : reason
+      )
+    );
+  };
+
+  const saveReasonSettings = () => {
+    setReasonOptions([...editingReasons]);
+    setShowReasonSettings(false);
+  };
+
+  const resetReasonSettings = () => {
+    const defaultReasons = [
+      { name: '오름', amount: 1000 },
+      { name: '내림', amount: -1000 },
+      { name: '5배가', amount: 500 },
+      { name: '7배가', amount: 1000 },
+      { name: '9배가', amount: 2000 },
+      { name: '퍼팩트', amount: 5000 },
+      { name: '올커버', amount: 1000 },
+      { name: '팀승리', amount: 1000 },
+      { name: '기타', amount: 0 },
+    ];
+    setEditingReasons([...defaultReasons]);
+    setReasonOptions([...defaultReasons]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingPoint) {
         await pointAPI.updatePoint(editingPoint.id, formData);
       } else {
-        await pointAPI.addPoint(formData);
+        // 표 형식에서 각 행을 개별적으로 등록
+        const validRows = pointRows.filter(
+          (row) => row.member_name && row.point_type && row.amount
+        );
+
+        if (validRows.length === 0) {
+          alert('최소 하나의 유효한 포인트 정보를 입력해주세요.');
+          return;
+        }
+
+        // 각 행을 개별적으로 등록
+        for (const row of validRows) {
+          const submitData = {
+            member_name: row.member_name,
+            point_type: row.point_type,
+            amount: parseInt(row.amount),
+            reason: row.reasons.length > 0 ? row.reasons.join(', ') : '',
+            point_date:
+              row.point_date || new Date().toISOString().split('T')[0],
+            note: row.note,
+          };
+          await pointAPI.addPoint(submitData);
+        }
       }
+
       setShowAddForm(false);
       setEditingPoint(null);
       setFormData({
@@ -350,9 +596,25 @@ const Points = () => {
         point_date: '',
         note: '',
       });
+      // 표 초기화
+      setPointRows([
+        {
+          id: 1,
+          member_name: '',
+          point_type: '',
+          amount: '',
+          reasons: [],
+          point_date: '',
+          note: '',
+        },
+      ]);
       loadPoints();
     } catch (error) {
       console.error('포인트 저장 실패:', error);
+      alert(
+        '포인트 저장에 실패했습니다: ' +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
@@ -382,9 +644,6 @@ const Points = () => {
 
   const saveInlineEdit = async () => {
     try {
-      console.log('포인트 인라인 수정 시도:', formData);
-      console.log('수정할 포인트 ID:', editingId);
-
       await pointAPI.updatePoint(editingId, formData);
 
       // 성공 시 목록 새로고침
@@ -399,13 +658,6 @@ const Points = () => {
         note: '',
       });
     } catch (error) {
-      console.error('인라인 수정 실패:', error);
-      console.error('에러 타입:', error.constructor.name);
-      console.error('에러 메시지:', error.message);
-      console.error('에러 코드:', error.code);
-      console.error('에러 상세:', error.response?.data);
-      console.error('요청 URL:', error.config?.url);
-      console.error('요청 메서드:', error.config?.method);
       alert('포인트 수정에 실패했습니다.');
     }
   };
@@ -416,7 +668,7 @@ const Points = () => {
         await pointAPI.deletePoint(id);
         loadPoints();
       } catch (error) {
-        console.error('포인트 삭제 실패:', error);
+        // 에러 처리
       }
     }
   };
@@ -432,6 +684,18 @@ const Points = () => {
     });
     setEditingPoint(null);
     setShowAddForm(false);
+    // 표 초기화
+    setPointRows([
+      {
+        id: 1,
+        member_name: '',
+        point_type: '',
+        amount: '',
+        reasons: [],
+        point_date: '',
+        note: '',
+      },
+    ]);
   };
 
   if (loading) {
@@ -604,108 +868,541 @@ const Points = () => {
             <h3 className="section-title">
               {editingPoint ? '포인트 수정' : '새 포인트 등록'}
             </h3>
-            <form onSubmit={handleSubmit} className="point-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>회원 이름 *</label>
-                  <select
-                    value={formData.member_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, member_name: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">회원 선택</option>
-                    {members.map((member) => (
-                      <option key={member.id} value={member.name}>
-                        {member.name}
-                      </option>
-                    ))}
-                  </select>
+
+            {!editingPoint ? (
+              // 표 형식 포인트 등록
+              <div className="table-form-container">
+                <div className="table-form-header">
+                  <div className="header-buttons">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={addPointRow}
+                    >
+                      + 행 추가
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={openReasonSettings}
+                    >
+                      포인트 설정
+                    </button>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>포인트 유형 *</label>
-                  <select
-                    value={formData.point_type}
-                    onChange={(e) =>
-                      setFormData({ ...formData, point_type: e.target.value })
-                    }
-                    required
+
+                <form onSubmit={handleSubmit} className="table-form">
+                  <div className="table-form-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>회원</th>
+                          <th>유형</th>
+                          <th>금액</th>
+                          <th>사유</th>
+                          <th>날짜</th>
+                          <th>비고</th>
+                          <th>작업</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pointRows.map((row) => (
+                          <tr key={row.id}>
+                            <td>
+                              <select
+                                value={row.member_name}
+                                onChange={(e) =>
+                                  updatePointRow(
+                                    row.id,
+                                    'member_name',
+                                    e.target.value
+                                  )
+                                }
+                                required
+                              >
+                                <option value="">회원 선택</option>
+                                {members.map((member) => (
+                                  <option key={member.id} value={member.name}>
+                                    {member.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td>
+                              <select
+                                value={row.point_type}
+                                onChange={(e) =>
+                                  updatePointRow(
+                                    row.id,
+                                    'point_type',
+                                    e.target.value
+                                  )
+                                }
+                                required
+                              >
+                                <option value="">유형 선택</option>
+                                <option value="정기전">정기전</option>
+                                <option value="사용">사용</option>
+                                <option value="기타">기타</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={row.amount}
+                                readOnly
+                                required
+                                min="0"
+                                step="500"
+                                placeholder="사유를 선택하세요"
+                                className={
+                                  row.reasons.length > 0
+                                    ? 'auto-calculated-amount'
+                                    : 'readonly-amount'
+                                }
+                                title={
+                                  row.reasons.length > 0
+                                    ? '사유 선택으로 자동 계산된 금액입니다'
+                                    : '사유를 선택하면 자동으로 금액이 계산됩니다'
+                                }
+                              />
+                            </td>
+                            <td>
+                              <div className="reason-cell">
+                                <div className="reason-options-mini">
+                                  {reasonOptions.map((reason) => (
+                                    <label
+                                      key={reason.name}
+                                      className="reason-option-mini"
+                                      title={`${reason.name}: ${
+                                        reason.amount > 0 ? '+' : ''
+                                      }${reason.amount.toLocaleString()}P`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={row.reasons.includes(
+                                          reason.name
+                                        )}
+                                        onChange={() =>
+                                          toggleReasonForRow(
+                                            row.id,
+                                            reason.name
+                                          )
+                                        }
+                                      />
+                                      <span>{reason.name}</span>
+                                      <span className="reason-amount">
+                                        {reason.name === '기타' ? (
+                                          <input
+                                            type="text"
+                                            value={getOtherAmount(row)}
+                                            onChange={(e) => {
+                                              const value = e.target.value;
+                                              // 숫자, -, 빈 문자열만 허용
+                                              if (
+                                                value === '' ||
+                                                value === '-' ||
+                                                /^-?\d*$/.test(value)
+                                              ) {
+                                                updateOtherAmount(
+                                                  row.id,
+                                                  value
+                                                );
+                                              }
+                                            }}
+                                            onKeyDown={(e) => {
+                                              // 허용할 키들
+                                              const allowedKeys = [
+                                                'Backspace',
+                                                'Delete',
+                                                'ArrowLeft',
+                                                'ArrowRight',
+                                                'ArrowUp',
+                                                'ArrowDown',
+                                                'Tab',
+                                                'Enter',
+                                                'Escape',
+                                              ];
+
+                                              // 숫자, -, 백스페이스, 삭제, 화살표 키만 허용
+                                              if (
+                                                !/[\d-]/.test(e.key) &&
+                                                !allowedKeys.includes(e.key)
+                                              ) {
+                                                e.preventDefault();
+                                              }
+                                            }}
+                                            placeholder="금액"
+                                            className="other-amount-input"
+                                            style={{
+                                              width: '60px',
+                                              padding: '2px 4px',
+                                              fontSize: '0.7rem',
+                                              border: '1px solid #ccc',
+                                              borderRadius: '3px',
+                                              textAlign: 'right',
+                                            }}
+                                          />
+                                        ) : (
+                                          `(${
+                                            reason.amount > 0 ? '+' : ''
+                                          }${reason.amount.toLocaleString()})`
+                                        )}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                                {row.reasons.length > 0 && (
+                                  <div className="selected-reasons-mini">
+                                    <span>{row.reasons.join(', ')}</span>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-secondary"
+                                      onClick={() => clearReasonsForRow(row.id)}
+                                    >
+                                      해제
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                type="date"
+                                value={row.point_date}
+                                onChange={(e) =>
+                                  updatePointRow(
+                                    row.id,
+                                    'point_date',
+                                    e.target.value
+                                  )
+                                }
+                                className={
+                                  pointRows[0]?.id === row.id
+                                    ? 'master-date-input'
+                                    : ''
+                                }
+                                title={
+                                  pointRows[0]?.id === row.id
+                                    ? '이 날짜가 모든 행에 적용됩니다'
+                                    : ''
+                                }
+                              />
+                              {pointRows[0]?.id === row.id &&
+                                pointRows.length > 1 && (
+                                  <div className="date-sync-indicator">
+                                    모든 행에 적용됨
+                                  </div>
+                                )}
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={row.note}
+                                onChange={(e) =>
+                                  updatePointRow(row.id, 'note', e.target.value)
+                                }
+                                placeholder="메모"
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-danger"
+                                onClick={() => removePointRow(row.id)}
+                                disabled={pointRows.length === 1}
+                              >
+                                삭제
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="form-actions">
+                    <button type="submit" className="btn btn-primary">
+                      등록 ({pointRows.length}명)
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={resetForm}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              // 기존 단일 수정 폼
+              <form onSubmit={handleSubmit} className="point-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>회원 이름 *</label>
+                    <select
+                      value={formData.member_name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          member_name: e.target.value,
+                        })
+                      }
+                      required
+                    >
+                      <option value="">회원 선택</option>
+                      {members.map((member) => (
+                        <option key={member.id} value={member.name}>
+                          {member.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>포인트 유형 *</label>
+                    <select
+                      value={formData.point_type}
+                      onChange={(e) =>
+                        setFormData({ ...formData, point_type: e.target.value })
+                      }
+                      required
+                    >
+                      <option value="">유형 선택</option>
+                      <option value="정기전">정기전</option>
+                      <option value="사용">사용</option>
+                      <option value="기타">기타</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>포인트 금액 *</label>
+                    <input
+                      type="number"
+                      value={formData.amount}
+                      onChange={(e) =>
+                        setFormData({ ...formData, amount: e.target.value })
+                      }
+                      required
+                      min="1"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>포인트 날짜</label>
+                    <input
+                      type="date"
+                      value={formData.point_date}
+                      onChange={(e) =>
+                        setFormData({ ...formData, point_date: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>사유</label>
+                    <select
+                      value={formData.reason}
+                      onChange={(e) =>
+                        setFormData({ ...formData, reason: e.target.value })
+                      }
+                    >
+                      <option value="">사유 선택</option>
+                      {reasonOptions.map((reason) => (
+                        <option key={reason.name} value={reason.name}>
+                          {reason.name}{' '}
+                          {`(${
+                            reason.amount > 0 ? '+' : ''
+                          }${reason.amount.toLocaleString()}P)`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>비고</label>
+                    <input
+                      type="text"
+                      value={formData.note}
+                      onChange={(e) =>
+                        setFormData({ ...formData, note: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={resetForm}
                   >
-                    <option value="">유형 선택</option>
-                    <option value="적립">적립</option>
-                    <option value="사용">사용</option>
-                    <option value="차감">차감</option>
-                    <option value="보너스">보너스</option>
-                  </select>
+                    취소
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 사유 설정 모달 */}
+      {showReasonSettings && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>포인트 설정</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowReasonSettings(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="reason-settings-grid">
+                {editingReasons
+                  .filter((reason) => reason.name !== '기타')
+                  .map((reason, index) => (
+                    <div key={reason.name} className="reason-setting-item">
+                      <label className="reason-name">{reason.name}</label>
+                      <div className="reason-amount-input">
+                        <input
+                          type="number"
+                          value={
+                            typeof reason.amount === 'string'
+                              ? reason.amount
+                              : Number.isFinite(reason.amount)
+                              ? String(reason.amount)
+                              : ''
+                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // 입력 중 상태 허용: '', '-'
+                            if (value === '' || value === '-') {
+                              updateEditingReason(index, 'amount', value);
+                              return;
+                            }
+                            const numValue = Number(value);
+                            if (!Number.isNaN(numValue)) {
+                              updateEditingReason(index, 'amount', numValue);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              const currentAmount =
+                                typeof reason.amount === 'number'
+                                  ? reason.amount
+                                  : 0;
+                              updateEditingReason(
+                                index,
+                                'amount',
+                                currentAmount + 500
+                              );
+                            } else if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              const currentAmount =
+                                typeof reason.amount === 'number'
+                                  ? reason.amount
+                                  : 0;
+                              updateEditingReason(
+                                index,
+                                'amount',
+                                currentAmount - 500
+                              );
+                            } else if (e.key === '-') {
+                              // 전체 선택 상태에서 '-' 입력 허용
+                              const input = e.target;
+                              const start = input.selectionStart;
+                              const end = input.selectionEnd;
+                              if (start !== end) {
+                                e.preventDefault();
+                                updateEditingReason(index, 'amount', '-');
+                              }
+                            }
+                          }}
+                          onMouseDown={(e) => {
+                            // 스피너 버튼 클릭 감지 및 기본 동작 차단
+                            const rect = e.target.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            const width = rect.width;
+                            const height = rect.height;
+
+                            if (
+                              x > width - 20 &&
+                              x < width &&
+                              y >= 0 &&
+                              y <= height
+                            ) {
+                              e.preventDefault();
+                              e.stopPropagation();
+
+                              const currentAmount =
+                                typeof reason.amount === 'number'
+                                  ? reason.amount
+                                  : 0;
+                              if (y < height / 2) {
+                                updateEditingReason(
+                                  index,
+                                  'amount',
+                                  currentAmount + 500
+                                );
+                              } else {
+                                updateEditingReason(
+                                  index,
+                                  'amount',
+                                  currentAmount - 500
+                                );
+                              }
+                            }
+                          }}
+                          step="1"
+                          min="-999999"
+                          max="999999"
+                        />
+                        <span className="amount-unit">P</span>
+                      </div>
+                    </div>
+                  ))}
+                <div className="reason-setting-item">
+                  <label className="reason-name">기타</label>
+                  <div className="reason-amount-input">
+                    <span className="readonly-note">
+                      기타 항목은 각 행에서 직접 입력하세요
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>포인트 금액 *</label>
-                  <input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, amount: e.target.value })
-                    }
-                    required
-                    min="1"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>포인트 날짜</label>
-                  <input
-                    type="date"
-                    value={formData.point_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, point_date: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>사유</label>
-                  <select
-                    value={formData.reason}
-                    onChange={(e) =>
-                      setFormData({ ...formData, reason: e.target.value })
-                    }
-                  >
-                    <option value="">사유 선택</option>
-                    <option value="경기 참여">경기 참여</option>
-                    <option value="스트라이크">스트라이크</option>
-                    <option value="스페어">스페어</option>
-                    <option value="200점 이상">200점 이상</option>
-                    <option value="상품 교환">상품 교환</option>
-                    <option value="기타">기타</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>비고</label>
-                  <input
-                    type="text"
-                    value={formData.note}
-                    onChange={(e) =>
-                      setFormData({ ...formData, note: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  {editingPoint ? '수정' : '등록'}
-                </button>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={resetReasonSettings}
+              >
+                기본값 복원
+              </button>
+              <div className="modal-actions">
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={resetForm}
+                  onClick={() => setShowReasonSettings(false)}
                 >
                   취소
                 </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={saveReasonSettings}
+                >
+                  저장
+                </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -839,10 +1536,13 @@ const Points = () => {
                               <td>
                                 <span
                                   className={`point-type ${
-                                    (point.point_type === '적립' ||
-                                      point.point_type === '보너스') &&
-                                    point.amount >= 0
-                                      ? 'positive'
+                                    point.point_type === '사용'
+                                      ? 'negative'
+                                      : point.point_type === '정기전' ||
+                                        point.point_type === '기타'
+                                      ? point.amount >= 0
+                                        ? 'positive'
+                                        : 'negative'
                                       : 'negative'
                                   }`}
                                 >
@@ -852,7 +1552,7 @@ const Points = () => {
                               <td
                                 className={
                                   (point.point_type === '적립' ||
-                                    point.point_type === '보너스') &&
+                                    point.point_type === '기타') &&
                                   point.amount >= 0
                                     ? 'positive'
                                     : 'negative'
@@ -1086,18 +1786,20 @@ const Points = () => {
                             className="form-control"
                           >
                             <option value="">유형 선택</option>
-                            <option value="적립">적립</option>
+                            <option value="정기전">정기전</option>
                             <option value="사용">사용</option>
-                            <option value="차감">차감</option>
-                            <option value="보너스">보너스</option>
+                            <option value="기타">기타</option>
                           </select>
                         ) : (
                           <span
                             className={`point-type ${
-                              (point.point_type === '적립' ||
-                                point.point_type === '보너스') &&
-                              point.amount >= 0
-                                ? 'positive'
+                              point.point_type === '사용'
+                                ? 'negative'
+                                : point.point_type === '정기전' ||
+                                  point.point_type === '기타'
+                                ? point.amount >= 0
+                                  ? 'positive'
+                                  : 'negative'
                                 : 'negative'
                             }`}
                           >
@@ -1123,7 +1825,7 @@ const Points = () => {
                           <span
                             className={
                               (point.point_type === '적립' ||
-                                point.point_type === '보너스') &&
+                                point.point_type === '기타') &&
                               point.amount >= 0
                                 ? 'positive'
                                 : 'negative'

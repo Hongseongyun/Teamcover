@@ -25,7 +25,6 @@ const UserManagement = () => {
       }
     } catch (error) {
       setError('사용자 목록을 불러오는데 실패했습니다.');
-      console.error('사용자 목록 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -46,7 +45,6 @@ const UserManagement = () => {
       }
     } catch (error) {
       setError('역할 변경에 실패했습니다.');
-      console.error('역할 변경 실패:', error);
     }
   };
 
@@ -66,7 +64,6 @@ const UserManagement = () => {
       }
     } catch (error) {
       setError('상태 변경에 실패했습니다.');
-      console.error('상태 변경 실패:', error);
     }
   };
 
@@ -86,7 +83,6 @@ const UserManagement = () => {
       }
     } catch (error) {
       setError('사용자 삭제에 실패했습니다.');
-      console.error('사용자 삭제 실패:', error);
     }
   };
 

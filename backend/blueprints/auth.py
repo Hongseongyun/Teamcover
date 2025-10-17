@@ -67,7 +67,6 @@ def get_current_user_from_jwt():
         user_id = get_jwt_identity()
         return User.query.get(int(user_id))
     except Exception as e:
-        print(f"JWT 검증 오류: {e}")
         return None
 
 @auth_bp.route('/register', methods=['POST'])
@@ -101,21 +100,15 @@ def register():
         
         # 먼저 이메일 발송 시도 (사용자 정보 포함)
         try:
-            print(f"=== 회원가입 이메일 발송 시도 ===")
-            print(f"이메일: {email}")
-            print(f"이름: {name}")
-            print(f"역할: {role}")
             
             # 이메일 발송 결과와 상세 정보를 받아옴
             email_result = send_verification_email_with_debug(email, name, password, role)
             email_sent = email_result['success']
             debug_info = email_result['debug_info']
             
-            print(f"이메일 발송 결과: {email_sent}")
-            print(f"디버그 정보: {debug_info}")
+            # 이메일 발송 결과 확인
             
             if not email_sent:
-                print("❌ 이메일 발송 실패")
                 return jsonify({
                     'success': False,
                     'message': '이메일 발송에 실패했습니다. Gmail SMTP 설정을 확인해주세요.',
@@ -125,7 +118,6 @@ def register():
                     }
                 })
             
-            print("✅ 이메일 발송 성공")
             # 이메일 발송 성공 - DB에는 저장하지 않음 (인증 완료 후 저장)
             return jsonify({
                 'success': True,
@@ -137,10 +129,6 @@ def register():
             })
             
         except Exception as email_error:
-            print(f"❌ 이메일 발송 오류: {email_error}")
-            print(f"오류 타입: {type(email_error)}")
-            import traceback
-            print(f"상세 오류: {traceback.format_exc()}")
             return jsonify({
                 'success': False,
                 'message': f'이메일 발송 중 오류가 발생했습니다: {str(email_error)}',
@@ -311,11 +299,7 @@ def google_callback():
         # origin이 제공되지 않았거나 허용되지 않은 origin인 경우 기본값 사용
         redirect_uri = allowed_origins.get(origin, current_app.config.get('GOOGLE_REDIRECT_URI', 'http://localhost:3000/google-callback'))
         
-        print(f"Google OAuth credentials: {google_creds}")
-        print(f"Client ID: {google_creds['client_id']}")
-        print(f"Client Secret set: {bool(google_creds['client_secret'])}")
-        print(f"Request Origin: {origin}")
-        print(f"Redirect URI: {redirect_uri}")
+        # Google OAuth 설정 확인
         
         # Google OAuth2 토큰 교환
         token_url = 'https://oauth2.googleapis.com/token'
@@ -330,8 +314,7 @@ def google_callback():
         token_response = requests.post(token_url, data=token_data)
         token_json = token_response.json()
         
-        print(f"Google token response status: {token_response.status_code}")
-        print(f"Google token response: {token_json}")
+        # Google 토큰 응답 확인
         
         if 'access_token' not in token_json:
             error_message = token_json.get('error_description', token_json.get('error', 'Unknown error'))
@@ -343,8 +326,7 @@ def google_callback():
         user_response = requests.get(user_info_url, headers=headers)
         user_info = user_response.json()
         
-        print(f"Google user info response status: {user_response.status_code}")
-        print(f"Google user info: {user_info}")
+        # Google 사용자 정보 응답 확인
         
         google_id = user_info.get('id')
         email = user_info.get('email')
@@ -353,24 +335,18 @@ def google_callback():
         if not google_id or not email or not name:
             return jsonify({'success': False, 'message': '구글 계정 정보를 가져올 수 없습니다.'})
         
-        print(f"=== Google User Processing ===")
-        print(f"Google ID: {google_id}")
-        print(f"Email: {email}")
-        print(f"Name: {name}")
+        # Google 사용자 처리
         
         # 기존 사용자 확인 또는 새 사용자 생성
         user = User.query.filter_by(google_id=google_id).first()
-        print(f"Existing user by google_id: {user}")
         
         if not user:
             # 이메일로 기존 사용자 확인
             existing_user = User.query.filter_by(email=email).first()
-            print(f"Existing user by email: {existing_user}")
             if existing_user:
                 # 기존 사용자에 구글 ID 연결
                 existing_user.google_id = google_id
                 user = existing_user
-                print(f"Linked existing user with Google ID: {user}")
             else:
                 # 새 사용자 생성 - 구글 로그인은 바로 활성화
                 user = User(
@@ -384,35 +360,27 @@ def google_callback():
                     verified_at=datetime.utcnow()  # 인증 완료 시간
                 )
                 db.session.add(user)
-                print(f"Created new user via Google login: {user}")
                 try:
                     db.session.commit()
-                    print(f"New Google user saved to database: {user.id}")
                 except Exception as e:
-                    print(f"Error saving new user: {e}")
                     db.session.rollback()
                     return jsonify({'success': False, 'message': f'사용자 생성 중 오류가 발생했습니다: {str(e)}'})
         
-        print(f"User before login: {user}")
-        print(f"User is_active: {user.is_active}")
+        # 사용자 로그인 상태 확인
         
         if not user.is_active:
-            print(f"User is inactive, returning error")
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
         db.session.commit()
-        print(f"User logged in successfully: {user.email}")
         
         # JWT 토큰 생성
         access_token = create_access_token(
             identity=str(user.id),
             expires_delta=timedelta(days=7)
         )
-        print(f"JWT token created for user: {user.id}")
-        print(f"=== Google Login Success ===")
         
         return jsonify({
             'success': True,
@@ -635,10 +603,6 @@ def resend_verification():
 def test_email():
     """이메일 발송 테스트"""
     try:
-        print(f"=== 이메일 테스트 요청 수신 ===")
-        print(f"요청 메서드: {request.method}")
-        print(f"Content-Type: {request.content_type}")
-        print(f"요청 데이터: {request.get_data()}")
         
         # JSON 데이터 파싱
         if request.is_json:
@@ -648,8 +612,7 @@ def test_email():
         
         test_email = data.get('email', 'test@example.com')
         
-        print(f"=== 이메일 테스트 시작 ===")
-        print(f"테스트 이메일: {test_email}")
+        # 이메일 테스트 시작
         
         # 이메일 발송 테스트
         success = send_verification_email(test_email, '테스트 사용자')

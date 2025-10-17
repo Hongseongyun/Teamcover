@@ -67,7 +67,7 @@ const Members = () => {
         setPasswordSetStatus(response.data.password_set);
       }
     } catch (error) {
-      console.error('비밀번호 상태 확인 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -79,7 +79,7 @@ const Members = () => {
         setPrivacyUnlocked(response.data.privacy_unlocked);
       }
     } catch (error) {
-      console.error('개인정보 보호 상태 확인 실패:', error);
+      // 에러 처리
     }
   };
 
@@ -139,11 +139,10 @@ const Members = () => {
     }
   };
 
-  // 개인정보 접근 토큰 초기화 (테스트용)
+  // 개인정보 접근 토큰 초기화
   const resetPrivacyToken = () => {
     localStorage.removeItem('privacy_token');
     setPrivacyUnlocked(false);
-    console.log('개인정보 접근 토큰 초기화됨');
   };
 
   // 비밀번호 설정
@@ -174,19 +173,13 @@ const Members = () => {
   const loadMembers = async () => {
     try {
       setLoading(true);
-      console.log('회원 목록 로드 시작');
       const response = await memberAPI.getMembers();
-      console.log('회원 목록 응답:', response);
       if (response.data.success) {
         setMembers(response.data.members);
         setStats(response.data.stats);
-        console.log('회원 목록 로드 성공:', response.data.members.length, '명');
-      } else {
-        console.error('회원 목록 로드 실패:', response.data.message);
       }
     } catch (error) {
-      console.error('회원 목록 로드 실패:', error);
-      console.error('에러 상세:', error.response?.data);
+      // 에러 처리
     } finally {
       setLoading(false);
     }
@@ -194,23 +187,15 @@ const Members = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('회원 추가 시도:', formData);
 
     try {
       if (editingMember) {
-        console.log('회원 수정 모드');
         const response = await memberAPI.updateMember(
           editingMember.id,
           formData
         );
-        console.log('수정 응답:', response);
       } else {
-        console.log('회원 추가 모드');
-        console.log('전송할 데이터:', JSON.stringify(formData, null, 2));
         const response = await memberAPI.addMember(formData);
-        console.log('추가 응답 전체:', response);
-        console.log('응답 데이터:', response.data);
-        console.log('응답 상태:', response.status);
 
         if (response.data && !response.data.success) {
           alert(response.data.message || '회원 추가에 실패했습니다.');
@@ -234,8 +219,6 @@ const Members = () => {
       });
       loadMembers();
     } catch (error) {
-      console.error('회원 저장 실패:', error);
-      console.error('에러 상세:', error.response?.data);
       alert(error.response?.data?.message || '회원 저장에 실패했습니다.');
     }
   };
@@ -259,7 +242,7 @@ const Members = () => {
         await memberAPI.deleteMember(id);
         loadMembers();
       } catch (error) {
-        console.error('회원 삭제 실패:', error);
+        // 에러 처리
       }
     }
   };
@@ -310,7 +293,6 @@ const Members = () => {
         alert(errorMessage);
       }
     } catch (error) {
-      console.error('구글시트 가져오기 실패:', error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -348,13 +330,7 @@ const Members = () => {
   // 인라인 편집 저장
   const saveInlineEdit = async (memberId) => {
     try {
-      console.log('회원 인라인 수정 시도:', inlineEditData);
-      console.log('수정할 회원 ID:', memberId);
-
       const response = await memberAPI.updateMember(memberId, inlineEditData);
-      console.log('인라인 수정 응답:', response);
-      console.log('응답 상태:', response.status);
-      console.log('응답 데이터:', response.data);
 
       if (response.data && !response.data.success) {
         alert(response.data.message || '회원 수정에 실패했습니다.');
@@ -381,14 +357,6 @@ const Members = () => {
       alert('회원 정보가 수정되었습니다.');
       cancelInlineEdit();
     } catch (error) {
-      console.error('인라인 수정 실패:', error);
-      console.error('에러 타입:', error.name);
-      console.error('에러 메시지:', error.message);
-      console.error('에러 코드:', error.code);
-      console.error('에러 상세:', error.response?.data);
-      console.error('요청 URL:', error.config?.url);
-      console.error('요청 메서드:', error.config?.method);
-
       if (error.code === 'ERR_NETWORK') {
         alert(
           '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
