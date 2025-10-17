@@ -433,14 +433,14 @@ const Scores = () => {
         return;
       }
 
-      let successCount = 0;
-      let failCount = 0;
-      const errors = [];
+      // 로딩 상태 시작
+      setAiAnalyzing(true);
+      setAnalyzingProgress({ current: 0, total: ocrResults.length });
 
-      for (let i = 0; i < ocrResults.length; i++) {
-        const result = ocrResults[i];
+      // 병렬 처리로 모든 스코어를 동시에 저장
+      const savePromises = ocrResults.map(async (result, index) => {
         try {
-          await scoreAPI.addScore({
+          const response = await scoreAPI.addScore({
             member_name: result.member_name.trim(),
             game_date:
               result.game_date || new Date().toISOString().split('T')[0],
@@ -449,34 +449,82 @@ const Scores = () => {
             score3: parseInt(result.score3) || 0,
             note: result.note || '', // 비고 추가
           });
-          successCount++;
+
+          // 진행률 업데이트
+          setAnalyzingProgress((prev) => ({
+            current: prev.current + 1,
+            total: prev.total,
+          }));
+
+          return { success: true, result, response };
         } catch (error) {
-          failCount++;
-          const errorMsg = error.response?.data?.message || error.message;
-          errors.push(`${result.member_name || '(이름없음)'}: ${errorMsg}`);
+          const errorMsg =
+            error.response?.data?.message || error.message || '알 수 없는 오류';
+          return {
+            success: false,
+            result,
+            error: `${result.member_name || '(이름없음)'}: ${errorMsg}`,
+          };
         }
-      }
+      });
+
+      // 모든 저장 작업 완료 대기
+      const results = await Promise.all(savePromises);
+
+      const successResults = results.filter((r) => r.success);
+      const failResults = results.filter((r) => !r.success);
+
+      const successCount = successResults.length;
+      const failCount = failResults.length;
+      const errors = failResults.map((r) => r.error);
+
+      // 로딩 상태 종료
+      setAiAnalyzing(false);
+      setAnalyzingProgress({ current: 0, total: 0 });
 
       if (successCount > 0 && failCount === 0) {
-        alert(`✅ ${successCount}명의 스코어가 저장되었습니다.`);
+        alert(`✅ ${successCount}명의 스코어가 성공적으로 저장되었습니다.`);
+        // 성공 시 폼 닫기 및 데이터 초기화
+        setShowPhotoForm(false);
+        setOcrResults([]);
+        setSelectedImages([]);
+        setImagePreviews([]);
+        setCurrentStep('upload');
+        loadScores();
       } else if (successCount > 0 && failCount > 0) {
-        alert(
+        const confirmContinue = window.confirm(
           `일부 저장 완료\n성공: ${successCount}명\n실패: ${failCount}명\n\n실패 내역:\n${errors.join(
             '\n'
-          )}`
+          )}\n\n성공한 스코어는 저장되었습니다. 계속하시겠습니까?`
         );
+        if (confirmContinue) {
+          setShowPhotoForm(false);
+          setOcrResults([]);
+          setSelectedImages([]);
+          setImagePreviews([]);
+          setCurrentStep('upload');
+          loadScores();
+        }
       } else {
-        alert(`❌ 스코어 저장에 실패했습니다.\n\n${errors.join('\n')}`);
+        alert(
+          `❌ 스코어 저장에 실패했습니다.\n\n실패 내역:\n${errors.join(
+            '\n'
+          )}\n\n다시 시도해주세요.`
+        );
         return; // 모두 실패하면 폼을 닫지 않음
       }
-      setShowPhotoForm(false);
-      setOcrResults([]);
-      setSelectedImages([]);
-      setImagePreviews([]);
-      setCurrentStep('upload');
-      loadScores();
     } catch (error) {
-      alert('스코어 저장에 실패했습니다.');
+      // 로딩 상태 종료
+      setAiAnalyzing(false);
+      setAnalyzingProgress({ current: 0, total: 0 });
+
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        '알 수 없는 오류가 발생했습니다.';
+      alert(
+        `스코어 저장 중 오류가 발생했습니다.\n\n오류: ${errorMsg}\n\n다시 시도해주세요.`
+      );
     }
   };
 
@@ -1299,7 +1347,7 @@ const Scores = () => {
                                 }}
                                 title="삭제"
                               >
-                                ❌
+                                X
                               </button>
                             </td>
                           </tr>
@@ -1336,8 +1384,17 @@ const Scores = () => {
                     type="button"
                     className="btn btn-success"
                     onClick={handleSaveOcrResults}
+                    disabled={aiAnalyzing}
                   >
-                    스코어 저장
+                    {aiAnalyzing ? (
+                      <>
+                        <span className="spinner"></span>
+                        저장 중... ({analyzingProgress.current}/
+                        {analyzingProgress.total})
+                      </>
+                    ) : (
+                      '스코어 저장'
+                    )}
                   </button>
                   <button
                     type="button"
