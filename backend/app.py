@@ -196,6 +196,7 @@ with app.app_context():
         db.create_all()
     except Exception as e:
         # 데이터베이스 초기화 경고
+        pass
 
 if __name__ == '__main__':
     # Railway 환경에서는 PORT 환경변수를 사용
