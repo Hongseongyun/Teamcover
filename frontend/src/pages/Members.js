@@ -19,6 +19,8 @@ const Members = () => {
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // 회원 등록 중 로딩 상태
+  const [deleting, setDeleting] = useState(false); // 회원 삭제 중 로딩 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [formData, setFormData] = useState({
@@ -187,6 +189,7 @@ const Members = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true); // 로딩 시작
 
     try {
       if (editingMember) {
@@ -199,6 +202,7 @@ const Members = () => {
 
         if (response.data && !response.data.success) {
           alert(response.data.message || '회원 추가에 실패했습니다.');
+          setSubmitting(false); // 로딩 종료
           return;
         }
       }
@@ -220,6 +224,8 @@ const Members = () => {
       loadMembers();
     } catch (error) {
       alert(error.response?.data?.message || '회원 저장에 실패했습니다.');
+    } finally {
+      setSubmitting(false); // 로딩 종료
     }
   };
 
@@ -238,11 +244,15 @@ const Members = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
+      setDeleting(true); // 로딩 시작
       try {
         await memberAPI.deleteMember(id);
         loadMembers();
       } catch (error) {
         // 에러 처리
+        alert('회원 삭제에 실패했습니다.');
+      } finally {
+        setDeleting(false); // 로딩 종료
       }
     }
   };
@@ -487,7 +497,10 @@ const Members = () => {
             <h3 className="section-title">
               {editingMember ? '회원 정보 수정' : '새 회원 등록'}
             </h3>
-            <form onSubmit={handleSubmit} className="member-form">
+            <form
+              onSubmit={handleSubmit}
+              className={`member-form ${submitting ? 'submitting' : ''}`}
+            >
               <div className="form-row">
                 <div className="form-group">
                   <label>이름 *</label>
@@ -498,6 +511,7 @@ const Members = () => {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     required
+                    disabled={submitting}
                   />
                 </div>
                 <div className="form-group">
@@ -508,6 +522,7 @@ const Members = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -519,6 +534,7 @@ const Members = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, gender: e.target.value })
                     }
+                    disabled={submitting}
                   >
                     <option value="">선택</option>
                     <option value="남">남</option>
@@ -532,6 +548,7 @@ const Members = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, level: e.target.value })
                     }
+                    disabled={submitting}
                   >
                     <option value="">선택</option>
                     <option value="초급">초급</option>
@@ -550,6 +567,7 @@ const Members = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
+                    disabled={submitting}
                   />
                 </div>
                 <div className="form-group">
@@ -560,17 +578,32 @@ const Members = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, note: e.target.value })
                     }
+                    disabled={submitting}
                   />
                 </div>
               </div>
               <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  {editingMember ? '수정' : '등록'}
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="loading-spinner"></div>
+                      {editingMember ? '수정 중...' : '등록 중...'}
+                    </>
+                  ) : editingMember ? (
+                    '수정'
+                  ) : (
+                    '등록'
+                  )}
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={resetForm}
+                  disabled={submitting}
                 >
                   취소
                 </button>
@@ -756,8 +789,16 @@ const Members = () => {
                           <button
                             className="btn btn-sm btn-danger"
                             onClick={() => handleDelete(member.id)}
+                            disabled={deleting}
                           >
-                            삭제
+                            {deleting ? (
+                              <>
+                                <div className="loading-spinner"></div>
+                                삭제 중...
+                              </>
+                            ) : (
+                              '삭제'
+                            )}
                           </button>
                         </td>
                       </>

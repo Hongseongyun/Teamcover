@@ -11,6 +11,8 @@ const Scores = () => {
   const [scores, setScores] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // 스코어 등록 중 로딩 상태
+  const [deleting, setDeleting] = useState(false); // 스코어 삭제 중 로딩 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [editingScore, setEditingScore] = useState(null);
@@ -630,6 +632,8 @@ const Scores = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true); // 로딩 시작
+
     try {
       if (editingScore) {
         // 단일 수정 모드
@@ -685,6 +689,8 @@ const Scores = () => {
       loadScores();
     } catch (error) {
       // 에러 처리
+    } finally {
+      setSubmitting(false); // 로딩 종료
     }
   };
 
@@ -703,11 +709,15 @@ const Scores = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 스코어를 삭제하시겠습니까?')) {
+      setDeleting(true); // 로딩 시작
       try {
         await scoreAPI.deleteScore(id);
         loadScores();
       } catch (error) {
         // 에러 처리
+        alert('스코어 삭제에 실패했습니다.');
+      } finally {
+        setDeleting(false); // 로딩 종료
       }
     }
   };
@@ -759,6 +769,7 @@ const Scores = () => {
         `선택한 ${selectedScores.length}개의 스코어를 삭제하시겠습니까?`
       )
     ) {
+      setDeleting(true); // 로딩 시작
       try {
         let successCount = 0;
         let failCount = 0;
@@ -786,6 +797,8 @@ const Scores = () => {
         }
       } catch (error) {
         alert('스코어 삭제에 실패했습니다.');
+      } finally {
+        setDeleting(false); // 로딩 종료
       }
     }
   };
@@ -1487,7 +1500,12 @@ const Scores = () => {
             <h3 className="section-title">
               {editingScore ? '스코어 수정' : '새 스코어 등록'}
             </h3>
-            <form onSubmit={handleSubmit} className="score-form compact-form">
+            <form
+              onSubmit={handleSubmit}
+              className={`score-form compact-form ${
+                submitting ? 'submitting' : ''
+              }`}
+            >
               {editingScore ? (
                 <>
                   <div className="form-row">
@@ -1502,6 +1520,7 @@ const Scores = () => {
                           })
                         }
                         required
+                        disabled={submitting}
                       >
                         <option value="">회원 선택</option>
                         {members.map((member) => (
@@ -1522,6 +1541,7 @@ const Scores = () => {
                             game_date: e.target.value,
                           })
                         }
+                        disabled={submitting}
                       />
                     </div>
                   </div>
@@ -1536,6 +1556,7 @@ const Scores = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, score1: e.target.value })
                         }
+                        disabled={submitting}
                       />
                     </div>
                     <div className="form-group">
@@ -1548,6 +1569,7 @@ const Scores = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, score2: e.target.value })
                         }
+                        disabled={submitting}
                       />
                     </div>
                     <div className="form-group">
@@ -1560,6 +1582,7 @@ const Scores = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, score3: e.target.value })
                         }
+                        disabled={submitting}
                       />
                     </div>
                   </div>
@@ -1590,6 +1613,7 @@ const Scores = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, note: e.target.value })
                         }
+                        disabled={submitting}
                       />
                     </div>
                   </div>
@@ -1614,6 +1638,7 @@ const Scores = () => {
                               })
                             }
                             required
+                            disabled={submitting}
                           >
                             <option value="">회원 선택</option>
                             {members.map((member) => (
@@ -1638,6 +1663,7 @@ const Scores = () => {
                                 return next;
                               })
                             }
+                            disabled={submitting}
                           />
                         </div>
                         <div className="form-group">
@@ -1658,6 +1684,7 @@ const Scores = () => {
                                 return next;
                               })
                             }
+                            disabled={submitting}
                           />
                         </div>
                         <div className="form-group">
@@ -1678,6 +1705,7 @@ const Scores = () => {
                                 return next;
                               })
                             }
+                            disabled={submitting}
                           />
                         </div>
                         <div className="form-group">
@@ -1698,6 +1726,7 @@ const Scores = () => {
                                 return next;
                               })
                             }
+                            disabled={submitting}
                           />
                         </div>
                         <div className="form-group">
@@ -1716,6 +1745,7 @@ const Scores = () => {
                                 return next;
                               })
                             }
+                            disabled={submitting}
                           />
                         </div>
                         {formEntries.length > 1 && (
@@ -1729,6 +1759,7 @@ const Scores = () => {
                                   prev.filter((_, i) => i !== index)
                                 )
                               }
+                              disabled={submitting}
                             >
                               -
                             </button>
@@ -1754,6 +1785,7 @@ const Scores = () => {
                           },
                         ])
                       }
+                      disabled={submitting}
                     >
                       +
                     </button>
@@ -1761,13 +1793,27 @@ const Scores = () => {
                 </>
               )}
               <div className="form-actions">
-                <button type="submit" className="btn btn-primary">
-                  {editingScore ? '수정' : '등록'}
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="loading-spinner"></div>
+                      {editingScore ? '수정 중...' : '등록 중...'}
+                    </>
+                  ) : editingScore ? (
+                    '수정'
+                  ) : (
+                    '등록'
+                  )}
                 </button>
                 <button
                   type="button"
                   className="btn btn-secondary"
                   onClick={resetForm}
+                  disabled={submitting}
                 >
                   취소
                 </button>
@@ -1787,8 +1833,16 @@ const Scores = () => {
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={handleDeleteSelected}
+                  disabled={deleting}
                 >
-                  선택 삭제 ({selectedScores.length})
+                  {deleting ? (
+                    <>
+                      <div className="loading-spinner"></div>
+                      삭제 중... ({selectedScores.length})
+                    </>
+                  ) : (
+                    `선택 삭제 (${selectedScores.length})`
+                  )}
                 </button>
               )}
             </div>
@@ -2074,8 +2128,16 @@ const Scores = () => {
                                   <button
                                     className="btn btn-sm btn-danger"
                                     onClick={() => handleDelete(score.id)}
+                                    disabled={deleting}
                                   >
-                                    삭제
+                                    {deleting ? (
+                                      <>
+                                        <div className="loading-spinner"></div>
+                                        삭제 중...
+                                      </>
+                                    ) : (
+                                      '삭제'
+                                    )}
                                   </button>
                                 </td>
                               )}
@@ -2446,8 +2508,16 @@ const Scores = () => {
                                     <button
                                       className="btn btn-sm btn-danger"
                                       onClick={() => handleDelete(score.id)}
+                                      disabled={deleting}
                                     >
-                                      삭제
+                                      {deleting ? (
+                                        <>
+                                          <div className="loading-spinner"></div>
+                                          삭제 중...
+                                        </>
+                                      ) : (
+                                        '삭제'
+                                      )}
                                     </button>
                                   </td>
                                 )}

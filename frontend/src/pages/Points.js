@@ -10,6 +10,8 @@ const Points = () => {
   const [points, setPoints] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // 포인트 등록 중 로딩 상태
+  const [deleting, setDeleting] = useState(false); // 포인트 삭제 중 로딩 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportForm, setShowImportForm] = useState(false);
   const [editingPoint, setEditingPoint] = useState(null);
@@ -557,6 +559,8 @@ const Points = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true); // 로딩 시작
+
     try {
       if (editingPoint) {
         await pointAPI.updatePoint(editingPoint.id, formData);
@@ -568,6 +572,7 @@ const Points = () => {
 
         if (validRows.length === 0) {
           alert('최소 하나의 유효한 포인트 정보를 입력해주세요.');
+          setSubmitting(false); // 로딩 종료
           return;
         }
 
@@ -615,6 +620,8 @@ const Points = () => {
         '포인트 저장에 실패했습니다: ' +
           (error.response?.data?.message || error.message)
       );
+    } finally {
+      setSubmitting(false); // 로딩 종료
     }
   };
 
@@ -664,11 +671,15 @@ const Points = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 포인트를 삭제하시겠습니까?')) {
+      setDeleting(true); // 로딩 시작
       try {
         await pointAPI.deletePoint(id);
         loadPoints();
       } catch (error) {
         // 에러 처리
+        alert('포인트 삭제에 실패했습니다.');
+      } finally {
+        setDeleting(false); // 로딩 종료
       }
     }
   };
@@ -876,22 +887,19 @@ const Points = () => {
                   <div className="header-buttons">
                     <button
                       type="button"
-                      className="btn btn-primary"
-                      onClick={addPointRow}
-                    >
-                      + 행 추가
-                    </button>
-                    <button
-                      type="button"
                       className="btn btn-outline-secondary"
                       onClick={openReasonSettings}
+                      disabled={submitting}
                     >
                       포인트 설정
                     </button>
                   </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="table-form">
+                <form
+                  onSubmit={handleSubmit}
+                  className={`table-form ${submitting ? 'submitting' : ''}`}
+                >
                   <div className="table-form-table">
                     <table>
                       <thead>
@@ -919,6 +927,7 @@ const Points = () => {
                                   )
                                 }
                                 required
+                                disabled={submitting}
                               >
                                 <option value="">회원 선택</option>
                                 {members.map((member) => (
@@ -939,6 +948,7 @@ const Points = () => {
                                   )
                                 }
                                 required
+                                disabled={submitting}
                               >
                                 <option value="">유형 선택</option>
                                 <option value="정기전">정기전</option>
@@ -965,6 +975,7 @@ const Points = () => {
                                     ? '사유 선택으로 자동 계산된 금액입니다'
                                     : '사유를 선택하면 자동으로 금액이 계산됩니다'
                                 }
+                                disabled={submitting}
                               />
                             </td>
                             <td>
@@ -989,6 +1000,7 @@ const Points = () => {
                                             reason.name
                                           )
                                         }
+                                        disabled={submitting}
                                       />
                                       <span>{reason.name}</span>
                                       <span className="reason-amount">
@@ -1034,6 +1046,7 @@ const Points = () => {
                                             }}
                                             placeholder="금액"
                                             className="other-amount-input"
+                                            disabled={submitting}
                                             style={{
                                               width: '60px',
                                               padding: '2px 4px',
@@ -1059,6 +1072,7 @@ const Points = () => {
                                       type="button"
                                       className="btn btn-sm btn-secondary"
                                       onClick={() => clearReasonsForRow(row.id)}
+                                      disabled={submitting}
                                     >
                                       해제
                                     </button>
@@ -1087,6 +1101,7 @@ const Points = () => {
                                     ? '이 날짜가 모든 행에 적용됩니다'
                                     : ''
                                 }
+                                disabled={submitting}
                               />
                               {pointRows[0]?.id === row.id &&
                                 pointRows.length > 1 && (
@@ -1103,6 +1118,7 @@ const Points = () => {
                                   updatePointRow(row.id, 'note', e.target.value)
                                 }
                                 placeholder="메모"
+                                disabled={submitting}
                               />
                             </td>
                             <td>
@@ -1110,7 +1126,7 @@ const Points = () => {
                                 type="button"
                                 className="btn btn-sm btn-danger"
                                 onClick={() => removePointRow(row.id)}
-                                disabled={pointRows.length === 1}
+                                disabled={pointRows.length === 1 || submitting}
                               >
                                 삭제
                               </button>
@@ -1120,14 +1136,39 @@ const Points = () => {
                       </tbody>
                     </table>
                   </div>
+                  {/* 표 하단 고정 "+" 행 추가 버튼 */}
+                  <div className="sticky-add-row">
+                    <button
+                      type="button"
+                      className="add-row-btn"
+                      onClick={addPointRow}
+                      aria-label="행 추가"
+                      disabled={submitting}
+                      title="행 추가"
+                    >
+                      +
+                    </button>
+                  </div>
                   <div className="form-actions">
-                    <button type="submit" className="btn btn-primary">
-                      등록 ({pointRows.length}명)
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="loading-spinner"></div>
+                          등록 중...
+                        </>
+                      ) : (
+                        `등록 (${pointRows.length}명)`
+                      )}
                     </button>
                     <button
                       type="button"
                       className="btn btn-secondary"
                       onClick={resetForm}
+                      disabled={submitting}
                     >
                       취소
                     </button>
@@ -1136,7 +1177,10 @@ const Points = () => {
               </div>
             ) : (
               // 기존 단일 수정 폼
-              <form onSubmit={handleSubmit} className="point-form">
+              <form
+                onSubmit={handleSubmit}
+                className={`point-form ${submitting ? 'submitting' : ''}`}
+              >
                 <div className="form-row">
                   <div className="form-group">
                     <label>회원 이름 *</label>
@@ -1149,6 +1193,7 @@ const Points = () => {
                         })
                       }
                       required
+                      disabled={submitting}
                     >
                       <option value="">회원 선택</option>
                       {members.map((member) => (
@@ -1166,6 +1211,7 @@ const Points = () => {
                         setFormData({ ...formData, point_type: e.target.value })
                       }
                       required
+                      disabled={submitting}
                     >
                       <option value="">유형 선택</option>
                       <option value="정기전">정기전</option>
@@ -1185,6 +1231,7 @@ const Points = () => {
                       }
                       required
                       min="1"
+                      disabled={submitting}
                     />
                   </div>
                   <div className="form-group">
@@ -1195,6 +1242,7 @@ const Points = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, point_date: e.target.value })
                       }
+                      disabled={submitting}
                     />
                   </div>
                 </div>
@@ -1206,6 +1254,7 @@ const Points = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, reason: e.target.value })
                       }
+                      disabled={submitting}
                     >
                       <option value="">사유 선택</option>
                       {reasonOptions.map((reason) => (
@@ -1226,17 +1275,30 @@ const Points = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, note: e.target.value })
                       }
+                      disabled={submitting}
                     />
                   </div>
                 </div>
                 <div className="form-actions">
-                  <button type="submit" className="btn btn-primary">
-                    수정
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="loading-spinner"></div>
+                        수정 중...
+                      </>
+                    ) : (
+                      '수정'
+                    )}
                   </button>
                   <button
                     type="button"
                     className="btn btn-secondary"
                     onClick={resetForm}
+                    disabled={submitting}
                   >
                     취소
                   </button>
@@ -1911,8 +1973,16 @@ const Points = () => {
                             <button
                               className="btn btn-sm btn-danger"
                               onClick={() => handleDelete(point.id)}
+                              disabled={deleting}
                             >
-                              삭제
+                              {deleting ? (
+                                <>
+                                  <div className="loading-spinner"></div>
+                                  삭제 중...
+                                </>
+                              ) : (
+                                '삭제'
+                              )}
                             </button>
                           </div>
                         )}

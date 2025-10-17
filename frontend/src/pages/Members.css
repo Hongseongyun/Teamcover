@@ -496,6 +496,67 @@
   color: var(--toss-gray-600);
 }
 
+/* 로딩 스피너 */
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 로딩 중 버튼 스타일 */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 로딩 중 폼 스타일 */
+.member-form.submitting {
+  position: relative;
+}
+
+.member-form.submitting::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+  border-radius: var(--toss-radius);
+}
+
+.member-form.submitting input,
+.member-form.submitting select {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.member-form.submitting input:disabled,
+.member-form.submitting select:disabled {
+  background-color: var(--toss-gray-100);
+  color: var(--toss-gray-500);
+}
+
 /* CSS 변수 정의 */
 :root {
   --toss-white: #ffffff;
