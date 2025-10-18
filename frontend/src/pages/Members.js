@@ -4,6 +4,72 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import './Members.css';
 
+// 티어 표시 컴포넌트
+const TierBadge = ({ tier, size = 'normal' }) => {
+  const getTierClass = (tier) => {
+    if (!tier) return 'tier-unranked';
+
+    const tierMap = {
+      배치: 'tier-unranked',
+      아이언: 'tier-iron',
+      브론즈: 'tier-bronze',
+      실버: 'tier-silver',
+      골드: 'tier-gold',
+      플레티넘: 'tier-platinum',
+      다이아: 'tier-diamond',
+      마스터: 'tier-master',
+      챌린저: 'tier-challenger',
+    };
+
+    return tierMap[tier] || 'tier-unranked';
+  };
+
+  const getTierIconClass = (tier) => {
+    if (!tier) return 'tier-icon-unranked';
+
+    const iconMap = {
+      배치: 'tier-icon-unranked',
+      아이언: 'tier-icon-iron',
+      브론즈: 'tier-icon-bronze',
+      실버: 'tier-icon-silver',
+      골드: 'tier-icon-gold',
+      플레티넘: 'tier-icon-platinum',
+      다이아: 'tier-icon-diamond',
+      마스터: 'tier-icon-master',
+      챌린저: 'tier-icon-challenger',
+    };
+
+    return iconMap[tier] || 'tier-icon-unranked';
+  };
+
+  const getDisplayTier = (tier) => {
+    const tierMap = {
+      배치: 'UNRANKED',
+      아이언: 'IRON',
+      브론즈: 'BRONZE',
+      실버: 'SILVER',
+      골드: 'GOLD',
+      플레티넘: 'PLATINUM',
+      다이아: 'DIAMOND',
+      마스터: 'MASTER',
+      챌린저: 'CHALLENGER',
+    };
+    return tierMap[tier] || 'UNRANKED';
+  };
+
+  const displayTier = getDisplayTier(tier);
+  const tierClass = getTierClass(tier);
+  const iconClass = getTierIconClass(tier);
+  const badgeClass =
+    size === 'small' ? 'tier-badge tier-badge-sm' : 'tier-badge';
+
+  return (
+    <div className={`${badgeClass} ${tierClass}`}>
+      <span>{displayTier}</span>
+    </div>
+  );
+};
+
 const Members = () => {
   const { user } = useAuth();
   const isSuperAdmin = user && user.role === 'super_admin';
@@ -761,13 +827,7 @@ const Members = () => {
                         </td>
                         <td>{member.gender || '-'}</td>
                         <td>
-                          <span
-                            className={`tier-${
-                              member.tier?.toLowerCase() || 'iron'
-                            }`}
-                          >
-                            {member.tier || '-'}
-                          </span>
+                          <TierBadge tier={member.tier} size="small" />
                         </td>
                         <td className="privacy-cell-wrapper">
                           <span className="privacy-text">

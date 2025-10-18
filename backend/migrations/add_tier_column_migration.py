@@ -9,38 +9,67 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app
-from models import db, Member
+from app import app
+from models import db, Member, Score
 from sqlalchemy import text
 
 def migrate_tier_column():
     """티어 컬럼 추가 및 데이터 마이그레이션"""
-    app = create_app()
-    
     with app.app_context():
         try:
             # 1. tier 컬럼 추가
             print("1. members 테이블에 tier 컬럼 추가 중...")
-            db.engine.execute(text("""
-                ALTER TABLE members 
-                ADD COLUMN tier VARCHAR(20) NULL
-            """))
-            print("✅ tier 컬럼 추가 완료")
+            try:
+                db.session.execute(text("""
+                    ALTER TABLE members 
+                    ADD COLUMN tier VARCHAR(20) NULL
+                """))
+                db.session.commit()
+                print("✅ tier 컬럼 추가 완료")
+            except Exception:
+                print("  - tier 컬럼이 이미 존재합니다.")
+                db.session.rollback()
             
             # 2. scores 테이블에 시즌 정보 컬럼 추가
             print("2. scores 테이블에 시즌 정보 컬럼 추가 중...")
-            db.engine.execute(text("""
-                ALTER TABLE scores 
-                ADD COLUMN is_regular_season BOOLEAN DEFAULT TRUE
-            """))
-            db.engine.execute(text("""
-                ALTER TABLE scores 
-                ADD COLUMN season_year INTEGER NULL
-            """))
-            db.engine.execute(text("""
-                ALTER TABLE scores 
-                ADD COLUMN season_half VARCHAR(10) NULL
-            """))
+            try:
+                db.session.execute(text("""
+                    ALTER TABLE scores 
+                    ADD COLUMN is_regular_season BOOLEAN DEFAULT TRUE
+                """))
+                db.session.commit()
+            except Exception:
+                print("  - is_regular_season 컬럼이 이미 존재합니다.")
+                db.session.rollback()
+            
+            try:
+                db.session.execute(text("""
+                    ALTER TABLE scores 
+                    ADD COLUMN season_year INTEGER NULL
+                """))
+                db.session.commit()
+            except Exception:
+                print("  - season_year 컬럼이 이미 존재합니다.")
+                db.session.rollback()
+            
+            try:
+                db.session.execute(text("""
+                    ALTER TABLE scores 
+                    ADD COLUMN season_half VARCHAR(20) NULL
+                """))
+                db.session.commit()
+            except Exception:
+                print("  - season_half 컬럼이 이미 존재합니다. 길이를 수정합니다.")
+                try:
+                    db.session.execute(text("""
+                        ALTER TABLE scores 
+                        ALTER COLUMN season_half TYPE VARCHAR(20)
+                    """))
+                    db.session.commit()
+                except Exception as e:
+                    print(f"  - 컬럼 길이 수정 실패: {e}")
+                    db.session.rollback()
+            
             print("✅ 시즌 정보 컬럼 추가 완료")
             
             # 3. 기존 level 데이터를 tier로 마이그레이션

@@ -3,6 +3,72 @@ import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Points.css';
 
+// 티어 표시 컴포넌트
+const TierBadge = ({ tier, size = 'normal' }) => {
+  const getTierClass = (tier) => {
+    if (!tier) return 'tier-unranked';
+
+    const tierMap = {
+      배치: 'tier-unranked',
+      아이언: 'tier-iron',
+      브론즈: 'tier-bronze',
+      실버: 'tier-silver',
+      골드: 'tier-gold',
+      플레티넘: 'tier-platinum',
+      다이아: 'tier-diamond',
+      마스터: 'tier-master',
+      챌린저: 'tier-challenger',
+    };
+
+    return tierMap[tier] || 'tier-unranked';
+  };
+
+  const getTierIconClass = (tier) => {
+    if (!tier) return 'tier-icon-unranked';
+
+    const iconMap = {
+      배치: 'tier-icon-unranked',
+      아이언: 'tier-icon-iron',
+      브론즈: 'tier-icon-bronze',
+      실버: 'tier-icon-silver',
+      골드: 'tier-icon-gold',
+      플레티넘: 'tier-icon-platinum',
+      다이아: 'tier-icon-diamond',
+      마스터: 'tier-icon-master',
+      챌린저: 'tier-icon-challenger',
+    };
+
+    return iconMap[tier] || 'tier-icon-unranked';
+  };
+
+  const getDisplayTier = (tier) => {
+    const tierMap = {
+      배치: 'UNRANKED',
+      아이언: 'IRON',
+      브론즈: 'BRONZE',
+      실버: 'SILVER',
+      골드: 'GOLD',
+      플레티넘: 'PLATINUM',
+      다이아: 'DIAMOND',
+      마스터: 'MASTER',
+      챌린저: 'CHALLENGER',
+    };
+    return tierMap[tier] || 'UNRANKED';
+  };
+
+  const displayTier = getDisplayTier(tier);
+  const tierClass = getTierClass(tier);
+  const iconClass = getTierIconClass(tier);
+  const badgeClass =
+    size === 'small' ? 'tier-badge tier-badge-sm' : 'tier-badge';
+
+  return (
+    <div className={`${badgeClass} ${tierClass}`}>
+      <span>{displayTier}</span>
+    </div>
+  );
+};
+
 const Points = () => {
   const { user } = useAuth(); // 현재 사용자 정보
   const isAdmin =
@@ -786,8 +852,17 @@ const Points = () => {
                           </span>
                         </div>
                         <div className="stat-item">
-                          <span className="stat-label">건수:</span>
-                          <span className="stat-value">{data.count}건</span>
+                          <span className="stat-label">결과:</span>
+                          <span
+                            className={`stat-value ${
+                              data.earned - data.used >= 0
+                                ? 'positive'
+                                : 'negative'
+                            }`}
+                          >
+                            {data.earned - data.used >= 0 ? '+' : ''}
+                            {formatNumber(data.earned - data.used)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1539,7 +1614,17 @@ const Points = () => {
               {memberStats && (
                 <>
                   <div className="member-header">
-                    <h4>{memberStats.memberName}님의 포인트 통계</h4>
+                    <div className="member-title">
+                      <h4>{memberStats.memberName}님의 포인트 통계</h4>
+                      {(() => {
+                        const member = members.find(
+                          (m) => m.name === memberStats.memberName
+                        );
+                        return member && member.tier ? (
+                          <TierBadge tier={member.tier} size="normal" />
+                        ) : null;
+                      })()}
+                    </div>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={resetMemberSearch}
@@ -1832,7 +1917,17 @@ const Points = () => {
                             ))}
                           </select>
                         ) : (
-                          point.member_name
+                          <div className="tier-cell">
+                            <span>{point.member_name}</span>
+                            {(() => {
+                              const member = members.find(
+                                (m) => m.name === point.member_name
+                              );
+                              return member && member.tier ? (
+                                <TierBadge tier={member.tier} size="small" />
+                              ) : null;
+                            })()}
+                          </div>
                         )}
                       </td>
                       <td>
