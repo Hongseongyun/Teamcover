@@ -1,0 +1,28 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 시스템 패키지 업데이트 및 필요한 패키지 설치
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Python 의존성 설치
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 애플리케이션 코드 복사
+COPY backend/ .
+
+# 시작 스크립트에 실행 권한 부여
+RUN chmod +x start.sh
+
+# 포트 노출 (Railway가 동적으로 포트를 할당하지만, 여기는 기본값 사용)
+EXPOSE 5000
+
+# 시작 스크립트 실행
+CMD ["/bin/bash", "start.sh"]
