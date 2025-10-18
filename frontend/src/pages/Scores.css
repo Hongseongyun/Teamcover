@@ -2,12 +2,139 @@
   padding: var(--responsive-padding, 2rem);
   font-size: var(--responsive-font-base, 1rem);
 }
+/* 포인트 등록 UI와 동일한 하단 "+" 버튼 스타일 */
+.sticky-add-row {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.9) 30%,
+    rgba(255, 255, 255, 1)
+  );
+}
+
+.add-row-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--toss-primary);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.add-row-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.35);
+}
+
+.add-row-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 포인트 테이블 스타일 재사용 */
+.table-form-table {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-gray-200);
+  background: var(--toss-white);
+}
+
+.table-form-table table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+}
+
+.table-form-table th,
+.table-form-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--toss-gray-200);
+  vertical-align: top;
+}
+
+.table-form-table th {
+  background: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.table-form-table td {
+  background: var(--toss-white);
+}
+
+.table-form-table tr:hover td {
+  background: var(--toss-gray-50);
+}
+
+/* 1G, 2G, 3G 컬럼 동일 비율 */
+.table-form-table th:nth-child(3),
+.table-form-table td:nth-child(3),
+.table-form-table th:nth-child(4),
+.table-form-table td:nth-child(4),
+.table-form-table th:nth-child(5),
+.table-form-table td:nth-child(5) {
+  width: 12% !important;
+  min-width: 80px;
+}
+
+.master-date-input {
+  border-color: var(--toss-primary) !important;
+  background-color: var(--toss-primary-light) !important;
+  font-weight: 600;
+}
+
+.date-sync-indicator {
+  font-size: 0.625rem;
+  color: var(--toss-primary);
+  font-weight: 500;
+  margin-top: 0.25rem;
+  text-align: center;
+  background: var(--toss-primary-light);
+  padding: 0.125rem 0.25rem;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-primary);
+}
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+/* 포인트 폼 헤더와 동일한 여백/정렬 */
+.table-form-container {
+  margin-top: 1rem;
+}
+
+.table-form-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .page-header h1 {

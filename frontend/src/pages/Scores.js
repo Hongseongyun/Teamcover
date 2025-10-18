@@ -47,6 +47,45 @@ const Scores = () => {
     },
   ]);
 
+  // 표 형식 보조 함수들 (포인트와 동일한 동작)
+  const addScoreRow = () => {
+    setFormEntries((prev) => {
+      const firstDate = prev.length > 0 ? prev[0].game_date : '';
+      return [
+        ...prev,
+        {
+          member_name: '',
+          game_date: firstDate,
+          score1: '',
+          score2: '',
+          score3: '',
+          note: '',
+        },
+      ];
+    });
+  };
+
+  const removeScoreRow = (indexToRemove) => {
+    setFormEntries((prev) =>
+      prev.length > 1 ? prev.filter((_, i) => i !== indexToRemove) : prev
+    );
+  };
+
+  const updateEntryField = (indexToUpdate, field, value) => {
+    setFormEntries((prev) => {
+      const next = prev.map((row, i) =>
+        i === indexToUpdate ? { ...row, [field]: value } : row
+      );
+      // 첫 행 날짜 변경 시 모든 행 동기화
+      if (field === 'game_date' && indexToUpdate === 0) {
+        return next.map((row, i) =>
+          i === 0 ? row : { ...row, game_date: value }
+        );
+      }
+      return next;
+    });
+  };
+
   // 이미지 업로드 관련 상태
   const [selectedImages, setSelectedImages] = useState([]); // 다중 이미지
   const [imagePreviews, setImagePreviews] = useState([]); // 다중 미리보기
@@ -920,7 +959,7 @@ const Scores = () => {
   return (
     <div className="scores-page">
       <div className="page-header">
-        <h1>2025 스코어 관리</h1>
+        <h1>스코어 관리</h1>
         {isAdmin && (
           <div className="header-actions">
             <button
@@ -1498,327 +1537,320 @@ const Scores = () => {
         <div className="form-section">
           <div className="section-card">
             <h3 className="section-title">
-              {editingScore ? '스코어 수정' : '새 스코어 등록'}
+              {editingScore ? '스코어 수정' : '스코어 등록'}
             </h3>
-            <form
-              onSubmit={handleSubmit}
-              className={`score-form compact-form ${
-                submitting ? 'submitting' : ''
-              }`}
-            >
-              {editingScore ? (
-                <>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>회원 이름 *</label>
-                      <select
-                        value={formData.member_name}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            member_name: e.target.value,
-                          })
-                        }
-                        required
-                        disabled={submitting}
-                      >
-                        <option value="">회원 선택</option>
-                        {members.map((member) => (
-                          <option key={member.id} value={member.name}>
-                            {member.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>게임 날짜</label>
-                      <input
-                        type="date"
-                        value={formData.game_date}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            game_date: e.target.value,
-                          })
-                        }
-                        disabled={submitting}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>1게임</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="300"
-                        value={formData.score1}
-                        onChange={(e) =>
-                          setFormData({ ...formData, score1: e.target.value })
-                        }
-                        disabled={submitting}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>2게임</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="300"
-                        value={formData.score2}
-                        onChange={(e) =>
-                          setFormData({ ...formData, score2: e.target.value })
-                        }
-                        disabled={submitting}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>3게임</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="300"
-                        value={formData.score3}
-                        onChange={(e) =>
-                          setFormData({ ...formData, score3: e.target.value })
-                        }
-                        disabled={submitting}
-                      />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>총점</label>
-                      <input
-                        type="number"
-                        value={calculateTotal()}
-                        readOnly
-                        className="readonly"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>평균</label>
-                      <input
-                        type="number"
-                        value={calculateAverage()}
-                        readOnly
-                        className="readonly"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>비고</label>
-                      <input
-                        type="text"
-                        value={formData.note}
-                        onChange={(e) =>
-                          setFormData({ ...formData, note: e.target.value })
-                        }
-                        disabled={submitting}
-                      />
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {formEntries.map((entry, index) => (
-                    <div className="entry-card" key={index}>
-                      <div className="entry-row">
-                        <div className="form-group">
-                          <label className="sr-only">회원 이름 *</label>
-                          <select
-                            value={entry.member_name}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  member_name: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            required
-                            disabled={submitting}
-                          >
-                            <option value="">회원 선택</option>
-                            {members.map((member) => (
-                              <option key={member.id} value={member.name}>
-                                {member.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group">
-                          <label className="sr-only">게임 날짜</label>
-                          <input
-                            type="date"
-                            value={entry.game_date}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  game_date: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            disabled={submitting}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="sr-only">1게임</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="300"
-                            placeholder="1G"
-                            value={entry.score1}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  score1: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            disabled={submitting}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="sr-only">2게임</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="300"
-                            placeholder="2G"
-                            value={entry.score2}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  score2: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            disabled={submitting}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="sr-only">3게임</label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="300"
-                            placeholder="3G"
-                            value={entry.score3}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  score3: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            disabled={submitting}
-                          />
-                        </div>
-                        <div className="form-group">
-                          <label className="sr-only">비고</label>
-                          <input
-                            type="text"
-                            placeholder="비고"
-                            value={entry.note}
-                            onChange={(e) =>
-                              setFormEntries((prev) => {
-                                const next = [...prev];
-                                next[index] = {
-                                  ...next[index],
-                                  note: e.target.value,
-                                };
-                                return next;
-                              })
-                            }
-                            disabled={submitting}
-                          />
-                        </div>
-                        {formEntries.length > 1 && (
-                          <div className="form-group entry-actions">
-                            <button
-                              type="button"
-                              className="btn btn-danger minus-btn"
-                              aria-label="행 삭제"
-                              onClick={() =>
-                                setFormEntries((prev) =>
-                                  prev.filter((_, i) => i !== index)
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              -
-                            </button>
-                          </div>
-                        )}
+            <div className="table-form-container">
+              <div className="table-form-header">
+                <div className="header-buttons">
+                  {/* 포인트 UI와 동일한 헤더 영역 (버튼 없음) */}
+                </div>
+              </div>
+              <form
+                onSubmit={handleSubmit}
+                className={`score-form compact-form ${
+                  submitting ? 'submitting' : ''
+                }`}
+              >
+                {editingScore ? (
+                  <>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>회원 이름 *</label>
+                        <select
+                          value={formData.member_name}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              member_name: e.target.value,
+                            })
+                          }
+                          required
+                          disabled={submitting}
+                        >
+                          <option value="">회원 선택</option>
+                          {members.map((member) => (
+                            <option key={member.id} value={member.name}>
+                              {member.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>게임 날짜</label>
+                        <input
+                          type="date"
+                          value={formData.game_date}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              game_date: e.target.value,
+                            })
+                          }
+                          disabled={submitting}
+                        />
                       </div>
                     </div>
-                  ))}
-                  <div className="plus-center">
-                    <button
-                      type="button"
-                      className="btn btn-secondary plus-btn"
-                      onClick={() =>
-                        setFormEntries((prev) => [
-                          ...prev,
-                          {
-                            member_name: '',
-                            game_date: '',
-                            score1: '',
-                            score2: '',
-                            score3: '',
-                            note: '',
-                          },
-                        ])
-                      }
-                      disabled={submitting}
-                    >
-                      +
-                    </button>
-                  </div>
-                </>
-              )}
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <>
-                      <div className="loading-spinner"></div>
-                      {editingScore ? '수정 중...' : '등록 중...'}
-                    </>
-                  ) : editingScore ? (
-                    '수정'
-                  ) : (
-                    '등록'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={resetForm}
-                  disabled={submitting}
-                >
-                  취소
-                </button>
-              </div>
-            </form>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>1게임</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          value={formData.score1}
+                          onChange={(e) =>
+                            setFormData({ ...formData, score1: e.target.value })
+                          }
+                          disabled={submitting}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>2게임</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          value={formData.score2}
+                          onChange={(e) =>
+                            setFormData({ ...formData, score2: e.target.value })
+                          }
+                          disabled={submitting}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>3게임</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="300"
+                          value={formData.score3}
+                          onChange={(e) =>
+                            setFormData({ ...formData, score3: e.target.value })
+                          }
+                          disabled={submitting}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>총점</label>
+                        <input
+                          type="number"
+                          value={calculateTotal()}
+                          readOnly
+                          className="readonly"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>평균</label>
+                        <input
+                          type="number"
+                          value={calculateAverage()}
+                          readOnly
+                          className="readonly"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>비고</label>
+                        <input
+                          type="text"
+                          value={formData.note}
+                          onChange={(e) =>
+                            setFormData({ ...formData, note: e.target.value })
+                          }
+                          disabled={submitting}
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="table-form-table">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>날짜</th>
+                            <th>회원</th>
+                            <th>1G</th>
+                            <th>2G</th>
+                            <th>3G</th>
+                            <th>비고</th>
+                            <th>작업</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formEntries.map((entry, index) => (
+                            <tr key={index}>
+                              <td>
+                                <input
+                                  type="date"
+                                  value={entry.game_date}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'game_date',
+                                      e.target.value
+                                    )
+                                  }
+                                  className={
+                                    index === 0 ? 'master-date-input' : ''
+                                  }
+                                  title={
+                                    index === 0
+                                      ? '이 날짜가 모든 행에 적용됩니다'
+                                      : ''
+                                  }
+                                  disabled={submitting}
+                                />
+                                {index === 0 && formEntries.length > 1 && (
+                                  <div className="date-sync-indicator">
+                                    모든 행에 적용됨
+                                  </div>
+                                )}
+                              </td>
+                              <td>
+                                <select
+                                  value={entry.member_name}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'member_name',
+                                      e.target.value
+                                    )
+                                  }
+                                  required
+                                  disabled={submitting}
+                                >
+                                  <option value="">회원 선택</option>
+                                  {members.map((member) => (
+                                    <option key={member.id} value={member.name}>
+                                      {member.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="300"
+                                  value={entry.score1}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'score1',
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={submitting}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="300"
+                                  value={entry.score2}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'score2',
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={submitting}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="300"
+                                  value={entry.score3}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'score3',
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={submitting}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  value={entry.note}
+                                  onChange={(e) =>
+                                    updateEntryField(
+                                      index,
+                                      'note',
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="메모"
+                                  disabled={submitting}
+                                />
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-danger"
+                                  onClick={() => removeScoreRow(index)}
+                                  disabled={
+                                    formEntries.length === 1 || submitting
+                                  }
+                                >
+                                  삭제
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="sticky-add-row">
+                      <button
+                        type="button"
+                        className="add-row-btn"
+                        onClick={addScoreRow}
+                        disabled={submitting}
+                        aria-label="행 추가"
+                        title="행 추가"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </>
+                )}
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="loading-spinner"></div>
+                        {editingScore ? '수정 중...' : '등록 중...'}
+                      </>
+                    ) : editingScore ? (
+                      '수정'
+                    ) : (
+                      `등록 (${formEntries.length}명)`
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={resetForm}
+                    disabled={submitting}
+                  >
+                    취소
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

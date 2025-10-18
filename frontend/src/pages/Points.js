@@ -716,7 +716,7 @@ const Points = () => {
   return (
     <div className="points-page">
       <div className="page-header">
-        <h1>2025 포인트 관리</h1>
+        <h1>포인트 관리</h1>
         {isAdmin && (
           <div className="header-actions">
             <button
@@ -877,7 +877,7 @@ const Points = () => {
         <div className="form-section">
           <div className="section-card">
             <h3 className="section-title">
-              {editingPoint ? '포인트 수정' : '새 포인트 등록'}
+              {editingPoint ? '포인트 수정' : '포인트 등록'}
             </h3>
 
             {!editingPoint ? (
@@ -887,7 +887,7 @@ const Points = () => {
                   <div className="header-buttons">
                     <button
                       type="button"
-                      className="btn btn-outline-secondary"
+                      className="btn btn-outline-secondary btn-sm settings-btn"
                       onClick={openReasonSettings}
                       disabled={submitting}
                     >
@@ -904,19 +904,49 @@ const Points = () => {
                     <table>
                       <thead>
                         <tr>
-                          <th>회원</th>
-                          <th>유형</th>
-                          <th>금액</th>
-                          <th>사유</th>
-                          <th>날짜</th>
-                          <th>비고</th>
-                          <th>작업</th>
+                          <th className="col-date">날짜</th>
+                          <th className="col-member">회원</th>
+                          <th className="col-type">유형</th>
+                          <th className="col-amount">금액</th>
+                          <th className="col-reason">사유</th>
+                          <th className="col-note">비고</th>
+                          <th className="col-actions">작업</th>
                         </tr>
                       </thead>
                       <tbody>
                         {pointRows.map((row) => (
                           <tr key={row.id}>
-                            <td>
+                            <td className="col-date">
+                              <input
+                                type="date"
+                                value={row.point_date}
+                                onChange={(e) =>
+                                  updatePointRow(
+                                    row.id,
+                                    'point_date',
+                                    e.target.value
+                                  )
+                                }
+                                className={
+                                  pointRows[0]?.id === row.id
+                                    ? 'master-date-input'
+                                    : ''
+                                }
+                                title={
+                                  pointRows[0]?.id === row.id
+                                    ? '이 날짜가 모든 행에 적용됩니다'
+                                    : ''
+                                }
+                                disabled={submitting}
+                              />
+                              {pointRows[0]?.id === row.id &&
+                                pointRows.length > 1 && (
+                                  <div className="date-sync-indicator">
+                                    모든 행에 적용됨
+                                  </div>
+                                )}
+                            </td>
+                            <td className="col-member">
                               <select
                                 value={row.member_name}
                                 onChange={(e) =>
@@ -937,7 +967,7 @@ const Points = () => {
                                 ))}
                               </select>
                             </td>
-                            <td>
+                            <td className="col-type">
                               <select
                                 value={row.point_type}
                                 onChange={(e) =>
@@ -956,7 +986,7 @@ const Points = () => {
                                 <option value="기타">기타</option>
                               </select>
                             </td>
-                            <td>
+                            <td className="col-amount">
                               <input
                                 type="number"
                                 value={row.amount}
@@ -964,7 +994,7 @@ const Points = () => {
                                 required
                                 min="0"
                                 step="500"
-                                placeholder="사유를 선택하세요"
+                                placeholder="자동계산"
                                 className={
                                   row.reasons.length > 0
                                     ? 'auto-calculated-amount'
@@ -978,7 +1008,7 @@ const Points = () => {
                                 disabled={submitting}
                               />
                             </td>
-                            <td>
+                            <td className="col-reason">
                               <div className="reason-cell">
                                 <div className="reason-options-mini">
                                   {reasonOptions.map((reason) => (
@@ -1080,37 +1110,7 @@ const Points = () => {
                                 )}
                               </div>
                             </td>
-                            <td>
-                              <input
-                                type="date"
-                                value={row.point_date}
-                                onChange={(e) =>
-                                  updatePointRow(
-                                    row.id,
-                                    'point_date',
-                                    e.target.value
-                                  )
-                                }
-                                className={
-                                  pointRows[0]?.id === row.id
-                                    ? 'master-date-input'
-                                    : ''
-                                }
-                                title={
-                                  pointRows[0]?.id === row.id
-                                    ? '이 날짜가 모든 행에 적용됩니다'
-                                    : ''
-                                }
-                                disabled={submitting}
-                              />
-                              {pointRows[0]?.id === row.id &&
-                                pointRows.length > 1 && (
-                                  <div className="date-sync-indicator">
-                                    모든 행에 적용됨
-                                  </div>
-                                )}
-                            </td>
-                            <td>
+                            <td className="col-note">
                               <input
                                 type="text"
                                 value={row.note}
@@ -1121,7 +1121,7 @@ const Points = () => {
                                 disabled={submitting}
                               />
                             </td>
-                            <td>
+                            <td className="col-actions">
                               <button
                                 type="button"
                                 className="btn btn-sm btn-danger"
