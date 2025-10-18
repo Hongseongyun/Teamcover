@@ -47,6 +47,54 @@
   display: inline-block;
 }
 
+/* 티어 색상 */
+.tier-배치 {
+  color: #666666;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.tier-iron {
+  color: #8b8b8b;
+  font-weight: 600;
+}
+
+.tier-bronze {
+  color: #cd7f32;
+  font-weight: 600;
+}
+
+.tier-silver {
+  color: #c0c0c0;
+  font-weight: 600;
+}
+
+.tier-gold {
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.tier-platinum {
+  color: #e5e4e2;
+  font-weight: 600;
+}
+
+.tier-diamond {
+  color: #b9f2ff;
+  font-weight: 600;
+}
+
+.tier-master {
+  color: #8a2be2;
+  font-weight: 600;
+}
+
+.tier-challenger {
+  color: #ff6b6b;
+  font-weight: 700;
+  text-shadow: 0 0 3px rgba(255, 107, 107, 0.3);
+}
+
 /* 모달 */
 .modal-overlay {
   position: fixed;

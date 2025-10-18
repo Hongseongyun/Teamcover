@@ -27,7 +27,7 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    level: '',
+    tier: '',
     email: '',
     note: '',
   });
@@ -38,7 +38,7 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    level: '',
+    tier: '',
     email: '',
     note: '',
   });
@@ -141,11 +141,11 @@ const Members = () => {
     }
   };
 
-  // 개인정보 접근 토큰 초기화
-  const resetPrivacyToken = () => {
-    localStorage.removeItem('privacy_token');
-    setPrivacyUnlocked(false);
-  };
+  // 개인정보 접근 토큰 초기화 (사용하지 않음 - 향후 필요시 사용)
+  // const resetPrivacyToken = () => {
+  //   localStorage.removeItem('privacy_token');
+  //   setPrivacyUnlocked(false);
+  // };
 
   // 비밀번호 설정
   const handleSetPassword = async () => {
@@ -193,10 +193,7 @@ const Members = () => {
 
     try {
       if (editingMember) {
-        const response = await memberAPI.updateMember(
-          editingMember.id,
-          formData
-        );
+        await memberAPI.updateMember(editingMember.id, formData);
       } else {
         const response = await memberAPI.addMember(formData);
 
@@ -217,7 +214,7 @@ const Members = () => {
         name: '',
         phone: '',
         gender: '',
-        level: '',
+        tier: '',
         email: '',
         note: '',
       });
@@ -262,7 +259,7 @@ const Members = () => {
       name: '',
       phone: '',
       gender: '',
-      level: '',
+      tier: '',
       email: '',
       note: '',
     });
@@ -318,7 +315,7 @@ const Members = () => {
       name: member.name,
       phone: member.phone || '',
       gender: member.gender || '',
-      level: member.level || '',
+      tier: member.tier || '',
       email: member.email || '',
       note: member.note || '',
     });
@@ -331,7 +328,7 @@ const Members = () => {
       name: '',
       phone: '',
       gender: '',
-      level: '',
+      tier: '',
       email: '',
       note: '',
     });
@@ -356,7 +353,7 @@ const Members = () => {
                 name: inlineEditData.name,
                 phone: inlineEditData.phone,
                 gender: inlineEditData.gender,
-                level: inlineEditData.level,
+                tier: inlineEditData.tier,
                 email: inlineEditData.email,
                 note: inlineEditData.note,
               }
@@ -542,19 +539,24 @@ const Members = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>레벨</label>
+                  <label>티어</label>
                   <select
-                    value={formData.level}
+                    value={formData.tier}
                     onChange={(e) =>
-                      setFormData({ ...formData, level: e.target.value })
+                      setFormData({ ...formData, tier: e.target.value })
                     }
                     disabled={submitting}
                   >
                     <option value="">선택</option>
-                    <option value="초급">초급</option>
-                    <option value="중급">중급</option>
-                    <option value="고급">고급</option>
-                    <option value="프로">프로</option>
+                    <option value="배치">배치</option>
+                    <option value="아이언">아이언</option>
+                    <option value="브론즈">브론즈</option>
+                    <option value="실버">실버</option>
+                    <option value="골드">골드</option>
+                    <option value="플레티넘">플레티넘</option>
+                    <option value="다이아">다이아</option>
+                    <option value="마스터">마스터</option>
+                    <option value="챌린저">챌린저</option>
                   </select>
                 </div>
               </div>
@@ -624,7 +626,7 @@ const Members = () => {
                   <th>이름</th>
                   <th>전화번호</th>
                   <th>성별</th>
-                  <th>레벨</th>
+                  <th>티어</th>
                   <th>이메일</th>
                   <th>등록일</th>
                   <th>작업</th>
@@ -681,19 +683,24 @@ const Members = () => {
                         <td>
                           <select
                             className="inline-select"
-                            value={inlineEditData.level}
+                            value={inlineEditData.tier}
                             onChange={(e) =>
                               setInlineEditData((prev) => ({
                                 ...prev,
-                                level: e.target.value,
+                                tier: e.target.value,
                               }))
                             }
                           >
                             <option value="">선택</option>
-                            <option value="초급">초급</option>
-                            <option value="중급">중급</option>
-                            <option value="고급">고급</option>
-                            <option value="프로">프로</option>
+                            <option value="배치">배치</option>
+                            <option value="아이언">아이언</option>
+                            <option value="브론즈">브론즈</option>
+                            <option value="실버">실버</option>
+                            <option value="골드">골드</option>
+                            <option value="플레티넘">플레티넘</option>
+                            <option value="다이아">다이아</option>
+                            <option value="마스터">마스터</option>
+                            <option value="챌린저">챌린저</option>
                           </select>
                         </td>
                         <td>
@@ -753,7 +760,15 @@ const Members = () => {
                           )}
                         </td>
                         <td>{member.gender || '-'}</td>
-                        <td>{member.level || '-'}</td>
+                        <td>
+                          <span
+                            className={`tier-${
+                              member.tier?.toLowerCase() || 'iron'
+                            }`}
+                          >
+                            {member.tier || '-'}
+                          </span>
+                        </td>
                         <td className="privacy-cell-wrapper">
                           <span className="privacy-text">
                             {maskEmail(member.email)}

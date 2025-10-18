@@ -227,7 +227,8 @@ def import_members_from_sheets():
                     # 기존 회원 정보 업데이트
                     existing_member.phone = member_data['phone']
                     existing_member.gender = member_data['gender']
-                    existing_member.level = member_data['level']
+                    existing_member.level = member_data['level']  # 레거시 호환성
+                    existing_member.tier = member_data.get('tier', '')
                     existing_member.email = member_data['email']
                     existing_member.note = member_data['note']
                     existing_member.updated_at = datetime.utcnow()
@@ -240,7 +241,8 @@ def import_members_from_sheets():
                     name=name,
                     phone=member_data['phone'],
                     gender=member_data['gender'],
-                    level=member_data['level'],
+                    level=member_data['level'],  # 레거시 호환성
+                    tier=member_data.get('tier', ''),
                     email=member_data['email'],
                     note=member_data['note']
                 )

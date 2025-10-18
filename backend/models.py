@@ -73,7 +73,8 @@ class Member(db.Model):
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     gender = db.Column(db.String(10), nullable=True)  # '남', '여'
-    level = db.Column(db.String(20), nullable=True)   # '초급', '중급', '고급', '전문'
+    level = db.Column(db.String(20), nullable=True)   # '초급', '중급', '고급', '전문' (레거시)
+    tier = db.Column(db.String(20), nullable=True)    # '아이언', '브론즈', '실버', '골드', '플레티넘', '다이아', '마스터', '챌린저'
     email = db.Column(db.String(100), nullable=True)
     note = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -82,13 +83,123 @@ class Member(db.Model):
     def __repr__(self):
         return f'<Member {self.name}>'
     
+    def calculate_tier_from_score(self):
+        """정기전 에버 기반으로 티어 계산"""
+        # 정기전 에버 계산
+        regular_avg = self.calculate_regular_season_average()
+        
+        if regular_avg is None:
+            return '배치'  # 정기전 기록이 없으면 배치
+        
+        # 점수 구간별 티어 할당 (정기전 에버 기준)
+        if regular_avg <= 100:
+            return '아이언'
+        elif regular_avg <= 130:
+            return '브론즈'
+        elif regular_avg <= 160:
+            return '실버'
+        elif regular_avg <= 190:
+            return '골드'
+        elif regular_avg <= 220:
+            return '플레티넘'
+        elif regular_avg <= 250:
+            return '다이아'
+        elif regular_avg <= 280:
+            return '마스터'
+        else:
+            return '챌린저'
+    
+    def calculate_regular_season_average(self):
+        """정기전 에버 계산 (우선순위에 따라)"""
+        current_date = datetime.now().date()
+        current_year = current_date.year
+        current_month = current_date.month
+        
+        # 1. 현재 반기 이후의 정기전 기록 (25년 7월 이후)
+        if current_month >= 7:
+            target_year = current_year
+            target_half = 'second_half'
+        else:
+            target_year = current_year
+            target_half = 'first_half'
+        
+        # 현재 반기 정기전 기록 확인
+        current_half_scores = Score.query.filter(
+            Score.member_id == self.id,
+            Score.is_regular_season == True,
+            Score.season_year == target_year,
+            Score.season_half == target_half
+        ).all()
+        
+        if current_half_scores:
+            return self._calculate_average_from_scores(current_half_scores)
+        
+        # 2. 현재 반기 이전의 정기전 기록 (25년 1~6월)
+        if current_month >= 7:
+            first_half_scores = Score.query.filter(
+                Score.member_id == self.id,
+                Score.is_regular_season == True,
+                Score.season_year == current_year,
+                Score.season_half == 'first_half'
+            ).all()
+            
+            if first_half_scores:
+                return self._calculate_average_from_scores(first_half_scores)
+        
+        # 3. 이전 연도 하반기 기록 (24년 7~12월)
+        prev_year = current_year - 1
+        prev_second_half_scores = Score.query.filter(
+            Score.member_id == self.id,
+            Score.is_regular_season == True,
+            Score.season_year == prev_year,
+            Score.season_half == 'second_half'
+        ).all()
+        
+        if prev_second_half_scores:
+            return self._calculate_average_from_scores(prev_second_half_scores)
+        
+        # 4. 이전 연도 상반기 기록 (24년 1~6월)
+        prev_first_half_scores = Score.query.filter(
+            Score.member_id == self.id,
+            Score.is_regular_season == True,
+            Score.season_year == prev_year,
+            Score.season_half == 'first_half'
+        ).all()
+        
+        if prev_first_half_scores:
+            return self._calculate_average_from_scores(prev_first_half_scores)
+        
+        # 5. 아무 기록도 없으면 None 반환 (배치 등급)
+        return None
+    
+    def _calculate_average_from_scores(self, scores):
+        """점수 리스트에서 평균 계산"""
+        if not scores:
+            return None
+        
+        valid_scores = [score.average_score for score in scores if score.average_score is not None]
+        if not valid_scores:
+            return None
+        
+        return sum(valid_scores) / len(valid_scores)
+    
+    def update_tier(self):
+        """티어 업데이트"""
+        self.tier = self.calculate_tier_from_score()
+        return self.tier
+    
     def to_dict(self, hide_privacy=False):
         """딕셔너리 형태로 변환"""
+        # 티어가 없으면 점수 기반으로 계산
+        if not self.tier:
+            self.tier = self.calculate_tier_from_score()
+        
         data = {
             'id': self.id,
             'name': self.name,
             'gender': self.gender,
-            'level': self.level,
+            'level': self.level,  # 레거시 호환성
+            'tier': self.tier,
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None
@@ -124,6 +235,9 @@ class Score(db.Model):
     score3 = db.Column(db.Integer, nullable=True)
     total_score = db.Column(db.Integer, nullable=True)
     average_score = db.Column(db.Float, nullable=True)
+    is_regular_season = db.Column(db.Boolean, default=True)  # 정기전 여부
+    season_year = db.Column(db.Integer, nullable=True)  # 시즌 연도
+    season_half = db.Column(db.String(10), nullable=True)  # 'first_half' 또는 'second_half'
     note = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -132,6 +246,29 @@ class Score(db.Model):
     
     def __repr__(self):
         return f'<Score {self.member.name} {self.game_date}>'
+    
+    def update_member_tier(self):
+        """스코어 추가 후 회원 티어 업데이트"""
+        if self.member:
+            self.member.update_tier()
+            db.session.commit()
+    
+    def set_season_info(self):
+        """스코어의 시즌 정보 자동 설정"""
+        if not self.game_date:
+            return
+        
+        year = self.game_date.year
+        month = self.game_date.month
+        
+        # 반기 결정 (1-6월: 상반기, 7-12월: 하반기)
+        if month <= 6:
+            self.season_half = 'first_half'
+        else:
+            self.season_half = 'second_half'
+        
+        self.season_year = year
+        self.is_regular_season = True  # 기본적으로 정기전으로 설정
 
 class Point(db.Model):
     """포인트 모델"""

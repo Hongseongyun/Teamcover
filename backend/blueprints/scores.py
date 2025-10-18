@@ -77,8 +77,14 @@ def add_score():
             note=data.get('note', '').strip() if data.get('note') else ''
         )
         
+        # 시즌 정보 자동 설정
+        new_score.set_season_info()
+        
         db.session.add(new_score)
         db.session.commit()
+        
+        # 스코어 추가 후 회원 티어 업데이트
+        new_score.update_member_tier()
         
         return jsonify({
             'success': True, 
@@ -107,6 +113,11 @@ def delete_score(score_id):
         
         db.session.delete(score)
         db.session.commit()
+        
+        # 스코어 삭제 후 회원 티어 업데이트
+        if member:
+            member.update_tier()
+            db.session.commit()
         
         return jsonify({
             'success': True, 
@@ -154,6 +165,13 @@ def update_score(score_id):
         score.note = note
         score.updated_at = datetime.utcnow()
         
+        # 시즌 정보 업데이트
+        score.set_season_info()
+        
+        db.session.commit()
+        
+        # 스코어 수정 후 회원 티어 업데이트
+        member.update_tier()
         db.session.commit()
         
         return jsonify({

@@ -232,7 +232,7 @@ class GoogleSheetsManager:
                     else:
                         gender = ''
                 
-                # 레벨 정리
+                # 레벨 정리 (레거시 호환성)
                 level = row.get('레벨', row.get('level', row.get('Level', '')))
                 if level:
                     level_str = str(level).strip()
@@ -241,11 +241,21 @@ class GoogleSheetsManager:
                     else:
                         level = ''
                 
+                # 티어 정리
+                tier = row.get('티어', row.get('tier', row.get('Tier', '')))
+                if tier:
+                    tier_str = str(tier).strip()
+                    if tier_str in ['배치', '아이언', '브론즈', '실버', '골드', '플레티넘', '다이아', '마스터', '챌린저']:
+                        tier = tier_str
+                    else:
+                        tier = ''
+                
                 parsed_members.append({
                     'name': name,
                     'phone': phone,
                     'gender': gender,
-                    'level': level,
+                    'level': level,  # 레거시 호환성
+                    'tier': tier,
                     'email': row.get('이메일', row.get('email', row.get('Email', ''))).strip(),
                     'note': row.get('메모', row.get('note', row.get('Note', ''))).strip()
                 })

@@ -107,9 +107,16 @@ def get_members():
         female_count = len([m for m in members if m.gender == '여'])
         
         level_counts = {}
+        tier_counts = {}
         for member in members:
             level = member.level or '미정'
             level_counts[level] = level_counts.get(level, 0) + 1
+            
+            # 티어가 없으면 점수 기반으로 계산
+            if not member.tier:
+                member.tier = member.calculate_tier_from_score()
+            tier = member.tier or '미정'
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
         
         return jsonify({
             'success': True,
@@ -119,7 +126,8 @@ def get_members():
                 'new_members': new_members,
                 'male_count': male_count,
                 'female_count': female_count,
-                'level_counts': level_counts
+                'level_counts': level_counts,  # 레거시 호환성
+                'tier_counts': tier_counts
             }
         })
     except Exception as e:
@@ -146,7 +154,8 @@ def add_member():
             name=name,
             phone=data.get('phone', '').strip(),
             gender=data.get('gender', '').strip(),
-            level=data.get('level', '').strip(),
+            level=data.get('level', '').strip(),  # 레거시 호환성
+            tier=data.get('tier', '').strip(),
             email=data.get('email', '').strip(),
             note=data.get('note', '').strip()
         )
@@ -188,7 +197,8 @@ def update_member(member_id):
         member.name = name
         member.phone = data.get('phone', '').strip()
         member.gender = data.get('gender', '').strip()
-        member.level = data.get('level', '').strip()
+        member.level = data.get('level', '').strip()  # 레거시 호환성
+        member.tier = data.get('tier', '').strip()
         member.email = data.get('email', '').strip()
         member.note = data.get('note', '').strip()
         member.updated_at = datetime.utcnow()
