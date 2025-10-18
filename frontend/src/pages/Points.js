@@ -3,72 +3,6 @@ import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Points.css';
 
-// 티어 표시 컴포넌트
-const TierBadge = ({ tier, size = 'normal' }) => {
-  const getTierClass = (tier) => {
-    if (!tier) return 'tier-unranked';
-
-    const tierMap = {
-      배치: 'tier-unranked',
-      아이언: 'tier-iron',
-      브론즈: 'tier-bronze',
-      실버: 'tier-silver',
-      골드: 'tier-gold',
-      플레티넘: 'tier-platinum',
-      다이아: 'tier-diamond',
-      마스터: 'tier-master',
-      챌린저: 'tier-challenger',
-    };
-
-    return tierMap[tier] || 'tier-unranked';
-  };
-
-  const getTierIconClass = (tier) => {
-    if (!tier) return 'tier-icon-unranked';
-
-    const iconMap = {
-      배치: 'tier-icon-unranked',
-      아이언: 'tier-icon-iron',
-      브론즈: 'tier-icon-bronze',
-      실버: 'tier-icon-silver',
-      골드: 'tier-icon-gold',
-      플레티넘: 'tier-icon-platinum',
-      다이아: 'tier-icon-diamond',
-      마스터: 'tier-icon-master',
-      챌린저: 'tier-icon-challenger',
-    };
-
-    return iconMap[tier] || 'tier-icon-unranked';
-  };
-
-  const getDisplayTier = (tier) => {
-    const tierMap = {
-      배치: 'UNRANKED',
-      아이언: 'IRON',
-      브론즈: 'BRONZE',
-      실버: 'SILVER',
-      골드: 'GOLD',
-      플레티넘: 'PLATINUM',
-      다이아: 'DIAMOND',
-      마스터: 'MASTER',
-      챌린저: 'CHALLENGER',
-    };
-    return tierMap[tier] || 'UNRANKED';
-  };
-
-  const displayTier = getDisplayTier(tier);
-  const tierClass = getTierClass(tier);
-  const iconClass = getTierIconClass(tier);
-  const badgeClass =
-    size === 'small' ? 'tier-badge tier-badge-sm' : 'tier-badge';
-
-  return (
-    <div className={`${badgeClass} ${tierClass}`}>
-      <span>{displayTier}</span>
-    </div>
-  );
-};
-
 const Points = () => {
   const { user } = useAuth(); // 현재 사용자 정보
   const isAdmin =
@@ -147,6 +81,45 @@ const Points = () => {
   // 월별 뷰 상태
   const [viewMode, setViewMode] = useState('monthly'); // 'all' 또는 'monthly' - 기본값: 월별 보기
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // 회원별 잔여 포인트 계산
+  const calculateMemberBalances = useCallback(() => {
+    if (!members.length || !points.length) return [];
+
+    const memberBalances = members.map((member) => {
+      const memberPoints = points.filter(
+        (point) => point.member_name === member.name
+      );
+      const totalEarned = memberPoints
+        .filter(
+          (point) =>
+            point.point_type === '적립' ||
+            (point.point_type === '기타' && point.amount >= 0)
+        )
+        .reduce((sum, point) => sum + point.amount, 0);
+      const totalUsed = memberPoints
+        .filter(
+          (point) =>
+            point.point_type === '사용' ||
+            (point.point_type === '기타' && point.amount < 0)
+        )
+        .reduce((sum, point) => sum + Math.abs(point.amount), 0);
+
+      return {
+        id: member.id,
+        name: member.name,
+        tier: member.tier,
+        earned: totalEarned,
+        used: totalUsed,
+        balance: totalEarned - totalUsed,
+      };
+    });
+
+    // 잔여 포인트 기준으로 내림차순 정렬
+    return memberBalances.sort((a, b) => b.balance - a.balance);
+  }, [members, points]);
+
+  const memberBalances = calculateMemberBalances();
 
   const loadPoints = useCallback(async () => {
     try {
@@ -873,6 +846,32 @@ const Points = () => {
         </div>
       )}
 
+      {/* 회원별 잔여 포인트 현황 */}
+      {memberBalances.length > 0 && (
+        <div className="member-balance-section">
+          <div className="section-card">
+            <h3 className="section-title">회원별 잔여 포인트 현황</h3>
+            <div className="member-balance-grid">
+              {memberBalances.map((member) => (
+                <div key={member.id} className="member-balance-card">
+                  <div className="member-name">{member.name}</div>
+                  <div className="member-balance">
+                    <span
+                      className={`balance ${
+                        member.balance >= 0 ? 'positive' : 'negative'
+                      }`}
+                    >
+                      {member.balance >= 0 ? '+' : ''}
+                      {formatNumber(member.balance)}P
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 구글시트 가져오기 폼 (관리자만) */}
       {isAdmin && showImportForm && (
         <div className="import-section">
@@ -1547,7 +1546,7 @@ const Points = () => {
       {/* 개인별 검색 섹션 */}
       <div className="member-search-section">
         <div className="section-card">
-          <h3 className="section-title">개인별 포인트 검색</h3>
+          <h3 className="section-title">개인별 포인트 내역 검색</h3>
 
           {showMemberSearch ? (
             <div className="search-form">
@@ -1614,17 +1613,7 @@ const Points = () => {
               {memberStats && (
                 <>
                   <div className="member-header">
-                    <div className="member-title">
-                      <h4>{memberStats.memberName}님의 포인트 통계</h4>
-                      {(() => {
-                        const member = members.find(
-                          (m) => m.name === memberStats.memberName
-                        );
-                        return member && member.tier ? (
-                          <TierBadge tier={member.tier} size="normal" />
-                        ) : null;
-                      })()}
-                    </div>
+                    <h4>{memberStats.memberName}님의 포인트 통계</h4>
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={resetMemberSearch}
@@ -1917,17 +1906,7 @@ const Points = () => {
                             ))}
                           </select>
                         ) : (
-                          <div className="tier-cell">
-                            <span>{point.member_name}</span>
-                            {(() => {
-                              const member = members.find(
-                                (m) => m.name === point.member_name
-                              );
-                              return member && member.tier ? (
-                                <TierBadge tier={member.tier} size="small" />
-                              ) : null;
-                            })()}
-                          </div>
+                          point.member_name
                         )}
                       </td>
                       <td>
