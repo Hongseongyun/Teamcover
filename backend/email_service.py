@@ -470,10 +470,10 @@ def send_verification_code_email(email, name, verification_code):
         
         print(f"SMTP 서버 연결 시도 중...")
         
-        # SMTP 방식으로 이메일 발송 (타임아웃 120초)
+        # SMTP 방식으로 이메일 발송 (타임아웃 30초)
         import socket
         original_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(120)  # 120초 타임아웃
+        socket.setdefaulttimeout(30)  # 30초 타임아웃
         
         try:
             mail.send(msg)
@@ -509,16 +509,26 @@ def resend_verification_email(email):
         return {'success': False, 'message': f'이메일 재발송 중 오류가 발생했습니다: {str(e)}'}
 
 def send_password_reset_email(email, name, reset_code):
-    """비밀번호 재설정 이메일 발송"""
+    """비밀번호 재설정 이메일 발송 (SendGrid 사용)"""
     try:
-        print(f"=== 비밀번호 재설정 이메일 발송 시작 ===")
+        print(f"=== 비밀번호 재설정 이메일 발송 시작 (SendGrid) ===")
         print(f"이메일: {email}")
         print(f"이름: {name}")
         print(f"재설정 코드: {reset_code}")
         
+        # SendGrid API 사용
+        import requests
+        
+        api_key = current_app.config.get('MAIL_PASSWORD')
+        url = "https://api.sendgrid.com/v3/mail/send"
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
         # 이메일 내용
-        subject = "Teamcover 비밀번호 재설정"
-        html_body = f"""
+        html_content = f"""
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
@@ -560,36 +570,34 @@ def send_password_reset_email(email, name, reset_code):
         </html>
         """
         
-        # 이메일 발송
-        print(f"이메일 메시지 생성 중...")
+        data = {
+            "personalizations": [
+                {
+                    "to": [{"email": email}],
+                    "subject": "Teamcover 비밀번호 재설정"
+                }
+            ],
+            "from": {
+                "email": "syun4224@gmail.com",
+                "name": "Teamcover"
+            },
+            "content": [
+                {
+                    "type": "text/html",
+                    "value": html_content
+                }
+            ]
+        }
         
-        # SendGrid용 발신자 이메일 설정
-        sender_email = current_app.config.get('MAIL_DEFAULT_SENDER') or 'syun4224@gmail.com'
+        print(f"SendGrid API 요청 중...")
+        response = requests.post(url, headers=headers, json=data, timeout=10)
         
-        msg = Message(
-            subject=subject,
-            recipients=[email],
-            sender=sender_email,
-            html=html_body
-        )
-        print(f"이메일 메시지 생성 완료 (발신자: {sender_email})")
-        
-        print(f"SMTP 서버 연결 시도 중...")
-        
-        # SMTP 방식으로 이메일 발송 (타임아웃 120초)
-        import socket
-        original_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(120)  # 120초 타임아웃
-        
-        try:
-            mail.send(msg)
-            print(f"✅ 비밀번호 재설정 이메일 발송 성공!")
+        if response.status_code == 202:
+            print(f"✅ 비밀번호 재설정 이메일 발송 성공! (SendGrid)")
             return True
-        except Exception as e:
-            print(f"❌ SMTP 이메일 발송 실패: {e}")
+        else:
+            print(f"❌ SendGrid 이메일 발송 실패: {response.status_code} - {response.text}")
             return False
-        finally:
-            socket.setdefaulttimeout(original_timeout)
         
     except Exception as e:
         print(f"❌ 비밀번호 재설정 이메일 발송 실패: {e}")
