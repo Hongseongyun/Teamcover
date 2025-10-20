@@ -114,9 +114,9 @@ def delete_score(score_id):
         db.session.delete(score)
         db.session.commit()
         
-        # 스코어 삭제 후 회원 티어 업데이트
+        # 스코어 삭제 후 회원 평균 점수와 티어 업데이트
         if member:
-            member.update_tier()
+            member.update_average_and_tier()
             db.session.commit()
         
         return jsonify({
@@ -170,8 +170,8 @@ def update_score(score_id):
         
         db.session.commit()
         
-        # 스코어 수정 후 회원 티어 업데이트
-        member.update_tier()
+        # 스코어 수정 후 회원 평균 점수와 티어 업데이트
+        member.update_average_and_tier()
         db.session.commit()
         
         return jsonify({
@@ -195,16 +195,24 @@ def get_member_averages():
         member_averages = []
         
         for member in members:
-            # 정기전 평균 계산
-            regular_avg = member.calculate_regular_season_average()
-            
-            if regular_avg is not None:
+            # 저장된 평균 점수 사용 (없으면 계산)
+            if member.average_score is not None:
                 member_averages.append({
                     'member_id': member.id,
                     'member_name': member.name,
-                    'average_score': round(regular_avg, 1),
+                    'average_score': round(member.average_score, 1),
                     'tier': member.tier or member.calculate_tier_from_score()
                 })
+            else:
+                # 평균 점수가 없으면 계산해서 추가
+                regular_avg = member.calculate_regular_season_average()
+                if regular_avg is not None:
+                    member_averages.append({
+                        'member_id': member.id,
+                        'member_name': member.name,
+                        'average_score': round(regular_avg, 1),
+                        'tier': member.tier or member.calculate_tier_from_score()
+                    })
         
         # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)
         member_averages.sort(key=lambda x: x['average_score'], reverse=True)

@@ -279,8 +279,8 @@ const TeamAssignment = () => {
       setIsLoading(true);
       setLoadingType('개별 추가');
 
-      // 스코어 기록에서 평균 에버 계산
-      const average = await calculateMemberAverage(member.name);
+      // 저장된 평균 에버 가져오기
+      const average = await getMemberAverage(member.name);
 
       await teamAPI.addPlayer({
         name: member.name,
@@ -434,7 +434,7 @@ const TeamAssignment = () => {
         setLoadingType('중복되지 않은 회원 추가');
 
         for (const member of nonDuplicateMembers) {
-          const average = await calculateMemberAverage(member.name);
+          const average = await getMemberAverage(member.name);
 
           await teamAPI.addPlayer({
             name: member.name,
@@ -445,7 +445,7 @@ const TeamAssignment = () => {
       } else {
         // 모든 검색 결과를 순차적으로 추가
         for (const member of searchResults) {
-          const average = await calculateMemberAverage(member.name);
+          const average = await getMemberAverage(member.name);
 
           const playerData = {
             name: member.name,
@@ -601,7 +601,7 @@ const TeamAssignment = () => {
         setLoadingType('중복되지 않은 회원 추가');
 
         for (const member of nonDuplicateMembers) {
-          const average = await calculateMemberAverage(member.name);
+          const average = await getMemberAverage(member.name);
 
           await teamAPI.addPlayer({
             name: member.name,
@@ -612,7 +612,7 @@ const TeamAssignment = () => {
       } else {
         // 모든 선택된 회원 추가
         for (const member of selectedMembers) {
-          const average = await calculateMemberAverage(member.name);
+          const average = await getMemberAverage(member.name);
 
           const playerData = {
             name: member.name,
@@ -650,68 +650,30 @@ const TeamAssignment = () => {
     }
   };
 
-  // 개별 회원의 평균 에버 계산 (선수 추가용)
-  const calculateMemberAverage = async (memberName) => {
+  // 회원의 저장된 평균 에버 가져오기 (선수 추가용)
+  const getMemberAverage = async (memberName) => {
     try {
-      const response = await scoreAPI.getScores();
-      const data = response.data;
+      // 회원 목록에서 해당 회원 찾기
+      const member = members.find((m) => m.name === memberName);
 
-      if (data.success) {
-        const memberScores = data.scores.filter(
-          (score) => score.member_name === memberName
-        );
+      if (
+        member &&
+        member.average_score !== null &&
+        member.average_score !== undefined
+      ) {
+        // 저장된 평균 점수가 있으면 반환
+        return Math.round(member.average_score);
+      }
 
-        if (memberScores.length > 0) {
-          const targetYear = 2025;
-          const getDate = (s) => new Date(s.game_date || s.created_at);
-
-          // 1) 2025년 7월 이후
-          let targetScores = memberScores.filter((score) => {
-            const d = getDate(score);
-            if (isNaN(d)) return false;
-            const y = d.getFullYear();
-            const m = d.getMonth() + 1;
-            return y === targetYear && m >= 7;
-          });
-
-          // 2) 없으면 2025년 1~6월
-          if (targetScores.length === 0) {
-            targetScores = memberScores.filter((score) => {
-              const d = getDate(score);
-              if (isNaN(d)) return false;
-              const y = d.getFullYear();
-              const m = d.getMonth() + 1;
-              return y === targetYear && m >= 1 && m <= 6;
-            });
-          }
-
-          // 3) 없으면 2024년 전체
-          if (targetScores.length === 0) {
-            targetScores = memberScores.filter((score) => {
-              const d = getDate(score);
-              if (isNaN(d)) return false;
-              const y = d.getFullYear();
-              return y === 2024;
-            });
-          }
-
-          // 선택된 기간에서 평균 계산
-          if (targetScores.length > 0) {
-            const allScores = targetScores
-              .flatMap((score) => [score.score1, score.score2, score.score3])
-              .filter((score) => score > 0);
-
-            if (allScores.length > 0) {
-              return Math.round(
-                allScores.reduce((sum, score) => sum + score, 0) /
-                  allScores.length
-              );
-            }
-          }
+      // 저장된 평균 점수가 없으면 API로 조회
+      if (member) {
+        const response = await memberAPI.getMemberAverage(member.id);
+        if (response.data.success) {
+          return Math.round(response.data.average);
         }
       }
     } catch (error) {
-      // 에러 처리
+      console.error('평균 점수 조회 오류:', error);
     }
 
     // 기본값 반환 (스코어 기록이 없는 경우)

@@ -76,6 +76,7 @@ class Member(db.Model):
     gender = db.Column(db.String(10), nullable=True)  # '남', '여'
     level = db.Column(db.String(20), nullable=True)   # '초급', '중급', '고급', '전문' (레거시)
     tier = db.Column(db.String(20), nullable=True)    # '아이언', '브론즈', '실버', '골드', '플레티넘', '다이아', '마스터', '챌린저'
+    average_score = db.Column(db.Float, nullable=True)  # 정기전 평균 점수
     email = db.Column(db.String(100), nullable=True)
     note = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -85,33 +86,30 @@ class Member(db.Model):
         return f'<Member {self.name}>'
     
     def calculate_tier_from_score(self):
-        """정기전 에버 기반으로 티어 계산"""
-        # 정기전 에버 계산
-        regular_avg = self.calculate_regular_season_average()
+        """저장된 평균 점수 기반으로 티어 계산"""
+        if self.average_score is None:
+            return '배치'  # 평균 점수가 없으면 배치
         
-        if regular_avg is None:
-            return '배치'  # 정기전 기록이 없으면 배치
-        
-        # 점수 구간별 티어 할당 (정기전 에버 기준)
-        if regular_avg <= 100:
+        # 점수 구간별 티어 할당 (저장된 평균 점수 기준)
+        if self.average_score <= 100:
             return '아이언'
-        elif regular_avg <= 130:
+        elif self.average_score <= 130:
             return '브론즈'
-        elif regular_avg <= 160:
+        elif self.average_score <= 160:
             return '실버'
-        elif regular_avg <= 190:
+        elif self.average_score <= 190:
             return '골드'
-        elif regular_avg <= 220:
+        elif self.average_score <= 220:
             return '플레티넘'
-        elif regular_avg <= 250:
+        elif self.average_score <= 250:
             return '다이아'
-        elif regular_avg <= 280:
+        elif self.average_score <= 280:
             return '마스터'
         else:
             return '챌린저'
     
     def calculate_regular_season_average(self):
-        """정기전 에버 계산 (우선순위에 따라)"""
+        """정기전 에버 계산 (우선순위에 따라) - 평균 점수 업데이트용"""
         current_date = datetime.now().date()
         current_year = current_date.year
         current_month = current_date.month
@@ -184,10 +182,21 @@ class Member(db.Model):
         
         return sum(valid_scores) / len(valid_scores)
     
+    def update_average_score(self):
+        """평균 점수 업데이트"""
+        self.average_score = self.calculate_regular_season_average()
+        return self.average_score
+    
     def update_tier(self):
-        """티어 업데이트"""
+        """티어 업데이트 (평균 점수 기반)"""
         self.tier = self.calculate_tier_from_score()
         return self.tier
+    
+    def update_average_and_tier(self):
+        """평균 점수와 티어 모두 업데이트"""
+        self.update_average_score()
+        self.update_tier()
+        return self.average_score, self.tier
     
     def to_dict(self, hide_privacy=False):
         """딕셔너리 형태로 변환"""
@@ -201,6 +210,7 @@ class Member(db.Model):
             'gender': self.gender,
             'level': self.level,  # 레거시 호환성
             'tier': self.tier,
+            'average_score': round(self.average_score, 2) if self.average_score else None,
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None
@@ -249,9 +259,9 @@ class Score(db.Model):
         return f'<Score {self.member.name} {self.game_date}>'
     
     def update_member_tier(self):
-        """스코어 추가 후 회원 티어 업데이트"""
+        """스코어 추가 후 회원 평균 점수와 티어 업데이트"""
         if self.member:
-            self.member.update_tier()
+            self.member.update_average_and_tier()
             db.session.commit()
     
     def set_season_info(self):

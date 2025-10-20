@@ -238,52 +238,36 @@ def delete_member(member_id):
 
 @members_bp.route('/<int:member_id>/average/', methods=['GET'])
 def get_member_average(member_id):
-    """회원별 에버 계산 API - 6월 이후 기록 우선, 없으면 6월 이전 기록"""
+    """회원별 에버 조회 API - 저장된 평균 점수 반환"""
     try:
         member = Member.query.get_or_404(member_id)
         
-        june_first = datetime(2025, 6, 1).date()
+        # 저장된 평균 점수가 있으면 반환
+        if member.average_score is not None:
+            return jsonify({
+                'success': True,
+                'average': round(member.average_score, 1),
+                'tier': member.tier or member.calculate_tier_from_score(),
+                'message': f'{member.name}의 평균 점수: {round(member.average_score, 1)}'
+            })
         
-        recent_scores = Score.query.filter(
-            Score.member_id == member_id,
-            Score.game_date >= june_first
-        ).all()
-        
-        if recent_scores:
-            total_average = sum(score.average_score for score in recent_scores if score.average_score)
-            count = len([s for s in recent_scores if s.average_score])
-            if count > 0:
-                average = round(total_average / count, 1)
-                return jsonify({
-                    'success': True,
-                    'average': average,
-                    'score_count': count,
-                    'period': '6월 이후',
-                    'message': f'{member.name}의 6월 이후 에버: {average} (총 {count}회)'
-                })
-        
-        all_scores = Score.query.filter_by(member_id=member_id).all()
-        if all_scores:
-            total_average = sum(score.average_score for score in all_scores if score.average_score)
-            count = len([s for s in all_scores if s.average_score])
-            if count > 0:
-                average = round(total_average / count, 1)
-                return jsonify({
-                    'success': True,
-                    'average': average,
-                    'score_count': count,
-                    'period': '전체 기간',
-                    'message': f'{member.name}의 전체 기간 에버: {average} (총 {count}회)'
-                })
+        # 저장된 평균 점수가 없으면 계산해서 반환
+        regular_avg = member.calculate_regular_season_average()
+        if regular_avg is not None:
+            return jsonify({
+                'success': True,
+                'average': round(regular_avg, 1),
+                'tier': member.calculate_tier_from_score(),
+                'message': f'{member.name}의 계산된 평균 점수: {round(regular_avg, 1)}'
+            })
         
         return jsonify({
             'success': False,
-            'message': f'{member.name}의 스코어 기록이 없습니다.',
-            'average': None
+            'message': f'{member.name}의 정기전 기록이 없습니다.'
         })
         
     except Exception as e:
-        return jsonify({'success': False, 'message': f'에버 계산 중 오류가 발생했습니다: {str(e)}'})
+        return jsonify({'success': False, 'message': f'평균 점수 조회 중 오류가 발생했습니다: {str(e)}'})
 
 @members_bp.route('/averages/', methods=['GET'])
 def get_all_members_averages():
