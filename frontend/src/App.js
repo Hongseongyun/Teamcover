@@ -14,6 +14,7 @@ import Scores from './pages/Scores';
 import Points from './pages/Points';
 import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
+import MyPage from './pages/MyPage';
 
 function App() {
   return (
@@ -64,6 +65,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="super_admin">
                   <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/mypage"
+              element={
+                <ProtectedRoute requiredRole="user">
+                  <MyPage />
                 </ProtectedRoute>
               }
             />

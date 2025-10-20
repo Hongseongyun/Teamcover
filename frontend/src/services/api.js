@@ -145,6 +145,10 @@ export const authAPI = {
     api.post('/api/auth/forgot-password', data, { timeout: 30000 }), // 30초 타임아웃
   verifyResetCode: (data) => api.post('/api/auth/verify-reset-code', data),
   resetPassword: (data) => api.post('/api/auth/reset-password', data),
+  // 마이페이지 관련 API
+  updateName: (data) => api.post('/api/auth/update-name', data),
+  changePassword: (data) => api.post('/api/auth/change-password', data),
+  deleteAccount: (data) => api.post('/api/auth/delete-account', data),
 };
 
 // 구글시트 가져오기 API

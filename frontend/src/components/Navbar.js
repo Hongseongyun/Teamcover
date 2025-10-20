@@ -159,6 +159,14 @@ const Navbar = () => {
                     </span>
                   </div>
                   <div className="dropdown-divider"></div>
+                  <Link
+                    to="/mypage"
+                    className="dropdown-item"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <span className="mypage-icon">👤</span>
+                    <span>마이페이지</span>
+                  </Link>
                   <button
                     className="dropdown-item logout-item"
                     onClick={handleLogout}

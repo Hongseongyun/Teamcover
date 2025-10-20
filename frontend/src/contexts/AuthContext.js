@@ -167,6 +167,14 @@ export const AuthProvider = ({ children }) => {
     return pagePermissions[page] || false;
   };
 
+  // 사용자 정보 업데이트 함수
+  const updateUser = (updatedUserData) => {
+    setUser((prevUser) => ({
+      ...prevUser,
+      ...updatedUserData,
+    }));
+  };
+
   const value = {
     user,
     loading,
@@ -178,6 +186,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     hasRole,
     canAccessPage,
+    updateUser,
     isAuthenticated: !!user,
   };
 

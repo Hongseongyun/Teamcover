@@ -1255,3 +1255,133 @@ def reset_password():
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'비밀번호 재설정 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/update-name', methods=['POST'])
+@jwt_required()
+def update_name():
+    """이름 변경"""
+    try:
+        data = request.get_json()
+        new_name = data.get('name', '').strip()
+        
+        if not new_name:
+            return jsonify({'success': False, 'message': '새 이름을 입력해주세요.'})
+        
+        if len(new_name) < 2:
+            return jsonify({'success': False, 'message': '이름은 2자 이상이어야 합니다.'})
+        
+        # 현재 사용자 가져오기
+        current_user = get_current_user_from_jwt()
+        if not current_user:
+            return jsonify({'success': False, 'message': '인증된 사용자를 찾을 수 없습니다.'})
+        
+        # 이름 업데이트
+        current_user.name = new_name
+        db.session.commit()
+        
+        print(f"Name updated for user: {current_user.email} -> {new_name}")
+        
+        return jsonify({
+            'success': True,
+            'message': '이름이 성공적으로 변경되었습니다.',
+            'user': {
+                'id': current_user.id,
+                'name': current_user.name,
+                'email': current_user.email,
+                'role': current_user.role
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in update_name: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'이름 변경 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    """비밀번호 변경 (현재 비밀번호 확인)"""
+    try:
+        data = request.get_json()
+        current_password = data.get('currentPassword', '')
+        new_password = data.get('newPassword', '')
+        
+        if not current_password or not new_password:
+            return jsonify({'success': False, 'message': '현재 비밀번호와 새 비밀번호를 모두 입력해주세요.'})
+        
+        # 비밀번호 조건 검증
+        password_validation = validate_password(new_password)
+        if not password_validation['valid']:
+            return jsonify({'success': False, 'message': password_validation['message']})
+        
+        # 현재 사용자 가져오기
+        current_user = get_current_user_from_jwt()
+        if not current_user:
+            return jsonify({'success': False, 'message': '인증된 사용자를 찾을 수 없습니다.'})
+        
+        # 현재 비밀번호 확인
+        if not current_user.check_password(current_password):
+            return jsonify({'success': False, 'message': '현재 비밀번호가 올바르지 않습니다.'})
+        
+        # 새 비밀번호로 업데이트
+        current_user.set_password(new_password)
+        db.session.commit()
+        
+        print(f"Password changed for user: {current_user.email}")
+        
+        return jsonify({
+            'success': True,
+            'message': '비밀번호가 성공적으로 변경되었습니다.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in change_password: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'비밀번호 변경 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/delete-account', methods=['POST'])
+@jwt_required()
+def delete_account():
+    """회원탈퇴"""
+    try:
+        data = request.get_json()
+        password = data.get('password', '')
+        
+        if not password:
+            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+        
+        # 현재 사용자 가져오기
+        current_user = get_current_user_from_jwt()
+        if not current_user:
+            return jsonify({'success': False, 'message': '인증된 사용자를 찾을 수 없습니다.'})
+        
+        # 비밀번호 확인
+        if not current_user.check_password(password):
+            return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
+        
+        # 관리자 계정은 탈퇴 불가
+        if current_user.role in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': '관리자 계정은 탈퇴할 수 없습니다.'})
+        
+        # 계정 삭제
+        user_email = current_user.email
+        db.session.delete(current_user)
+        db.session.commit()
+        
+        print(f"Account deleted for user: {user_email}")
+        
+        return jsonify({
+            'success': True,
+            'message': '회원탈퇴가 완료되었습니다.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in delete_account: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'회원탈퇴 중 오류가 발생했습니다: {str(e)}'})
