@@ -1068,77 +1068,159 @@ const Scores = () => {
 
       {/* 회원별 평균 순위 섹션 */}
       <div className="averages-section">
-        <div className="section-card">
-          <div className="section-header">
-            <h3 className="section-title">회원별 평균(에버) 순위</h3>
-            <button
-              className="btn btn-outline-primary btn-sm refresh-btn"
-              onClick={refreshMemberAverages}
-              disabled={averagesLoading}
-              title={
-                isAdmin
-                  ? '평균 순위 새로고침 (자동 업데이트)'
-                  : '평균 순위 새로고침'
-              }
-            >
+        <div className="averages-container">
+          {/* 평균 순위 테이블 */}
+          <div className="averages-main">
+            <div className="section-card">
+              <div className="section-header">
+                <h3 className="section-title">회원별 평균(에버) 순위</h3>
+                <button
+                  className="btn btn-outline-primary btn-sm refresh-btn"
+                  onClick={refreshMemberAverages}
+                  disabled={averagesLoading}
+                  title={
+                    isAdmin
+                      ? '평균 순위 새로고침 (자동 업데이트)'
+                      : '평균 순위 새로고침'
+                  }
+                >
+                  {averagesLoading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-1"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      새로고침 중...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-sync-alt me-1"></i>
+                      새로고침
+                    </>
+                  )}
+                </button>
+              </div>
+              <div className="averages-description">
+                <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
+                <p>
+                  현재 기준: 7월 이후 → 1~6월 → 작년 전체 순으로 적용됩니다.
+                </p>
+              </div>
+
               {averagesLoading ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm me-1"
-                    role="status"
-                    aria-hidden="true"
-                  ></span>
-                  새로고침 중...
-                </>
+                <div className="loading">평균 순위 로딩 중...</div>
               ) : (
-                <>
-                  <i className="fas fa-sync-alt me-1"></i>
-                  새로고침
-                </>
-              )}
-            </button>
-          </div>
-          <div className="averages-description">
-            <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
-            <p>현재 기준: 7월 이후 → 1~6월 → 작년 전체 순으로 적용됩니다.</p>
-          </div>
+                <div className="averages-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>순위</th>
+                        <th>회원명</th>
+                        <th>평균 점수</th>
+                        <th>티어</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {memberAverages.map((member) => (
+                        <tr key={member.member_id} className="average-row">
+                          <td className="rank-cell">
+                            {renderMedalIcon(member.rank)}
+                          </td>
+                          <td className="member-name">{member.member_name}</td>
+                          <td className="average-score">
+                            {member.average_score}
+                          </td>
+                          <td className="tier-cell">
+                            <TierBadge tier={member.tier} size="small" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
 
-          {averagesLoading ? (
-            <div className="loading">평균 순위 로딩 중...</div>
-          ) : (
-            <div className="averages-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>순위</th>
-                    <th>회원명</th>
-                    <th>평균 점수</th>
-                    <th>티어</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {memberAverages.map((member) => (
-                    <tr key={member.member_id} className="average-row">
-                      <td className="rank-cell">
-                        {renderMedalIcon(member.rank)}
-                      </td>
-                      <td className="member-name">{member.member_name}</td>
-                      <td className="average-score">{member.average_score}</td>
-                      <td className="tier-cell">
-                        <TierBadge tier={member.tier} size="small" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {memberAverages.length === 0 && (
-                <div className="no-data">
-                  <p>정기전 기록이 있는 회원이 없습니다.</p>
+                  {memberAverages.length === 0 && (
+                    <div className="no-data">
+                      <p>정기전 기록이 있는 회원이 없습니다.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
+          </div>
+
+          {/* 티어 기준표 */}
+          <div className="tier-reference">
+            <div className="section-card">
+              <h3 className="section-title">티어 기준표</h3>
+              <div className="tier-reference-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>티어</th>
+                      <th>평균 점수</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="tier-row challenger">
+                      <td>
+                        <TierBadge tier="챌린저" size="small" />
+                      </td>
+                      <td>280점 이상</td>
+                    </tr>
+                    <tr className="tier-row master">
+                      <td>
+                        <TierBadge tier="마스터" size="small" />
+                      </td>
+                      <td>250~279점</td>
+                    </tr>
+                    <tr className="tier-row diamond">
+                      <td>
+                        <TierBadge tier="다이아" size="small" />
+                      </td>
+                      <td>220~249점</td>
+                    </tr>
+                    <tr className="tier-row platinum">
+                      <td>
+                        <TierBadge tier="플레티넘" size="small" />
+                      </td>
+                      <td>190~219점</td>
+                    </tr>
+                    <tr className="tier-row gold">
+                      <td>
+                        <TierBadge tier="골드" size="small" />
+                      </td>
+                      <td>160~189점</td>
+                    </tr>
+                    <tr className="tier-row silver">
+                      <td>
+                        <TierBadge tier="실버" size="small" />
+                      </td>
+                      <td>130~159점</td>
+                    </tr>
+                    <tr className="tier-row bronze">
+                      <td>
+                        <TierBadge tier="브론즈" size="small" />
+                      </td>
+                      <td>100~129점</td>
+                    </tr>
+                    <tr className="tier-row iron">
+                      <td>
+                        <TierBadge tier="아이언" size="small" />
+                      </td>
+                      <td>100점 미만</td>
+                    </tr>
+                    <tr className="tier-row unranked">
+                      <td>
+                        <TierBadge tier="배치" size="small" />
+                      </td>
+                      <td>기록 없음</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

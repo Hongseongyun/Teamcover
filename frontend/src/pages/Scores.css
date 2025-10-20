@@ -2099,6 +2099,18 @@
     font-size: 0.75rem;
   }
 
+  /* 평균 순위 섹션 모바일 레이아웃 */
+  .averages-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .tier-reference-table th,
+  .tier-reference-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
   /* 합계/평균 셀 크기 축소 */
   .total-cell,
   .average-cell {
@@ -2143,6 +2155,21 @@
   margin-bottom: 2rem;
 }
 
+.averages-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.averages-main {
+  min-width: 0; /* 그리드 오버플로우 방지 */
+}
+
+.tier-reference {
+  min-width: 0; /* 그리드 오버플로우 방지 */
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -2183,6 +2210,77 @@
 
 .refresh-btn i {
   font-size: 0.875rem;
+}
+
+/* 티어 기준표 스타일 */
+.tier-reference-table {
+  overflow-x: auto;
+}
+
+.tier-reference-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tier-reference-table th {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  font-size: 0.875rem;
+}
+
+.tier-reference-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.tier-reference-table .tier-row:hover {
+  background-color: #f8f9fa;
+}
+
+.tier-reference-table .tier-row.challenger {
+  background-color: #fef2f2;
+}
+
+.tier-reference-table .tier-row.master {
+  background-color: #faf5ff;
+}
+
+.tier-reference-table .tier-row.diamond {
+  background-color: #dbeafe;
+}
+
+.tier-reference-table .tier-row.platinum {
+  background-color: #ecfeff;
+}
+
+.tier-reference-table .tier-row.gold {
+  background-color: #fffbeb;
+}
+
+.tier-reference-table .tier-row.silver {
+  background-color: #f1f5f9;
+}
+
+.tier-reference-table .tier-row.bronze {
+  background-color: #f4e4bc;
+}
+
+.tier-reference-table .tier-row.iron {
+  background-color: #f7fafc;
+}
+
+.tier-reference-table .tier-row.unranked {
+  background-color: #f3f4f6;
 }
 
 .averages-description {
