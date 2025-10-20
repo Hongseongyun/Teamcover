@@ -75,31 +75,7 @@ CORS(app,
      supports_credentials=True,
      expose_headers=["Content-Type", "Authorization"])
 
-# CORS preflight 요청을 위한 명시적 핸들러
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = make_response()
-        # 요청 Origin을 그대로 반영하되, 허용 목록에 있는 경우에만 설정
-        request_origin = request.headers.get('Origin')
-        if request_origin and request_origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", request_origin)
-            response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
-            response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
-            response.headers.add('Access-Control-Max-Age', '86400')  # 24시간 캐시
-        return response
-
-# 모든 응답에 CORS 헤더 추가
-@app.after_request
-def after_request(response):
-    request_origin = request.headers.get('Origin')
-    if request_origin and request_origin in allowed_origins:
-        response.headers.add('Access-Control-Allow-Origin', request_origin)
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,X-Privacy-Token')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+# CORS는 flask-cors 라이브러리로만 처리 (중복 방지)
 
 # 데이터베이스 초기화
 db.init_app(app)
