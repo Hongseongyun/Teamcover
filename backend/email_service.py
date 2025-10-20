@@ -472,7 +472,8 @@ def send_verification_code_email(email, name, verification_code):
         
         # SendGrid API 사용 (SMTP 대신)
         try:
-            result = send_via_sendgrid(email, name, verification_code, 'google_verification')
+            debug_info = {'email_type': 'google_verification'}
+            result = send_via_sendgrid_api(email, name, verification_code, 'user', debug_info)
             if result:
                 print(f"✅ 인증 코드 이메일 발송 성공! (SendGrid)")
                 return True
@@ -576,7 +577,8 @@ def send_password_reset_email(email, name, reset_code):
         
         # SendGrid API 사용 (SMTP 대신)
         try:
-            result = send_via_sendgrid(email, name, reset_code, 'password_reset')
+            debug_info = {'email_type': 'password_reset'}
+            result = send_via_sendgrid_api(email, name, reset_code, 'user', debug_info)
             if result:
                 print(f"✅ 비밀번호 재설정 이메일 발송 성공! (SendGrid)")
                 return True
