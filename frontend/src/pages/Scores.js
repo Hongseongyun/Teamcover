@@ -2100,7 +2100,7 @@ const Scores = () => {
         <div className="section-card">
           <div className="scores-header">
             <div className="header-left">
-              <h3 className="section-title">스코어 목록</h3>
+              <h3 className="section-title">스코어 기록</h3>
               {selectedScores.length > 0 && (
                 <button
                   className="btn btn-danger btn-sm"
