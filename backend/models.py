@@ -86,27 +86,48 @@ class Member(db.Model):
         return f'<Member {self.name}>'
     
     def calculate_tier_from_score(self):
-        """저장된 평균 점수 기반으로 티어 계산"""
+        """저장된 평균 점수의 백분위(상위 비율) 기준으로 티어 계산.
+        기준(누적 상위 비율): 챌린저 1%, 마스터 3%, 다이아 7%, 플레티넘 12%,
+        골드 18%, 실버 22%, 브론즈 20%, 아이언 17% (총 100%).
+        """
         if self.average_score is None:
-            return '배치'  # 평균 점수가 없으면 배치
-        
-        # 점수 구간별 티어 할당 (저장된 평균 점수 기준)
-        if self.average_score <= 100:
-            return '아이언'
-        elif self.average_score <= 130:
-            return '브론즈'
-        elif self.average_score <= 160:
-            return '실버'
-        elif self.average_score <= 190:
-            return '골드'
-        elif self.average_score <= 220:
-            return '플레티넘'
-        elif self.average_score <= 250:
-            return '다이아'
-        elif self.average_score <= 280:
-            return '마스터'
-        else:
+            return '배치'
+
+        # 평균 점수가 있는 모든 회원 집합
+        members_with_avg = (
+            Member.query.filter(Member.average_score.isnot(None)).with_entities(Member.average_score).all()
+        )
+        if not members_with_avg:
+            return '배치'
+
+        # 내림차순 정렬 후 현재 회원의 순위(동점은 동일 구간으로 처리: 나보다 높은 값의 개수만 카운트)
+        scores_desc = sorted((m[0] for m in members_with_avg), reverse=True)
+        total = len(scores_desc)
+        # 상위에 있는 인원 수
+        higher_count = sum(1 for s in scores_desc if s > self.average_score)
+        # 본인의 0-based 위치
+        position = higher_count
+        # 상위 비율(%) 계산
+        top_percent = (position / total) * 100.0
+
+        # 누적 상위 비율 구간 매핑
+        # 0<=x<1 -> 챌린저, 1<=x<4 -> 마스터, 4<=x<11 -> 다이아, 11<=x<23 -> 플레, 23<=x<41 -> 골드,
+        # 41<=x<63 -> 실버, 63<=x<83 -> 브론즈, 83<=x<=100 -> 아이언
+        if top_percent < 1:
             return '챌린저'
+        if top_percent < 4:
+            return '마스터'
+        if top_percent < 11:
+            return '다이아'
+        if top_percent < 23:
+            return '플레티넘'
+        if top_percent < 41:
+            return '골드'
+        if top_percent < 63:
+            return '실버'
+        if top_percent < 83:
+            return '브론즈'
+        return '아이언'
     
     def calculate_regular_season_average(self):
         """정기전 에버 계산 (우선순위에 따라) - 평균 점수 업데이트용"""

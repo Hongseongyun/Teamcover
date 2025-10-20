@@ -6,17 +6,17 @@
 /* 티어별 색상 변수 (이미지 참고) */
 :root {
   --tier-unranked: #9ca3af;
-  --tier-iron: #4a5568;
+  --tier-iron: #2d1b0e; /* 아이언: 매우 짙은 갈색 */
   --tier-bronze: #8b4513;
   --tier-silver: #e2e8f0;
-  --tier-gold: #ffd700;
+  --tier-gold: #e4ab0dfe; /* 더 진한 골드 색상 */
   --tier-platinum: #3bb1e4;
   --tier-diamond: #2563eb;
   --tier-master: #a855f7;
   --tier-challenger: #dc2626;
 
   --tier-unranked-bg: #f3f4f6;
-  --tier-iron-bg: #f7fafc;
+  --tier-iron-bg: #efe3d0; /* 아이언 배경: 은은한 베이지 톤 */
   --tier-bronze-bg: #f4e4bc;
   --tier-silver-bg: #f1f5f9;
   --tier-gold-bg: #fffbeb;
@@ -2248,39 +2248,39 @@
 }
 
 .tier-reference-table .tier-row.challenger {
-  background-color: #fef2f2;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.master {
-  background-color: #faf5ff;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.diamond {
-  background-color: #dbeafe;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.platinum {
-  background-color: #ecfeff;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.gold {
-  background-color: #fffbeb;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.silver {
-  background-color: #f1f5f9;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.bronze {
-  background-color: #f4e4bc;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.iron {
-  background-color: #f7fafc;
+  background-color: white;
 }
 
 .tier-reference-table .tier-row.unranked {
-  background-color: #f3f4f6;
+  background-color: white;
 }
 
 .averages-description {

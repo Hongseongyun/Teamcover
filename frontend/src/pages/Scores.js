@@ -1158,7 +1158,7 @@ const Scores = () => {
                   <thead>
                     <tr>
                       <th>티어</th>
-                      <th>평균 점수</th>
+                      <th>비율(누적 상위 %)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1166,49 +1166,49 @@ const Scores = () => {
                       <td>
                         <TierBadge tier="챌린저" size="small" />
                       </td>
-                      <td>280점 이상</td>
+                      <td>1% (0~1%)</td>
                     </tr>
                     <tr className="tier-row master">
                       <td>
                         <TierBadge tier="마스터" size="small" />
                       </td>
-                      <td>250~279점</td>
+                      <td>3% (0~4%)</td>
                     </tr>
                     <tr className="tier-row diamond">
                       <td>
                         <TierBadge tier="다이아" size="small" />
                       </td>
-                      <td>220~249점</td>
+                      <td>7% (4~11%)</td>
                     </tr>
                     <tr className="tier-row platinum">
                       <td>
                         <TierBadge tier="플레티넘" size="small" />
                       </td>
-                      <td>190~219점</td>
+                      <td>12%(11~23%)</td>
                     </tr>
                     <tr className="tier-row gold">
                       <td>
                         <TierBadge tier="골드" size="small" />
                       </td>
-                      <td>160~189점</td>
+                      <td>18%(23~41%)</td>
                     </tr>
                     <tr className="tier-row silver">
                       <td>
                         <TierBadge tier="실버" size="small" />
                       </td>
-                      <td>130~159점</td>
+                      <td>22%(41~63%)</td>
                     </tr>
                     <tr className="tier-row bronze">
                       <td>
                         <TierBadge tier="브론즈" size="small" />
                       </td>
-                      <td>100~129점</td>
+                      <td>20%(63~83%)</td>
                     </tr>
                     <tr className="tier-row iron">
                       <td>
                         <TierBadge tier="아이언" size="small" />
                       </td>
-                      <td>100점 미만</td>
+                      <td>17%(83~100%)</td>
                     </tr>
                     <tr className="tier-row unranked">
                       <td>
