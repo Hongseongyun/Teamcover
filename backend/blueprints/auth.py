@@ -1128,37 +1128,29 @@ def forgot_password():
         
         print(f"Password reset code generated for {user.email}: {reset_code}")
         
-        # 이메일 발송 (비동기 처리 - 즉시 응답 반환)
-        email_sent = True  # 항상 성공으로 처리하여 사용자 경험 개선
+        # 이메일 발송 (동기 처리로 변경 - 실제 결과 반환)
+        email_sent = False
         try:
             print(f"비밀번호 재설정 이메일 발송 시도: {user.email}")
-            # 백그라운드에서 이메일 발송 (타임아웃 방지)
-            import threading
-            from flask import current_app
-            
-            def send_email_background(app, email, name, code):
-                with app.app_context():
-                    try:
-                        result = send_password_reset_email(email, name, code)
-                        print(f"백그라운드 이메일 발송 결과: {result}")
-                    except Exception as e:
-                        print(f"백그라운드 이메일 발송 실패: {e}")
-            
-            # 백그라운드 스레드로 이메일 발송 (앱 인스턴스 전달)
-            email_thread = threading.Thread(target=send_email_background, args=(current_app._get_current_object(), user.email, user.name, reset_code))
-            email_thread.daemon = True
-            email_thread.start()
-            
+            email_sent = send_password_reset_email(user.email, user.name, reset_code)
+            print(f"이메일 발송 결과: {email_sent}")
         except Exception as e:
-            print(f"이메일 발송 스레드 생성 실패: {e}")
-            email_sent = True  # 사용자에게는 성공으로 표시
+            print(f"비밀번호 재설정 이메일 발송 실패: {e}")
+            # 기존 이메일 함수로 대체 시도
+            try:
+                print(f"대체 이메일 함수로 재시도: {user.email}")
+                email_sent = send_verification_code_email(user.email, user.name, reset_code)
+                print(f"대체 이메일 발송 결과: {email_sent}")
+            except Exception as e2:
+                print(f"대체 이메일 발송도 실패: {e2}")
+                email_sent = False
         
-        # 이메일 발송 성공 여부와 관계없이 성공 응답 반환 (보안상)
+        # 이메일 발송 결과에 따른 응답
         print(f"✅ 비밀번호 재설정 코드 생성 완료: {user.email} - 코드: {reset_code}")
         return jsonify({
             'success': True,
             'message': '입력하신 이메일로 비밀번호 재설정 인증 코드를 발송했습니다.',
-            'email_sent': True,
+            'email_sent': email_sent,
             'debug_code': reset_code if not email_sent else None  # 디버그용 (이메일 발송 실패 시에만)
         })
         
