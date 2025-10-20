@@ -468,19 +468,20 @@ def send_verification_code_email(email, name, verification_code):
         )
         print(f"이메일 메시지 생성 완료 (발신자: {sender_email})")
         
-        print(f"SMTP 서버 연결 시도 중...")
+        print(f"SendGrid API를 통한 이메일 발송 시도 중...")
         
-        # 타임아웃 설정으로 이메일 발송 (60초)
-        import socket
-        original_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(60)  # 60초 타임아웃
-        
+        # SendGrid API 사용 (SMTP 대신)
         try:
-            mail.send(msg)
-            print(f"✅ 인증 코드 이메일 발송 성공!")
-            return True
-        finally:
-            socket.setdefaulttimeout(original_timeout)
+            result = send_via_sendgrid(email, name, verification_code, 'google_verification')
+            if result:
+                print(f"✅ 인증 코드 이메일 발송 성공! (SendGrid)")
+                return True
+            else:
+                print(f"❌ SendGrid 이메일 발송 실패")
+                return False
+        except Exception as e:
+            print(f"❌ SendGrid 이메일 발송 오류: {e}")
+            return False
         
     except Exception as e:
         print(f"❌ 인증 코드 이메일 발송 실패: {e}")
@@ -571,19 +572,20 @@ def send_password_reset_email(email, name, reset_code):
         )
         print(f"이메일 메시지 생성 완료 (발신자: {sender_email})")
         
-        print(f"SMTP 서버 연결 시도 중...")
+        print(f"SendGrid API를 통한 이메일 발송 시도 중...")
         
-        # 타임아웃 설정으로 이메일 발송 (60초로 증가)
-        import socket
-        original_timeout = socket.getdefaulttimeout()
-        socket.setdefaulttimeout(60)  # 60초 타임아웃
-        
+        # SendGrid API 사용 (SMTP 대신)
         try:
-            mail.send(msg)
-            print(f"✅ 비밀번호 재설정 이메일 발송 성공!")
-            return True
-        finally:
-            socket.setdefaulttimeout(original_timeout)
+            result = send_via_sendgrid(email, name, reset_code, 'password_reset')
+            if result:
+                print(f"✅ 비밀번호 재설정 이메일 발송 성공! (SendGrid)")
+                return True
+            else:
+                print(f"❌ SendGrid 이메일 발송 실패")
+                return False
+        except Exception as e:
+            print(f"❌ SendGrid 이메일 발송 오류: {e}")
+            return False
         
     except Exception as e:
         print(f"❌ 비밀번호 재설정 이메일 발송 실패: {e}")
