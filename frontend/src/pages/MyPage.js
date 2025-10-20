@@ -280,70 +280,72 @@ const MyPage = () => {
           )}
         </div>
 
-        {/* 비밀번호 변경 */}
-        <div className="info-card">
-          <h2>비밀번호 변경</h2>
-          <form onSubmit={handlePasswordChange}>
-            <div className="form-group">
-              <label>현재 비밀번호</label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    currentPassword: e.target.value,
-                  })
-                }
-                placeholder="현재 비밀번호를 입력하세요"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>새 비밀번호</label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    newPassword: e.target.value,
-                  })
-                }
-                placeholder="새 비밀번호를 입력하세요 (8자 이상)"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>새 비밀번호 확인</label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    confirmPassword: e.target.value,
-                  })
-                }
-                placeholder="새 비밀번호를 다시 입력하세요"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-            >
-              {loading ? '변경 중...' : '비밀번호 변경'}
-            </button>
-          </form>
-          {/* 비밀번호 변경 알림 메시지 */}
-          {passwordMessage.text && (
-            <div className={`alert alert-${passwordMessage.type}`}>
-              {passwordMessage.text}
-            </div>
-          )}
-        </div>
+        {/* 비밀번호 변경 - 일반 로그인 사용자만 표시 */}
+        {!user.google_id && (
+          <div className="info-card">
+            <h2>비밀번호 변경</h2>
+            <form onSubmit={handlePasswordChange}>
+              <div className="form-group">
+                <label>현재 비밀번호</label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  placeholder="현재 비밀번호를 입력하세요"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>새 비밀번호</label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  placeholder="새 비밀번호를 입력하세요 (8자 이상)"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>새 비밀번호 확인</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
+                  placeholder="새 비밀번호를 다시 입력하세요"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading}
+              >
+                {loading ? '변경 중...' : '비밀번호 변경'}
+              </button>
+            </form>
+            {/* 비밀번호 변경 알림 메시지 */}
+            {passwordMessage.text && (
+              <div className={`alert alert-${passwordMessage.type}`}>
+                {passwordMessage.text}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 회원탈퇴 */}
         <div className="info-card danger-card">

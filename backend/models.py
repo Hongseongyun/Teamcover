@@ -57,6 +57,7 @@ class User(UserMixin, db.Model):
             'email': self.email,
             'name': self.name,
             'role': self.role,
+            'google_id': self.google_id,
             'is_active': self.is_active,
             'is_verified': self.is_verified,
             'verification_method': self.verification_method,
