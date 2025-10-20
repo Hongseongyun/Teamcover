@@ -182,3 +182,41 @@ def update_score(score_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'스코어 수정 중 오류가 발생했습니다: {str(e)}'})
+
+@scores_bp.route('/averages', methods=['GET'])
+@jwt_required(optional=True)
+def get_member_averages():
+    """회원별 평균(에버) 순위 조회 API"""
+    try:
+        # 모든 회원 조회
+        members = Member.query.all()
+        
+        # 각 회원의 평균 계산 및 순위 매기기
+        member_averages = []
+        
+        for member in members:
+            # 정기전 평균 계산
+            regular_avg = member.calculate_regular_season_average()
+            
+            if regular_avg is not None:
+                member_averages.append({
+                    'member_id': member.id,
+                    'member_name': member.name,
+                    'average_score': round(regular_avg, 1),
+                    'tier': member.tier or member.calculate_tier_from_score()
+                })
+        
+        # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)
+        member_averages.sort(key=lambda x: x['average_score'], reverse=True)
+        
+        # 순위 추가 (1등부터 시작)
+        for i, member in enumerate(member_averages):
+            member['rank'] = i + 1
+        
+        return jsonify({
+            'success': True,
+            'averages': member_averages
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'회원별 평균 조회 중 오류가 발생했습니다: {str(e)}'})

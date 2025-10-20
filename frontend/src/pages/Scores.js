@@ -1,7 +1,55 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Scores.css';
+import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
+
+// Members 페이지의 TierBadge 컴포넌트를 가져옴
+const TierBadge = ({ tier, size = 'normal' }) => {
+  const getTierClass = (tier) => {
+    if (!tier) return 'tier-unranked';
+
+    const tierMap = {
+      배치: 'tier-unranked',
+      아이언: 'tier-iron',
+      브론즈: 'tier-bronze',
+      실버: 'tier-silver',
+      골드: 'tier-gold',
+      플레티넘: 'tier-platinum',
+      다이아: 'tier-diamond',
+      마스터: 'tier-master',
+      챌린저: 'tier-challenger',
+    };
+
+    return tierMap[tier] || 'tier-unranked';
+  };
+
+  const getDisplayTier = (tier) => {
+    const tierMap = {
+      배치: 'UNRANKED',
+      아이언: 'IRON',
+      브론즈: 'BRONZE',
+      실버: 'SILVER',
+      골드: 'GOLD',
+      플레티넘: 'PLATINUM',
+      다이아: 'DIAMOND',
+      마스터: 'MASTER',
+      챌린저: 'CHALLENGER',
+    };
+
+    return tierMap[tier] || 'UNRANKED';
+  };
+
+  return (
+    <span
+      className={`tier-badge ${getTierClass(tier)} ${
+        size === 'small' ? 'tier-badge-sm' : ''
+      }`}
+    >
+      {getDisplayTier(tier)}
+    </span>
+  );
+};
 
 const Scores = () => {
   const { user } = useAuth(); // 현재 사용자 정보
@@ -96,14 +144,6 @@ const Scores = () => {
     current: 0,
     total: 0,
   }); // 분석 진행률
-  const [selectionBox, setSelectionBox] = useState({
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-  });
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   // 구글시트 가져오기 관련 상태
   const [showImportForm, setShowImportForm] = useState(false);
@@ -113,13 +153,17 @@ const Scores = () => {
     confirmDelete: false,
   });
 
-  // 통계 상태
-  const [stats, setStats] = useState({
-    totalScores: 0,
-    averageScore: 0,
-    highestScore: 0,
-    sectionStats: {},
-  });
+  // 통계 상태 (현재 사용하지 않음)
+  // const [stats, setStats] = useState({
+  //   totalScores: 0,
+  //   averageScore: 0,
+  //   highestScore: 0,
+  //   sectionStats: {},
+  // });
+
+  // 회원별 평균 순위 상태
+  const [memberAverages, setMemberAverages] = useState([]);
+  const [averagesLoading, setAveragesLoading] = useState(false);
 
   // 개인별 검색 상태
   const [searchMember, setSearchMember] = useState('');
@@ -148,15 +192,7 @@ const Scores = () => {
   const [editingGroupDate, setEditingGroupDate] = useState(null); // 기존 날짜 문자열 (yyyy-MM-dd)
   const [newGroupDate, setNewGroupDate] = useState('');
 
-  const canvasRef = useRef(null);
-  const imageRef = useRef(null);
-
-  useEffect(() => {
-    loadScores();
-    loadMembers();
-  }, []);
-
-  const loadScores = async () => {
+  const loadScores = useCallback(async () => {
     try {
       setLoading(true);
       const response = await scoreAPI.getScores();
@@ -169,9 +205,9 @@ const Scores = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const response = await memberAPI.getMembers();
       if (response.data.success) {
@@ -180,47 +216,31 @@ const Scores = () => {
     } catch (error) {
       // 에러 처리
     }
-  };
+  }, []);
+
+  const loadMemberAverages = useCallback(async () => {
+    try {
+      setAveragesLoading(true);
+      const response = await scoreAPI.getMemberAverages();
+      if (response.data.success) {
+        setMemberAverages(response.data.averages);
+      }
+    } catch (error) {
+      console.error('회원별 평균 로드 실패:', error);
+    } finally {
+      setAveragesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadScores();
+    loadMembers();
+    loadMemberAverages();
+  }, [loadScores, loadMembers, loadMemberAverages]);
 
   const calculateStats = (scoreList) => {
-    if (!scoreList || scoreList.length === 0) return;
-
-    const totalScores = scoreList.length;
-    const allScores = scoreList
-      .flatMap((score) => [score.score1, score.score2, score.score3])
-      .filter((s) => s > 0);
-    const averageScore =
-      allScores.length > 0
-        ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-        : 0;
-    const highestScore = Math.max(...allScores, 0);
-
-    // 섹션별 통계 계산
-    const sectionStats = {};
-    scoreList.forEach((score) => {
-      const section = score.section || 'A';
-      if (!sectionStats[section]) {
-        sectionStats[section] = { count: 0, total: 0, scores: [] };
-      }
-      sectionStats[section].count++;
-      sectionStats[section].total += score.score1 + score.score2 + score.score3;
-      sectionStats[section].scores.push(
-        score.score1,
-        score.score2,
-        score.score3
-      );
-    });
-
-    // 섹션별 평균 계산
-    Object.keys(sectionStats).forEach((section) => {
-      const scores = sectionStats[section].scores.filter((s) => s > 0);
-      sectionStats[section].average =
-        scores.length > 0
-          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-          : 0;
-    });
-
-    setStats({ totalScores, averageScore, highestScore, sectionStats });
+    // 통계 계산 로직 (현재 사용하지 않음)
+    // 필요시 나중에 구현
   };
 
   // 개인별 통계 계산
@@ -330,44 +350,49 @@ const Scores = () => {
   }, [scores.length]);
 
   // 날짜별로 스코어 그룹화
-  const groupScoresByDate = (scoreList) => {
-    const groups = {};
+  const groupScoresByDate = useCallback(
+    (scoreList) => {
+      const groups = {};
 
-    scoreList.forEach((score) => {
-      const dateKey = score.game_date || score.created_at;
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(score);
-    });
+      scoreList.forEach((score) => {
+        const dateKey = score.game_date || score.created_at;
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(score);
+      });
 
-    // 날짜별로 정렬하여 배열로 변환
-    const sortedGroups = Object.entries(groups)
-      .sort(([dateA], [dateB]) => {
-        const dateObjA = new Date(dateA);
-        const dateObjB = new Date(dateB);
-        return sortOrder === 'desc' ? dateObjB - dateObjA : dateObjA - dateObjB;
-      })
-      .map(([date, scores]) => ({
-        date,
-        scores,
-        memberCount: scores.length,
-        totalScore: scores.reduce(
-          (sum, score) => sum + score.score1 + score.score2 + score.score3,
-          0
-        ),
-        averageScore: Math.round(
-          scores.reduce(
+      // 날짜별로 정렬하여 배열로 변환
+      const sortedGroups = Object.entries(groups)
+        .sort(([dateA], [dateB]) => {
+          const dateObjA = new Date(dateA);
+          const dateObjB = new Date(dateB);
+          return sortOrder === 'desc'
+            ? dateObjB - dateObjA
+            : dateObjA - dateObjB;
+        })
+        .map(([date, scores]) => ({
+          date,
+          scores,
+          memberCount: scores.length,
+          totalScore: scores.reduce(
             (sum, score) => sum + score.score1 + score.score2 + score.score3,
             0
-          ) /
-            (scores.length * 3)
-        ),
-      }));
+          ),
+          averageScore: Math.round(
+            scores.reduce(
+              (sum, score) => sum + score.score1 + score.score2 + score.score3,
+              0
+            ) /
+              (scores.length * 3)
+          ),
+        }));
 
-    setGroupedScores(sortedGroups);
-    return sortedGroups;
-  };
+      setGroupedScores(sortedGroups);
+      return sortedGroups;
+    },
+    [sortOrder]
+  );
 
   // 날짜 그룹 인라인 편집 시작
   const startGroupDateEdit = (dateStr) => {
@@ -429,7 +454,7 @@ const Scores = () => {
     if (scores.length > 0) {
       groupScoresByDate(scores);
     }
-  }, [scores, sortOrder]);
+  }, [scores, groupScoresByDate]);
 
   // 이미지 업로드 처리 (다중 이미지 지원)
   const handleImageUpload = (event) => {
@@ -592,6 +617,7 @@ const Scores = () => {
         setImagePreviews([]);
         setCurrentStep('upload');
         loadScores();
+        loadMemberAverages();
       } else if (successCount > 0 && failCount > 0) {
         const confirmContinue = window.confirm(
           `일부 저장 완료\n성공: ${successCount}명\n실패: ${failCount}명\n\n실패 내역:\n${errors.join(
@@ -605,6 +631,7 @@ const Scores = () => {
           setImagePreviews([]);
           setCurrentStep('upload');
           loadScores();
+          loadMemberAverages();
         }
       } else {
         alert(
@@ -649,6 +676,7 @@ const Scores = () => {
           confirmDelete: false,
         });
         loadScores();
+        loadMemberAverages();
       } else {
         let errorMessage = message || '구글시트 가져오기에 실패했습니다.';
         if (error_type === 'authentication_failed') {
@@ -726,24 +754,12 @@ const Scores = () => {
         },
       ]);
       loadScores();
+      loadMemberAverages();
     } catch (error) {
       // 에러 처리
     } finally {
       setSubmitting(false); // 로딩 종료
     }
-  };
-
-  const handleEdit = (score) => {
-    setEditingScore(score);
-    setFormData({
-      member_name: score.member_name,
-      game_date: score.game_date,
-      score1: score.score1,
-      score2: score.score2,
-      score3: score.score3,
-      note: score.note || '',
-    });
-    setShowAddForm(true);
   };
 
   const handleDelete = async (id) => {
@@ -752,6 +768,7 @@ const Scores = () => {
       try {
         await scoreAPI.deleteScore(id);
         loadScores();
+        loadMemberAverages();
       } catch (error) {
         // 에러 처리
         alert('스코어 삭제에 실패했습니다.');
@@ -831,6 +848,7 @@ const Scores = () => {
           setSelectedScores([]);
           setSelectAll(false);
           loadScores();
+          loadMemberAverages();
         } else {
           alert('스코어 삭제에 실패했습니다.');
         }
@@ -911,6 +929,8 @@ const Scores = () => {
         return updatedScores;
       });
 
+      // 평균 순위도 새로고침
+      loadMemberAverages();
       cancelInlineEdit();
     } catch (error) {
       alert('수정에 실패했습니다.');
@@ -952,6 +972,20 @@ const Scores = () => {
     return total > 0 ? (total / 3).toFixed(1) : 0;
   };
 
+  // 메달 아이콘 렌더링 함수
+  const renderMedalIcon = (rank) => {
+    switch (rank) {
+      case 1:
+        return <span className="medal gold">🥇</span>;
+      case 2:
+        return <span className="medal silver">🥈</span>;
+      case 3:
+        return <span className="medal bronze">🥉</span>;
+      default:
+        return <span className="rank-number">{rank}</span>;
+    }
+  };
+
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
@@ -982,6 +1016,54 @@ const Scores = () => {
             </button>
           </div>
         )}
+      </div>
+
+      {/* 회원별 평균 순위 섹션 */}
+      <div className="averages-section">
+        <div className="section-card">
+          <h3 className="section-title">회원별 평균(에버) 순위</h3>
+          <div className="averages-description">
+            <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
+            <p>현재 기준: 7월 이후 → 1~6월 → 작년 전체 순으로 적용됩니다.</p>
+          </div>
+
+          {averagesLoading ? (
+            <div className="loading">평균 순위 로딩 중...</div>
+          ) : (
+            <div className="averages-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>순위</th>
+                    <th>회원명</th>
+                    <th>평균 점수</th>
+                    <th>티어</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memberAverages.map((member) => (
+                    <tr key={member.member_id} className="average-row">
+                      <td className="rank-cell">
+                        {renderMedalIcon(member.rank)}
+                      </td>
+                      <td className="member-name">{member.member_name}</td>
+                      <td className="average-score">{member.average_score}</td>
+                      <td className="tier-cell">
+                        <TierBadge tier={member.tier} size="small" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {memberAverages.length === 0 && (
+                <div className="no-data">
+                  <p>정기전 기록이 있는 회원이 없습니다.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 개인별 검색 섹션 */}
