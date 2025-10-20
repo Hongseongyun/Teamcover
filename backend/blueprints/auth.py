@@ -1128,8 +1128,17 @@ def forgot_password():
         
         print(f"Password reset code generated for {user.email}: {reset_code}")
         
-        # 이메일 발송
-        email_sent = send_password_reset_email(user.email, user.name, reset_code)
+        # 이메일 발송 (기존 함수 사용)
+        try:
+            email_sent = send_password_reset_email(user.email, user.name, reset_code)
+        except Exception as e:
+            print(f"비밀번호 재설정 이메일 발송 실패: {e}")
+            # 기존 이메일 함수로 대체 시도
+            try:
+                email_sent = send_verification_code_email(user.email, user.name, reset_code)
+            except Exception as e2:
+                print(f"대체 이메일 발송도 실패: {e2}")
+                email_sent = False
         
         if email_sent:
             print(f"✅ 비밀번호 재설정 이메일 발송 성공: {user.email}")

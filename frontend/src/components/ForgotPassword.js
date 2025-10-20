@@ -60,7 +60,9 @@ const ForgotPassword = ({ onClose, onLogin }) => {
     setError('');
 
     try {
+      console.log('비밀번호 찾기 요청 시작:', formData.email);
       const result = await authAPI.forgotPassword({ email: formData.email });
+      console.log('비밀번호 찾기 응답:', result.data);
 
       if (result.data.success) {
         setSuccessMessage(result.data.message);
@@ -69,10 +71,26 @@ const ForgotPassword = ({ onClose, onLogin }) => {
         setError(result.data.message);
       }
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          '비밀번호 찾기 요청 중 오류가 발생했습니다.'
-      );
+      console.error('비밀번호 찾기 오류:', error);
+      console.error('오류 응답:', error.response);
+
+      let errorMessage = '비밀번호 찾기 요청 중 오류가 발생했습니다.';
+
+      if (error.response) {
+        // 서버에서 응답을 받았지만 오류 상태
+        errorMessage =
+          error.response.data?.message ||
+          `서버 오류 (${error.response.status})`;
+      } else if (error.request) {
+        // 요청이 전송되었지만 응답을 받지 못함
+        errorMessage =
+          '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+      } else {
+        // 요청 설정 중 오류 발생
+        errorMessage = error.message || '요청 설정 중 오류가 발생했습니다.';
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
