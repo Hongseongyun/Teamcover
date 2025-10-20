@@ -14,34 +14,73 @@ class Config:
     # Flask 설정
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'teamcover_secret_key_2025'
     
-    # PostgreSQL 데이터베이스 설정
-    # 우선순위: DATABASE_PRIVATE_URL > DATABASE_URL > DATABASE_PUBLIC_URL > 개별 항목
-    # Railway Private Network 사용을 위해 DATABASE_PRIVATE_URL 우선 사용
-    DATABASE_URL = (os.environ.get('DATABASE_PRIVATE_URL') or 
-                   os.environ.get('DATABASE_URL') or 
-                   os.environ.get('DATABASE_PUBLIC_URL'))
-    # 개별 데이터베이스 변수들 (PostgreSQL 표준 + 커스텀)
-    DB_HOST = os.environ.get('DB_HOST') or os.environ.get('PGHOST')
-    DB_PORT = os.environ.get('DB_PORT') or os.environ.get('PGPORT')
-    DB_NAME = os.environ.get('DB_NAME') or os.environ.get('PGDATABASE')
-    DB_USER = os.environ.get('DB_USER') or os.environ.get('PGUSER')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD') or os.environ.get('PGPASSWORD')
-
-    # SQLAlchemy 설정 (psycopg2 드라이버 사용)
-    if DATABASE_URL:
-        # Railway의 postgres:// URL을 postgresql://로 변환
-        if DATABASE_URL.startswith('postgres://'):
-            SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-        else:
-            SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    # PostgreSQL 데이터베이스 설정 - 안전한 연결 보장
+    def get_database_uri():
+        """안전한 데이터베이스 URI 생성"""
+        print("=== 데이터베이스 URI 생성 시작 ===")
+        
+        # 1순위: Private Network URL
+        private_url = os.environ.get('DATABASE_PRIVATE_URL')
+        if private_url and private_url != '' and not private_url.startswith('postgresql://postgres:'):
+            print(f"✅ Private Network URL 사용: {private_url[:50]}...")
+            return private_url
+        
+        # 2순위: 일반 DATABASE_URL
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url and database_url != '':
+            print(f"✅ 일반 DATABASE_URL 사용: {database_url[:50]}...")
+            return database_url
+        
+        # 3순위: 개별 변수로 구성
+        pg_host = os.environ.get('PGHOST')
+        pg_port = os.environ.get('PGPORT')
+        pg_user = os.environ.get('PGUSER')
+        pg_password = os.environ.get('PGPASSWORD')
+        pg_database = os.environ.get('PGDATABASE')
+        
+        print(f"개별 변수 확인:")
+        print(f"  PGHOST: {pg_host}")
+        print(f"  PGPORT: {pg_port}")
+        print(f"  PGUSER: {pg_user}")
+        print(f"  PGPASSWORD: {'SET' if pg_password else 'NOT_SET'}")
+        print(f"  PGDATABASE: {pg_database}")
+        
+        if all([pg_host, pg_port, pg_user, pg_password, pg_database]):
+            # 포트가 숫자인지 확인
+            try:
+                int(pg_port)
+                constructed_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
+                print(f"✅ 개별 변수로 구성된 URL 사용: {constructed_url[:50]}...")
+                return constructed_url
+            except ValueError:
+                print(f"❌ PGPORT가 숫자가 아님: {pg_port}")
+        
+        # 4순위: DATABASE_PUBLIC_URL (최후의 수단)
+        public_url = os.environ.get('DATABASE_PUBLIC_URL')
+        if public_url and public_url != '':
+            print(f"⚠️ Public URL 사용 (egress 비용 발생): {public_url[:50]}...")
+            return public_url
+        
+        # 5순위: 기본값 (개발 환경)
+        default_url = "postgresql://postgres:password@localhost:5432/teamcover"
+        print(f"❌ 기본값 사용 (개발 환경): {default_url}")
+        return default_url
+    
+    # 데이터베이스 URI 설정
+    DATABASE_URL = get_database_uri()
+    
+    # SQLAlchemy 설정
+    if DATABASE_URL.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     else:
-        SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
         'connect_args': {
-            'connect_timeout': 10,
+            'connect_timeout': 30,  # 연결 타임아웃 증가
         }
     }
     

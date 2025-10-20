@@ -60,6 +60,12 @@ allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [
     "https://teamcover-frontend.vercel.app"
 ])
 
+# CORS 설정 디버깅
+print(f"=== CORS 설정 정보 ===")
+print(f"Allowed Origins: {allowed_origins}")
+print(f"Frontend Base URL: {app.config.get('FRONTEND_BASE_URL')}")
+print(f"CORS Origins Config: {app.config.get('CORS_ORIGINS')}")
+
 # CORS 설정
 
 CORS(app,
@@ -81,7 +87,19 @@ def handle_preflight():
             response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
             response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
             response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers.add('Access-Control-Max-Age', '86400')  # 24시간 캐시
         return response
+
+# 모든 응답에 CORS 헤더 추가
+@app.after_request
+def after_request(response):
+    request_origin = request.headers.get('Origin')
+    if request_origin and request_origin in allowed_origins:
+        response.headers.add('Access-Control-Allow-Origin', request_origin)
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,X-Privacy-Token')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # 데이터베이스 초기화
 db.init_app(app)
@@ -192,11 +210,21 @@ with app.app_context():
         # 데이터베이스 연결 테스트
         from sqlalchemy import text
         db.session.execute(text('SELECT 1'))
+        print("✅ 데이터베이스 연결 성공")
         # 데이터베이스 테이블 생성
         db.create_all()
+        print("✅ 데이터베이스 테이블 생성 완료")
     except Exception as e:
-        # 데이터베이스 초기화 경고
-        pass
+        print(f"❌ 데이터베이스 초기화 실패: {e}")
+        # 연결 실패 시 재시도 로직
+        import time
+        time.sleep(5)  # 5초 대기 후 재시도
+        try:
+            db.session.execute(text('SELECT 1'))
+            db.create_all()
+            print("✅ 데이터베이스 재연결 성공")
+        except Exception as e2:
+            print(f"❌ 데이터베이스 재연결 실패: {e2}")
 
 if __name__ == '__main__':
     # Railway 환경에서는 PORT 환경변수를 사용
