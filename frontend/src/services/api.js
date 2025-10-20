@@ -33,9 +33,13 @@ api.interceptors.request.use(
       config.url = config.url.replace('http://', 'https://');
     }
 
-    // JWT 토큰 추가
+    // JWT 토큰 추가 (비밀번호 재설정용 임시 토큰 우선)
+    const tempResetToken = localStorage.getItem('temp_reset_token');
     const token = localStorage.getItem('token');
-    if (token) {
+
+    if (tempResetToken) {
+      config.headers.Authorization = `Bearer ${tempResetToken}`;
+    } else if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -136,6 +140,10 @@ export const authAPI = {
   deleteUser: (userId) => api.delete(`/api/auth/users/${userId}`),
   verifyEmail: (data) => api.post('/api/auth/verify-email', data),
   resendVerification: (data) => api.post('/api/auth/resend-verification', data),
+  // 비밀번호 찾기 관련 API
+  forgotPassword: (data) => api.post('/api/auth/forgot-password', data),
+  verifyResetCode: (data) => api.post('/api/auth/verify-reset-code', data),
+  resetPassword: (data) => api.post('/api/auth/reset-password', data),
 };
 
 // 구글시트 가져오기 API

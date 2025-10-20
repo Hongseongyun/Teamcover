@@ -495,3 +495,81 @@ def resend_verification_email(email):
             
     except Exception as e:
         return {'success': False, 'message': f'이메일 재발송 중 오류가 발생했습니다: {str(e)}'}
+
+def send_password_reset_email(email, name, reset_code):
+    """비밀번호 재설정 이메일 발송"""
+    try:
+        print(f"=== 비밀번호 재설정 이메일 발송 시작 ===")
+        print(f"이메일: {email}")
+        print(f"이름: {name}")
+        print(f"재설정 코드: {reset_code}")
+        
+        # 이메일 내용
+        subject = "Teamcover 비밀번호 재설정"
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                <h2 style="color: #dc3545; margin-bottom: 20px;">비밀번호 재설정 요청</h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                    안녕하세요 <strong>{name}</strong>님!<br>
+                    비밀번호 재설정을 위한 인증 코드를 발송해드립니다.
+                </p>
+                
+                <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 30px 0; border: 2px solid #dc3545;">
+                    <p style="font-size: 14px; color: #999; margin: 0 0 10px 0;">비밀번호 재설정 코드</p>
+                    <p style="font-size: 48px; font-weight: bold; color: #dc3545; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">
+                        {reset_code}
+                    </p>
+                </div>
+                
+                <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                    이 코드는 <strong>1시간</strong> 동안 유효합니다.<br>
+                    비밀번호 재설정 페이지에서 위 코드를 입력하여 새 비밀번호를 설정하세요.
+                </p>
+                
+                <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ffeaa7;">
+                    <p style="font-size: 14px; color: #856404; margin: 0;">
+                        <strong>⚠️ 보안 알림:</strong><br>
+                        만약 비밀번호 재설정을 요청하지 않으셨다면, 이 이메일을 무시하셔도 됩니다.<br>
+                        다른 사람이 계정에 접근하지 못하도록 주의해주세요.
+                    </p>
+                </div>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="font-size: 12px; color: #999;">
+                    이 이메일은 Teamcover 시스템에서 자동으로 발송되었습니다.<br>
+                    문의사항이 있으시면 관리자에게 연락해주세요.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # 이메일 발송
+        print(f"이메일 메시지 생성 중...")
+        
+        # SendGrid용 발신자 이메일 설정
+        sender_email = current_app.config.get('MAIL_DEFAULT_SENDER') or 'syun4224@gmail.com'
+        
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            sender=sender_email,
+            html=html_body
+        )
+        print(f"이메일 메시지 생성 완료 (발신자: {sender_email})")
+        
+        print(f"SMTP 서버 연결 시도 중...")
+        mail.send(msg)
+        print(f"✅ 비밀번호 재설정 이메일 발송 성공!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 비밀번호 재설정 이메일 발송 실패: {e}")
+        print(f"오류 타입: {type(e)}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        return False

@@ -8,7 +8,7 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 import os
 import requests
-from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email, send_verification_code_email
+from email_service import send_verification_email, send_verification_email_with_debug, verify_email_token, resend_verification_email, send_verification_code_email, send_password_reset_email
 import re
 import random
 import string
@@ -1091,3 +1091,159 @@ def resend_verification_code():
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'인증 코드 재발송 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """비밀번호 찾기 - 인증 코드 발송"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # 보안을 위해 존재하지 않는 이메일이어도 성공 메시지 반환
+            return jsonify({
+                'success': True,
+                'message': '입력하신 이메일로 비밀번호 재설정 인증 코드를 발송했습니다.',
+                'email_sent': True
+            })
+        
+        if not user.is_active:
+            return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
+        
+        # 새 인증 코드 생성 (6자리)
+        reset_code = generate_verification_code()
+        reset_expires = datetime.utcnow() + timedelta(hours=1)  # 1시간 유효
+        
+        # 사용자 정보에 비밀번호 재설정 코드 저장
+        user.verification_code = reset_code
+        user.verification_code_expires = reset_expires
+        
+        db.session.commit()
+        
+        print(f"Password reset code generated for {user.email}: {reset_code}")
+        
+        # 이메일 발송
+        email_sent = send_password_reset_email(user.email, user.name, reset_code)
+        
+        if email_sent:
+            print(f"✅ 비밀번호 재설정 이메일 발송 성공: {user.email}")
+            return jsonify({
+                'success': True,
+                'message': '입력하신 이메일로 비밀번호 재설정 인증 코드를 발송했습니다.',
+                'email_sent': True
+            })
+        else:
+            print(f"⚠️ 비밀번호 재설정 이메일 발송 실패: {user.email}")
+            return jsonify({
+                'success': False,
+                'message': '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+                'email_sent': False
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in forgot_password: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'비밀번호 찾기 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/verify-reset-code', methods=['POST'])
+def verify_reset_code():
+    """비밀번호 재설정 코드 검증"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        code = data.get('code', '').strip()
+        
+        if not email or not code:
+            return jsonify({'success': False, 'message': '이메일과 인증 코드를 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 인증 코드 검증
+        if user.verification_code != code:
+            return jsonify({'success': False, 'message': '인증 코드가 올바르지 않습니다.'})
+        
+        # 인증 코드 만료 확인
+        if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
+            return jsonify({'success': False, 'message': '인증 코드가 만료되었습니다. 다시 요청해주세요.'})
+        
+        # 임시 토큰 생성 (비밀번호 재설정용)
+        reset_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(minutes=15)  # 15분 유효
+        )
+        
+        print(f"Password reset code verified for {user.email}")
+        
+        return jsonify({
+            'success': True,
+            'message': '인증 코드가 확인되었습니다.',
+            'reset_token': reset_token
+        })
+        
+    except Exception as e:
+        print(f"Error verifying reset code: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'인증 코드 검증 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/reset-password', methods=['POST'])
+@jwt_required()
+def reset_password():
+    """비밀번호 재설정"""
+    try:
+        data = request.get_json()
+        new_password = data.get('new_password', '')
+        new_password_confirm = data.get('new_password_confirm', '')
+        
+        if not new_password or not new_password_confirm:
+            return jsonify({'success': False, 'message': '새 비밀번호와 비밀번호 확인을 입력해주세요.'})
+        
+        if new_password != new_password_confirm:
+            return jsonify({'success': False, 'message': '새 비밀번호와 비밀번호 확인이 일치하지 않습니다.'})
+        
+        # 비밀번호 조건 검증
+        password_validation = validate_password(new_password)
+        if not password_validation['valid']:
+            return jsonify({'success': False, 'message': password_validation['message']})
+        
+        # JWT에서 사용자 ID 가져오기
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 비밀번호 업데이트
+        user.set_password(new_password)
+        
+        # 인증 코드 초기화 (보안)
+        user.verification_code = None
+        user.verification_code_expires = None
+        
+        db.session.commit()
+        
+        print(f"Password reset successful for {user.email}")
+        
+        return jsonify({
+            'success': True,
+            'message': '비밀번호가 성공적으로 재설정되었습니다. 새 비밀번호로 로그인해주세요.'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error resetting password: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'비밀번호 재설정 중 오류가 발생했습니다: {str(e)}'})
