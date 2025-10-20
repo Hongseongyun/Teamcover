@@ -15,14 +15,17 @@ class Config:
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'teamcover_secret_key_2025'
     
     # PostgreSQL 데이터베이스 설정
-    # 우선순위: DATABASE_URL(풀 URI) > 개별 항목(DB_HOST 등)
-    # Railway에서는 DATABASE_URL 또는 DATABASE_PUBLIC_URL을 제공합니다
-    DATABASE_URL = os.environ.get('DATABASE_URL') or os.environ.get('DATABASE_PUBLIC_URL')
-    DB_HOST = os.environ.get('DB_HOST')
-    DB_PORT = os.environ.get('DB_PORT')
-    DB_NAME = os.environ.get('DB_NAME')
-    DB_USER = os.environ.get('DB_USER')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD')
+    # 우선순위: DATABASE_PRIVATE_URL > DATABASE_URL > DATABASE_PUBLIC_URL > 개별 항목
+    # Railway Private Network 사용을 위해 DATABASE_PRIVATE_URL 우선 사용
+    DATABASE_URL = (os.environ.get('DATABASE_PRIVATE_URL') or 
+                   os.environ.get('DATABASE_URL') or 
+                   os.environ.get('DATABASE_PUBLIC_URL'))
+    # 개별 데이터베이스 변수들 (PostgreSQL 표준 + 커스텀)
+    DB_HOST = os.environ.get('DB_HOST') or os.environ.get('PGHOST')
+    DB_PORT = os.environ.get('DB_PORT') or os.environ.get('PGPORT')
+    DB_NAME = os.environ.get('DB_NAME') or os.environ.get('PGDATABASE')
+    DB_USER = os.environ.get('DB_USER') or os.environ.get('PGUSER')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD') or os.environ.get('PGPASSWORD')
 
     # SQLAlchemy 설정 (psycopg2 드라이버 사용)
     if DATABASE_URL:

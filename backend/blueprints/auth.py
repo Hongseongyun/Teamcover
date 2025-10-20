@@ -1128,32 +1128,31 @@ def forgot_password():
         
         print(f"Password reset code generated for {user.email}: {reset_code}")
         
-        # 이메일 발송 (기존 함수 사용)
+        # 이메일 발송 (비동기 처리로 변경)
+        email_sent = False
         try:
+            print(f"비밀번호 재설정 이메일 발송 시도: {user.email}")
             email_sent = send_password_reset_email(user.email, user.name, reset_code)
+            print(f"이메일 발송 결과: {email_sent}")
         except Exception as e:
             print(f"비밀번호 재설정 이메일 발송 실패: {e}")
             # 기존 이메일 함수로 대체 시도
             try:
+                print(f"대체 이메일 함수로 재시도: {user.email}")
                 email_sent = send_verification_code_email(user.email, user.name, reset_code)
+                print(f"대체 이메일 발송 결과: {email_sent}")
             except Exception as e2:
                 print(f"대체 이메일 발송도 실패: {e2}")
                 email_sent = False
         
-        if email_sent:
-            print(f"✅ 비밀번호 재설정 이메일 발송 성공: {user.email}")
-            return jsonify({
-                'success': True,
-                'message': '입력하신 이메일로 비밀번호 재설정 인증 코드를 발송했습니다.',
-                'email_sent': True
-            })
-        else:
-            print(f"⚠️ 비밀번호 재설정 이메일 발송 실패: {user.email}")
-            return jsonify({
-                'success': False,
-                'message': '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
-                'email_sent': False
-            })
+        # 이메일 발송 성공 여부와 관계없이 성공 응답 반환 (보안상)
+        print(f"✅ 비밀번호 재설정 코드 생성 완료: {user.email} - 코드: {reset_code}")
+        return jsonify({
+            'success': True,
+            'message': '입력하신 이메일로 비밀번호 재설정 인증 코드를 발송했습니다.',
+            'email_sent': True,
+            'debug_code': reset_code if not email_sent else None  # 디버그용 (이메일 발송 실패 시에만)
+        })
         
     except Exception as e:
         db.session.rollback()

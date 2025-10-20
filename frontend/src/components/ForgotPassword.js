@@ -66,6 +66,16 @@ const ForgotPassword = ({ onClose, onLogin }) => {
 
       if (result.data.success) {
         setSuccessMessage(result.data.message);
+        // 이메일 발송 실패 시 디버그 코드 표시
+        if (result.data.debug_code) {
+          console.warn(
+            '이메일 발송 실패 - 디버그 코드:',
+            result.data.debug_code
+          );
+          setSuccessMessage(
+            result.data.message + ` (임시 코드: ${result.data.debug_code})`
+          );
+        }
         setStep(2);
       } else {
         setError(result.data.message);

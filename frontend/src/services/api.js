@@ -141,7 +141,8 @@ export const authAPI = {
   verifyEmail: (data) => api.post('/api/auth/verify-email', data),
   resendVerification: (data) => api.post('/api/auth/resend-verification', data),
   // 비밀번호 찾기 관련 API
-  forgotPassword: (data) => api.post('/api/auth/forgot-password', data),
+  forgotPassword: (data) =>
+    api.post('/api/auth/forgot-password', data, { timeout: 120000 }), // 2분 타임아웃
   verifyResetCode: (data) => api.post('/api/auth/verify-reset-code', data),
   resetPassword: (data) => api.post('/api/auth/reset-password', data),
 };
