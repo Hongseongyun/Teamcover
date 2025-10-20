@@ -232,33 +232,39 @@ const Scores = () => {
     }
   }, []);
 
-  const handleUpdateAverages = async () => {
-    if (
-      !window.confirm(
-        '모든 회원의 평균 점수를 재계산하고 저장하시겠습니까?\n이 작업은 시간이 걸릴 수 있습니다.'
-      )
-    ) {
-      return;
-    }
-
+  const refreshMemberAverages = useCallback(async () => {
     try {
       setAveragesLoading(true);
-      const response = await memberAPI.updateAllMemberAverages();
 
+      // 먼저 평균 점수 업데이트
+      if (isAdmin) {
+        try {
+          const updateResponse = await memberAPI.updateAllMemberAverages();
+          if (updateResponse.data.success) {
+            console.log(
+              '평균 점수 업데이트 완료:',
+              updateResponse.data.message
+            );
+          }
+        } catch (updateError) {
+          console.warn(
+            '평균 점수 업데이트 실패, 기존 데이터로 표시:',
+            updateError
+          );
+        }
+      }
+
+      // 그 다음 평균 순위 로드
+      const response = await scoreAPI.getMemberAverages();
       if (response.data.success) {
-        alert(`✅ ${response.data.message}`);
-        // 평균 순위 새로고침
-        await loadMemberAverages();
-      } else {
-        alert(`❌ ${response.data.message}`);
+        setMemberAverages(response.data.averages);
       }
     } catch (error) {
-      console.error('평균 점수 업데이트 실패:', error);
-      alert('평균 점수 업데이트 중 오류가 발생했습니다.');
+      console.error('회원별 평균 새로고침 실패:', error);
     } finally {
       setAveragesLoading(false);
     }
-  };
+  }, [isAdmin]);
 
   useEffect(() => {
     loadScores();
@@ -1061,41 +1067,32 @@ const Scores = () => {
         <div className="section-card">
           <div className="section-header">
             <h3 className="section-title">회원별 평균(에버) 순위</h3>
-            <div className="btn-group">
-              <button
-                className="btn btn-outline-primary btn-sm refresh-btn"
-                onClick={loadMemberAverages}
-                disabled={averagesLoading}
-                title="평균 순위 새로고침"
-              >
-                {averagesLoading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-1"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    새로고침 중...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-sync-alt me-1"></i>
-                    새로고침
-                  </>
-                )}
-              </button>
-              {isAdmin && (
-                <button
-                  className="btn btn-outline-success btn-sm"
-                  onClick={handleUpdateAverages}
-                  disabled={averagesLoading}
-                  title="모든 회원의 평균 점수 재계산 및 저장"
-                >
-                  <i className="fas fa-calculator me-1"></i>
-                  평균 재계산
-                </button>
+            <button
+              className="btn btn-outline-primary btn-sm refresh-btn"
+              onClick={refreshMemberAverages}
+              disabled={averagesLoading}
+              title={
+                isAdmin
+                  ? '평균 순위 새로고침 (자동 업데이트)'
+                  : '평균 순위 새로고침'
+              }
+            >
+              {averagesLoading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  새로고침 중...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-sync-alt me-1"></i>
+                  새로고침
+                </>
               )}
-            </div>
+            </button>
           </div>
           <div className="averages-description">
             <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
