@@ -238,6 +238,16 @@ const Scores = () => {
     loadMemberAverages();
   }, [loadScores, loadMembers, loadMemberAverages]);
 
+  // 페이지 포커스 시 평균 순위 업데이트
+  useEffect(() => {
+    const handleFocus = () => {
+      loadMemberAverages();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [loadMemberAverages]);
+
   const calculateStats = (scoreList) => {
     // 통계 계산 로직 (현재 사용하지 않음)
     // 필요시 나중에 구현
@@ -1021,7 +1031,31 @@ const Scores = () => {
       {/* 회원별 평균 순위 섹션 */}
       <div className="averages-section">
         <div className="section-card">
-          <h3 className="section-title">회원별 평균(에버) 순위</h3>
+          <div className="section-header">
+            <h3 className="section-title">회원별 평균(에버) 순위</h3>
+            <button
+              className="btn btn-outline-primary btn-sm refresh-btn"
+              onClick={loadMemberAverages}
+              disabled={averagesLoading}
+              title="평균 순위 새로고침"
+            >
+              {averagesLoading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-1"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  새로고침 중...
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-sync-alt me-1"></i>
+                  새로고침
+                </>
+              )}
+            </button>
+          </div>
           <div className="averages-description">
             <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
             <p>현재 기준: 7월 이후 → 1~6월 → 작년 전체 순으로 적용됩니다.</p>
