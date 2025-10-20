@@ -269,6 +269,49 @@ def get_member_average(member_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'평균 점수 조회 중 오류가 발생했습니다: {str(e)}'})
 
+@members_bp.route('/update-averages/', methods=['POST'])
+@jwt_required()
+def update_all_member_averages():
+    """모든 회원의 평균 점수를 일괄 업데이트하는 API (관리자 전용)"""
+    try:
+        # 현재 사용자 확인
+        current_user_id = get_jwt_identity()
+        current_user = User.query.get(current_user_id)
+        
+        if not current_user or current_user.role not in ['admin', 'super_admin']:
+            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        
+        # 모든 회원 조회
+        members = Member.query.all()
+        updated_count = 0
+        
+        for member in members:
+            # 평균 점수 계산
+            average_score = member.calculate_regular_season_average()
+            
+            if average_score is not None:
+                # 평균 점수 저장
+                member.average_score = round(average_score, 2)
+                
+                # 티어 업데이트
+                member.update_tier()
+                
+                updated_count += 1
+        
+        # 데이터베이스에 저장
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'평균 점수 업데이트 완료! {updated_count}명의 회원이 업데이트되었습니다.',
+            'updated_count': updated_count,
+            'total_members': len(members)
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'평균 점수 업데이트 중 오류가 발생했습니다: {str(e)}'})
+
 @members_bp.route('/averages/', methods=['GET'])
 def get_all_members_averages():
     """모든 회원의 에버를 일괄 조회하는 API"""

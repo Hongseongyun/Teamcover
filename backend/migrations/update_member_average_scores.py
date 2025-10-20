@@ -7,13 +7,12 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app
+from app import app
 from models import db, Member, Score
 from datetime import datetime
 
 def update_member_average_scores():
     """모든 회원의 평균 점수를 계산하고 저장"""
-    app = create_app()
     
     with app.app_context():
         try:
@@ -58,7 +57,6 @@ def update_member_average_scores():
 
 def verify_average_scores():
     """업데이트된 평균 점수 검증"""
-    app = create_app()
     
     with app.app_context():
         try:
