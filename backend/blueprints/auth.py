@@ -1134,12 +1134,15 @@ def forgot_password():
             print(f"비밀번호 재설정 이메일 발송 시도: {user.email}")
             # 백그라운드에서 이메일 발송 (타임아웃 방지)
             import threading
+            from flask import current_app
+            
             def send_email_background():
-                try:
-                    result = send_password_reset_email(user.email, user.name, reset_code)
-                    print(f"백그라운드 이메일 발송 결과: {result}")
-                except Exception as e:
-                    print(f"백그라운드 이메일 발송 실패: {e}")
+                with current_app.app_context():
+                    try:
+                        result = send_password_reset_email(user.email, user.name, reset_code)
+                        print(f"백그라운드 이메일 발송 결과: {result}")
+                    except Exception as e:
+                        print(f"백그라운드 이메일 발송 실패: {e}")
             
             # 백그라운드 스레드로 이메일 발송
             email_thread = threading.Thread(target=send_email_background)
