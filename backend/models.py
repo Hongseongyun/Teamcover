@@ -195,14 +195,21 @@ class Member(db.Model):
     def update_average_and_tier(self):
         """평균 점수와 티어 모두 업데이트"""
         self.update_average_score()
-        self.update_tier()
+        # average_score가 업데이트되었으므로 티어도 다시 계산
+        if self.average_score is not None:
+            self.tier = self.calculate_tier_from_score()
+        else:
+            self.tier = '배치'
         return self.average_score, self.tier
     
     def to_dict(self, hide_privacy=False):
         """딕셔너리 형태로 변환"""
-        # 티어가 없으면 점수 기반으로 계산
-        if not self.tier:
+        # average_score가 있으면 항상 최신 티어 계산
+        if self.average_score is not None:
             self.tier = self.calculate_tier_from_score()
+        elif not self.tier:
+            # average_score도 없고 티어도 없으면 배치
+            self.tier = '배치'
         
         data = {
             'id': self.id,

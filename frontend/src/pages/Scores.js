@@ -245,6 +245,10 @@ const Scores = () => {
               '평균 점수 업데이트 완료:',
               updateResponse.data.message
             );
+            // 디버깅 정보 출력
+            if (updateResponse.data.debug_info) {
+              console.log('디버깅 정보:', updateResponse.data.debug_info);
+            }
           }
         } catch (updateError) {
           console.warn(

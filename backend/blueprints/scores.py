@@ -197,21 +197,26 @@ def get_member_averages():
         for member in members:
             # 저장된 평균 점수 사용 (없으면 계산)
             if member.average_score is not None:
+                # average_score가 있으면 항상 최신 티어 계산
+                current_tier = member.calculate_tier_from_score()
                 member_averages.append({
                     'member_id': member.id,
                     'member_name': member.name,
                     'average_score': round(member.average_score, 1),
-                    'tier': member.tier or member.calculate_tier_from_score()
+                    'tier': current_tier
                 })
             else:
                 # 평균 점수가 없으면 계산해서 추가
                 regular_avg = member.calculate_regular_season_average()
                 if regular_avg is not None:
+                    # 계산된 평균으로 티어 계산
+                    member.average_score = regular_avg  # 임시로 설정
+                    current_tier = member.calculate_tier_from_score()
                     member_averages.append({
                         'member_id': member.id,
                         'member_name': member.name,
                         'average_score': round(regular_avg, 1),
-                        'tier': member.tier or member.calculate_tier_from_score()
+                        'tier': current_tier
                     })
         
         # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)

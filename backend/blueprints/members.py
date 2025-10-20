@@ -293,19 +293,32 @@ def update_all_member_averages():
                 # 평균 점수 저장
                 member.average_score = round(average_score, 2)
                 
-                # 티어 업데이트
-                member.update_tier()
+                # 티어 업데이트 (average_score 기반)
+                member.tier = member.calculate_tier_from_score()
                 
                 updated_count += 1
+            else:
+                # 평균 점수가 없으면 티어를 배치로 설정
+                member.tier = '배치'
         
         # 데이터베이스에 저장
         db.session.commit()
+        
+        # 디버깅을 위한 상세 정보
+        debug_info = []
+        for member in members[:5]:  # 처음 5명만 디버깅 정보에 포함
+            debug_info.append({
+                'name': member.name,
+                'average_score': member.average_score,
+                'tier': member.tier
+            })
         
         return jsonify({
             'success': True,
             'message': f'평균 점수 업데이트 완료! {updated_count}명의 회원이 업데이트되었습니다.',
             'updated_count': updated_count,
-            'total_members': len(members)
+            'total_members': len(members),
+            'debug_info': debug_info
         })
         
     except Exception as e:
