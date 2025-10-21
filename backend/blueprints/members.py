@@ -240,7 +240,12 @@ def delete_member(member_id):
 def get_member_average(member_id):
     """회원별 에버 조회 API - 저장된 평균 점수 반환"""
     try:
-        member = Member.query.get_or_404(member_id)
+        member = Member.query.get(member_id)
+        if not member:
+            return jsonify({
+                'success': False,
+                'message': f'회원 ID {member_id}를 찾을 수 없습니다.'
+            })
         
         # 저장된 평균 점수 사용 (없으면 계산하여 업데이트)
         if member.average_score is None:
