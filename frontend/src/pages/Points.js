@@ -179,11 +179,10 @@ const Points = () => {
       // amount가 이미 올바른 부호를 가지고 있음
       const amount = parseInt(point.amount) || 0;
 
-      // 적립: +와 - 두 종류 모두 포함 (모든 포인트의 절댓값)
-      // 사용: 실제 사용된 포인트 (음수 포인트의 절댓값)
-      totalEarned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
-
-      if (amount < 0) {
+      // 올바른 계산: 양수는 적립, 음수는 사용
+      if (amount > 0) {
+        totalEarned += amount; // 양수 포인트만 적립으로 계산
+      } else if (amount < 0) {
         totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
 
@@ -191,11 +190,7 @@ const Points = () => {
       if (!memberPoints[point.member_name]) {
         memberPoints[point.member_name] = 0;
       }
-      if (amount >= 0) {
-        memberPoints[point.member_name] += Math.abs(amount);
-      } else {
-        memberPoints[point.member_name] -= Math.abs(amount);
-      }
+      memberPoints[point.member_name] += amount; // 부호를 그대로 유지하여 누적
 
       // 월별 통계
       const date = new Date(point.point_date || point.created_at);
@@ -205,9 +200,11 @@ const Points = () => {
       if (!monthlyStats[monthKey]) {
         monthlyStats[monthKey] = { earned: 0, used: 0, count: 0 };
       }
-      monthlyStats[monthKey].earned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
 
-      if (amount < 0) {
+      // 월별 통계도 올바르게 계산
+      if (amount > 0) {
+        monthlyStats[monthKey].earned += amount; // 양수 포인트만 적립으로 계산
+      } else if (amount < 0) {
         monthlyStats[monthKey].used += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
       monthlyStats[monthKey].count++;
@@ -278,11 +275,10 @@ const Points = () => {
 
     memberPoints.forEach((point) => {
       const amount = parseInt(point.amount) || 0;
-      // 적립: +와 - 두 종류 모두 포함 (모든 포인트의 절댓값)
-      // 사용: 실제 사용된 포인트 (음수 포인트의 절댓값)
-      totalEarned += Math.abs(amount); // 모든 포인트의 절댓값을 적립에 포함
-
-      if (amount < 0) {
+      // 올바른 계산: 양수는 적립, 음수는 사용
+      if (amount > 0) {
+        totalEarned += amount; // 양수 포인트만 적립으로 계산
+      } else if (amount < 0) {
         totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
       }
     });
