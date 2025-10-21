@@ -18,6 +18,10 @@ class BowlingTeamMaker:
         """모든 선수 제거"""
         self.players.clear()
     
+    def remove_player(self, name: str):
+        """특정 선수 제거"""
+        self.players = [player for player in self.players if player[0].strip() != name.strip()]
+    
     def get_players(self):
         """등록된 선수 목록 반환"""
         return self.players
@@ -175,12 +179,8 @@ def delete_player():
     if not name:
         return jsonify({'success': False, 'message': '선수 이름을 입력해주세요.'})
     
-    # 선수 삭제
-    players = team_maker.get_players()
-    team_maker.clear_players()
-    for player in players:
-        if player[0] != name:
-            team_maker.add_player(player[0], player[1], player[2])
+    # 해당 선수만 삭제
+    team_maker.remove_player(name)
     
     return jsonify({'success': True, 'message': f'{name} 선수가 삭제되었습니다.'})
 

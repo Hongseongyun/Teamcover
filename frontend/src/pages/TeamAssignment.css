@@ -1263,6 +1263,10 @@ html {
   height: 42px; /* 입력란과 높이 맞춤 */
   padding: 0.75rem 1.5rem;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* 팀 구성하기 버튼 - 심플하고 고급스러운 플랫 스타일 */
@@ -1274,6 +1278,8 @@ html {
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15), 0 2px 4px rgba(0, 0, 0, 0.06);
   font-weight: 600;
   letter-spacing: 0.02em;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .team-config .btn.btn-primary:hover:not(:disabled) {
