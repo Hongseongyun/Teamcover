@@ -858,6 +858,21 @@ const Points = () => {
     ]);
   };
 
+  // 포인트 추가 폼으로 스크롤하는 함수
+  const scrollToAddForm = () => {
+    setShowAddForm(true);
+    // 폼이 렌더링된 후 스크롤
+    setTimeout(() => {
+      const formSection = document.querySelector('.form-section');
+      if (formSection) {
+        formSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  };
+
   if (loading) {
     return <div className="loading">로딩 중...</div>;
   }
@@ -874,10 +889,7 @@ const Points = () => {
             >
               구글시트 가져오기
             </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowAddForm(true)}
-            >
+            <button className="btn btn-primary" onClick={scrollToAddForm}>
               포인트 추가
             </button>
           </div>

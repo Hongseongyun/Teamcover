@@ -989,6 +989,21 @@ const Scores = () => {
     setShowAddForm(false);
   };
 
+  // 스코어 추가 폼으로 스크롤하는 함수
+  const scrollToAddForm = () => {
+    setShowAddForm(true);
+    // 폼이 렌더링된 후 스크롤
+    setTimeout(() => {
+      const formSection = document.querySelector('.form-section');
+      if (formSection) {
+        formSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  };
+
   const calculateTotal = () => {
     const score1 = parseInt(formData.score1) || 0;
     const score2 = parseInt(formData.score2) || 0;
@@ -1037,10 +1052,7 @@ const Scores = () => {
             >
               AI로 스코어 인식
             </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowAddForm(true)}
-            >
+            <button className="btn btn-primary" onClick={scrollToAddForm}>
               스코어 추가
             </button>
           </div>
