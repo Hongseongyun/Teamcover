@@ -425,28 +425,24 @@ const Login = () => {
           </button>
 
           <div className="login-footer">
-            <p>
-              {isLogin ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
-              <button
-                type="button"
-                className="link-button"
-                onClick={toggleMode}
-              >
-                {isLogin ? '회원가입' : '로그인'}
-              </button>
-            </p>
-            {isLogin && (
-              <p>
-                비밀번호를 잊으셨나요?
+            <div className="footer-links">
+              {isLogin && (
                 <button
                   type="button"
-                  className="link-button"
+                  className="footer-link"
                   onClick={() => setShowForgotPassword(true)}
                 >
                   비밀번호 찾기
                 </button>
-              </p>
-            )}
+              )}
+              <button
+                type="button"
+                className="footer-link"
+                onClick={toggleMode}
+              >
+                {isLogin ? '회원가입' : '로그인'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

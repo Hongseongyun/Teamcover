@@ -142,14 +142,20 @@
   position: relative;
   text-align: center;
   margin: 2rem 0;
+  display: flex;
+  align-items: center;
 }
 
 .divider::before {
   content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.divider::after {
+  content: '';
+  flex: 1;
   height: 1px;
   background: #e5e7eb;
 }
@@ -159,6 +165,7 @@
   padding: 0 1rem;
   color: #6b7280;
   font-size: 0.875rem;
+  white-space: nowrap;
 }
 
 .google-login-button {
@@ -198,6 +205,36 @@
   margin-top: 2rem;
   color: #6b7280;
   font-size: 0.875rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.footer-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-decoration: none;
+  padding: 0;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #3b82f6;
+}
+
+.footer-link:not(:last-child)::after {
+  content: '|';
+  margin-left: 1rem;
+  color: #d1d5db;
+  font-weight: normal;
 }
 
 .link-button {
