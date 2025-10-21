@@ -295,9 +295,9 @@ const Scores = () => {
     const highestScore = Math.max(...allScores, 0);
     const lowestScore = Math.min(...allScores, 300);
 
-    // 전체 게임 기록 (날짜순 정렬)
+    // 전체 게임 기록 (최신순 정렬)
     const allScoresSorted = memberScores.sort(
-      (a, b) => new Date(b.game_date) - new Date(a.created_at)
+      (a, b) => new Date(b.game_date) - new Date(a.game_date)
     );
 
     setMemberStats({
