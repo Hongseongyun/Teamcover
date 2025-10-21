@@ -1,7 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import './Points.css';
+
+// Chart.js 컴포넌트 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Points = () => {
   const { user } = useAuth(); // 현재 사용자 정보
@@ -108,8 +130,8 @@ const Points = () => {
       };
     });
 
-    // 잔여 포인트 기준으로 내림차순 정렬
-    return memberBalances.sort((a, b) => b.balance - a.balance);
+    // 이름 가나다 순으로 정렬
+    return memberBalances.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [members, points]);
 
   const memberBalances = calculateMemberBalances();
@@ -348,6 +370,103 @@ const Points = () => {
   // 천 단위 구분 쉼표 추가 함수
   const formatNumber = (num) => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // 월별 포인트 현황 그래프 데이터 준비
+  const prepareChartData = () => {
+    const monthlyData = Object.entries(stats.monthlyStats)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6); // 최근 6개월
+
+    const labels = monthlyData.map(([month]) => {
+      const [year, monthNum] = month.split('-');
+      return `${year}-${monthNum}`;
+    });
+
+    const results = monthlyData.map(([, data]) => data.earned - data.used);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '월별 포인트 결과',
+          data: results,
+          borderColor: 'rgba(59, 130, 246, 1)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          pointBackgroundColor: results.map((value) =>
+            value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
+          ),
+          pointBorderColor: results.map((value) =>
+            value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
+          ),
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderWidth: 2,
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: true,
+        text: '월별 포인트 결과 현황',
+        font: {
+          size: 16,
+          weight: 'bold',
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        callbacks: {
+          label: function (context) {
+            const value = context.parsed.y;
+            return `결과: ${value >= 0 ? '+' : ''}${formatNumber(value)}P`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function (value) {
+            return formatNumber(value) + 'P';
+          },
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+      },
+    },
+    elements: {
+      point: {
+        hoverBackgroundColor: 'rgba(255, 255, 255, 1)',
+        hoverBorderWidth: 3,
+      },
+    },
   };
 
   // 잔여포인트 계산 함수 (날짜별 순차 계산)
@@ -799,10 +918,19 @@ const Points = () => {
           {Object.keys(stats.monthlyStats).length > 0 && (
             <div className="monthly-stats">
               <h3>월별 포인트 현황</h3>
+
+              {/* 그래프 섹션 */}
+              <div className="monthly-chart-section">
+                <div className="chart-container">
+                  <Line data={prepareChartData()} options={chartOptions} />
+                </div>
+              </div>
+
+              {/* 카드 섹션 */}
               <div className="monthly-stats-grid">
                 {Object.entries(stats.monthlyStats)
-                  .sort(([a], [b]) => b.localeCompare(a))
-                  .slice(0, 6)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .slice(-6)
                   .map(([month, data]) => (
                     <div key={month} className="monthly-stat-card">
                       <h4>{month}</h4>
@@ -1906,17 +2034,14 @@ const Points = () => {
                         ) : (
                           <span
                             className={`point-type ${
-                              point.point_type === '사용'
-                                ? 'negative'
-                                : point.point_type === '정기전' ||
-                                  point.point_type === '기타'
-                                ? point.amount >= 0
-                                  ? 'positive'
-                                  : 'negative'
+                              (parseInt(point.amount) || 0) >= 0
+                                ? 'positive'
                                 : 'negative'
                             }`}
                           >
-                            {point.point_type}
+                            {(parseInt(point.amount) || 0) >= 0
+                              ? '적립'
+                              : '사용'}
                           </span>
                         )}
                       </td>
