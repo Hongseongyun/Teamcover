@@ -69,13 +69,12 @@ def add_point():
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
-        point_type = data.get('point_type', '').strip() if data.get('point_type') else ''
-        if not point_type:
-            return jsonify({'success': False, 'message': '포인트 유형은 필수 입력 항목입니다.'})
-        
         amount = data.get('amount', 0)
         if amount == 0:
             return jsonify({'success': False, 'message': '포인트 금액은 0이 아닌 값이어야 합니다.'})
+        
+        # 금액 부호 기준으로 유형 강제 설정
+        point_type = '적립' if amount > 0 else '사용'
         
         point_date_str = data.get('point_date', '')
         if point_date_str:
@@ -145,13 +144,12 @@ def add_points_batch():
         if not member_names or not isinstance(member_names, list):
             return jsonify({'success': False, 'message': '회원 목록이 필요합니다.'})
         
-        point_type = data.get('point_type', '').strip() if data.get('point_type') else ''
-        if not point_type:
-            return jsonify({'success': False, 'message': '포인트 유형은 필수 입력 항목입니다.'})
-        
         amount = data.get('amount', 0)
         if amount == 0:
             return jsonify({'success': False, 'message': '포인트 금액은 0이 아닌 값이어야 합니다.'})
+        
+        # 금액 부호 기준으로 유형 강제 설정
+        point_type = '적립' if amount > 0 else '사용'
         
         # 날짜 처리
         point_date_str = data.get('point_date', '')
@@ -177,10 +175,12 @@ def add_points_batch():
                 failed_members.append(member_name)
                 continue
             
+            # 금액 부호 기준으로 유형 강제 설정
+            computed_type = '적립' if amount > 0 else '사용'
             new_point = Point(
                 member_id=member.id,
                 point_date=point_date,
-                point_type=point_type,
+                point_type=computed_type,
                 amount=amount,
                 reason=data.get('reason', '').strip() if data.get('reason') else '',
                 note=data.get('note', '').strip() if data.get('note') else ''

@@ -90,20 +90,13 @@ const Points = () => {
       const memberPoints = points.filter(
         (point) => point.member_name === member.name
       );
+      // 부호 기준으로 일원화: + 적립, - 사용
       const totalEarned = memberPoints
-        .filter(
-          (point) =>
-            point.point_type === '적립' ||
-            (point.point_type === '기타' && point.amount >= 0)
-        )
-        .reduce((sum, point) => sum + point.amount, 0);
+        .filter((point) => (parseInt(point.amount) || 0) > 0)
+        .reduce((sum, point) => sum + (parseInt(point.amount) || 0), 0);
       const totalUsed = memberPoints
-        .filter(
-          (point) =>
-            point.point_type === '사용' ||
-            (point.point_type === '기타' && point.amount < 0)
-        )
-        .reduce((sum, point) => sum + Math.abs(point.amount), 0);
+        .filter((point) => (parseInt(point.amount) || 0) < 0)
+        .reduce((sum, point) => sum + Math.abs(parseInt(point.amount) || 0), 0);
 
       return {
         id: member.id,
@@ -176,7 +169,7 @@ const Points = () => {
       if (!memberPoints[point.member_name]) {
         memberPoints[point.member_name] = 0;
       }
-      if (point.point_type === '적립' || point.point_type === '기타') {
+      if (amount >= 0) {
         memberPoints[point.member_name] += Math.abs(amount);
       } else {
         memberPoints[point.member_name] -= Math.abs(amount);
@@ -606,7 +599,7 @@ const Points = () => {
       } else {
         // 표 형식에서 각 행을 개별적으로 등록
         const validRows = pointRows.filter(
-          (row) => row.member_name && row.point_type && row.amount
+          (row) => row.member_name && row.amount
         );
 
         if (validRows.length === 0) {
@@ -617,9 +610,11 @@ const Points = () => {
 
         // 각 행을 개별적으로 등록
         for (const row of validRows) {
+          const computedType =
+            (parseInt(row.amount) || 0) >= 0 ? '적립' : '사용';
           const submitData = {
             member_name: row.member_name,
-            point_type: row.point_type,
+            point_type: computedType,
             amount: parseInt(row.amount),
             reason: row.reasons.length > 0 ? row.reasons.join(', ') : '',
             point_date:
@@ -668,7 +663,7 @@ const Points = () => {
     setEditingId(point.id);
     setFormData({
       member_name: point.member_name,
-      point_type: point.point_type,
+      point_type: (parseInt(point.amount) || 0) >= 0 ? '적립' : '사용',
       amount: point.amount,
       reason: point.reason || '',
       point_date: point.point_date,
@@ -1042,23 +1037,17 @@ const Points = () => {
                               </select>
                             </td>
                             <td className="col-type">
-                              <select
-                                value={row.point_type}
-                                onChange={(e) =>
-                                  updatePointRow(
-                                    row.id,
-                                    'point_type',
-                                    e.target.value
-                                  )
+                              <input
+                                type="text"
+                                value={
+                                  (parseInt(row.amount) || 0) >= 0
+                                    ? '적립'
+                                    : '사용'
                                 }
-                                required
-                                disabled={submitting}
-                              >
-                                <option value="">유형 선택</option>
-                                <option value="정기전">정기전</option>
-                                <option value="사용">사용</option>
-                                <option value="기타">기타</option>
-                              </select>
+                                readOnly
+                                disabled
+                                className="readonly-type"
+                              />
                             </td>
                             <td className="col-amount">
                               <input
@@ -1278,20 +1267,15 @@ const Points = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>포인트 유형 *</label>
-                    <select
-                      value={formData.point_type}
-                      onChange={(e) =>
-                        setFormData({ ...formData, point_type: e.target.value })
+                    <label>포인트 유형</label>
+                    <input
+                      type="text"
+                      value={
+                        (parseInt(formData.amount) || 0) >= 0 ? '적립' : '사용'
                       }
-                      required
-                      disabled={submitting}
-                    >
-                      <option value="">유형 선택</option>
-                      <option value="정기전">정기전</option>
-                      <option value="사용">사용</option>
-                      <option value="기타">기타</option>
-                    </select>
+                      readOnly
+                      disabled
+                    />
                   </div>
                 </div>
                 <div className="form-row">
@@ -1672,13 +1656,8 @@ const Points = () => {
                               <td>
                                 <span
                                   className={`point-type ${
-                                    point.point_type === '사용'
-                                      ? 'negative'
-                                      : point.point_type === '정기전' ||
-                                        point.point_type === '기타'
-                                      ? point.amount >= 0
-                                        ? 'positive'
-                                        : 'negative'
+                                    (parseInt(point.amount) || 0) >= 0
+                                      ? 'positive'
                                       : 'negative'
                                   }`}
                                 >
@@ -1687,9 +1666,7 @@ const Points = () => {
                               </td>
                               <td
                                 className={
-                                  (point.point_type === '적립' ||
-                                    point.point_type === '기타') &&
-                                  point.amount >= 0
+                                  (parseInt(point.amount) || 0) >= 0
                                     ? 'positive'
                                     : 'negative'
                                 }
@@ -1960,9 +1937,7 @@ const Points = () => {
                         ) : (
                           <span
                             className={
-                              (point.point_type === '적립' ||
-                                point.point_type === '기타') &&
-                              point.amount >= 0
+                              (parseInt(point.amount) || 0) >= 0
                                 ? 'positive'
                                 : 'negative'
                             }
