@@ -95,6 +95,7 @@ export const scoreAPI = {
   deleteScore: (id) => api.delete(`/api/scores/${id}`), // 마지막 슬래시 제거
   importFromSheets: (data) => api.post('/api/scores/import-from-sheets', data),
   getMemberAverages: () => api.get('/api/scores/averages'), // 회원별 평균 순위 조회
+  refreshMemberAverages: () => api.post('/api/scores/averages/refresh'), // 에버 새로고침
 };
 
 // 포인트 관리 API

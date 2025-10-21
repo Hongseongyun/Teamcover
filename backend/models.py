@@ -130,70 +130,86 @@ class Member(db.Model):
         return '아이언'
     
     def calculate_regular_season_average(self):
-        """정기전 에버 계산 (우선순위에 따라) - 평균 점수 업데이트용"""
+        """정기전 에버 계산 (반기별 초기화, 폴백 로직 적용) - 평균 점수 업데이트용
+        
+        계산 우선순위:
+        1. 현재 반기 기록 (1-6월 또는 7-12월)
+        2. 이전 반기 기록 (같은 연도)
+        3. 이전 연도 기록 (최신 순)
+        """
         current_date = datetime.now().date()
         current_year = current_date.year
         current_month = current_date.month
         
-        # 1. 현재 반기 이후의 정기전 기록 (25년 7월 이후)
-        if current_month >= 7:
-            target_year = current_year
-            target_half = '2H'
-        else:
-            target_year = current_year
-            target_half = '1H'
-        
-        # 현재 반기 정기전 기록 확인 (season_year, season_half 조건 제거하고 날짜로 직접 필터링)
-        current_half_scores = Score.query.filter(
-            Score.member_id == self.id,
-            Score.is_regular_season == True,
-            Score.game_date >= f'{target_year}-07-01' if current_month >= 7 else Score.game_date >= f'{target_year}-01-01',
-            Score.game_date < f'{target_year + 1}-01-01' if current_month >= 7 else Score.game_date < f'{target_year}-07-01'
-        ).all()
-        
-        if current_half_scores:
-            return self._calculate_average_from_scores(current_half_scores)
-        
-        # 2. 현재 반기 이전의 정기전 기록 (25년 1~6월)
-        if current_month >= 7:
-            first_half_scores = Score.query.filter(
+        # 1. 현재 반기 기록 확인
+        if current_month >= 7:  # 7-12월 (하반기)
+            current_half_scores = Score.query.filter(
+                Score.member_id == self.id,
+                Score.is_regular_season == True,
+                Score.game_date >= f'{current_year}-07-01',
+                Score.game_date < f'{current_year + 1}-01-01'
+            ).all()
+        else:  # 1-6월 (상반기)
+            current_half_scores = Score.query.filter(
                 Score.member_id == self.id,
                 Score.is_regular_season == True,
                 Score.game_date >= f'{current_year}-01-01',
                 Score.game_date < f'{current_year}-07-01'
             ).all()
-            
-            if first_half_scores:
-                return self._calculate_average_from_scores(first_half_scores)
         
-        # 3. 이전 연도 하반기 기록 (24년 7~12월)
+        if current_half_scores:
+            return self._calculate_average_from_scores(current_half_scores)
+        
+        # 2. 이전 반기 기록 확인 (같은 연도)
+        if current_month >= 7:  # 현재가 하반기면 상반기 확인
+            prev_half_scores = Score.query.filter(
+                Score.member_id == self.id,
+                Score.is_regular_season == True,
+                Score.game_date >= f'{current_year}-01-01',
+                Score.game_date < f'{current_year}-07-01'
+            ).all()
+        else:  # 현재가 상반기면 이전 연도 하반기 확인
+            prev_year = current_year - 1
+            prev_half_scores = Score.query.filter(
+                Score.member_id == self.id,
+                Score.is_regular_season == True,
+                Score.game_date >= f'{prev_year}-07-01',
+                Score.game_date < f'{current_year}-01-01'
+            ).all()
+        
+        if prev_half_scores:
+            return self._calculate_average_from_scores(prev_half_scores)
+        
+        # 3. 이전 연도 기록 확인 (최신 순)
         prev_year = current_year - 1
-        prev_second_half_scores = Score.query.filter(
+        
+        # 이전 연도 하반기 (7-12월)
+        prev_year_second_half = Score.query.filter(
             Score.member_id == self.id,
             Score.is_regular_season == True,
             Score.game_date >= f'{prev_year}-07-01',
             Score.game_date < f'{current_year}-01-01'
         ).all()
         
-        if prev_second_half_scores:
-            return self._calculate_average_from_scores(prev_second_half_scores)
+        if prev_year_second_half:
+            return self._calculate_average_from_scores(prev_year_second_half)
         
-        # 4. 이전 연도 상반기 기록 (24년 1~6월)
-        prev_first_half_scores = Score.query.filter(
+        # 이전 연도 상반기 (1-6월)
+        prev_year_first_half = Score.query.filter(
             Score.member_id == self.id,
             Score.is_regular_season == True,
             Score.game_date >= f'{prev_year}-01-01',
             Score.game_date < f'{prev_year}-07-01'
         ).all()
         
-        if prev_first_half_scores:
-            return self._calculate_average_from_scores(prev_first_half_scores)
+        if prev_year_first_half:
+            return self._calculate_average_from_scores(prev_year_first_half)
         
-        # 5. 아무 기록도 없으면 None 반환 (배치 등급)
+        # 4. 아무 기록도 없으면 None 반환 (배치 등급)
         return None
     
     def _calculate_average_from_scores(self, scores):
-        """점수 리스트에서 평균 계산"""
+        """점수 리스트에서 평균 계산 (자연수로 반올림)"""
         if not scores:
             return None
         
@@ -201,19 +217,17 @@ class Member(db.Model):
         if not valid_scores:
             return None
         
-        # 디버깅을 위한 로그 추가
-        print(f"DEBUG - {self.name}의 스코어 개수: {len(valid_scores)}")
-        print(f"DEBUG - {self.name}의 스코어 값들: {valid_scores}")
-        print(f"DEBUG - {self.name}의 총합: {sum(valid_scores)}")
-        print(f"DEBUG - {self.name}의 평균: {sum(valid_scores) / len(valid_scores)}")
+        # 평균 계산 후 자연수로 반올림
+        average = sum(valid_scores) / len(valid_scores)
+        rounded_average = round(average)
         
-        return sum(valid_scores) / len(valid_scores)
+        return rounded_average
     
     def update_average_score(self):
-        """평균 점수 업데이트"""
+        """평균 점수 업데이트 (이미 자연수로 반올림됨)"""
         calculated_avg = self.calculate_regular_season_average()
         if calculated_avg is not None:
-            self.average_score = round(calculated_avg)
+            self.average_score = calculated_avg  # 이미 자연수로 반올림됨
         else:
             self.average_score = None
         return self.average_score
@@ -248,7 +262,7 @@ class Member(db.Model):
             'gender': self.gender,
             'level': self.level,  # 레거시 호환성
             'tier': self.tier,
-            'average_score': round(self.average_score, 2) if self.average_score else None,
+            'average_score': self.average_score,  # 이미 자연수로 저장됨
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None

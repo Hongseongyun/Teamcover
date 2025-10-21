@@ -236,55 +236,36 @@ const Scores = () => {
     try {
       setAveragesLoading(true);
 
-      // 먼저 평균 점수 업데이트
-      if (isAdmin) {
-        try {
-          const updateResponse = await memberAPI.updateAllMemberAverages();
-          if (updateResponse.data.success) {
-            console.log(
-              '평균 점수 업데이트 완료:',
-              updateResponse.data.message
-            );
-            // 디버깅 정보 출력
-            if (updateResponse.data.debug_info) {
-              console.log('디버깅 정보:', updateResponse.data.debug_info);
-            }
-          }
-        } catch (updateError) {
-          console.warn(
-            '평균 점수 업데이트 실패, 기존 데이터로 표시:',
-            updateError
-          );
-        }
-      }
-
-      // 그 다음 평균 순위 로드
-      const response = await scoreAPI.getMemberAverages();
+      // 에버 새로고침 API 호출 (모든 사용자)
+      const response = await scoreAPI.refreshMemberAverages();
       if (response.data.success) {
         setMemberAverages(response.data.averages);
+      } else {
+        console.error('에버 새로고침 실패:', response.data.message);
       }
     } catch (error) {
       console.error('회원별 평균 새로고침 실패:', error);
     } finally {
       setAveragesLoading(false);
     }
-  }, [isAdmin]);
+  }, []);
 
   useEffect(() => {
     loadScores();
     loadMembers();
-    loadMemberAverages();
-  }, [loadScores, loadMembers, loadMemberAverages]);
+    // 페이지 로드 시 평균 점수 업데이트 후 로드
+    refreshMemberAverages();
+  }, [loadScores, loadMembers, refreshMemberAverages]);
 
   // 페이지 포커스 시 평균 순위 업데이트
   useEffect(() => {
     const handleFocus = () => {
-      loadMemberAverages();
+      refreshMemberAverages();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [loadMemberAverages]);
+  }, [refreshMemberAverages]);
 
   const calculateStats = (scoreList) => {
     // 통계 계산 로직 (현재 사용하지 않음)
@@ -665,7 +646,7 @@ const Scores = () => {
         setImagePreviews([]);
         setCurrentStep('upload');
         loadScores();
-        loadMemberAverages();
+        refreshMemberAverages();
       } else if (successCount > 0 && failCount > 0) {
         const confirmContinue = window.confirm(
           `일부 저장 완료\n성공: ${successCount}명\n실패: ${failCount}명\n\n실패 내역:\n${errors.join(
@@ -679,7 +660,7 @@ const Scores = () => {
           setImagePreviews([]);
           setCurrentStep('upload');
           loadScores();
-          loadMemberAverages();
+          refreshMemberAverages();
         }
       } else {
         alert(
@@ -724,7 +705,7 @@ const Scores = () => {
           confirmDelete: false,
         });
         loadScores();
-        loadMemberAverages();
+        refreshMemberAverages();
       } else {
         let errorMessage = message || '구글시트 가져오기에 실패했습니다.';
         if (error_type === 'authentication_failed') {
@@ -816,7 +797,7 @@ const Scores = () => {
       try {
         await scoreAPI.deleteScore(id);
         loadScores();
-        loadMemberAverages();
+        refreshMemberAverages();
       } catch (error) {
         // 에러 처리
         alert('스코어 삭제에 실패했습니다.');
@@ -896,7 +877,7 @@ const Scores = () => {
           setSelectedScores([]);
           setSelectAll(false);
           loadScores();
-          loadMemberAverages();
+          refreshMemberAverages();
         } else {
           alert('스코어 삭제에 실패했습니다.');
         }
@@ -1104,7 +1085,12 @@ const Scores = () => {
               <div className="averages-description">
                 <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
                 <p>
-                  현재 기준: 7월 이후 → 1~6월 → 작년 전체 순으로 적용됩니다.
+                  <strong>에버 계산 기준:</strong>
+                  <br />
+                  • 현재 반기 기록 (1-6월 또는 7-12월)
+                  <br />
+                  • 이전 반기 기록 (같은 연도)
+                  <br />• 이전 연도 기록 (최신 순)
                 </p>
               </div>
 
@@ -1122,28 +1108,32 @@ const Scores = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {memberAverages.map((member) => (
-                        <tr key={member.member_id} className="average-row">
-                          <td className="rank-cell">
-                            {renderMedalIcon(member.rank)}
-                          </td>
-                          <td className="member-name">{member.member_name}</td>
-                          <td className="average-score">
-                            {member.average_score}
-                          </td>
-                          <td className="tier-cell">
-                            <TierBadge tier={member.tier} size="small" />
+                      {memberAverages && memberAverages.length > 0 ? (
+                        memberAverages.map((member) => (
+                          <tr key={member.member_id} className="average-row">
+                            <td className="rank-cell">
+                              {renderMedalIcon(member.rank)}
+                            </td>
+                            <td className="member-name">
+                              {member.member_name}
+                            </td>
+                            <td className="average-score">
+                              {member.average_score}
+                            </td>
+                            <td className="tier-cell">
+                              <TierBadge tier={member.tier} size="small" />
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="no-data">
+                            <p>정기전 기록이 있는 회원이 없습니다.</p>
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
-
-                  {memberAverages.length === 0 && (
-                    <div className="no-data">
-                      <p>정기전 기록이 있는 회원이 없습니다.</p>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

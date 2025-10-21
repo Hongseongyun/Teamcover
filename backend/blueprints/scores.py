@@ -186,38 +186,31 @@ def update_score(score_id):
 @scores_bp.route('/averages', methods=['GET'])
 @jwt_required(optional=True)
 def get_member_averages():
-    """회원별 평균(에버) 순위 조회 API"""
+    """회원별 평균(에버) 순위 조회 API - 저장된 평균 점수 사용"""
     try:
         # 모든 회원 조회
         members = Member.query.all()
         
-        # 각 회원의 평균 계산 및 순위 매기기
+        # 각 회원의 평균 및 순위 매기기
         member_averages = []
         
         for member in members:
-            # 저장된 평균 점수 사용 (없으면 계산)
+            # 저장된 평균 점수 사용 (없으면 계산하여 업데이트)
+            if member.average_score is None:
+                # 저장된 값이 없으면 계산하여 업데이트
+                calculated_avg = member.calculate_regular_season_average()
+                if calculated_avg is not None:
+                    member.average_score = calculated_avg  # 이미 자연수로 반올림됨
+                    member.tier = member.calculate_tier_from_score()
+                    db.session.commit()
+            
             if member.average_score is not None:
-                # average_score가 있으면 항상 최신 티어 계산
-                current_tier = member.calculate_tier_from_score()
                 member_averages.append({
                     'member_id': member.id,
                     'member_name': member.name,
-                    'average_score': round(member.average_score, 1),
-                    'tier': current_tier
+                    'average_score': member.average_score,
+                    'tier': member.tier or '배치'
                 })
-            else:
-                # 평균 점수가 없으면 계산해서 추가
-                regular_avg = member.calculate_regular_season_average()
-                if regular_avg is not None:
-                    # 계산된 평균으로 티어 계산
-                    member.average_score = regular_avg  # 임시로 설정
-                    current_tier = member.calculate_tier_from_score()
-                    member_averages.append({
-                        'member_id': member.id,
-                        'member_name': member.name,
-                        'average_score': round(regular_avg, 1),
-                        'tier': current_tier
-                    })
         
         # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)
         member_averages.sort(key=lambda x: x['average_score'], reverse=True)
@@ -233,3 +226,56 @@ def get_member_averages():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'회원별 평균 조회 중 오류가 발생했습니다: {str(e)}'})
+
+@scores_bp.route('/averages/refresh', methods=['POST'])
+@jwt_required(optional=True)
+def refresh_member_averages():
+    """회원별 평균(에버) 새로고침 API - 모든 회원의 에버를 다시 계산하여 업데이트"""
+    try:
+        # 모든 회원 조회
+        members = Member.query.all()
+        updated_count = 0
+        member_averages = []
+        
+        for member in members:
+            # 에버 재계산
+            calculated_avg = member.calculate_regular_season_average()
+            if calculated_avg is not None:
+                member.average_score = calculated_avg  # 이미 자연수로 반올림됨
+                member.tier = member.calculate_tier_from_score()
+                updated_count += 1
+            else:
+                # 기록이 없으면 배치로 설정
+                member.average_score = None
+                member.tier = '배치'
+            
+            # 에버 데이터가 있는 회원만 추가
+            if member.average_score is not None:
+                member_averages.append({
+                    'member_id': member.id,
+                    'member_name': member.name,
+                    'average_score': member.average_score,
+                    'tier': member.tier or '배치'
+                })
+        
+        # 데이터베이스에 저장
+        db.session.commit()
+        
+        # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)
+        member_averages.sort(key=lambda x: x['average_score'], reverse=True)
+        
+        # 순위 추가 (1등부터 시작)
+        for i, member in enumerate(member_averages):
+            member['rank'] = i + 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'에버 새로고침 완료! {updated_count}명의 회원이 업데이트되었습니다.',
+            'updated_count': updated_count,
+            'total_members': len(members),
+            'averages': member_averages
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'에버 새로고침 중 오류가 발생했습니다: {str(e)}'})
