@@ -246,19 +246,23 @@ def get_member_average(member_id):
         if member.average_score is not None:
             return jsonify({
                 'success': True,
-                'average': round(member.average_score, 1),
+                'average': round(member.average_score),
                 'tier': member.tier or member.calculate_tier_from_score(),
-                'message': f'{member.name}의 평균 점수: {round(member.average_score, 1)}'
+                'message': f'{member.name}의 평균 점수: {round(member.average_score)}'
             })
         
         # 저장된 평균 점수가 없으면 계산해서 반환
         regular_avg = member.calculate_regular_season_average()
         if regular_avg is not None:
+            # 디버깅을 위한 로그 추가
+            print(f"DEBUG - {member.name}의 계산된 평균: {regular_avg}")
+            print(f"DEBUG - 반올림된 평균: {round(regular_avg)}")
+            
             return jsonify({
                 'success': True,
-                'average': round(regular_avg, 1),
+                'average': round(regular_avg),
                 'tier': member.calculate_tier_from_score(),
-                'message': f'{member.name}의 계산된 평균 점수: {round(regular_avg, 1)}'
+                'message': f'{member.name}의 계산된 평균 점수: {round(regular_avg)}'
             })
         
         return jsonify({
@@ -290,8 +294,8 @@ def update_all_member_averages():
             average_score = member.calculate_regular_season_average()
             
             if average_score is not None:
-                # 평균 점수 저장
-                member.average_score = round(average_score, 2)
+                # 평균 점수 저장 (자연수로 반올림)
+                member.average_score = round(average_score)
                 
                 # 티어 업데이트 (average_score 기반)
                 member.tier = member.calculate_tier_from_score()

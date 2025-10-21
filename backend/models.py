@@ -138,17 +138,17 @@ class Member(db.Model):
         # 1. 현재 반기 이후의 정기전 기록 (25년 7월 이후)
         if current_month >= 7:
             target_year = current_year
-            target_half = 'second_half'
+            target_half = '2H'
         else:
             target_year = current_year
-            target_half = 'first_half'
+            target_half = '1H'
         
-        # 현재 반기 정기전 기록 확인
+        # 현재 반기 정기전 기록 확인 (season_year, season_half 조건 제거하고 날짜로 직접 필터링)
         current_half_scores = Score.query.filter(
             Score.member_id == self.id,
             Score.is_regular_season == True,
-            Score.season_year == target_year,
-            Score.season_half == target_half
+            Score.game_date >= f'{target_year}-07-01' if current_month >= 7 else Score.game_date >= f'{target_year}-01-01',
+            Score.game_date < f'{target_year + 1}-01-01' if current_month >= 7 else Score.game_date < f'{target_year}-07-01'
         ).all()
         
         if current_half_scores:
@@ -159,8 +159,8 @@ class Member(db.Model):
             first_half_scores = Score.query.filter(
                 Score.member_id == self.id,
                 Score.is_regular_season == True,
-                Score.season_year == current_year,
-                Score.season_half == 'first_half'
+                Score.game_date >= f'{current_year}-01-01',
+                Score.game_date < f'{current_year}-07-01'
             ).all()
             
             if first_half_scores:
@@ -171,8 +171,8 @@ class Member(db.Model):
         prev_second_half_scores = Score.query.filter(
             Score.member_id == self.id,
             Score.is_regular_season == True,
-            Score.season_year == prev_year,
-            Score.season_half == 'second_half'
+            Score.game_date >= f'{prev_year}-07-01',
+            Score.game_date < f'{current_year}-01-01'
         ).all()
         
         if prev_second_half_scores:
@@ -182,8 +182,8 @@ class Member(db.Model):
         prev_first_half_scores = Score.query.filter(
             Score.member_id == self.id,
             Score.is_regular_season == True,
-            Score.season_year == prev_year,
-            Score.season_half == 'first_half'
+            Score.game_date >= f'{prev_year}-01-01',
+            Score.game_date < f'{prev_year}-07-01'
         ).all()
         
         if prev_first_half_scores:
@@ -201,11 +201,21 @@ class Member(db.Model):
         if not valid_scores:
             return None
         
+        # 디버깅을 위한 로그 추가
+        print(f"DEBUG - {self.name}의 스코어 개수: {len(valid_scores)}")
+        print(f"DEBUG - {self.name}의 스코어 값들: {valid_scores}")
+        print(f"DEBUG - {self.name}의 총합: {sum(valid_scores)}")
+        print(f"DEBUG - {self.name}의 평균: {sum(valid_scores) / len(valid_scores)}")
+        
         return sum(valid_scores) / len(valid_scores)
     
     def update_average_score(self):
         """평균 점수 업데이트"""
-        self.average_score = self.calculate_regular_season_average()
+        calculated_avg = self.calculate_regular_season_average()
+        if calculated_avg is not None:
+            self.average_score = round(calculated_avg)
+        else:
+            self.average_score = None
         return self.average_score
     
     def update_tier(self):
@@ -302,9 +312,9 @@ class Score(db.Model):
         
         # 반기 결정 (1-6월: 상반기, 7-12월: 하반기)
         if month <= 6:
-            self.season_half = 'first_half'
+            self.season_half = '1H'
         else:
-            self.season_half = 'second_half'
+            self.season_half = '2H'
         
         self.season_year = year
         self.is_regular_season = True  # 기본적으로 정기전으로 설정
