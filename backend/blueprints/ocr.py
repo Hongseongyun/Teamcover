@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 import sys
 import os
 
@@ -9,6 +9,20 @@ from llm_image_analyzer import llm_analyzer
 
 # LLM 이미지 분석 Blueprint
 ocr_bp = Blueprint('ocr', __name__, url_prefix='/api')
+
+@ocr_bp.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        from flask import current_app
+        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [])
+        request_origin = request.headers.get('Origin')
+        if request_origin and request_origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", request_origin)
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
 
 @ocr_bp.route('/ocr', methods=['POST'])
 def process_ocr():

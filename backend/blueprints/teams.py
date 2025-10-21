@@ -1,10 +1,24 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 import random
 from typing import List, Tuple
 from models import db
 
 # 팀 배정 Blueprint
 teams_bp = Blueprint('teams', __name__, url_prefix='/api')
+
+@teams_bp.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        from flask import current_app
+        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [])
+        request_origin = request.headers.get('Origin')
+        if request_origin and request_origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", request_origin)
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
 
 class BowlingTeamMaker:
     def __init__(self):

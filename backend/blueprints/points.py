@@ -1,10 +1,24 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime
 from models import db, Member, Point
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # 포인트 관리 Blueprint
 points_bp = Blueprint('points', __name__, url_prefix='/api/points')
+
+@points_bp.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = make_response()
+        from flask import current_app
+        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [])
+        request_origin = request.headers.get('Origin')
+        if request_origin and request_origin in allowed_origins:
+            response.headers.add("Access-Control-Allow-Origin", request_origin)
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
 
 @points_bp.route('/', methods=['GET'])
 @jwt_required(optional=True)

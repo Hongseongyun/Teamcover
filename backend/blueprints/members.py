@@ -16,7 +16,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -453,38 +453,44 @@ def check_privacy_status():
         # 기본적으로 마스킹된 상태
         privacy_unlocked = False
         
-        if current_user_obj and current_user_obj.role == 'super_admin':
+        if current_user_obj and current_user_obj.role in ['super_admin', 'admin']:
             # 전역 개인정보 보호 비밀번호 설정 확인
             privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
             if not privacy_setting or not privacy_setting.setting_value:
                 # 비밀번호가 설정되지 않은 경우 자동으로 해제
                 privacy_unlocked = True
             else:
-                # 세션에서 개인정보 접근 허용 상태 확인
-                privacy_access_granted = session.get('privacy_access_granted', False)
-                privacy_access_user_id = session.get('privacy_access_user_id')
-                
-                # 현재 사용자와 세션의 사용자가 일치하는지 확인
-                if privacy_access_granted and privacy_access_user_id == current_user_obj.id:
-                    # 접근 시간 확인 (30분 유효)
-                    access_time_str = session.get('privacy_access_time')
-                    if access_time_str:
-                        try:
-                            access_time = datetime.fromisoformat(access_time_str)
-                            if datetime.utcnow() - access_time < timedelta(minutes=30):
-                                privacy_unlocked = True
-                            else:
-                                # 시간 만료된 경우 세션 정리
-                                session.pop('privacy_access_granted', None)
-                                session.pop('privacy_access_user_id', None)
-                                session.pop('privacy_access_time', None)
-                                privacy_unlocked = False
-                        except:
-                            privacy_unlocked = False
-                    else:
-                        privacy_unlocked = False
+                # 헤더에서 개인정보 접근 토큰 확인
+                privacy_token = request.headers.get('X-Privacy-Token')
+                if privacy_token:
+                    try:
+                        from flask_jwt_extended import decode_token
+                        import time
+                        # 개인정보 접근 토큰 디코딩
+                        decoded_token = decode_token(privacy_token)
+                        jwt_claims = decoded_token
+                        privacy_access_granted = jwt_claims.get('privacy_access_granted', False)
+                        user_role = jwt_claims.get('user_role')
+                        exp_time = jwt_claims.get('exp', 0)
+                        current_time = int(time.time())
+                        
+                        # 토큰 사용자 ID와 현재 사용자 ID 비교
+                        token_user_id = jwt_claims.get('sub', '')
+                        current_user_id = str(current_user_obj.id)
+                        
+                        # 토큰 만료 시간 체크 및 사용자 ID 체크
+                        if current_time >= exp_time:
+                            privacy_unlocked = False  # 토큰 만료
+                        elif token_user_id != current_user_id:
+                            privacy_unlocked = False  # 사용자 ID 불일치
+                        elif privacy_access_granted and user_role in ['super_admin', 'admin']:
+                            privacy_unlocked = True  # 원본 데이터 허용
+                        else:
+                            privacy_unlocked = False  # 기본적으로 마스킹
+                    except Exception as e:
+                        privacy_unlocked = False  # 토큰 디코딩 실패
                 else:
-                    privacy_unlocked = False
+                    privacy_unlocked = False  # 토큰 없음
         
         return jsonify({
             'success': True,

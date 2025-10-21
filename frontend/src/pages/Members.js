@@ -59,7 +59,6 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 
   const displayTier = getDisplayTier(tier);
   const tierClass = getTierClass(tier);
-  const iconClass = getTierIconClass(tier);
   const badgeClass =
     size === 'small' ? 'tier-badge tier-badge-sm' : 'tier-badge';
 
@@ -122,9 +121,12 @@ const Members = () => {
     checkPrivacyStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 개인정보 보호 상태가 변경될 때마다 세션 스토리지에 저장
+  // 개인정보 보호 상태가 변경될 때마다 회원 목록 다시 로드
   useEffect(() => {
     sessionStorage.setItem('privacyUnlocked', privacyUnlocked.toString());
+    if (privacyUnlocked) {
+      loadMembers();
+    }
   }, [privacyUnlocked]);
 
   // 비밀번호 설정 여부 확인
@@ -145,33 +147,25 @@ const Members = () => {
       const response = await memberAPI.checkPrivacyStatus();
       if (response.data.success) {
         setPrivacyUnlocked(response.data.privacy_unlocked);
+        // 개인정보가 잠금 해제된 경우 회원 목록 다시 로드
+        if (response.data.privacy_unlocked) {
+          loadMembers();
+        }
       }
     } catch (error) {
-      // 에러 처리
+      console.error('개인정보 상태 확인 오류:', error);
     }
   };
 
-  // 개인정보 마스킹 (백엔드에서 이미 마스킹된 경우 고려)
+  // 개인정보 마스킹 (백엔드에서 처리하므로 프론트엔드에서는 단순 표시)
   const maskPhone = (phone) => {
     if (!phone) return '-';
-    // 이미 마스킹된 형태인지 확인
-    if (phone.includes('***')) return phone;
-    // 개인정보 보호 비밀번호가 해제된 경우 원본 표시
-    if (privacyUnlocked) return phone;
-    return '***-****-****';
+    return phone;
   };
 
   const maskEmail = (email) => {
     if (!email) return '-';
-    // 이미 마스킹된 형태인지 확인
-    if (email.includes('***')) return email;
-    // 개인정보 보호 비밀번호가 해제된 경우 원본 표시
-    if (privacyUnlocked) return email;
-    const [local, domain] = email.split('@');
-    if (local && domain) {
-      return `${local.charAt(0)}***@${domain}`;
-    }
-    return '***@***';
+    return email;
   };
 
   // 개인정보 클릭 핸들러
@@ -195,8 +189,8 @@ const Members = () => {
         setShowPasswordModal(false);
         setPrivacyPassword('');
 
-        // 회원 목록 다시 로드하여 개인정보 표시
-        loadMembers();
+        // 개인정보 상태 확인 후 회원 목록 다시 로드
+        await checkPrivacyStatus();
       } else {
         setPasswordError(response.data.message);
       }
