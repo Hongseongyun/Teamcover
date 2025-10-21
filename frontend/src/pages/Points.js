@@ -880,7 +880,7 @@ const Points = () => {
   return (
     <div className="points-page">
       <div className="page-header">
-        <h1>포인트 관리</h1>
+        <h1>포인트</h1>
         {isAdmin && (
           <div className="header-actions">
             <button

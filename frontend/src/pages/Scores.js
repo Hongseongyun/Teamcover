@@ -1037,7 +1037,7 @@ const Scores = () => {
   return (
     <div className="scores-page">
       <div className="page-header">
-        <h1>스코어 관리</h1>
+        <h1>스코어</h1>
         {isAdmin && (
           <div className="header-actions">
             <button
