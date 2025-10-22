@@ -300,6 +300,42 @@
   }
 }
 
+/* 더 작은 모바일 화면 (770px 이하) - 작업 버튼 여백 추가 축소 */
+@media (max-width: 770px) {
+  /* 테이블 셀 기본 패딩도 약간 축소 */
+  .members-table th,
+  .members-table td {
+    padding: 0.3rem 0.2rem;
+  }
+
+  /* 작업 영역 버튼 간격/크기 대폭 축소 */
+  .members-table td:nth-child(7) .btn {
+    padding: 0.25rem 0.35rem;
+    font-size: 0.65rem;
+    margin: 0 0.02rem;
+    min-width: auto;
+    width: auto;
+  }
+
+  .inline-actions {
+    gap: 0.1rem;
+  }
+
+  .inline-actions .btn {
+    padding: 0.25rem 0.35rem;
+    font-size: 0.65rem;
+    min-width: auto;
+    width: auto;
+  }
+
+  /* 작업 컬럼 너비도 더 줄이기 */
+  .members-table th:nth-child(7),
+  .members-table td:nth-child(7) {
+    width: 25%;
+    min-width: 80px;
+  }
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);

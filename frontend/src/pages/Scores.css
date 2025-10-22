@@ -3,6 +3,55 @@
   font-size: var(--responsive-font-base, 1rem);
 }
 
+/* 스코어 페이지 공통 반응형 변수: 화면이 줄수록 일괄 축소 */
+@media (max-width: 1200px) {
+  .scores-page {
+    --responsive-font-base: clamp(0.9rem, 0.8rem + 0.3vw, 1rem);
+    --responsive-font-h1: clamp(1.6rem, 1.2rem + 1.5vw, 2rem);
+    --responsive-font-h2: clamp(1.1rem, 0.95rem + 1vw, 1.5rem);
+    --responsive-table-font: clamp(0.8rem, 0.7rem + 0.3vw, 0.875rem);
+    --responsive-button-font: clamp(0.8rem, 0.72rem + 0.25vw, 1rem);
+    --responsive-button-padding: clamp(0.5rem, 0.35rem + 0.3vw, 0.75rem)
+      clamp(0.9rem, 0.6rem + 0.8vw, 1.5rem);
+  }
+}
+
+@media (max-width: 770px) {
+  .scores-page {
+    --responsive-font-base: clamp(0.85rem, 0.75rem + 0.5vw, 0.95rem);
+    --responsive-font-h1: clamp(1.4rem, 1.05rem + 1.6vw, 1.75rem);
+    --responsive-font-h2: clamp(1rem, 0.9rem + 0.9vw, 1.25rem);
+    --responsive-table-font: clamp(0.75rem, 0.65rem + 0.4vw, 0.8rem);
+    --responsive-button-font: clamp(0.72rem, 0.62rem + 0.35vw, 0.8rem);
+    --responsive-button-padding: clamp(0.35rem, 0.28rem + 0.35vw, 0.6rem)
+      clamp(0.6rem, 0.5rem + 0.6vw, 1rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .scores-page {
+    --responsive-font-base: clamp(0.8rem, 0.7rem + 0.6vw, 0.9rem);
+    --responsive-font-h1: clamp(1.2rem, 0.95rem + 1.4vw, 1.5rem);
+    --responsive-font-h2: clamp(0.95rem, 0.85rem + 0.7vw, 1.1rem);
+    --responsive-table-font: clamp(0.7rem, 0.6rem + 0.35vw, 0.75rem);
+    --responsive-button-font: clamp(0.68rem, 0.58rem + 0.3vw, 0.75rem);
+    --responsive-button-padding: clamp(0.3rem, 0.25rem + 0.3vw, 0.5rem)
+      clamp(0.5rem, 0.4rem + 0.5vw, 0.9rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .scores-page {
+    --responsive-font-base: clamp(0.78rem, 0.68rem + 0.6vw, 0.85rem);
+    --responsive-font-h1: clamp(1.05rem, 0.9rem + 1vw, 1.3rem);
+    --responsive-font-h2: clamp(0.9rem, 0.8rem + 0.6vw, 1rem);
+    --responsive-table-font: clamp(0.65rem, 0.55rem + 0.35vw, 0.7rem);
+    --responsive-button-font: clamp(0.62rem, 0.52rem + 0.3vw, 0.7rem);
+    --responsive-button-padding: clamp(0.25rem, 0.2rem + 0.25vw, 0.4rem)
+      clamp(0.45rem, 0.35rem + 0.4vw, 0.75rem);
+  }
+}
+
 /* 티어별 색상 변수 (이미지 참고) */
 :root {
   --tier-unranked: #9ca3af;
@@ -284,10 +333,11 @@
 
 .table-form-table th,
 .table-form-table td {
-  padding: 0.75rem;
+  padding: 0.5rem !important;
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
   vertical-align: top;
+  font-size: 0.82rem !important;
 }
 
 .table-form-table th {
@@ -315,7 +365,41 @@
 .table-form-table th:nth-child(5),
 .table-form-table td:nth-child(5) {
   width: 12% !important;
-  min-width: 80px;
+  min-width: 70px !important;
+}
+
+/* 회원명(2열)과 비고(8열) 영역 더 넓게 */
+.table-form-table th:nth-child(2),
+.table-form-table td:nth-child(2) {
+  width: 180px !important;
+  min-width: 150px !important;
+}
+
+.table-form-table th:nth-child(8),
+.table-form-table td:nth-child(8) {
+  min-width: 150px !important;
+}
+
+/* 입력/셀렉트가 잘리지 않도록 최소 너비 보장 */
+.table-form-table select,
+.table-form-table input[type='number'],
+.table-form-table input[type='text'] {
+  min-width: 64px !important;
+}
+
+/* 회원명 셀 내부 셀렉트 너비 강제 (실측 15px 이슈 대응) */
+.table-form-table td:nth-child(2) .name-select,
+.table-form-table td:nth-child(2) select.name-select {
+  min-width: 160px !important;
+  width: auto !important;
+}
+
+/* 닫기 버튼 실제 컨테이너 대상 축소 및 자동폭 */
+.form-actions .btn {
+  width: auto !important;
+  min-width: 0 !important;
+  font-size: 0.8rem;
+  padding: 0.6em 1.1em;
 }
 
 .master-date-input {
@@ -371,6 +455,7 @@
 .header-actions {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 /* AI 인식 결과 편집 스타일 */
@@ -1517,6 +1602,19 @@
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
+  /* 섹션 헤더: 제목과 버튼을 세로 배치하여 줄바꿈 시 다음 줄로 */
+  .section-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .section-header .btn,
+  .header-actions .btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
   .file-input {
     padding: 1.5rem;
     min-height: 100px;
@@ -1809,10 +1907,23 @@
 
 /* 모바일 반응형 - 입력 폼 레이아웃 조정 */
 @media (max-width: 1000px) {
+  .scores-page {
+    padding: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+  }
+
   .entry-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
 
   /* 회원 이름 */
@@ -1849,7 +1960,7 @@
   .entry-row .entry-actions {
     grid-column: 1 / 4;
     justify-content: center;
-    margin-top: 0.5rem;
+    margin-top: 0.4rem;
   }
 
   .entry-row .form-group {
@@ -1862,11 +1973,11 @@
     width: auto;
     height: auto;
     padding: 0;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.2rem 0;
     overflow: visible;
     clip: auto;
     white-space: normal;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--toss-gray-700);
   }
@@ -1877,19 +1988,460 @@
   .note-input {
     min-width: auto;
     width: 100%;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  /* 테이블 요소들 작게 */
+  .scores-table th,
+  .scores-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  .scores-table th {
+    font-size: 0.75rem;
+  }
+
+  /* 버튼들 작게 */
+  .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  /* 티어 배지 작게 */
+  .tier-badge {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .tier-icon {
+    width: 12px;
+    height: 12px;
+    font-size: 9px;
+  }
+}
+
+/* 770px 이하 - 더 작은 화면 */
+@media (max-width: 770px) {
+  .scores-page {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+
+  .entry-row {
+    gap: 0.4rem;
+  }
+
+  .editable-input,
+  .name-select,
+  .score-input,
+  .note-input {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+
+  .sr-only {
+    font-size: 0.75rem;
+    margin: 0 0 0.15rem 0;
+  }
+
+  /* 회원별 평균 순위: 제목/버튼 더 작게 + 가로 배치 */
+  .member-averages-section .section-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .member-averages-section .section-title {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .member-averages-section .section-header .btn {
+    font-size: 0.7rem;
+    padding: 0.4em 0.7em;
+  }
+
+  /* 테이블 요소들 더 작게 */
+  .scores-table th,
+  .scores-table td {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .scores-table th {
+    font-size: 0.7rem;
+  }
+
+  /* 버튼들 더 작게 */
+  .btn {
+    padding: 0.6em 1.2em;
+    font-size: var(--responsive-button-font, 0.75rem);
+  }
+
+  .btn-sm {
+    padding: 0.5em 1em;
+    font-size: calc(var(--responsive-button-font, 0.75rem) * 0.875);
+  }
+
+  /* 상단/검색/보기 영역 버튼 강제 축소 */
+  .header-actions .btn {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .view-toggle .btn,
+  .search-row .btn {
+    height: auto !important;
+    padding: 0.35rem 0.6rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* 인원 추가/스코어 저장/다른 이미지 선택/닫기 - 줄 폭 채우지 않도록 */
+  .add-person-row .btn,
+  .ocr-actions .btn,
+  .modal-actions .btn {
+    width: auto !important;
+    min-width: 0 !important;
+    display: inline-flex !important;
+  }
+
+  /* 티어 배지 더 작게 */
+  .tier-badge {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+  }
+
+  .tier-icon {
+    width: 10px;
+    height: 10px;
+    font-size: 8px;
+  }
+
+  /* 통계 카드들 작게 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  /* 버튼이 내용 너비만 차지하도록 강제 (길어지는 문제 해결) */
+  .header-actions .btn,
+  .section-header .btn,
+  .view-toggle .btn,
+  .search-row .btn {
+    flex: 0 0 auto !important; /* 남는 공간 채우지 않음 */
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    align-self: flex-start;
+  }
+}
+
+/* 개인별 스코어 검색 결과 영역 - 모바일 축소 및 한 줄 유지 */
+@media (max-width: 770px) {
+  .member-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .member-header h4 {
+    font-size: 0.95rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 65%;
+  }
+
+  .member-header .btn {
+    font-size: 0.65rem;
+    padding: 0.4em 0.65em;
+    flex: 0 0 auto;
+    width: auto;
+  }
+}
+
+/* AI 스코어 인식 결과 버튼 크기 축소 (모바일) */
+@media (max-width: 770px) {
+  .ocr-actions .btn,
+  .result-step .btn {
+    font-size: 0.65rem;
+    padding: 0.4em 0.65em;
+  }
+
+  /* 닫기 버튼 더 작게 */
+  .modal-actions .btn {
+    font-size: 0.7rem !important;
+    padding: 0.5em 1em !important;
+  }
+}
+
+/* 스코어 입력 테이블: 텍스트가 잘리지 않도록 최소 너비 보장 */
+.scores-table td .inline-input,
+.scores-table td .score-input {
+  min-width: 3.25rem; /* 약 52px */
+  overflow: visible;
+}
+
+.scores-table td .name-select,
+.scores-table td select.name-select {
+  min-width: 5.5rem; /* 이름은 더 넓게 */
+}
+
+@media (max-width: 770px) {
+  .scores-table td .inline-input,
+  .scores-table td .score-input {
+    font-size: 0.8rem;
   }
 }
 
 @media (max-width: 600px) {
+  .scores-page {
+    padding: 0.8rem;
+    font-size: 0.85rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
   .entry-row {
-    gap: 0.5rem;
+    gap: 0.3rem;
   }
 
   .entry-card {
-    padding: 1rem;
+    padding: 0.8rem;
     background: var(--toss-gray-50);
     border-radius: var(--toss-radius);
     margin-bottom: 1rem;
+  }
+
+  .editable-input,
+  .name-select,
+  .score-input,
+  .note-input {
+    font-size: 0.75rem;
+    padding: 0.35rem;
+  }
+
+  .sr-only {
+    font-size: 0.7rem;
+    margin: 0 0 0.1rem 0;
+  }
+
+  /* 테이블 요소들 더 작게 */
+  .scores-table th,
+  .scores-table td {
+    padding: 0.3rem 0.15rem;
+    font-size: 0.7rem;
+  }
+
+  .scores-table th {
+    font-size: 0.65rem;
+  }
+
+  /* 버튼들 더 작게 */
+  .btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .btn-sm {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.6rem;
+  }
+
+  .header-actions .btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .view-toggle .btn,
+  .search-row .btn {
+    height: auto !important;
+    padding: 0.3rem 0.5rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .add-person-row .btn,
+  .ocr-actions .btn,
+  .modal-actions .btn {
+    width: auto !important;
+    min-width: 0 !important;
+    display: inline-flex !important;
+  }
+
+  /* 티어 배지 더 작게 */
+  .tier-badge {
+    padding: 0.08rem 0.3rem;
+    font-size: 0.6rem;
+  }
+
+  .tier-icon {
+    width: 8px;
+    height: 8px;
+    font-size: 7px;
+  }
+
+  /* 통계 카드들 더 작게 */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .stat-card {
+    padding: 0.8rem;
+  }
+
+  .stat-number {
+    font-size: 1.2rem;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+}
+
+/* 480px 이하 - 매우 작은 화면 */
+@media (max-width: 480px) {
+  .scores-page {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+  }
+
+  .entry-row {
+    gap: 0.2rem;
+  }
+
+  .entry-card {
+    padding: 0.6rem;
+  }
+
+  .editable-input,
+  .name-select,
+  .score-input,
+  .note-input {
+    font-size: 0.7rem;
+    padding: 0.3rem;
+  }
+
+  .sr-only {
+    font-size: 0.65rem;
+    margin: 0 0 0.08rem 0;
+  }
+
+  /* 테이블 요소들 매우 작게 */
+  .scores-table th,
+  .scores-table td {
+    padding: 0.25rem 0.1rem;
+    font-size: 0.65rem;
+  }
+
+  .scores-table th {
+    font-size: 0.6rem;
+  }
+
+  /* 버튼들 매우 작게 */
+  .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .btn-sm {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.55rem;
+  }
+
+  .header-actions .btn {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.62rem;
+  }
+
+  .view-toggle .btn,
+  .search-row .btn {
+    height: auto !important;
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.62rem !important;
+  }
+
+  .add-person-row .btn,
+  .ocr-actions .btn,
+  .modal-actions .btn {
+    width: auto !important;
+    min-width: 0 !important;
+    display: inline-flex !important;
+  }
+
+  /* 티어 배지 매우 작게 */
+  .tier-badge {
+    padding: 0.05rem 0.25rem;
+    font-size: 0.55rem;
+  }
+
+  .tier-icon {
+    width: 6px;
+    height: 6px;
+    font-size: 6px;
+  }
+
+  /* 통계 카드들 매우 작게 */
+  .stat-card {
+    padding: 0.6rem;
+  }
+
+  .stat-number {
+    font-size: 1rem;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+  }
+
+  /* 차트 높이 조정 */
+  .chart-container {
+    height: 200px;
   }
 }
 
@@ -2047,10 +2599,10 @@
 
 .scores-table th,
 .scores-table td {
-  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
+  padding: clamp(0.4rem, 0.25rem + 0.4vw, 0.8rem);
   text-align: left;
   border-bottom: 1px solid var(--toss-gray-200);
-  font-size: var(--responsive-table-font, 0.875rem);
+  font-size: var(--responsive-table-font, 0.82rem);
   white-space: nowrap;
 }
 
@@ -2072,7 +2624,7 @@
 /* 스코어 테이블 각 셀 최소 너비 보장 */
 .scores-table th:nth-child(1),
 .scores-table td:nth-child(1) {
-  min-width: 80px;
+  min-width: 110px; /* 회원명 더 넓게 */
 }
 
 .scores-table th:nth-child(2),
@@ -2088,7 +2640,7 @@
 .scores-table td:nth-child(5),
 .scores-table th:nth-child(6),
 .scores-table td:nth-child(6) {
-  min-width: 60px;
+  min-width: 70px; /* 게임별 점수 칸 확대 */
 }
 
 .scores-table th:nth-child(7),
@@ -2165,6 +2717,26 @@
 
 .btn-danger:hover {
   background-color: var(--toss-danger-dark);
+}
+
+.btn {
+  /* 모든 화면에서 글씨 크기에 비례해 동일 비율 유지 */
+  font-size: var(--responsive-button-font, 1rem);
+  padding: 0.6em 1.2em;
+}
+
+.btn-sm {
+  font-size: calc(var(--responsive-button-font, 1rem) * 0.875);
+  padding: 0.5em 1em;
+}
+
+.btn {
+  padding: clamp(0.5rem, 0.35rem + 0.4vw, 0.9rem)
+    clamp(0.8rem, 0.5rem + 0.8vw, 1.4rem);
+  font-size: clamp(0.8rem, 0.72rem + 0.28vw, 1rem);
+  line-height: 1.1;
+  height: auto;
+  white-space: nowrap;
 }
 
 .btn-sm {
@@ -2621,6 +3193,19 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+/* 줄바꿈 시 다음 줄 배치 및 버튼 감싸기 */
+.section-header,
+.header-actions,
+.view-toggle,
+.show-more-btn-container {
+  flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .section-title {
