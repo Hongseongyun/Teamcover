@@ -15,6 +15,7 @@ import Points from './pages/Points';
 import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   return (
@@ -78,6 +79,7 @@ function App() {
             />
           </Routes>
         </main>
+        <SpeedInsights />
       </div>
     </AuthProvider>
   );
