@@ -455,7 +455,7 @@ const Members = () => {
             </button>
           )}
           <button
-            className="btn btn-secondary"
+            className="btn btn-info"
             onClick={() => setShowImportForm(true)}
           >
             구글시트 가져오기

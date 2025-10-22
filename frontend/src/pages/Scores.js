@@ -164,6 +164,7 @@ const Scores = () => {
   // 회원별 평균 순위 상태
   const [memberAverages, setMemberAverages] = useState([]);
   const [averagesLoading, setAveragesLoading] = useState(false);
+  const [showAllAverages, setShowAllAverages] = useState(false);
 
   // 개인별 검색 상태
   const [searchMember, setSearchMember] = useState('');
@@ -1060,57 +1061,38 @@ const Scores = () => {
       </div>
 
       {/* 회원별 평균 순위 섹션 */}
-      <div className="averages-section">
-        <div className="averages-container">
+      <div className="member-averages-section">
+        <div className="averages-container-new">
           {/* 평균 순위 테이블 */}
-          <div className="averages-main">
+          <div className="averages-main-new">
             <div className="section-card">
               <div className="section-header">
-                <h3 className="section-title">회원별 평균(에버) 순위</h3>
+                <h3 className="section-title">회원별 평균 순위</h3>
                 <button
-                  className="btn btn-outline-primary btn-sm refresh-btn"
+                  className="btn btn-primary btn-sm"
                   onClick={refreshMemberAverages}
                   disabled={averagesLoading}
-                  title={
-                    isAdmin
-                      ? '평균 순위 새로고침 (자동 업데이트)'
-                      : '평균 순위 새로고침'
-                  }
                 >
                   {averagesLoading ? (
                     <>
-                      <span
-                        className="spinner-border spinner-border-sm me-1"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      새로고침 중...
+                      <span className="loading-spinner"></span>
+                      로딩 중...
                     </>
                   ) : (
-                    <>
-                      <i className="fas fa-sync-alt me-1"></i>
-                      새로고침
-                    </>
+                    '새로고침'
                   )}
                 </button>
               </div>
-              <div className="averages-description">
+
+              <div className="averages-info">
                 <p>정기전 점수 기준 반기별 평균 순위입니다.</p>
-                <p>
-                  <strong>에버 계산 기준:</strong>
-                  <br />
-                  • 현재 반기 기록 (1-6월 또는 7-12월)
-                  <br />
-                  • 이전 반기 기록 (같은 연도)
-                  <br />• 이전 연도 기록 (최신 순)
-                </p>
               </div>
 
               {averagesLoading ? (
                 <div className="loading">평균 순위 로딩 중...</div>
               ) : (
-                <div className="averages-table">
-                  <table>
+                <div className="averages-table-container">
+                  <table className="averages-table-new">
                     <thead>
                       <tr>
                         <th>순위</th>
@@ -1121,18 +1103,21 @@ const Scores = () => {
                     </thead>
                     <tbody>
                       {memberAverages && memberAverages.length > 0 ? (
-                        memberAverages.map((member) => (
-                          <tr key={member.member_id} className="average-row">
-                            <td className="rank-cell">
+                        (showAllAverages
+                          ? memberAverages
+                          : memberAverages.slice(0, 10)
+                        ).map((member) => (
+                          <tr key={member.member_id}>
+                            <td className="rank-column">
                               {renderMedalIcon(member.rank)}
                             </td>
-                            <td className="member-name">
+                            <td className="name-column">
                               {member.member_name}
                             </td>
-                            <td className="average-score">
+                            <td className="score-column">
                               {member.average_score}
                             </td>
-                            <td className="tier-cell">
+                            <td className="tier-column">
                               <TierBadge tier={member.tier} size="small" />
                             </td>
                           </tr>
@@ -1140,22 +1125,36 @@ const Scores = () => {
                       ) : (
                         <tr>
                           <td colSpan="4" className="no-data">
-                            <p>정기전 기록이 있는 회원이 없습니다.</p>
+                            정기전 기록이 있는 회원이 없습니다.
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+
+                  {/* 더보기 버튼 */}
+                  {memberAverages && memberAverages.length > 10 && (
+                    <div className="show-more-btn-container">
+                      <button
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={() => setShowAllAverages(!showAllAverages)}
+                      >
+                        {showAllAverages
+                          ? '접기'
+                          : `더보기 (${memberAverages.length - 10}명 더)`}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* 티어 기준표 */}
-          <div className="tier-reference">
+          <div className="tier-reference-new">
             <div className="section-card">
               <h3 className="section-title">티어 기준표</h3>
-              <div className="tier-reference-table">
+              <div className="tier-reference-table-new">
                 <table>
                   <thead>
                     <tr>

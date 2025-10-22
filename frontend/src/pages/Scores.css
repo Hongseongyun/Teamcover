@@ -39,6 +39,8 @@
   letter-spacing: 0.025em;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
+  min-height: 1.25rem;
+  height: 1.25rem;
 }
 
 .tier-badge:hover {
@@ -162,6 +164,8 @@
   padding: 0.125rem 0.5rem;
   font-size: 0.75rem;
   gap: 0.25rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tier-badge-sm .tier-icon {
@@ -172,14 +176,56 @@
 
 /* 테이블에서 티어 표시 */
 .tier-cell {
-  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0;
 }
 
 .tier-cell .tier-badge {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.25rem;
+  min-height: 1.25rem;
+}
+
+/* 평균 순위 테이블 셀 정렬 통일 */
+.averages-table td {
+  vertical-align: middle;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+}
+
+.averages-table .rank-cell,
+.averages-table .member-name,
+.averages-table .average-score {
+  text-align: center;
+  vertical-align: middle;
+  height: 65px !important;
+  min-height: 65px;
+  max-height: 65px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
+}
+
+.averages-table .tier-cell {
+  text-align: center;
+  vertical-align: middle;
+  height: 65px !important;
+  min-height: 65px;
+  max-height: 65px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
+  width: 100px !important;
+  max-width: 100px !important;
+  min-width: 100px !important;
 }
 /* 포인트 등록 UI와 동일한 하단 "+" 버튼 스타일 */
 .sticky-add-row {
@@ -2101,8 +2147,34 @@
 
   /* 평균 순위 섹션 모바일 레이아웃 */
   .averages-container {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: 1.5fr 1fr !important;
+    gap: 1rem !important;
+    min-width: 600px !important;
+  }
+
+  /* 테이블 셀 크기 조정 */
+  .averages-table th,
+  .averages-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .rank-cell {
+    width: 50px;
+  }
+
+  .member-name {
+    font-size: 0.8rem;
+    max-width: 60px;
+  }
+
+  .average-score {
+    font-size: 0.9rem;
+    width: 50px;
+  }
+
+  .averages-table .tier-cell {
+    width: 80px;
+    max-width: 80px;
   }
 
   .tier-reference-table th,
@@ -2150,24 +2222,145 @@
   }
 }
 
-/* 회원별 평균 순위 섹션 스타일 */
-.averages-section {
+/* 회원별 평균 순위 섹션 스타일 - 새로운 버전 */
+.member-averages-section {
   margin-bottom: 2rem;
 }
 
-.averages-container {
+.averages-container-new {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
   align-items: start;
 }
 
-.averages-main {
-  min-width: 0; /* 그리드 오버플로우 방지 */
+.averages-main-new {
+  min-width: 0;
 }
 
-.tier-reference {
-  min-width: 0; /* 그리드 오버플로우 방지 */
+.tier-reference-new {
+  min-width: 0;
+}
+
+.tier-reference-table-new {
+  overflow-x: auto;
+}
+
+.tier-reference-table-new table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.tier-reference-table-new th {
+  background: var(--toss-gray-50);
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  border-bottom: 2px solid var(--toss-gray-200);
+  font-size: 0.875rem;
+}
+
+.tier-reference-table-new td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--toss-gray-200);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.tier-reference-table-new .tier-row:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.averages-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--toss-gray-50);
+  border-radius: var(--toss-radius);
+  border-left: 4px solid var(--toss-primary);
+}
+
+.averages-info p {
+  margin: 0;
+  color: var(--toss-gray-700);
+  font-size: 0.9rem;
+}
+
+.averages-table-container {
+  overflow-x: auto;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-gray-200);
+  box-shadow: var(--toss-shadow);
+}
+
+.averages-table-new {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--toss-white);
+  min-width: 500px;
+}
+
+.averages-table-new th {
+  background: var(--toss-gray-50);
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  border-bottom: 2px solid var(--toss-gray-200);
+  font-size: 0.9rem;
+}
+
+.averages-table-new td {
+  padding: 1rem 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid var(--toss-gray-200);
+  vertical-align: middle;
+}
+
+.averages-table-new tr:hover {
+  background: var(--toss-gray-50);
+}
+
+.averages-table-new .rank-column {
+  width: 80px;
+  font-weight: 600;
+}
+
+.averages-table-new .name-column {
+  width: 120px;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+}
+
+.averages-table-new .score-column {
+  width: 100px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--toss-primary);
+}
+
+.averages-table-new .tier-column {
+  width: 120px;
+}
+
+.show-more-btn-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--toss-gray-50);
+  border-top: 1px solid var(--toss-gray-200);
+}
+
+.averages-table-new .no-data {
+  padding: 3rem;
+  color: var(--toss-gray-500);
+  font-style: italic;
+  text-align: center;
 }
 
 .section-header {
@@ -2228,19 +2421,19 @@
 
 .tier-reference-table th {
   background: #f8f9fa;
-  padding: 0.75rem;
+  padding: 0.5rem;
   text-align: center;
   font-weight: 600;
   color: #495057;
   border-bottom: 2px solid #dee2e6;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .tier-reference-table td {
-  padding: 0.75rem;
+  padding: 0.5rem;
   border-bottom: 1px solid #dee2e6;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .tier-reference-table .tier-row:hover {
@@ -2308,6 +2501,8 @@
 
 .averages-table table {
   width: 100%;
+  min-width: 400px !important;
+  max-width: 400px !important;
   border-collapse: collapse;
   background: white;
   border-radius: 0.5rem;
@@ -2317,7 +2512,7 @@
 
 .averages-table th {
   background: #f8f9fa;
-  padding: 1rem;
+  padding: 0.5rem !important;
   text-align: center;
   font-weight: 600;
   color: #495057;
@@ -2325,19 +2520,41 @@
 }
 
 .averages-table td {
-  padding: 1rem;
+  padding: 0.5rem !important;
   border-bottom: 1px solid #dee2e6;
   vertical-align: middle;
   text-align: center;
+  height: 65px !important;
+  min-height: 65px;
+  max-height: 65px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
 }
 
 .average-row:hover {
   background: #f8f9fa;
 }
 
+.average-row {
+  height: 65px !important;
+  min-height: 65px;
+  max-height: 65px;
+}
+
+.average-row td {
+  height: 65px !important;
+  min-height: 65px;
+  max-height: 65px;
+  vertical-align: middle;
+}
+
 .rank-cell {
   text-align: center;
-  width: 80px;
+  width: 100px !important;
+  max-width: 100px !important;
+  min-width: 100px !important;
 }
 
 .medal {
@@ -2375,6 +2592,12 @@
   font-weight: 600;
   color: #495057;
   text-align: center;
+  width: 100px !important;
+  max-width: 100px !important;
+  min-width: 100px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .average-score {
@@ -2382,10 +2605,9 @@
   font-weight: bold;
   color: #007bff;
   text-align: center;
-}
-
-.tier-cell {
-  text-align: center;
+  width: 100px !important;
+  max-width: 100px !important;
+  min-width: 100px !important;
 }
 
 /* Members 페이지의 티어 스타일을 사용하므로 추가 스타일 불필요 */
@@ -2450,7 +2672,148 @@
   .averages-table .tier-badge {
     font-size: 0.7rem !important;
     padding: 0.2rem 0.5rem !important;
+    min-height: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+}
+
+/* 더 작은 화면에서도 가로 배치 유지 */
+@media (max-width: 600px) {
+  .averages-container {
+    grid-template-columns: 1.2fr 1fr !important;
+    gap: 0.75rem !important;
+    min-width: 500px !important;
+  }
+
+  .averages-table th,
+  .averages-table td {
+    padding: 0.4rem 0.15rem;
+  }
+
+  .rank-cell {
+    width: 40px;
+  }
+
+  .member-name {
+    font-size: 0.75rem;
+    max-width: 50px;
+  }
+
+  .average-score {
+    font-size: 0.8rem;
+    width: 40px;
+  }
+
+  .averages-table .tier-cell {
+    width: 70px;
+    max-width: 70px;
+  }
+
+  .tier-reference-table th,
+  .tier-reference-table td {
+    padding: 0.4rem;
+    font-size: 0.7rem;
   }
 }
 
 /* Members 페이지의 티어 스타일을 사용하므로 추가 스타일 불필요 */
+
+/* 더보기 버튼 스타일 */
+.show-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+  margin-top: 0.5rem;
+}
+
+.show-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 2px solid #6c757d;
+  border-radius: 0.5rem;
+  background-color: transparent;
+  color: #6c757d;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.show-more-btn:hover {
+  background-color: #6c757d;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.show-more-btn:active {
+  transform: translateY(0);
+}
+
+.show-more-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.show-more-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* 새로운 회원별 평균 순위 테이블 반응형 스타일 */
+@media (max-width: 768px) {
+  .averages-container-new {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .averages-table-new th,
+  .averages-table-new td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .averages-table-new .score-column {
+    font-size: 1rem;
+  }
+
+  .tier-reference-table-new th,
+  .tier-reference-table-new td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .averages-table-new {
+    min-width: 400px;
+  }
+
+  .averages-table-new th,
+  .averages-table-new td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .averages-table-new .rank-column {
+    width: 60px;
+  }
+
+  .averages-table-new .name-column {
+    width: 100px;
+  }
+
+  .averages-table-new .score-column {
+    width: 80px;
+    font-size: 0.9rem;
+  }
+
+  .averages-table-new .tier-column {
+    width: 100px;
+  }
+
+  .tier-reference-table-new th,
+  .tier-reference-table-new td {
+    padding: 0.4rem;
+    font-size: 0.75rem;
+  }
+}

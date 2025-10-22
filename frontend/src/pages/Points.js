@@ -323,6 +323,24 @@ const Points = () => {
     setShowMemberSearch(true);
   };
 
+  // 카드 클릭 핸들러 - 개인별 포인트 내역 검색
+  const handleCardClick = (memberName) => {
+    setSearchMember(memberName);
+    calculateMemberStats(memberName);
+    setShowMemberSearch(false);
+
+    // 개인별 검색 섹션으로 스크롤
+    setTimeout(() => {
+      const searchSection = document.querySelector('.member-search-section');
+      if (searchSection) {
+        searchSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  };
+
   // 구글시트 가져오기
   const handleImportFromSheets = async (e) => {
     e.preventDefault();
@@ -983,18 +1001,23 @@ const Points = () => {
           <div className="section-card">
             <h3 className="section-title">회원별 잔여 포인트 현황</h3>
             <div className="member-balance-grid">
-              {memberBalances.map((member) => (
-                <div key={member.id} className="member-balance-card">
+              {memberBalances.map((member, index) => (
+                <div
+                  key={member.id}
+                  className={`member-balance-card ${
+                    member.balance >= 0 ? 'positive' : 'negative'
+                  }`}
+                  style={{ '--rank': index + 1 }}
+                  onClick={() => handleCardClick(member.name)}
+                  title={`${member.name}님의 포인트 내역 보기`}
+                >
                   <div className="member-name">{member.name}</div>
                   <div className="member-balance">
-                    <span
-                      className={`balance ${
-                        member.balance >= 0 ? 'positive' : 'negative'
-                      }`}
-                    >
+                    <span className="balance-amount">
                       {member.balance >= 0 ? '+' : ''}
-                      {formatNumber(member.balance)}P
+                      {formatNumber(member.balance)}
                     </span>
+                    <span className="balance-unit">P</span>
                   </div>
                 </div>
               ))}
