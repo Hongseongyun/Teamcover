@@ -406,7 +406,7 @@ const Points = () => {
           label: '월별 포인트 결과',
           data: results,
           borderColor: 'rgba(59, 130, 246, 1)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          backgroundColor: 'transparent',
           pointBackgroundColor: results.map((value) =>
             value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
           ),
@@ -417,7 +417,7 @@ const Points = () => {
           pointHoverRadius: 8,
           pointBorderWidth: 2,
           borderWidth: 3,
-          fill: true,
+          fill: false,
           tension: 0.4,
         },
       ],
