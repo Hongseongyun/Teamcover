@@ -112,69 +112,63 @@ const Landing = () => {
             {isAuthenticated &&
               (user?.role === 'admin' || user?.role === 'super_admin') && (
                 <div
-                  className="feature-card"
+                  className="feature-card left-aligned"
                   ref={(el) => (featureRefs.current[0] = el)}
                   onClick={() => handleCardClick('/members')}
                 >
                   <div className="feature-icon">👥</div>
-                  <h3>회원</h3>
-                  <p>
-                    팀원들의 정보를 체계적으로 관리하고
-                    <br />
-                    볼링 실력을 추적하세요
-                  </p>
-                  <div className="feature-link">회원 페이지 →</div>
+                  <div className="feature-content">
+                    <h3>회원</h3>
+                    <p>
+                      팀원들의 정보를 체계적으로 관리하고 볼링 실력을 추적하세요
+                    </p>
+                    <div className="feature-link">회원 페이지 →</div>
+                  </div>
                 </div>
               )}
 
             {/* 모든 사용자가 볼 수 있는 스코어 카드 */}
             <div
-              className="feature-card"
+              className="feature-card right-aligned"
               ref={(el) => (featureRefs.current[1] = el)}
               onClick={() => handleCardClick('/scores')}
             >
               <div className="feature-icon">🎯</div>
-              <h3>스코어</h3>
-              <p>
-                매 경기의 점수를 기록하고
-                <br />
-                개인별 통계를 확인하세요
-              </p>
-              <div className="feature-link">스코어 페이지 →</div>
+              <div className="feature-content">
+                <h3>스코어</h3>
+                <p>매 경기의 점수를 기록하고 개인별 통계를 확인하세요</p>
+                <div className="feature-link">스코어 페이지 →</div>
+              </div>
             </div>
 
             {/* 모든 사용자가 볼 수 있는 포인트 카드 */}
             <div
-              className="feature-card"
+              className="feature-card left-aligned"
               ref={(el) => (featureRefs.current[2] = el)}
               onClick={() => handleCardClick('/points')}
             >
               <div className="feature-icon">🏆</div>
-              <h3>포인트</h3>
-              <p>
-                경기 참여와 성과에 따른
-                <br />
-                포인트를 자동으로 관리하세요
-              </p>
-              <div className="feature-link">포인트 페이지 →</div>
+              <div className="feature-content">
+                <h3>포인트</h3>
+                <p>경기 참여와 성과에 따른 포인트를 자동으로 관리하세요</p>
+                <div className="feature-link">포인트 페이지 →</div>
+              </div>
             </div>
 
             {/* 관리자만 볼 수 있는 팀 배정 카드 */}
             {isAuthenticated &&
               (user?.role === 'admin' || user?.role === 'super_admin') && (
                 <div
-                  className="feature-card"
+                  className="feature-card right-aligned"
                   ref={(el) => (featureRefs.current[3] = el)}
                   onClick={() => handleCardClick('/team-assignment')}
                 >
                   <div className="feature-icon">⚡</div>
-                  <h3>팀 배정</h3>
-                  <p>
-                    공정한 팀 구성과
-                    <br />
-                    균형잡힌 매치를 만들어보세요
-                  </p>
-                  <div className="feature-link">팀 배정 페이지 →</div>
+                  <div className="feature-content">
+                    <h3>팀 배정</h3>
+                    <p>공정한 팀 구성과 균형잡힌 매치를 만들어보세요</p>
+                    <div className="feature-link">팀 배정 페이지 →</div>
+                  </div>
                 </div>
               )}
           </div>
