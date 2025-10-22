@@ -8,6 +8,15 @@ const Landing = () => {
   const { isAuthenticated, user } = useAuth();
   const featureRefs = useRef([]);
 
+  // 표시될 카드 개수 계산
+  const getVisibleCardCount = () => {
+    if (!isAuthenticated) return 2; // 로그인하지 않은 사용자: 스코어, 포인트
+    if (user?.role === 'admin' || user?.role === 'super_admin') return 4; // 관리자: 모든 카드
+    return 2; // 일반 사용자: 스코어, 포인트
+  };
+
+  const visibleCardCount = getVisibleCardCount();
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -94,22 +103,31 @@ const Landing = () => {
 
       <div className="features-section">
         <div className="container">
-          <div className="features-grid">
-            <div
-              className="feature-card"
-              ref={(el) => (featureRefs.current[0] = el)}
-              onClick={() => handleCardClick('/members')}
-            >
-              <div className="feature-icon">👥</div>
-              <h3>회원</h3>
-              <p>
-                팀원들의 정보를 체계적으로 관리하고
-                <br />
-                볼링 실력을 추적하세요
-              </p>
-              <div className="feature-link">회원 페이지 →</div>
-            </div>
+          <div
+            className={`features-grid ${
+              visibleCardCount === 2 ? 'two-cards' : ''
+            }`}
+          >
+            {/* 관리자만 볼 수 있는 회원 카드 */}
+            {isAuthenticated &&
+              (user?.role === 'admin' || user?.role === 'super_admin') && (
+                <div
+                  className="feature-card"
+                  ref={(el) => (featureRefs.current[0] = el)}
+                  onClick={() => handleCardClick('/members')}
+                >
+                  <div className="feature-icon">👥</div>
+                  <h3>회원</h3>
+                  <p>
+                    팀원들의 정보를 체계적으로 관리하고
+                    <br />
+                    볼링 실력을 추적하세요
+                  </p>
+                  <div className="feature-link">회원 페이지 →</div>
+                </div>
+              )}
 
+            {/* 모든 사용자가 볼 수 있는 스코어 카드 */}
             <div
               className="feature-card"
               ref={(el) => (featureRefs.current[1] = el)}
@@ -125,6 +143,7 @@ const Landing = () => {
               <div className="feature-link">스코어 페이지 →</div>
             </div>
 
+            {/* 모든 사용자가 볼 수 있는 포인트 카드 */}
             <div
               className="feature-card"
               ref={(el) => (featureRefs.current[2] = el)}
@@ -140,20 +159,24 @@ const Landing = () => {
               <div className="feature-link">포인트 페이지 →</div>
             </div>
 
-            <div
-              className="feature-card"
-              ref={(el) => (featureRefs.current[3] = el)}
-              onClick={() => handleCardClick('/team-assignment')}
-            >
-              <div className="feature-icon">⚡</div>
-              <h3>팀 배정</h3>
-              <p>
-                공정한 팀 구성과
-                <br />
-                균형잡힌 매치를 만들어보세요
-              </p>
-              <div className="feature-link">팀 배정 페이지 →</div>
-            </div>
+            {/* 관리자만 볼 수 있는 팀 배정 카드 */}
+            {isAuthenticated &&
+              (user?.role === 'admin' || user?.role === 'super_admin') && (
+                <div
+                  className="feature-card"
+                  ref={(el) => (featureRefs.current[3] = el)}
+                  onClick={() => handleCardClick('/team-assignment')}
+                >
+                  <div className="feature-icon">⚡</div>
+                  <h3>팀 배정</h3>
+                  <p>
+                    공정한 팀 구성과
+                    <br />
+                    균형잡힌 매치를 만들어보세요
+                  </p>
+                  <div className="feature-link">팀 배정 페이지 →</div>
+                </div>
+              )}
           </div>
         </div>
       </div>

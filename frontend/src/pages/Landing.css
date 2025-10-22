@@ -306,6 +306,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
+  justify-items: center;
+}
+
+/* 카드가 2개일 때 중앙 정렬을 위한 클래스 */
+.features-grid.two-cards {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .feature-card {
@@ -539,6 +547,11 @@
   .features-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+  }
+
+  .features-grid.two-cards {
+    grid-template-columns: 1fr;
+    max-width: none;
   }
 
   .feature-card {

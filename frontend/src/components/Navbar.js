@@ -128,7 +128,7 @@ const Navbar = () => {
                 </div>
                 <span className="user-name">{user?.name}</span>
                 <span className="user-role">({user?.role})</span>
-                <span className="dropdown-arrow">▼</span>
+                <span className="dropdown-arrow">▲</span>
               </button>
 
               {showUserMenu && (
