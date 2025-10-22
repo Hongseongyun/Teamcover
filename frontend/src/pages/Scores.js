@@ -1391,15 +1391,49 @@ const Scores = () => {
                       memberStats.allScores.length > 0 ? (
                         <Line
                           data={{
-                            labels: memberStats.allScores
-                              .slice()
-                              .reverse()
-                              .map((score) => {
+                            labels: (() => {
+                              const reversedScores = memberStats.allScores
+                                .slice()
+                                .reverse();
+                              const monthGroups = {};
+
+                              // 월별로 그룹화
+                              reversedScores.forEach((score, index) => {
                                 const date = new Date(score.game_date);
-                                return `${
+                                const monthKey = `${date.getFullYear()}-${
                                   date.getMonth() + 1
-                                }월 ${date.getDate()}일`;
-                              }),
+                                }`;
+                                if (!monthGroups[monthKey]) {
+                                  monthGroups[monthKey] = [];
+                                }
+                                monthGroups[monthKey].push({
+                                  score,
+                                  index,
+                                  date,
+                                });
+                              });
+
+                              // 라벨 생성
+                              // - 각 월의 데이터를 날짜순으로 정렬하여 1-1, 1-2, 2-1, 2-2 형태로 표시
+                              const labels = [];
+                              Object.keys(monthGroups).forEach((monthKey) => {
+                                const group = monthGroups[monthKey];
+                                const monthNum =
+                                  new Date(group[0].date).getMonth() + 1;
+
+                                // 날짜순으로 정렬 (빠른 날짜가 먼저)
+                                group.sort(
+                                  (a, b) => new Date(a.date) - new Date(b.date)
+                                );
+
+                                group.forEach((item, groupIndex) => {
+                                  const order = groupIndex + 1;
+                                  labels[item.index] = `${monthNum}-${order}`;
+                                });
+                              });
+
+                              return labels;
+                            })(),
                             datasets: [
                               {
                                 label: '평균점수',
@@ -1468,33 +1502,28 @@ const Scores = () => {
                               x: {
                                 display: true,
                                 title: {
-                                  display: true,
-                                  text: '날짜',
-                                  font: {
-                                    size: 14,
-                                    weight: '600',
-                                  },
+                                  display: false,
                                 },
                                 grid: {
                                   display: false,
                                 },
                                 ticks: {
-                                  maxRotation: 45,
+                                  maxRotation: 0,
                                   minRotation: 0,
                                   font: {
                                     size: 12,
+                                    weight: '600',
+                                  },
+                                  callback: function (value, index, ticks) {
+                                    const label = this.getLabelForValue(value);
+                                    return label || '';
                                   },
                                 },
                               },
                               y: {
                                 display: true,
                                 title: {
-                                  display: true,
-                                  text: '평균점수',
-                                  font: {
-                                    size: 14,
-                                    weight: '600',
-                                  },
+                                  display: false,
                                 },
                                 grid: {
                                   color: 'rgba(0, 0, 0, 0.1)',
