@@ -3,6 +3,30 @@ import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Chart.js 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 // Members 페이지의 TierBadge 컴포넌트를 가져옴
 const TierBadge = ({ tier, size = 'normal' }) => {
@@ -490,7 +514,8 @@ const Scores = () => {
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
     if (files.length > 0) {
-      setSelectedImages(files);
+      // 기존 이미지에 새 이미지 추가
+      setSelectedImages((prevImages) => [...prevImages, ...files]);
 
       // 각 파일의 미리보기 생성
       const previewPromises = files.map((file) => {
@@ -504,7 +529,7 @@ const Scores = () => {
       });
 
       Promise.all(previewPromises).then((previews) => {
-        setImagePreviews(previews);
+        setImagePreviews((prevPreviews) => [...prevPreviews, ...previews]);
         setCurrentStep('upload');
       });
     }
@@ -1049,7 +1074,21 @@ const Scores = () => {
             </button>
             <button
               className="btn btn-success"
-              onClick={() => setShowPhotoForm(true)}
+              onClick={() => {
+                setShowPhotoForm(true);
+                // AI 스코어 인식 섹션으로 스크롤
+                setTimeout(() => {
+                  const element = document.getElementById(
+                    'ai-score-recognition'
+                  );
+                  if (element) {
+                    element.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  }
+                }, 100); // 약간의 지연을 두어 섹션이 렌더링된 후 스크롤
+              }}
             >
               AI로 스코어 인식
             </button>
@@ -1331,6 +1370,164 @@ const Scores = () => {
                     </div>
                   </div>
 
+                  {/* 스코어 그래프 */}
+                  <div className="score-chart-section">
+                    <h5>평균점수 추이 그래프</h5>
+                    <div className="chart-container">
+                      {(() => {
+                        // 디버깅을 위한 데이터 확인
+                        console.log(
+                          'memberStats.allScores:',
+                          memberStats.allScores
+                        );
+                        const scores =
+                          memberStats.allScores?.map(
+                            (score) => score.average_score
+                          ) || [];
+                        console.log('average scores data:', scores);
+                        return null;
+                      })()}
+                      {memberStats.allScores &&
+                      memberStats.allScores.length > 0 ? (
+                        <Line
+                          data={{
+                            labels: memberStats.allScores
+                              .slice()
+                              .reverse()
+                              .map((score) => {
+                                const date = new Date(score.game_date);
+                                return `${
+                                  date.getMonth() + 1
+                                }월 ${date.getDate()}일`;
+                              }),
+                            datasets: [
+                              {
+                                label: '평균점수',
+                                data: memberStats.allScores
+                                  .slice()
+                                  .reverse()
+                                  .map((score) => score.average_score),
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'transparent',
+                                borderWidth: 3,
+                                pointRadius: 6,
+                                pointHoverRadius: 8,
+                                pointBackgroundColor: '#3b82f6',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                              },
+                            ],
+                          }}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                display: false,
+                              },
+                              tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#3b82f6',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: false,
+                                callbacks: {
+                                  title: function (context) {
+                                    const index = context[0].dataIndex;
+                                    const reversedScores = memberStats.allScores
+                                      .slice()
+                                      .reverse();
+                                    const score = reversedScores[index];
+                                    const date = new Date(score.game_date);
+                                    return `${date.getFullYear()}년 ${
+                                      date.getMonth() + 1
+                                    }월 ${date.getDate()}일`;
+                                  },
+                                  label: function (context) {
+                                    const index = context.dataIndex;
+                                    const reversedScores = memberStats.allScores
+                                      .slice()
+                                      .reverse();
+                                    const score = reversedScores[index];
+                                    return [
+                                      `평균: ${score.average_score}`,
+                                      `1게임: ${score.score1}`,
+                                      `2게임: ${score.score2}`,
+                                      `3게임: ${score.score3}`,
+                                      `총점: ${score.total_score}`,
+                                    ];
+                                  },
+                                },
+                              },
+                            },
+                            scales: {
+                              x: {
+                                display: true,
+                                title: {
+                                  display: true,
+                                  text: '날짜',
+                                  font: {
+                                    size: 14,
+                                    weight: '600',
+                                  },
+                                },
+                                grid: {
+                                  display: false,
+                                },
+                                ticks: {
+                                  maxRotation: 45,
+                                  minRotation: 0,
+                                  font: {
+                                    size: 12,
+                                  },
+                                },
+                              },
+                              y: {
+                                display: true,
+                                title: {
+                                  display: true,
+                                  text: '평균점수',
+                                  font: {
+                                    size: 14,
+                                    weight: '600',
+                                  },
+                                },
+                                grid: {
+                                  color: 'rgba(0, 0, 0, 0.1)',
+                                  drawBorder: false,
+                                },
+                                ticks: {
+                                  font: {
+                                    size: 12,
+                                  },
+                                },
+                                beginAtZero: true,
+                                max: 300,
+                              },
+                            },
+                            interaction: {
+                              intersect: false,
+                              mode: 'index',
+                            },
+                            elements: {
+                              point: {
+                                hoverBackgroundColor: '#3b82f6',
+                              },
+                            },
+                          }}
+                        />
+                      ) : (
+                        <div className="no-data-message">
+                          <p>표시할 게임 기록이 없습니다.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* 전체 게임 기록 */}
                   <div className="all-games">
                     <h5>전체 게임 기록 ({memberStats.totalGames}게임)</h5>
@@ -1451,7 +1648,7 @@ const Scores = () => {
 
       {/* 사진으로 스코어 등록 폼 (관리자만) */}
       {isAdmin && showPhotoForm && (
-        <div className="photo-section">
+        <div id="ai-score-recognition" className="photo-section">
           <div className="section-card">
             <h3 className="section-title">AI 스코어 인식</h3>
 
@@ -1459,45 +1656,94 @@ const Scores = () => {
               <div className="upload-step">
                 <div className="form-group">
                   <label>볼링 점수표 사진 선택</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
+                  <div
                     className="file-input"
-                  />
-                  <div className="form-text">
-                    JPG, PNG, GIF 파일을 여러 개 선택할 수 있습니다. AI가
-                    자동으로 모든 스코어를 인식합니다.
-                  </div>
-                </div>
-
-                {imagePreviews.length > 0 && (
-                  <div className="image-preview-section">
-                    <div className="images-grid">
-                      {imagePreviews.map((preview, index) => (
-                        <div key={index} className="image-preview-wrapper">
-                          <img src={preview} alt={`미리보기 ${index + 1}`} />
-                          <button
-                            type="button"
-                            className="image-remove-btn"
-                            onClick={() => {
-                              setImagePreviews(
-                                imagePreviews.filter((_, i) => i !== index)
-                              );
-                              setSelectedImages(
-                                selectedImages.filter((_, i) => i !== index)
-                              );
-                            }}
-                            title="이미지 제거"
-                          >
-                            ✕
-                          </button>
-                          <div className="image-number">{index + 1}</div>
+                    onClick={() =>
+                      document.getElementById('file-upload').click()
+                    }
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add('drag-over');
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('drag-over');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('drag-over');
+                      const files = Array.from(e.dataTransfer.files);
+                      if (files.length > 0) {
+                        handleImageUpload({ target: { files } });
+                      }
+                    }}
+                  >
+                    <input
+                      id="file-upload"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <div className="file-input-content">
+                      {selectedImages.length > 0 ? (
+                        <div className="file-input-images">
+                          {imagePreviews.map((preview, index) => (
+                            <div
+                              key={index}
+                              className="file-input-preview-wrapper"
+                            >
+                              <img
+                                src={preview}
+                                alt={`미리보기 ${index + 1}`}
+                                className="file-input-preview"
+                              />
+                              <button
+                                type="button"
+                                className="file-input-remove-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImagePreviews(
+                                    imagePreviews.filter((_, i) => i !== index)
+                                  );
+                                  setSelectedImages(
+                                    selectedImages.filter((_, i) => i !== index)
+                                  );
+                                }}
+                                title="이미지 제거"
+                              >
+                                ✕
+                              </button>
+                              <div className="file-input-number">
+                                {index + 1}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="file-input-overlay">
+                            <div className="file-input-icon">+</div>
+                            <div className="file-input-text">더 추가하기</div>
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <>
+                          <div className="file-input-icon">📁</div>
+                          <div className="file-input-text">
+                            클릭하거나 파일을 드래그하세요
+                          </div>
+                          <div className="file-input-subtext">
+                            JPG, PNG, GIF 파일을 여러 개 선택할 수 있습니다
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div className="preview-actions">
+                  </div>
+                  <div className="form-text">
+                    AI가 자동으로 모든 스코어를 인식합니다.
+                  </div>
+
+                  {selectedImages.length > 0 && (
+                    <div className="file-input-actions">
                       <button
                         type="button"
                         className="btn btn-primary btn-lg"
@@ -1515,8 +1761,8 @@ const Scores = () => {
                         )}
                       </button>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {/* AI 분석 중 로딩 오버레이 */}
                 {aiAnalyzing && (

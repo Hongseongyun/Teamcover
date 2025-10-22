@@ -1341,16 +1341,269 @@
 }
 
 .file-input {
-  padding: 0.75rem;
+  padding: 2rem;
   border: 2px dashed var(--toss-gray-300);
-  border-radius: var(--toss-radius);
+  border-radius: var(--toss-radius-lg);
   background-color: var(--toss-gray-50);
   transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  cursor: pointer;
 }
 
 .file-input:hover {
   border-color: var(--toss-primary);
   background-color: var(--toss-primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.file-input.drag-over {
+  border-color: var(--toss-primary);
+  background-color: var(--toss-primary-light);
+  transform: scale(1.02);
+}
+
+.file-input-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-input-icon {
+  font-size: 2rem;
+  color: var(--toss-gray-400);
+  margin-bottom: 0.5rem;
+}
+
+.file-input-text {
+  font-size: 1rem;
+  color: var(--toss-gray-600);
+  font-weight: 500;
+}
+
+.file-input-subtext {
+  font-size: 0.875rem;
+  color: var(--toss-gray-500);
+  margin-top: 0.25rem;
+}
+
+.file-input input[type='file'] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+}
+
+.file-input-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--toss-radius);
+  border: 2px solid var(--toss-gray-200);
+  transition: all 0.2s ease;
+}
+
+.file-input-preview:hover {
+  transform: scale(1.05);
+  border-color: var(--toss-primary);
+}
+
+.file-input-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border: 2px dashed var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  background-color: var(--toss-gray-50);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.file-input-overlay:hover {
+  border-color: var(--toss-primary);
+  background-color: var(--toss-primary-light);
+}
+
+.file-input-overlay .file-input-icon {
+  font-size: 1.5rem;
+  color: var(--toss-gray-400);
+  margin-bottom: 0.25rem;
+}
+
+.file-input-overlay .file-input-text {
+  font-size: 0.75rem;
+  color: var(--toss-gray-500);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.file-input-preview-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.file-input-remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: 2px solid white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.file-input-remove-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.file-input-number {
+  position: absolute;
+  bottom: -8px;
+  left: -8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #374151;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.file-input-actions {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .file-input {
+    padding: 1.5rem;
+    min-height: 100px;
+  }
+
+  .file-input-icon {
+    font-size: 1.5rem;
+  }
+
+  .file-input-text {
+    font-size: 0.9rem;
+  }
+
+  .file-input-subtext {
+    font-size: 0.8rem;
+  }
+
+  .file-input-preview {
+    width: 100px;
+    height: 100px;
+  }
+
+  .file-input-overlay {
+    width: 100px;
+    height: 100px;
+  }
+
+  .file-input-remove-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .file-input-number {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-input {
+    padding: 1rem;
+    min-height: 80px;
+  }
+
+  .file-input-content {
+    gap: 0.5rem;
+  }
+
+  .file-input-icon {
+    font-size: 1.25rem;
+  }
+
+  .file-input-text {
+    font-size: 0.85rem;
+  }
+
+  .file-input-subtext {
+    font-size: 0.75rem;
+  }
+
+  .file-input-preview {
+    width: 80px;
+    height: 80px;
+  }
+
+  .file-input-overlay {
+    width: 80px;
+    height: 80px;
+  }
+
+  .file-input-overlay .file-input-text {
+    font-size: 0.7rem;
+  }
+
+  .file-input-remove-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .file-input-number {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
 }
 
 .image-preview-section {
@@ -2717,6 +2970,67 @@
 }
 
 /* Members 페이지의 티어 스타일을 사용하므로 추가 스타일 불필요 */
+
+/* 스코어 그래프 섹션 */
+.score-chart-section {
+  margin: 2rem 0;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.score-chart-section h5 {
+  margin: 0 0 1.5rem 0;
+  color: var(--toss-gray-900);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.chart-container {
+  position: relative;
+  height: 400px;
+  width: 100%;
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1rem;
+}
+
+.no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--toss-gray-500);
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+/* 그래프 반응형 디자인 */
+@media (max-width: 768px) {
+  .score-chart-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+  }
+
+  .chart-container {
+    height: 300px;
+    padding: 0.5rem;
+  }
+
+  .score-chart-section h5 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    height: 250px;
+  }
+}
 
 /* 더보기 버튼 스타일 */
 .show-more-container {

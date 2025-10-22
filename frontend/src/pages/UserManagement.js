@@ -133,14 +133,18 @@ const UserManagement = () => {
           <tbody>
             {users.map((user) => (
               <tr key={user.id}>
-                <td className="user-name">
-                  <div className="user-avatar">
-                    {user.name.charAt(0).toUpperCase()}
+                <td className="user-name-cell">
+                  <div className="user-name-content">
+                    <div className="user-avatar">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="user-name-text">{user.name}</span>
                   </div>
-                  {user.name}
                 </td>
-                <td className="user-email">{user.email}</td>
-                <td>
+                <td className="user-email-cell">
+                  <span className="user-email-text">{user.email}</span>
+                </td>
+                <td className="role-cell">
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.id, e.target.value)}
@@ -148,7 +152,7 @@ const UserManagement = () => {
                     disabled={
                       user.id === currentUser?.id ||
                       user.email === 'syun4224@naver.com'
-                    } // 자신의 역할과 고정 슈퍼계정은 변경 불가
+                    }
                   >
                     <option value="user">일반 사용자</option>
                     <option value="admin">운영진</option>
@@ -157,7 +161,7 @@ const UserManagement = () => {
                     )}
                   </select>
                 </td>
-                <td>
+                <td className="status-cell">
                   <label className="status-toggle">
                     <input
                       type="checkbox"
@@ -165,7 +169,7 @@ const UserManagement = () => {
                       onChange={(e) =>
                         handleStatusChange(user.id, e.target.checked)
                       }
-                      disabled={user.id === currentUser?.id} // 자신의 상태는 변경 불가
+                      disabled={user.id === currentUser?.id}
                     />
                     <span
                       className={`status-indicator ${
@@ -177,14 +181,18 @@ const UserManagement = () => {
                   </label>
                 </td>
                 <td className="date-cell">
-                  {user.created_at
-                    ? new Date(user.created_at).toLocaleDateString('ko-KR')
-                    : '-'}
+                  <span className="date-text">
+                    {user.created_at
+                      ? new Date(user.created_at).toLocaleDateString('ko-KR')
+                      : '-'}
+                  </span>
                 </td>
                 <td className="date-cell">
-                  {user.last_login
-                    ? new Date(user.last_login).toLocaleDateString('ko-KR')
-                    : '-'}
+                  <span className="date-text">
+                    {user.last_login
+                      ? new Date(user.last_login).toLocaleDateString('ko-KR')
+                      : '-'}
+                  </span>
                 </td>
                 <td className="actions-cell">
                   {user.id === currentUser?.id ? (

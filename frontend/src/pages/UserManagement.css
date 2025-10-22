@@ -40,6 +40,7 @@
 .users-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* 테이블 레이아웃 고정 */
 }
 
 .users-table th {
@@ -49,23 +50,37 @@
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
+  height: 60px; /* 헤더 높이 고정 */
+  vertical-align: middle;
 }
 
 .users-table td {
   padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
   vertical-align: middle;
+  height: 60px; /* 모든 셀의 높이를 일정하게 설정 */
+  overflow: hidden; /* 내용이 넘치면 숨김 */
 }
 
 .users-table tbody tr:hover {
   background: #f9fafb;
 }
 
-.user-name {
+/* 이름 셀 스타일 */
+.user-name-cell {
+  width: 20%;
+}
+
+.user-name-content {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  height: 100%;
+}
+
+.user-name-text {
   font-weight: 500;
+  color: #1f2937;
 }
 
 .user-avatar {
@@ -79,14 +94,53 @@
   justify-content: center;
   font-weight: 600;
   font-size: 1rem;
+  flex-shrink: 0; /* 아바타 크기 고정 */
 }
 
-.user-email {
+/* 이메일 셀 스타일 */
+.user-email-cell {
+  width: 25%;
+}
+
+.user-email-text {
   color: #6b7280;
   font-family: monospace;
+  font-size: 0.875rem;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 역할 셀 스타일 */
+.role-cell {
+  width: 15%;
+}
+
+/* 상태 셀 스타일 */
+.status-cell {
+  width: 10%;
+}
+
+/* 날짜 셀 스타일 */
+.date-cell {
+  width: 12%;
+}
+
+.date-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+  display: block;
+}
+
+/* 작업 셀 스타일 */
+.actions-cell {
+  width: 13%;
+  text-align: center;
 }
 
 .role-select {
+  width: 100%;
   padding: 0.5rem;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
@@ -94,6 +148,7 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  height: 40px; /* 높이 고정 */
 }
 
 .role-select:disabled {
@@ -120,8 +175,10 @@
 .status-toggle {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
+  height: 100%;
 }
 
 .status-toggle input[type='checkbox'] {
@@ -238,9 +295,10 @@
   .users-table th,
   .users-table td {
     padding: 0.75rem 0.5rem;
+    height: 60px; /* 모바일에서도 동일한 높이 유지 */
   }
 
-  .user-name {
+  .user-name-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
