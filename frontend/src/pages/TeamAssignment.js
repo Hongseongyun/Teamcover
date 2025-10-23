@@ -32,6 +32,9 @@ const TeamAssignment = () => {
   const [isBalancing, setIsBalancing] = useState(false);
   const [balancingResult, setBalancingResult] = useState('');
   const [searchDuplicateAlert, setSearchDuplicateAlert] = useState('');
+
+  // 팀 구성 상태 추적
+  const [isTeamConfigured, setIsTeamConfigured] = useState(false);
   const [bulkDuplicateAlert, setBulkDuplicateAlert] = useState('');
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filteredAutocomplete, setFilteredAutocomplete] = useState([]);
@@ -92,6 +95,20 @@ const TeamAssignment = () => {
     loadMembers();
     loadPlayers();
   }, [loadPlayers]);
+
+  // 선수 목록이 변경되면 팀 구성 상태 초기화
+  useEffect(() => {
+    if (isTeamConfigured) {
+      setIsTeamConfigured(false);
+      setTeams([]);
+      setBalancingResult('');
+    }
+  }, [players.length]); // 선수 수가 변경될 때만 실행
+
+  // teams 상태 변화 디버깅
+  useEffect(() => {
+    console.log('🔄 teams 상태 업데이트:', teams);
+  }, [teams]);
 
   const loadMembers = async () => {
     try {
@@ -815,7 +832,50 @@ const TeamAssignment = () => {
       setLoading(true);
       setIsBalancing(true);
 
-      // 팀 구성 및 밸런싱 시작
+      // 이미 팀이 구성된 상태인지 확인
+      if (isTeamConfigured && teams.length > 0) {
+        console.log('🔄 기존 팀 상태에서 추가 밸런싱 시작...');
+
+        // 기존 팀 상태에서 추가 밸런싱
+        const rebalancedTeams = await rebalanceExistingTeams(teams);
+        console.log('🔄 rebalancedTeams:', rebalancedTeams);
+
+        // 상태 업데이트
+        setTeams(rebalancedTeams);
+        console.log('🔄 setTeams 호출 완료');
+
+        // 결과 메시지 설정
+        const maxDiff =
+          Math.max(...rebalancedTeams.map((t) => t.total_average)) -
+          Math.min(...rebalancedTeams.map((t) => t.total_average));
+
+        if (maxDiff <= 5) {
+          setBalancingResult(
+            `✅ 추가 밸런싱 완료! 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+          );
+        } else if (maxDiff <= 10) {
+          setBalancingResult(
+            `⚠️ 추가 밸런싱 완료. 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+          );
+        } else {
+          setBalancingResult(
+            `⚠️ 추가 밸런싱 완료. 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+          );
+        }
+
+        // 5초 후 메시지 자동 제거
+        setTimeout(() => setBalancingResult(''), 5000);
+
+        // 상태 업데이트 완료를 위해 약간의 지연 후 로딩 해제
+        setTimeout(() => {
+          setLoading(false);
+          setIsBalancing(false);
+        }, 100);
+        return;
+      }
+
+      // 새로운 팀 구성 시작
+      console.log('🆕 새로운 팀 구성 시작...');
 
       // 1단계: 여성 인원 균등 분배를 위한 선수 정렬
 
@@ -857,6 +917,7 @@ const TeamAssignment = () => {
         (a, b) => a.team_number - b.team_number
       );
       setTeams(sortedTeams);
+      setIsTeamConfigured(true); // 팀 구성 완료 상태로 설정
 
       // 팀 구성 및 밸런싱 완료
 
@@ -867,11 +928,11 @@ const TeamAssignment = () => {
 
       if (maxDiff <= 5) {
         setBalancingResult(
-          `✅ 팀 구성 완료! 여성 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점)`
+          `✅ 팀 구성 완료! 여성 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점, 2000회 시도 중 최적 결과)`
         );
       } else if (maxDiff <= 10) {
         setBalancingResult(
-          `⚠️ 팀 구성 완료. 여성 균등 분배 완료, 점수 차이: ${maxDiff}점 (목표: 5점 이내)`
+          `⚠️ 팀 구성 완료. 여성 균등 분배 완료, 점수 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
         );
       } else {
         setBalancingResult(
@@ -1727,14 +1788,13 @@ const TeamAssignment = () => {
         noImprovementCount++;
       }
 
-      // 4번 규칙: 에버가 가장 높은팀과 가장 낮은 팀의 차이가 5점 이내가 되어야한다
+      // 4번 규칙: 5점 이내 달성 시 로그만 출력하고 계속 진행 (2000번 모두 시도)
       if (currentMaxDiff <= 5) {
         console.log(
-          `✅ 목표 달성! 최대 차이: ${currentMaxDiff}점, 표준편차: ${standardDeviation.toFixed(
+          `🎯 5점 이내 달성! 최대 차이: ${currentMaxDiff}점, 표준편차: ${standardDeviation.toFixed(
             2
-          )}점`
+          )}점 (계속 시도 중...)`
         );
-        break;
       }
 
       // 무한 루프 방지: 개선이 없으면 다른 방법 시도
@@ -1862,9 +1922,78 @@ const TeamAssignment = () => {
     }
 
     console.log(
-      `밸런싱 완료: 최대 차이 ${bestMaxDiff}점 (${attempt}번 시도, 목표: 5점 이내)`
+      `밸런싱 완료: 최대 차이 ${bestMaxDiff}점 (${attempt}번 시도 완료, 2000번 중 최적 결과)`
     );
     return bestTeams;
+  };
+
+  // 기존 팀 상태에서 추가 밸런싱하는 함수
+  const rebalanceExistingTeams = async (existingTeams) => {
+    console.log('🔄 기존 팀 상태에서 추가 밸런싱 시작...');
+
+    // 기존 팀 데이터를 복사
+    const teams = JSON.parse(JSON.stringify(existingTeams));
+
+    // 팀별 총점과 평균 재계산
+    teams.forEach((team) => {
+      team.total_average = team.players.reduce(
+        (sum, player) => sum + player.average,
+        0
+      );
+      team.average_per_player = team.total_average / team.players.length;
+    });
+
+    // 밸런싱 전 상태 저장 (비교용)
+    const beforeTeams = JSON.parse(JSON.stringify(teams));
+    console.log('🔄 밸런싱 전 팀 구성:');
+    beforeTeams.forEach((team, index) => {
+      console.log(
+        `  팀 ${team.team_number}: 총 ${team.total_average}점, 선수들:`,
+        team.players.map((p) => `${p.name}(${p.average})`).join(', ')
+      );
+    });
+
+    // 기존 밸런싱 로직 사용 (teams 배열을 직접 수정)
+    await balanceTeamsWithNewRules(teams);
+
+    // 밸런싱 후 상태와 비교
+    console.log('🔄 밸런싱 후 팀 구성:');
+    teams.forEach((team, index) => {
+      console.log(
+        `  팀 ${team.team_number}: 총 ${team.total_average}점, 선수들:`,
+        team.players.map((p) => `${p.name}(${p.average})`).join(', ')
+      );
+    });
+
+    // 변화 확인
+    let hasChanges = false;
+    beforeTeams.forEach((beforeTeam, index) => {
+      const afterTeam = teams[index];
+      const beforePlayers = beforeTeam.players
+        .map((p) => `${p.name}-${p.average}`)
+        .sort();
+      const afterPlayers = afterTeam.players
+        .map((p) => `${p.name}-${p.average}`)
+        .sort();
+
+      if (JSON.stringify(beforePlayers) !== JSON.stringify(afterPlayers)) {
+        hasChanges = true;
+        console.log(`🔄 팀 ${beforeTeam.team_number}에서 변화 감지!`);
+        console.log(`  이전: ${beforePlayers.join(', ')}`);
+        console.log(`  이후: ${afterPlayers.join(', ')}`);
+      }
+    });
+
+    if (!hasChanges) {
+      console.log(
+        '⚠️ 밸런싱 시도했지만 변화가 없습니다. 이미 최적 상태일 수 있습니다.'
+      );
+    } else {
+      console.log('✅ 밸런싱으로 인한 변화가 감지되었습니다.');
+    }
+
+    console.log('✅ 추가 밸런싱 완료');
+    return teams; // 수정된 teams 배열 반환
   };
 
   // 6번 규칙: 남성회원은 남성끼리, 여성회원은 여성끼리만 교체
@@ -2819,6 +2948,8 @@ const TeamAssignment = () => {
                   `인원 불일치 (${players.length}명 / ${
                     teamConfig.team_count * teamConfig.team_size
                   }명 필요)`
+                ) : isTeamConfigured ? (
+                  '밸런싱 개선'
                 ) : (
                   '팀 구성하기'
                 )}
@@ -3000,12 +3131,6 @@ const TeamAssignment = () => {
             </div>
             <div className="modal-footer">
               <button
-                className="btn btn-secondary"
-                onClick={handleCloseGuestModal}
-              >
-                취소
-              </button>
-              <button
                 className="btn btn-primary"
                 onClick={handleAddGuest}
                 disabled={
@@ -3015,6 +3140,12 @@ const TeamAssignment = () => {
                 }
               >
                 추가하기
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleCloseGuestModal}
+              >
+                취소
               </button>
             </div>
           </div>
