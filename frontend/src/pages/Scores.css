@@ -1989,8 +1989,6 @@
   .name-select,
   .score-input,
   .note-input {
-    min-width: auto;
-    width: 100%;
     font-size: 0.85rem;
     padding: 0.5rem;
   }
@@ -3871,5 +3869,59 @@
   .tier-reference-table-new td {
     padding: 0.4rem;
     font-size: 0.75rem;
+  }
+}
+
+/* 검색 결과 없음 스타일 */
+.no-results {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.no-results-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.no-results-content h4 {
+  font-size: 1.25rem;
+  color: var(--toss-gray-700);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.no-results-content p {
+  color: var(--toss-gray-500);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.no-results-content .btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* 360px 모바일에서 검색 결과 없음 최적화 */
+@media (max-width: 360px) {
+  .no-results {
+    min-height: 150px;
+    padding: 1rem;
+  }
+
+  .no-results-content h4 {
+    font-size: 1.1rem;
+  }
+
+  .no-results-content p {
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .no-results-content .btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
   }
 }

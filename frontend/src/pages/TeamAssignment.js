@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teamAPI, memberAPI, scoreAPI } from '../services/api';
 import './TeamAssignment.css';
 
@@ -39,16 +39,22 @@ const TeamAssignment = () => {
   // 선수 목록 섹션 ref
   const playersSectionRef = useRef(null);
 
-  // 팀 구성 옵션
-  const [teamOptions, setTeamOptions] = useState({
-    balanceByGender: true,
-    balanceByLevel: true,
-    allowUnevenTeams: false,
-  });
-
   // 선수 선택 및 스위칭 시스템 상태
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [isPlayerSelected, setIsPlayerSelected] = useState(false);
+
+  // 점수 입력 모달 상태
+  const [showScoreInputModal, setShowScoreInputModal] = useState(false);
+  const [pendingMembers, setPendingMembers] = useState([]);
+  const [memberScores, setMemberScores] = useState({});
+
+  // 게스트 추가 모달 상태
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestData, setGuestData] = useState({
+    name: '',
+    average: '',
+    gender: '',
+  });
 
   // 팀 구성 가능 여부 계산
   const isTeamFormationPossible = () => {
@@ -57,10 +63,35 @@ const TeamAssignment = () => {
     return totalPlayers === requiredPlayers;
   };
 
+  const loadPlayers = useCallback(async () => {
+    try {
+      const response = await teamAPI.getPlayers();
+      if (response.data.success) {
+        // 선수 데이터 구조 변환 (필요한 경우)
+        const formattedPlayers = response.data.players.map((player) => {
+          if (Array.isArray(player)) {
+            // 배열 형태인 경우 객체로 변환
+            return {
+              name: player[0] || '이름 없음',
+              average: parseFloat(player[1]) || 0,
+              gender: player[2] || '남',
+            };
+          }
+          return player;
+        });
+
+        setPlayers(formattedPlayers);
+        calculateStats(formattedPlayers);
+      }
+    } catch (error) {
+      console.error('선수 목록 로드 실패:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadMembers();
     loadPlayers();
-  }, []);
+  }, [loadPlayers]);
 
   const loadMembers = async () => {
     try {
@@ -475,52 +506,8 @@ const TeamAssignment = () => {
     }
   };
 
-  const loadPlayers = async () => {
-    try {
-      const response = await teamAPI.getPlayers();
-      if (response.data.success) {
-        // 선수 데이터 구조 변환 (필요한 경우)
-        const formattedPlayers = response.data.players.map((player) => {
-          if (Array.isArray(player)) {
-            // 배열 형태인 경우 객체로 변환
-            return {
-              name: player[0] || '이름 없음',
-              average: parseInt(player[1]) || 0,
-              gender: player[2] || '미지정',
-            };
-          } else if (typeof player === 'object' && player !== null) {
-            // 객체 형태인 경우 그대로 사용
-            return {
-              name: player.name || player.player_name || '이름 없음',
-              average: parseInt(player.average || player.average_score || 0),
-              gender: player.gender || '미지정',
-            };
-          } else {
-            // 기타 형태인 경우 기본값 설정
-            return {
-              name: '이름 없음',
-              average: 0,
-              gender: '미지정',
-            };
-          }
-        });
-
-        setPlayers(formattedPlayers);
-        calculateStats(formattedPlayers);
-      }
-    } catch (error) {
-      // 에러 처리
-    }
-  };
-
   const calculateStats = (playerList) => {
     if (!playerList || playerList.length === 0) return;
-
-    const totalPlayers = playerList.length;
-    const totalScore = playerList.reduce(
-      (sum, player) => sum + (player.average || 0),
-      0
-    );
 
     const genderDistribution = { male: 0, female: 0 };
     const levelDistribution = {};
@@ -594,16 +581,34 @@ const TeamAssignment = () => {
         }
       } else {
         // 모든 선택된 회원 추가
+        const membersWithScores = [];
+        const membersWithoutScores = [];
+
         for (const member of selectedMembers) {
           const average = await getMemberAverage(member.name);
 
+          if (average !== null) {
+            membersWithScores.push({ ...member, average });
+          } else {
+            membersWithoutScores.push(member);
+          }
+        }
+
+        // 점수가 있는 회원들 먼저 추가
+        for (const member of membersWithScores) {
           const playerData = {
             name: member.name,
-            average: average,
+            average: member.average,
             gender: member.gender || '',
           };
-
           await teamAPI.addPlayer(playerData);
+        }
+
+        // 점수가 없는 회원들은 모달로 처리
+        if (membersWithoutScores.length > 0) {
+          setPendingMembers(membersWithoutScores);
+          setMemberScores({});
+          setShowScoreInputModal(true);
         }
       }
 
@@ -659,8 +664,116 @@ const TeamAssignment = () => {
       console.error('평균 점수 조회 오류:', error);
     }
 
-    // 기본값 반환 (스코어 기록이 없는 경우)
-    return Math.floor(Math.random() * 100) + 100;
+    // 점수가 없는 경우 null 반환 (사용자 입력 필요)
+    return null;
+  };
+
+  // 점수 입력 모달 핸들러
+  const handleScoreInput = (memberName, score) => {
+    setMemberScores((prev) => ({
+      ...prev,
+      [memberName]: score,
+    }));
+  };
+
+  // 점수 입력 완료
+  const handleScoreInputComplete = async () => {
+    try {
+      setIsLoading(true);
+      setLoadingType('점수 입력된 회원 추가');
+
+      for (const member of pendingMembers) {
+        const score = memberScores[member.name];
+        if (score && score > 0) {
+          const playerData = {
+            name: member.name,
+            average: parseInt(score),
+            gender: member.gender || '',
+          };
+          await teamAPI.addPlayer(playerData);
+        }
+      }
+
+      // 모달 닫기
+      setShowScoreInputModal(false);
+      setPendingMembers([]);
+      setMemberScores({});
+
+      // 선수 목록 새로고침
+      await loadPlayers();
+    } catch (error) {
+      console.error('점수 입력된 회원 추가 오류:', error);
+    } finally {
+      setIsLoading(false);
+      setLoadingType('');
+    }
+  };
+
+  // 점수 입력 취소
+  const handleScoreInputCancel = () => {
+    setShowScoreInputModal(false);
+    setPendingMembers([]);
+    setMemberScores({});
+  };
+
+  // 게스트 추가 모달 열기
+  const handleOpenGuestModal = () => {
+    setShowGuestModal(true);
+    setGuestData({
+      name: '',
+      average: '',
+      gender: '',
+    });
+  };
+
+  // 게스트 추가 모달 닫기
+  const handleCloseGuestModal = () => {
+    setShowGuestModal(false);
+    setGuestData({
+      name: '',
+      average: '',
+      gender: '',
+    });
+  };
+
+  // 게스트 데이터 입력 핸들러
+  const handleGuestDataChange = (field, value) => {
+    setGuestData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  // 게스트 추가 완료
+  const handleAddGuest = async () => {
+    if (!guestData.name.trim() || !guestData.average || !guestData.gender) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setLoadingType('게스트 추가');
+
+      const playerData = {
+        name: guestData.name.trim(),
+        average: parseInt(guestData.average),
+        gender: guestData.gender,
+      };
+
+      await teamAPI.addPlayer(playerData);
+
+      // 모달 닫기
+      handleCloseGuestModal();
+
+      // 선수 목록 새로고침
+      await loadPlayers();
+    } catch (error) {
+      console.error('게스트 추가 오류:', error);
+    } finally {
+      setIsLoading(false);
+      setLoadingType('');
+    }
   };
 
   const handleDeletePlayer = async (name) => {
@@ -733,11 +846,11 @@ const TeamAssignment = () => {
       // 선수 정렬 완료 (여성 우선)
       sortedPlayers.map((p) => `${p.name}(${p.gender}, ${p.average})`);
 
-      // 2단계: 여성 인원 균등 분배로 팀 구성
+      // 2단계: 여성 균등 분배 체크박스에 따른 팀 구성
       const balancedTeams = createBalancedTeams(sortedPlayers);
 
-      // 3단계: 점수 밸런싱 적용
-      const finalTeams = await balanceTeamsByScore(balancedTeams);
+      // 3단계: 새로운 규칙에 따른 밸런싱 적용
+      const finalTeams = await balanceTeamsWithNewRules(balancedTeams);
 
       // 4단계: 팀 번호 순으로 정렬하여 UI에 설정
       const sortedTeams = finalTeams.sort(
@@ -752,13 +865,17 @@ const TeamAssignment = () => {
         Math.max(...sortedTeams.map((t) => t.total_average)) -
         Math.min(...sortedTeams.map((t) => t.total_average));
 
-      if (maxDiff <= 10) {
+      if (maxDiff <= 5) {
         setBalancingResult(
-          `✅ 팀 구성 완료! 여성 인원 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점)`
+          `✅ 팀 구성 완료! 여성 균등 분배 + 점수 밸런싱 완료 (최대 차이: ${maxDiff}점)`
+        );
+      } else if (maxDiff <= 10) {
+        setBalancingResult(
+          `⚠️ 팀 구성 완료. 여성 균등 분배 완료, 점수 차이: ${maxDiff}점 (목표: 5점 이내)`
         );
       } else {
         setBalancingResult(
-          `⚠️ 팀 구성 완료. 여성 인원 균등 분배 완료, 점수 차이: ${maxDiff}점`
+          `⚠️ 팀 구성 완료. 여성 균등 분배 완료, 점수 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
         );
       }
 
@@ -797,45 +914,44 @@ const TeamAssignment = () => {
       (a, b) => b.average - a.average
     );
 
-    // 1단계: 상위 시드 선수들을 각각 다른 팀에 배치
-    const topSeedCount = Math.min(team_count, playersByAverage.length);
-    for (let i = 0; i < topSeedCount; i++) {
-      const seed = playersByAverage[i];
-      teams[i].players.push(seed);
-      teams[i].total_average += seed.average;
-    }
-
-    // 시드로 배정된 선수 제거
-    const seededIds = new Set(
-      playersByAverage
-        .slice(0, topSeedCount)
-        .map((p) => `${p.name}-${p.average}-${p.gender}`)
+    // 항상 여성 균등 분배 + 새로운 규칙 적용
+    return createBalancedTeamsWithNewRules(
+      teams,
+      playersByAverage,
+      team_count,
+      team_size
     );
-    const remainingPlayers = playersByAverage.filter(
-      (p) => !seededIds.has(`${p.name}-${p.average}-${p.gender}`)
+  };
+
+  // 새로운 규칙에 따른 팀 구성
+  const createBalancedTeamsWithNewRules = (
+    teams,
+    playersByAverage,
+    team_count,
+    team_size
+  ) => {
+    const femalePlayers = playersByAverage.filter((p) => p.gender === '여');
+    const malePlayers = playersByAverage.filter((p) => p.gender === '남');
+
+    console.log(
+      `총 선수: ${playersByAverage.length}명 (여성 ${femalePlayers.length}명, 남성 ${malePlayers.length}명)`
     );
 
-    // 2단계: 여성 선수 균등 분배
-    const femalePlayers = remainingPlayers.filter((p) => p.gender === '여');
-    const malePlayers = remainingPlayers.filter((p) => p.gender === '남');
+    // 1단계: 여성회원만 따로 스네이크 패턴 적용 (권장 방법)
+    distributeFemalePlayersBySnakePattern(
+      teams,
+      femalePlayers,
+      team_count,
+      team_size
+    );
 
-    // 여성 선수들을 팀별로 균등 분배
-    for (let i = 0; i < femalePlayers.length; i++) {
-      const teamIndex = i % team_count;
-      if (teams[teamIndex].players.length < team_size) {
-        teams[teamIndex].players.push(femalePlayers[i]);
-        teams[teamIndex].total_average += femalePlayers[i].average;
-      }
-    }
-
-    // 3단계: 남성 선수들을 남은 자리에 배치
-    for (let i = 0; i < malePlayers.length; i++) {
-      const teamIndex = i % team_count;
-      if (teams[teamIndex].players.length < team_size) {
-        teams[teamIndex].players.push(malePlayers[i]);
-        teams[teamIndex].total_average += malePlayers[i].average;
-      }
-    }
+    // 2단계: 남성회원들을 남은 빈자리에 스네이크 패턴으로 배치
+    distributeMalePlayersToEmptySlots(
+      teams,
+      malePlayers,
+      team_count,
+      team_size
+    );
 
     // 각 팀의 평균 계산
     teams.forEach((team) => {
@@ -843,10 +959,494 @@ const TeamAssignment = () => {
         team.players.length > 0 ? team.total_average / team.players.length : 0;
     });
 
+    console.log('초기 배치 완료:');
+    teams.forEach((team, index) => {
+      const femaleCount = team.players.filter((p) => p.gender === '여').length;
+      console.log(
+        `팀 ${index + 1}: 총 ${team.total_average}점, 여성 ${femaleCount}명`
+      );
+    });
+
     return teams;
   };
 
+  // 여성 선수만 따로 스네이크 패턴 적용 (권장 방법)
+  const distributeFemalePlayersBySnakePattern = (
+    teams,
+    femalePlayers,
+    team_count,
+    team_size
+  ) => {
+    if (femalePlayers.length === 0) return;
+
+    console.log(
+      `여성 선수 ${femalePlayers.length}명을 ${team_count}팀에 스네이크 패턴으로 분배 시작`
+    );
+
+    // 여성 선수들을 에버 순으로 정렬 (내림차순)
+    const sortedFemales = [...femalePlayers].sort(
+      (a, b) => b.average - a.average
+    );
+
+    let teamIndex = 0;
+    let direction = 1; // 1: 순방향, -1: 역방향
+
+    for (let i = 0; i < sortedFemales.length; i++) {
+      const female = sortedFemales[i];
+
+      // 팀에 여성 선수 배치
+      teams[teamIndex].players.push(female);
+      teams[teamIndex].total_average += female.average;
+
+      console.log(
+        `팀 ${teamIndex + 1}에 여성 선수 ${female.name}(${
+          female.average
+        }점) 배치`
+      );
+
+      // 다음 팀 인덱스 계산 (스네이크 패턴)
+      teamIndex += direction;
+
+      // 경계에서 방향 전환
+      if (teamIndex >= team_count) {
+        teamIndex = team_count - 1;
+        direction = -1;
+      } else if (teamIndex < 0) {
+        teamIndex = 0;
+        direction = 1;
+      }
+    }
+
+    console.log('여성 선수 스네이크 패턴 분배 완료');
+  };
+
+  // 남성 선수들을 남은 빈자리에 최적화된 방식으로 배치
+  const distributeMalePlayersToEmptySlots = (
+    teams,
+    malePlayers,
+    team_count,
+    team_size
+  ) => {
+    if (malePlayers.length === 0) return;
+
+    console.log(
+      `남성 선수 ${malePlayers.length}명을 남은 빈자리에 최적화 배치 시작`
+    );
+
+    // 남성 선수들을 에버 순으로 정렬 (내림차순)
+    const sortedMales = [...malePlayers].sort((a, b) => b.average - a.average);
+
+    for (let i = 0; i < sortedMales.length; i++) {
+      const male = sortedMales[i];
+
+      // 현재 가장 낮은 총점을 가진 팀 찾기
+      let lowestTeamIndex = 0;
+      let lowestTotal = teams[0].total_average;
+
+      for (let j = 0; j < team_count; j++) {
+        if (
+          teams[j].players.length < team_size &&
+          teams[j].total_average < lowestTotal
+        ) {
+          lowestTotal = teams[j].total_average;
+          lowestTeamIndex = j;
+        }
+      }
+
+      // 가장 낮은 팀에 남성 선수 배치
+      teams[lowestTeamIndex].players.push(male);
+      teams[lowestTeamIndex].total_average += male.average;
+
+      console.log(
+        `팀 ${lowestTeamIndex + 1}에 남성 선수 ${male.name}(${
+          male.average
+        }점) 배치 (현재 총점: ${teams[lowestTeamIndex].total_average}점)`
+      );
+    }
+
+    console.log('남성 선수 최적화 배치 완료');
+  };
+
+  // 팀 간 선수 스위칭 시도 (새로운 규칙)
+  const tryTeamSwap = (team1, team2, teams, teamConfig) => {
+    const team1Index = teams.findIndex(
+      (t) => t.team_number === team1.teamNumber
+    );
+    const team2Index = teams.findIndex(
+      (t) => t.team_number === team2.teamNumber
+    );
+
+    if (team1Index === -1 || team2Index === -1) return null;
+
+    const team1Players = teams[team1Index].players;
+    const team2Players = teams[team2Index].players;
+
+    let bestSwap = null;
+    let bestImprovement = 0;
+
+    // 모든 선수 조합 시도
+    for (let i = 0; i < team1Players.length; i++) {
+      for (let j = 0; j < team2Players.length; j++) {
+        const player1 = team1Players[i];
+        const player2 = team2Players[j];
+
+        // 5번 규칙: 여성회원은 여성회원끼리만 바꿀 수 있음
+        if (player1.gender !== player2.gender) {
+          continue;
+        }
+
+        // 여성 균등 분배 체크 시 성비 확인 (기본 적용)
+        const team1FemaleCount = team1Players.filter(
+          (p) => p.gender === '여'
+        ).length;
+        const team2FemaleCount = team2Players.filter(
+          (p) => p.gender === '여'
+        ).length;
+
+        // 스위칭 후 성비 변화 계산
+        const newTeam1FemaleCount =
+          team1FemaleCount -
+          (player1.gender === '여' ? 1 : 0) +
+          (player2.gender === '여' ? 1 : 0);
+        const newTeam2FemaleCount =
+          team2FemaleCount -
+          (player2.gender === '여' ? 1 : 0) +
+          (player1.gender === '여' ? 1 : 0);
+
+        // 1번 규칙: 여성 회원 차이가 2명 이상 나면 안 됨
+        if (Math.abs(newTeam1FemaleCount - newTeam2FemaleCount) > 1) {
+          continue;
+        }
+
+        // 스위칭 후 점수 차이 계산
+        const currentDiff = Math.abs(team1.totalAverage - team2.totalAverage);
+        const newTeam1Total =
+          team1.totalAverage - player1.average + player2.average;
+        const newTeam2Total =
+          team2.totalAverage - player2.average + player1.average;
+        const newDiff = Math.abs(newTeam1Total - newTeam2Total);
+
+        const improvement = currentDiff - newDiff;
+
+        if (improvement > bestImprovement) {
+          bestImprovement = improvement;
+          bestSwap = {
+            team1Index,
+            team2Index,
+            player1: { ...player1, originalIndex: i },
+            player2: { ...player2, originalIndex: j },
+            improvement,
+          };
+        }
+      }
+    }
+
+    return bestSwap;
+  };
+
+  // 팀 간 선수 스위칭 실행
+  const executeTeamSwap = (swapData, teams) => {
+    const { team1Index, team2Index, player1, player2 } = swapData.result;
+
+    // 팀1에서 player1 제거하고 player2 추가
+    teams[team1Index].players = teams[team1Index].players.filter(
+      (p, index) => index !== player1.originalIndex
+    );
+    teams[team1Index].players.push(player2);
+    teams[team1Index].total_average = teams[team1Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team1Index].average_per_player =
+      teams[team1Index].total_average / teams[team1Index].players.length;
+
+    // 팀2에서 player2 제거하고 player1 추가
+    teams[team2Index].players = teams[team2Index].players.filter(
+      (p, index) => index !== player2.originalIndex
+    );
+    teams[team2Index].players.push(player1);
+    teams[team2Index].total_average = teams[team2Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team2Index].average_per_player =
+      teams[team2Index].total_average / teams[team2Index].players.length;
+  };
+
+  // 3팀 스위칭 (4번 규칙: 같은 선수끼리 바꾸는 경우)
+  const tryThreeTeamSwap = (teams, teamConfig) => {
+    const teamStats = teams.map((team) => ({
+      teamNumber: team.team_number,
+      totalAverage: team.total_average,
+      averagePerPlayer: team.average_per_player,
+      playerCount: team.players.length,
+      players: team.players,
+    }));
+
+    // 팀별 총점 정렬 (내림차순)
+    teamStats.sort((a, b) => b.totalAverage - a.totalAverage);
+
+    const highTeam = teamStats[0];
+    const lowTeam = teamStats[teamStats.length - 1];
+    const middleTeam = teamStats[1];
+
+    // 최고점 팀의 하위 선수와 최저점 팀의 하위 선수 찾기
+    const highTeamLowestPlayer = highTeam.players.reduce((lowest, player) =>
+      player.average < lowest.average ? player : lowest
+    );
+    const lowTeamLowestPlayer = lowTeam.players.reduce((lowest, player) =>
+      player.average < lowest.average ? player : lowest
+    );
+
+    // 중간 팀의 하위 선수 찾기
+    const middleTeamLowestPlayer = middleTeam.players.reduce((lowest, player) =>
+      player.average < lowest.average ? player : lowest
+    );
+
+    // 3팀 스위칭 시도: 최고점팀 하위 ↔ 중간팀 하위, 중간팀 하위 ↔ 최저점팀 하위
+    const highTeamIndex = teams.findIndex(
+      (t) => t.team_number === highTeam.teamNumber
+    );
+    const middleTeamIndex = teams.findIndex(
+      (t) => t.team_number === middleTeam.teamNumber
+    );
+    const lowTeamIndex = teams.findIndex(
+      (t) => t.team_number === lowTeam.teamNumber
+    );
+
+    // 1차 스위칭: 최고점팀 하위 ↔ 중간팀 하위
+    const firstSwapImprovement = calculateThreeTeamSwapImprovement(
+      highTeam,
+      middleTeam,
+      highTeamLowestPlayer,
+      middleTeamLowestPlayer
+    );
+
+    // 2차 스위칭: 중간팀 하위 ↔ 최저점팀 하위
+    const secondSwapImprovement = calculateThreeTeamSwapImprovement(
+      middleTeam,
+      lowTeam,
+      middleTeamLowestPlayer,
+      lowTeamLowestPlayer
+    );
+
+    if (
+      firstSwapImprovement > 0 &&
+      firstSwapImprovement > secondSwapImprovement
+    ) {
+      // 1차 스위칭 실행
+      executeThreeTeamSwap(
+        teams,
+        highTeamIndex,
+        middleTeamIndex,
+        highTeamLowestPlayer,
+        middleTeamLowestPlayer
+      );
+      return true;
+    } else if (secondSwapImprovement > 0) {
+      // 2차 스위칭 실행
+      executeThreeTeamSwap(
+        teams,
+        middleTeamIndex,
+        lowTeamIndex,
+        middleTeamLowestPlayer,
+        lowTeamLowestPlayer
+      );
+      return true;
+    }
+
+    return false;
+  };
+
+  // 3팀 스위칭 개선도 계산
+  const calculateThreeTeamSwapImprovement = (
+    team1,
+    team2,
+    player1,
+    player2
+  ) => {
+    const currentDiff = Math.abs(team1.totalAverage - team2.totalAverage);
+    const newTeam1Total =
+      team1.totalAverage - player1.average + player2.average;
+    const newTeam2Total =
+      team2.totalAverage - player2.average + player1.average;
+    const newDiff = Math.abs(newTeam1Total - newTeam2Total);
+
+    return currentDiff - newDiff;
+  };
+
+  // 3팀 스위칭 실행
+  const executeThreeTeamSwap = (
+    teams,
+    team1Index,
+    team2Index,
+    player1,
+    player2
+  ) => {
+    // 팀1에서 player1 제거하고 player2 추가
+    teams[team1Index].players = teams[team1Index].players.filter(
+      (p) => !(p.name === player1.name && p.average === player1.average)
+    );
+    teams[team1Index].players.push(player2);
+    teams[team1Index].total_average = teams[team1Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team1Index].average_per_player =
+      teams[team1Index].total_average / teams[team1Index].players.length;
+
+    // 팀2에서 player2 제거하고 player1 추가
+    teams[team2Index].players = teams[team2Index].players.filter(
+      (p) => !(p.name === player2.name && p.average === player2.average)
+    );
+    teams[team2Index].players.push(player1);
+    teams[team2Index].total_average = teams[team2Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team2Index].average_per_player =
+      teams[team2Index].total_average / teams[team2Index].players.length;
+  };
+
+  // 전체 최적화 시도 (모든 선수 조합 검토)
+  const tryGlobalOptimization = (teams, teamConfig) => {
+    const teamStats = teams.map((team) => ({
+      teamNumber: team.team_number,
+      totalAverage: team.total_average,
+      averagePerPlayer: team.average_per_player,
+      playerCount: team.players.length,
+      players: team.players,
+    }));
+
+    // 현재 최대 차이 계산
+    const currentMaxDiff =
+      Math.max(...teamStats.map((t) => t.totalAverage)) -
+      Math.min(...teamStats.map((t) => t.totalAverage));
+
+    let bestSwap = null;
+    let bestImprovement = 0;
+
+    // 모든 팀 조합에서 모든 선수 조합 시도
+    for (let i = 0; i < teamStats.length - 1; i++) {
+      for (let j = i + 1; j < teamStats.length; j++) {
+        const team1 = teamStats[i];
+        const team2 = teamStats[j];
+
+        const team1Index = teams.findIndex(
+          (t) => t.team_number === team1.teamNumber
+        );
+        const team2Index = teams.findIndex(
+          (t) => t.team_number === team2.teamNumber
+        );
+
+        // 모든 선수 조합 시도
+        for (let k = 0; k < team1.players.length; k++) {
+          for (let l = 0; l < team2.players.length; l++) {
+            const player1 = team1.players[k];
+            const player2 = team2.players[l];
+
+            // 여성 균등 분배 체크 시 성비 확인
+            if (teamConfig.balanceByGender) {
+              // 5번 규칙: 여성회원은 여성회원끼리만 바꿀 수 있음
+              if (player1.gender !== player2.gender) {
+                continue;
+              }
+
+              const team1FemaleCount = team1.players.filter(
+                (p) => p.gender === '여'
+              ).length;
+              const team2FemaleCount = team2.players.filter(
+                (p) => p.gender === '여'
+              ).length;
+
+              // 스위칭 후 성비 변화 계산
+              const newTeam1FemaleCount =
+                team1FemaleCount -
+                (player1.gender === '여' ? 1 : 0) +
+                (player2.gender === '여' ? 1 : 0);
+              const newTeam2FemaleCount =
+                team2FemaleCount -
+                (player2.gender === '여' ? 1 : 0) +
+                (player1.gender === '여' ? 1 : 0);
+
+              // 1번 규칙: 여성 회원 차이가 2명 이상 나면 안 됨
+              if (Math.abs(newTeam1FemaleCount - newTeam2FemaleCount) > 1) {
+                continue;
+              }
+            }
+
+            // 스위칭 후 전체 최대 차이 계산
+            const newTeam1Total =
+              team1.totalAverage - player1.average + player2.average;
+            const newTeam2Total =
+              team2.totalAverage - player2.average + player1.average;
+
+            // 새로운 팀 점수 배열 생성
+            const newTeamTotals = teamStats.map((team, index) => {
+              if (index === i) return newTeam1Total;
+              if (index === j) return newTeam2Total;
+              return team.totalAverage;
+            });
+
+            const newMaxDiff =
+              Math.max(...newTeamTotals) - Math.min(...newTeamTotals);
+            const improvement = currentMaxDiff - newMaxDiff;
+
+            if (improvement > bestImprovement) {
+              bestImprovement = improvement;
+              bestSwap = {
+                team1Index,
+                team2Index,
+                player1: { ...player1, originalIndex: k },
+                player2: { ...player2, originalIndex: l },
+                improvement,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // 최적의 스위칭 실행
+    if (bestSwap && bestImprovement > 0) {
+      executeGlobalSwap(teams, bestSwap);
+      return true;
+    }
+
+    return false;
+  };
+
+  // 전체 최적화 스위칭 실행
+  const executeGlobalSwap = (teams, swapData) => {
+    const { team1Index, team2Index, player1, player2 } = swapData;
+
+    // 팀1에서 player1 제거하고 player2 추가
+    teams[team1Index].players = teams[team1Index].players.filter(
+      (p, index) => index !== player1.originalIndex
+    );
+    teams[team1Index].players.push(player2);
+    teams[team1Index].total_average = teams[team1Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team1Index].average_per_player =
+      teams[team1Index].total_average / teams[team1Index].players.length;
+
+    // 팀2에서 player2 제거하고 player1 추가
+    teams[team2Index].players = teams[team2Index].players.filter(
+      (p, index) => index !== player2.originalIndex
+    );
+    teams[team2Index].players.push(player1);
+    teams[team2Index].total_average = teams[team2Index].players.reduce(
+      (sum, p) => sum + p.average,
+      0
+    );
+    teams[team2Index].average_per_player =
+      teams[team2Index].total_average / teams[team2Index].players.length;
+  };
+
   // 개선된 점수 밸런싱 함수
+  // eslint-disable-next-line no-unused-vars
   const balanceTeamsByScore = async (teamsToBalance) => {
     if (teamsToBalance.length < 2) return teamsToBalance;
 
@@ -865,9 +1465,9 @@ const TeamAssignment = () => {
       }
     });
 
-    // 밸런싱 시도 (최대 500회)
+    // 밸런싱 시도 (최대 2000회로 증가)
     let attempt = 0;
-    const maxAttempts = 500;
+    const maxAttempts = 2000;
 
     while (attempt < maxAttempts) {
       attempt++;
@@ -895,39 +1495,73 @@ const TeamAssignment = () => {
         bestTeams = JSON.parse(JSON.stringify(teams));
       }
 
-      // 목표 달성 시 종료 (5점 이하)
-      if (currentMaxDiff <= 5) {
+      // 목표 달성 시 종료 (8점 이하로 설정)
+      if (currentMaxDiff <= 8) {
         break;
       }
 
-      // 최고점 팀과 최저점 팀에서 스위칭 시도
+      // 모든 팀 조합에서 스위칭 시도 (더 적극적인 밸런싱)
+      let bestTeamSwap = null;
+      let bestTeamImprovement = 0;
+
+      for (let i = 0; i < teamStats.length - 1; i++) {
+        for (let j = i + 1; j < teamStats.length; j++) {
+          const team1 = teamStats[i];
+          const team2 = teamStats[j];
+
+          // 두 팀 간의 스위칭 시도
+
+          // 스위칭 시도
+          const swapResult = tryTeamSwap(team1, team2, teams, teamConfig);
+          if (swapResult && swapResult.improvement > bestTeamImprovement) {
+            bestTeamImprovement = swapResult.improvement;
+            bestTeamSwap = { team1: team1, team2: team2, result: swapResult };
+          }
+        }
+      }
+
+      if (bestTeamSwap) {
+        // 최적의 스위칭 실행
+        executeTeamSwap(bestTeamSwap, teams);
+        continue;
+      }
+
+      // 3팀 스위칭 시도 (4번 규칙)
+      if (tryThreeTeamSwap(teams, teamConfig)) {
+        continue;
+      }
+
+      // 전체 최적화 시도 (모든 선수 조합 검토)
+      if (tryGlobalOptimization(teams, teamConfig)) {
+        continue;
+      }
+
+      // 기존 방식도 시도 (최고점 팀과 최저점 팀)
       const highTeam = teamStats[0];
       const lowTeam = teamStats[teamStats.length - 1];
 
       let bestSwap = null;
       let bestImprovement = 0;
 
-      // 남성 선수만 필터링 (1시드 제외)
-      const highTeamMales = highTeam.players.filter(
-        (p) =>
-          p.gender === '남' &&
-          !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
+      // 모든 선수 필터링 (1시드 제외) - 성별 상관없이 모든 선수 시도
+      const highTeamAllPlayers = highTeam.players.filter(
+        (p) => !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
       );
-      const lowTeamMales = lowTeam.players.filter(
-        (p) =>
-          p.gender === '남' &&
-          !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
+      const lowTeamAllPlayers = lowTeam.players.filter(
+        (p) => !seedPlayers.has(`${p.name}-${p.average}-${p.gender}`)
       );
 
       // 에버 낮은 선수부터 스위칭 시도
-      const sortedHighMales = highTeamMales.sort(
+      const sortedHighPlayers = highTeamAllPlayers.sort(
         (a, b) => a.average - b.average
       );
-      const sortedLowMales = lowTeamMales.sort((a, b) => a.average - b.average);
+      const sortedLowPlayers = lowTeamAllPlayers.sort(
+        (a, b) => a.average - b.average
+      );
 
-      for (const highPlayer of sortedHighMales) {
-        for (const lowPlayer of sortedLowMales) {
-          // 여성 인원 균등성 유지 확인
+      for (const highPlayer of sortedHighPlayers) {
+        for (const lowPlayer of sortedLowPlayers) {
+          // 여성 인원 균등성 유지 확인 (완화된 조건)
           const highTeamFemaleCount = highTeam.players.filter(
             (p) => p.gender === '여'
           ).length;
@@ -935,9 +1569,9 @@ const TeamAssignment = () => {
             (p) => p.gender === '여'
           ).length;
 
-          // 여성 인원 균등성 유지 확인
-          const maxFemaleDiff = 1; // 여성 인원 차이는 최대 1명까지 허용
-
+          // 여성 균등 분배 체크박스 상태에 따른 처리
+          // 여성 균등 분배는 기본 적용 (차이 1명까지 허용)
+          const maxFemaleDiff = 1;
           if (
             Math.abs(highTeamFemaleCount - lowTeamFemaleCount) > maxFemaleDiff
           ) {
@@ -1005,6 +1639,19 @@ const TeamAssignment = () => {
           teams[lowTeamIndex].average_per_player =
             teams[lowTeamIndex].total_average /
             teams[lowTeamIndex].players.length;
+
+          // 팀당 인원 수 검증
+          const { team_size } = teamConfig;
+          if (
+            teams[highTeamIndex].players.length !== team_size ||
+            teams[lowTeamIndex].players.length !== team_size
+          ) {
+            console.error('팀 인원 수 불일치 발생:', {
+              team1: teams[highTeamIndex].players.length,
+              team2: teams[lowTeamIndex].players.length,
+              expected: team_size,
+            });
+          }
         }
       } else {
         break; // 더 이상 개선할 수 없으면 종료
@@ -1014,7 +1661,476 @@ const TeamAssignment = () => {
     return bestTeams;
   };
 
-  // 자동 팀 밸런싱 함수
+  // 새로운 규칙에 따른 밸런싱 함수
+  const balanceTeamsWithNewRules = async (teamsToBalance) => {
+    if (teamsToBalance.length < 2) return teamsToBalance;
+
+    const teams = [...teamsToBalance];
+    let bestTeams = [...teams];
+    let bestMaxDiff = Number.MAX_SAFE_INTEGER;
+
+    // 무한 루프 방지를 위한 변수들
+    let noImprovementCount = 0;
+    const maxNoImprovement = 50; // 50번 연속 개선 없으면 다른 방법 시도
+    let lastSwapHash = '';
+    let sameSwapCount = 0;
+    const maxSameSwap = 10; // 같은 교체를 10번 반복하면 강제로 다른 방법 시도
+
+    // 3단계: 총합 에버가 제일 낮은 팀과 가장 높은 팀의 선수를 교체
+    // 4단계: 3번을 계속 반복 (2000회 시도)
+    let attempt = 0;
+    const maxAttempts = 2000;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+
+      // 현재 팀 상태 분석
+      const teamStats = teams.map((team) => ({
+        teamNumber: team.team_number,
+        totalAverage: team.total_average,
+        averagePerPlayer: team.average_per_player,
+        playerCount: team.players.length,
+        players: team.players,
+      }));
+
+      // 팀별 총점 정렬 (내림차순)
+      teamStats.sort((a, b) => b.totalAverage - a.totalAverage);
+
+      // 복합 목표 함수 계산 (최대 차이 + 분산 고려)
+      const currentMaxDiff =
+        teamStats[0].totalAverage -
+        teamStats[teamStats.length - 1].totalAverage;
+
+      // 분산 계산
+      const teamAverages = teamStats.map((team) => team.totalAverage);
+      const mean =
+        teamAverages.reduce((sum, avg) => sum + avg, 0) / teamAverages.length;
+      const variance =
+        teamAverages.reduce((sum, avg) => sum + Math.pow(avg - mean, 2), 0) /
+        teamAverages.length;
+      const standardDeviation = Math.sqrt(variance);
+
+      // 복합 점수 (최대 차이 + 분산의 10%)
+      const compositeScore = currentMaxDiff + standardDeviation * 0.1;
+
+      // 현재 결과가 최적이면 저장
+      if (compositeScore < bestMaxDiff) {
+        bestMaxDiff = compositeScore;
+        bestTeams = JSON.parse(JSON.stringify(teams));
+        noImprovementCount = 0; // 개선이 있었으므로 카운터 리셋
+        console.log(
+          `🎯 새로운 최적해 발견! 최대 차이: ${currentMaxDiff}점, 표준편차: ${standardDeviation.toFixed(
+            2
+          )}점, 복합점수: ${compositeScore.toFixed(2)}점`
+        );
+      } else {
+        noImprovementCount++;
+      }
+
+      // 4번 규칙: 에버가 가장 높은팀과 가장 낮은 팀의 차이가 5점 이내가 되어야한다
+      if (currentMaxDiff <= 5) {
+        console.log(
+          `✅ 목표 달성! 최대 차이: ${currentMaxDiff}점, 표준편차: ${standardDeviation.toFixed(
+            2
+          )}점`
+        );
+        break;
+      }
+
+      // 무한 루프 방지: 개선이 없으면 다른 방법 시도
+      if (noImprovementCount >= maxNoImprovement) {
+        console.log(
+          `⚠️ ${maxNoImprovement}번 연속 개선 없음. 다른 방법 시도...`
+        );
+        noImprovementCount = 0;
+
+        // 강제로 랜덤한 팀 조합에서 교체 시도
+        if (tryRandomTeamSwap(teams)) {
+          console.log('랜덤 팀 교체 성공');
+          continue;
+        }
+
+        // 그래도 안 되면 강제로 선수 셔플
+        if (tryForcedShuffle(teams)) {
+          console.log('강제 셔플 성공');
+          continue;
+        }
+
+        // 마지막 수단: 현재까지의 최적해로 복원
+        console.log('더 이상 개선 불가능. 현재까지의 최적해로 복원');
+        Object.assign(teams, bestTeams);
+        break;
+      }
+
+      // 3단계: 총합 에버가 제일 낮은 팀과 가장 높은 팀의 선수를 교체
+      const highTeam = teamStats[0];
+      const lowTeam = teamStats[teamStats.length - 1];
+
+      console.log(
+        `밸런싱 시도 ${attempt}: 최고점 팀 ${highTeam.teamNumber}(${highTeam.totalAverage}점) vs 최저점 팀 ${lowTeam.teamNumber}(${lowTeam.totalAverage}점)`
+      );
+
+      // 모든 팀 쌍에서 교체 시도 (강화된 교체 전략)
+      let bestSwapFound = false;
+      let bestSwap = null;
+      let bestImprovement = 0;
+
+      // 모든 팀 조합에서 최적의 교체 찾기
+      for (let i = 0; i < teamStats.length - 1; i++) {
+        for (let j = i + 1; j < teamStats.length; j++) {
+          const team1 = teamStats[i];
+          const team2 = teamStats[j];
+
+          const swapResult = tryGenderSpecificSwap(team1, team2, teams);
+          if (swapResult) {
+            const improvement = calculateSwapImprovement(
+              team1,
+              team2,
+              swapResult.player1,
+              swapResult.player2
+            );
+            if (improvement > bestImprovement) {
+              bestImprovement = improvement;
+              bestSwap = { team1, team2, swapResult };
+              bestSwapFound = true;
+            }
+          }
+        }
+      }
+
+      if (bestSwapFound) {
+        // 중복 교체 방지: 같은 교체인지 확인
+        const currentSwapHash = `${bestSwap.swapResult.player1.name}-${bestSwap.swapResult.player2.name}`;
+        if (currentSwapHash === lastSwapHash) {
+          sameSwapCount++;
+          if (sameSwapCount >= maxSameSwap) {
+            console.log(
+              `⚠️ 같은 교체를 ${maxSameSwap}번 반복. 다른 방법 시도...`
+            );
+            sameSwapCount = 0;
+            lastSwapHash = '';
+
+            // 다른 팀 조합으로 교체 시도
+            if (tryAlternativeSwap(teams, highTeam, lowTeam)) {
+              console.log('대안 스위칭 성공');
+              continue;
+            }
+
+            // 고급 스위칭 시도
+            if (tryAdvancedSwap(teams)) {
+              console.log('고급 스위칭 성공');
+              continue;
+            }
+
+            // 더 이상 개선할 수 없으면 종료
+            break;
+          }
+        } else {
+          sameSwapCount = 0;
+          lastSwapHash = currentSwapHash;
+        }
+
+        console.log(
+          `스위칭 성공: ${bestSwap.swapResult.player1.name} ↔ ${bestSwap.swapResult.player2.name} (팀 ${bestSwap.team1.teamNumber} ↔ 팀 ${bestSwap.team2.teamNumber}, 개선도: ${bestImprovement}점)`
+        );
+        executeGenderSpecificSwap(teams, bestSwap.swapResult);
+        continue;
+      }
+
+      // 5번 규칙: 똑같은 회원끼리의 교체가 반복되면, 그 팀의 다음으로 차이가 적게 나는 회원이나, 다른 팀에서 근소한 차이나는 사람이랑 교체
+      if (tryAlternativeSwap(teams, highTeam, lowTeam)) {
+        console.log('대안 스위칭 성공');
+        continue;
+      }
+
+      // 7번 규칙: 6번보다 더 좋은 방법이 있다면 시도해도 좋다
+      if (tryAdvancedSwap(teams)) {
+        console.log('고급 스위칭 성공');
+        continue;
+      }
+
+      // 2000회 시도 완료 시 최적 결과 반환
+      if (attempt >= maxAttempts) {
+        console.log(
+          `⚠️ 2000회 시도 완료. 최적 결과: ${bestMaxDiff}점 (목표: 5점 이내)`
+        );
+        break;
+      }
+
+      // 더 이상 개선할 수 없으면 종료
+      break;
+    }
+
+    console.log(
+      `밸런싱 완료: 최대 차이 ${bestMaxDiff}점 (${attempt}번 시도, 목표: 5점 이내)`
+    );
+    return bestTeams;
+  };
+
+  // 6번 규칙: 남성회원은 남성끼리, 여성회원은 여성끼리만 교체
+  const tryGenderSpecificSwap = (highTeam, lowTeam, teams) => {
+    let bestSwap = null;
+    let bestImprovement = 0;
+
+    // 남성 선수들만 교체 시도
+    const highTeamMales = highTeam.players.filter((p) => p.gender === '남');
+    const lowTeamMales = lowTeam.players.filter((p) => p.gender === '남');
+
+    for (const highPlayer of highTeamMales) {
+      for (const lowPlayer of lowTeamMales) {
+        const improvement = calculateSwapImprovement(
+          highTeam,
+          lowTeam,
+          highPlayer,
+          lowPlayer
+        );
+        if (improvement > bestImprovement) {
+          bestImprovement = improvement;
+          bestSwap = { player1: highPlayer, player2: lowPlayer };
+        }
+      }
+    }
+
+    // 여성 선수들만 교체 시도
+    const highTeamFemales = highTeam.players.filter((p) => p.gender === '여');
+    const lowTeamFemales = lowTeam.players.filter((p) => p.gender === '여');
+
+    for (const highPlayer of highTeamFemales) {
+      for (const lowPlayer of lowTeamFemales) {
+        const improvement = calculateSwapImprovement(
+          highTeam,
+          lowTeam,
+          highPlayer,
+          lowPlayer
+        );
+        if (improvement > bestImprovement) {
+          bestImprovement = improvement;
+          bestSwap = { player1: highPlayer, player2: lowPlayer };
+        }
+      }
+    }
+
+    return bestSwap;
+  };
+
+  // 스위칭 개선도 계산
+  const calculateSwapImprovement = (
+    highTeam,
+    lowTeam,
+    highPlayer,
+    lowPlayer
+  ) => {
+    const currentDiff = Math.abs(highTeam.totalAverage - lowTeam.totalAverage);
+    const newHighTotal =
+      highTeam.totalAverage - highPlayer.average + lowPlayer.average;
+    const newLowTotal =
+      lowTeam.totalAverage - lowPlayer.average + highPlayer.average;
+    const newDiff = Math.abs(newHighTotal - newLowTotal);
+
+    return currentDiff - newDiff;
+  };
+
+  // 성별별 스위칭 실행
+  const executeGenderSpecificSwap = (teams, swapData) => {
+    const { player1, player2 } = swapData;
+
+    const highTeamIndex = teams.findIndex((t) =>
+      t.players.some(
+        (p) => p.name === player1.name && p.average === player1.average
+      )
+    );
+    const lowTeamIndex = teams.findIndex((t) =>
+      t.players.some(
+        (p) => p.name === player2.name && p.average === player2.average
+      )
+    );
+
+    if (highTeamIndex !== -1 && lowTeamIndex !== -1) {
+      // 팀1에서 player1 제거하고 player2 추가
+      teams[highTeamIndex].players = teams[highTeamIndex].players.filter(
+        (p) => !(p.name === player1.name && p.average === player1.average)
+      );
+      teams[highTeamIndex].players.push(player2);
+      teams[highTeamIndex].total_average = teams[highTeamIndex].players.reduce(
+        (sum, p) => sum + p.average,
+        0
+      );
+      teams[highTeamIndex].average_per_player =
+        teams[highTeamIndex].total_average /
+        teams[highTeamIndex].players.length;
+
+      // 팀2에서 player2 제거하고 player1 추가
+      teams[lowTeamIndex].players = teams[lowTeamIndex].players.filter(
+        (p) => !(p.name === player2.name && p.average === player2.average)
+      );
+      teams[lowTeamIndex].players.push(player1);
+      teams[lowTeamIndex].total_average = teams[lowTeamIndex].players.reduce(
+        (sum, p) => sum + p.average,
+        0
+      );
+      teams[lowTeamIndex].average_per_player =
+        teams[lowTeamIndex].total_average / teams[lowTeamIndex].players.length;
+    }
+  };
+
+  // 5번 규칙: 대안 스위칭 (다른 팀과의 교체)
+  const tryAlternativeSwap = (teams, highTeam, lowTeam) => {
+    // 중간 팀과의 교체 시도
+    const teamStats = teams.map((team) => ({
+      teamNumber: team.team_number,
+      totalAverage: team.total_average,
+      players: team.players,
+    }));
+
+    const middleTeam = teamStats.find(
+      (t) =>
+        t.teamNumber !== highTeam.teamNumber &&
+        t.teamNumber !== lowTeam.teamNumber
+    );
+    if (!middleTeam) return false;
+
+    // highTeam ↔ middleTeam 교체 시도
+    const swap1 = tryGenderSpecificSwap(highTeam, middleTeam, teams);
+    if (swap1) {
+      executeGenderSpecificSwap(teams, swap1);
+      return true;
+    }
+
+    // lowTeam ↔ middleTeam 교체 시도
+    const swap2 = tryGenderSpecificSwap(lowTeam, middleTeam, teams);
+    if (swap2) {
+      executeGenderSpecificSwap(teams, swap2);
+      return true;
+    }
+
+    return false;
+  };
+
+  // 7번 규칙: 고급 스위칭 (3팀 이상의 복합 교체)
+  const tryAdvancedSwap = (teams) => {
+    // 모든 팀 조합에서 최적의 교체 찾기
+    const teamStats = teams.map((team) => ({
+      teamNumber: team.team_number,
+      totalAverage: team.total_average,
+      players: team.players,
+    }));
+
+    let bestSwap = null;
+    let bestImprovement = 0;
+
+    for (let i = 0; i < teamStats.length - 1; i++) {
+      for (let j = i + 1; j < teamStats.length; j++) {
+        const swap = tryGenderSpecificSwap(teamStats[i], teamStats[j], teams);
+        if (swap) {
+          const improvement = calculateSwapImprovement(
+            teamStats[i],
+            teamStats[j],
+            swap.player1,
+            swap.player2
+          );
+          if (improvement > bestImprovement) {
+            bestImprovement = improvement;
+            bestSwap = swap;
+          }
+        }
+      }
+    }
+
+    if (bestSwap) {
+      executeGenderSpecificSwap(teams, bestSwap);
+      return true;
+    }
+
+    return false;
+  };
+
+  // 무한 루프 방지를 위한 랜덤 팀 교체
+  const tryRandomTeamSwap = (teams) => {
+    const teamStats = teams.map((team) => ({
+      teamNumber: team.team_number,
+      totalAverage: team.total_average,
+      players: team.players,
+    }));
+
+    // 랜덤하게 두 팀 선택
+    const team1Index = Math.floor(Math.random() * teamStats.length);
+    let team2Index = Math.floor(Math.random() * teamStats.length);
+    while (team2Index === team1Index) {
+      team2Index = Math.floor(Math.random() * teamStats.length);
+    }
+
+    const team1 = teamStats[team1Index];
+    const team2 = teamStats[team2Index];
+
+    const swap = tryGenderSpecificSwap(team1, team2, teams);
+    if (swap) {
+      executeGenderSpecificSwap(teams, swap);
+      return true;
+    }
+
+    return false;
+  };
+
+  // 강제 셔플 (극단적인 상황에서 사용)
+  const tryForcedShuffle = (teams) => {
+    // 모든 선수를 수집
+    const allPlayers = [];
+    teams.forEach((team) => {
+      allPlayers.push(...team.players);
+    });
+
+    // 선수들을 랜덤하게 섞기
+    for (let i = allPlayers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allPlayers[i], allPlayers[j]] = [allPlayers[j], allPlayers[i]];
+    }
+
+    // 팀들을 초기화하고 다시 배치
+    teams.forEach((team) => {
+      team.players = [];
+      team.total_average = 0;
+    });
+
+    // 스네이크 패턴으로 재배치
+    let playerIndex = 0;
+    let direction = 1;
+    let currentTeam = 0;
+
+    while (playerIndex < allPlayers.length) {
+      if (teams[currentTeam].players.length >= teamConfig.team_size) {
+        currentTeam = (currentTeam + 1) % teams.length;
+        continue;
+      }
+
+      teams[currentTeam].players.push(allPlayers[playerIndex]);
+      teams[currentTeam].total_average += allPlayers[playerIndex].average;
+      playerIndex++;
+
+      if (direction === 1) {
+        if (currentTeam === teams.length - 1) {
+          direction = -1;
+        } else {
+          currentTeam++;
+        }
+      } else {
+        if (currentTeam === 0) {
+          direction = 1;
+        } else {
+          currentTeam--;
+        }
+      }
+    }
+
+    // 평균 재계산
+    teams.forEach((team) => {
+      team.average_per_player = team.total_average / team.players.length;
+    });
+
+    return true;
+  };
+
+  // 자동 팀 밸런싱 함수 (사용하지 않음)
+  // eslint-disable-next-line no-unused-vars
   const autoBalanceTeams = async (teamsToBalance = teams) => {
     if (teamsToBalance.length < 2) return;
 
@@ -1168,13 +2284,6 @@ const TeamAssignment = () => {
   };
 
   const switchPlayers = (player1, player2) => {
-    const switchData = {
-      player1: player1.player.name,
-      team1: player1.sourceTeam,
-      player2: player2.player.name,
-      team2: player2.sourceTeam,
-    };
-
     // 같은 팀 내에서의 스위칭은 의미가 없음
     if (player1.sourceTeam === player2.sourceTeam) {
       deselectPlayer();
@@ -1251,6 +2360,7 @@ const TeamAssignment = () => {
     deselectPlayer();
   };
 
+  // eslint-disable-next-line no-unused-vars
   const movePlayerToTeam = (playerData, targetTeam) => {
     const updatedTeams = teams.map((team) => {
       if (team.team_number === playerData.sourceTeam) {
@@ -1331,76 +2441,97 @@ const TeamAssignment = () => {
 
           {/* 회원 검색 */}
           <div className="search-section">
-            <div className="search-header">
-              <h4>회원 검색 및 추가</h4>
-            </div>
             <div className="search-input-row">
-              <div className="form-group search-group">
-                <label>회원 검색</label>
-                <input
-                  type="text"
-                  placeholder="회원 이름을 입력하세요 (엔터키로 검색)"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    filterAutocomplete(e.target.value);
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearchAndAdd();
-                      setShowAutocomplete(false);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') {
-                      setShowAutocomplete(false);
-                      e.target.blur();
-                    }
-                  }}
-                  onFocus={() => {
-                    if (searchQuery.trim()) {
-                      filterAutocomplete(searchQuery);
-                    } else {
-                      // 빈 검색어일 때도 모든 회원 표시 (최대 5개)
-                      const allMembers = members.slice(0, 5);
-                      setFilteredAutocomplete(allMembers);
-                      setShowAutocomplete(allMembers.length > 0);
-                    }
-                  }}
-                  onBlur={() => {
-                    // 약간의 지연을 두어 클릭 이벤트가 처리되도록 함
-                    setTimeout(() => setShowAutocomplete(false), 200);
-                  }}
-                  className="search-input"
-                />
+              <div className="search-group">
+                <h4>회원 검색</h4>
+                <div className="form-group">
+                  <div className="search-input-group">
+                    <input
+                      type="text"
+                      placeholder="회원 이름을 입력하세요"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        filterAutocomplete(e.target.value);
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearchAndAdd();
+                          setShowAutocomplete(false);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowAutocomplete(false);
+                          e.target.blur();
+                        }
+                      }}
+                      onFocus={() => {
+                        if (searchQuery.trim()) {
+                          filterAutocomplete(searchQuery);
+                        } else {
+                          // 빈 검색어일 때도 모든 회원 표시 (최대 5개)
+                          const allMembers = members.slice(0, 5);
+                          setFilteredAutocomplete(allMembers);
+                          setShowAutocomplete(allMembers.length > 0);
+                        }
+                      }}
+                      onBlur={() => {
+                        // 약간의 지연을 두어 클릭 이벤트가 처리되도록 함
+                        setTimeout(() => setShowAutocomplete(false), 200);
+                      }}
+                      className="search-input"
+                    />
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleSearchAndAdd}
+                      disabled={isLoading && loadingType === '회원 검색'}
+                    >
+                      {isLoading && loadingType === '회원 검색' ? (
+                        <>
+                          <div className="spinner"></div>
+                          검색 중...
+                        </>
+                      ) : (
+                        '검색'
+                      )}
+                    </button>
+                  </div>
 
-                {/* 자동완성 목록 */}
-                {showAutocomplete && (
-                  <div className="autocomplete-list">
-                    {filteredAutocomplete.map((member) => (
-                      <div
-                        key={member.id}
-                        className="autocomplete-item"
-                        onClick={() => {
-                          handleAutocompleteToSearch(member);
-                        }}
-                      >
-                        <div className="autocomplete-member-info">
-                          <span className="autocomplete-name">
-                            {member.name}
-                          </span>
-                          <span className="autocomplete-gender">
-                            {member.gender || '미지정'}
+                  {/* 자동완성 목록 */}
+                  {showAutocomplete && (
+                    <div className="autocomplete-list">
+                      {filteredAutocomplete.map((member) => (
+                        <div
+                          key={member.id}
+                          className="autocomplete-item"
+                          onClick={() => {
+                            handleAutocompleteToSearch(member);
+                          }}
+                        >
+                          <div className="autocomplete-member-info">
+                            <span className="autocomplete-name">
+                              {member.name}
+                            </span>
+                            <span className="autocomplete-gender">
+                              {member.gender || '미지정'}
+                            </span>
+                          </div>
+                          <span className="autocomplete-indicator">
+                            클릭하여 검색 결과에 추가
                           </span>
                         </div>
-                        <span className="autocomplete-indicator">
-                          클릭하여 검색 결과에 추가
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+              <button
+                className="btn btn-secondary guest-add-btn"
+                onClick={handleOpenGuestModal}
+              >
+                게스트 추가
+              </button>
             </div>
 
             {/* 검색 결과 */}
@@ -1666,6 +2797,7 @@ const TeamAssignment = () => {
                   max="8"
                 />
               </div>
+
               <button
                 className="btn btn-primary"
                 onClick={handleMakeTeams}
@@ -1691,20 +2823,6 @@ const TeamAssignment = () => {
                   '팀 구성하기'
                 )}
               </button>
-
-              <label className="gender-balance-option">
-                <input
-                  type="checkbox"
-                  checked={teamOptions.balanceByGender}
-                  onChange={(e) =>
-                    setTeamOptions({
-                      ...teamOptions,
-                      balanceByGender: e.target.checked,
-                    })
-                  }
-                />
-                <span>여성 인원 균등 분배</span>
-              </label>
             </div>
           </div>
 
@@ -1774,6 +2892,134 @@ const TeamAssignment = () => {
           )}
         </div>
       </div>
+
+      {/* 점수 입력 모달 */}
+      {showScoreInputModal && (
+        <div className="modal-overlay">
+          <div className="modal-content score-input-modal">
+            <div className="modal-header">
+              <h3>점수 입력</h3>
+              <p>다음 회원들의 평균 점수를 입력해주세요.</p>
+            </div>
+            <div className="modal-body">
+              {pendingMembers.map((member) => (
+                <div key={member.id} className="score-input-row">
+                  <div className="member-info">
+                    <span className="member-name">{member.name}</span>
+                    <span className="member-gender">
+                      ({member.gender || '미지정'})
+                    </span>
+                  </div>
+                  <div className="score-input-group">
+                    <input
+                      type="number"
+                      min="0"
+                      max="300"
+                      placeholder="평균 점수"
+                      value={memberScores[member.name] || ''}
+                      onChange={(e) =>
+                        handleScoreInput(member.name, e.target.value)
+                      }
+                      className="score-input"
+                    />
+                    <span className="score-unit">점</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={handleScoreInputCancel}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleScoreInputComplete}
+                disabled={pendingMembers.some(
+                  (member) =>
+                    !memberScores[member.name] || memberScores[member.name] <= 0
+                )}
+              >
+                추가하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 게스트 추가 모달 */}
+      {showGuestModal && (
+        <div className="modal-overlay">
+          <div className="modal-content guest-modal">
+            <div className="modal-header">
+              <h3>게스트 추가</h3>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>이름 *</label>
+                <input
+                  type="text"
+                  placeholder="게스트 이름을 입력하세요"
+                  value={guestData.name}
+                  onChange={(e) =>
+                    handleGuestDataChange('name', e.target.value)
+                  }
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>평균 점수 *</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="300"
+                  placeholder="평균 점수를 입력하세요"
+                  value={guestData.average}
+                  onChange={(e) =>
+                    handleGuestDataChange('average', e.target.value)
+                  }
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>성별 *</label>
+                <select
+                  value={guestData.gender}
+                  onChange={(e) =>
+                    handleGuestDataChange('gender', e.target.value)
+                  }
+                  className="form-select"
+                >
+                  <option value="">성별을 선택하세요</option>
+                  <option value="남">남</option>
+                  <option value="여">여</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={handleCloseGuestModal}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleAddGuest}
+                disabled={
+                  !guestData.name.trim() ||
+                  !guestData.average ||
+                  !guestData.gender
+                }
+              >
+                추가하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

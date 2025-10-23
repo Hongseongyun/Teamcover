@@ -21,7 +21,59 @@
 
 /* 검색 섹션 */
 .search-section {
+  margin-top: 1.5rem;
   margin-bottom: 2rem;
+  text-align: left;
+}
+
+.search-input-row {
+  display: flex !important;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.search-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  width: auto;
+}
+
+.search-group h4 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.search-input-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.guest-add-btn {
+  margin-left: auto;
+}
+
+.search-group .search-input {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+.search-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .search-header {
@@ -34,24 +86,13 @@
   font-size: 1.125rem;
 }
 
-/* 검색 입력란 스타일 (버튼 제거 후) */
-.search-input-row {
-  display: flex !important;
-  flex-direction: column !important;
-  margin-bottom: 1.5rem;
-  width: 100%;
-}
+/* 검색 입력란 스타일 (버튼 제거 후) - 제거됨 */
 
-/* 기본 검색 그룹 스타일 */
-.search-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+/* 기본 검색 그룹 스타일 - 제거됨 */
 
 /* 검색 그룹 - 입력란 영역 */
 .search-input-row .search-group {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
 }
@@ -78,15 +119,26 @@
   font-size: 1rem;
 }
 
-/* 작은 화면에서도 가로 배치 유지 */
-@media (max-width: 768px) {
+/* 작은 화면에서 세로 배치로 변경 */
+@media (max-width: 770px) {
   .search-input-row {
-    flex-direction: row;
+    flex-direction: column !important;
     gap: 0.75rem;
+    align-items: flex-start;
   }
 
   .search-group {
-    flex: 1;
+    flex: none;
+    width: 100%;
+  }
+
+  .search-group .search-input {
+    width: 200px; /* 2/3 줄임 (250px -> 200px) */
+  }
+
+  .guest-add-btn {
+    margin-left: 0;
+    margin-top: 0.5rem;
   }
 
   .btn {
@@ -96,6 +148,303 @@
 
   .btn-sm {
     min-height: 30px !important;
+  }
+
+  /* 회원 카드 한 줄에 두 개씩 배치 */
+  .members-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* 600px 이하에서도 회원 카드 두 개씩 배치 유지 */
+@media (max-width: 600px) {
+  .members-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* 360px 이하 모바일에서는 한 줄에 하나씩 배치 */
+@media (max-width: 360px) {
+  .members-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  /* 선수 카드 상자 안에 맞추기 */
+  .players-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+    padding: 0 0.5rem !important;
+  }
+
+  .player-card {
+    padding: 0.75rem !important;
+    min-width: 0 !important;
+  }
+
+  /* 선택된 회원 추가/선택 초기화 버튼 글씨 크기 축소 */
+  .bulk-actions-bottom .btn {
+    font-size: 0.7rem !important;
+    padding: 0.5rem 0.8rem !important;
+    min-width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .bulk-actions-bottom {
+    gap: 0.5rem !important;
+    padding: 0 0.5rem !important;
+  }
+
+  /* 팀 구성 섹션 모바일 최적화 */
+  .team-config {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    align-items: stretch !important;
+  }
+
+  .team-config-row {
+    flex-direction: row !important;
+    gap: 0.5rem !important;
+    align-items: flex-end !important;
+    flex-wrap: wrap !important;
+  }
+
+  .team-config .form-group {
+    min-width: auto !important;
+    flex: 1 !important;
+  }
+
+  .team-config .form-group input {
+    padding: 0.6rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .team-config .btn {
+    height: auto !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+    flex: 1 1 100% !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .team-config .gender-balance-option {
+    height: auto !important;
+    padding: 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* 360px 모바일에서 팀 결과 세로 배치 */
+  .teams-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .team-card {
+    padding: 0.75rem !important;
+  }
+
+  .team-card h4 {
+    font-size: 1.1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .team-stats {
+    font-size: 0.8rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .team-members {
+    font-size: 0.75rem !important;
+  }
+
+  .team-members .member-item {
+    padding: 0.25rem 0 !important;
+    margin-bottom: 0.25rem !important;
+  }
+}
+
+/* 점수 입력 모달 스타일 */
+.score-input-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.score-input-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  margin-bottom: 0.75rem;
+  background: var(--toss-white);
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.member-name {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  font-size: 1rem;
+}
+
+.member-gender {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+}
+
+.score-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.score-input {
+  width: 100px;
+  padding: 0.5rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  text-align: center;
+  font-size: 1rem;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.score-unit {
+  font-size: 0.875rem;
+  color: var(--toss-gray-600);
+  font-weight: 500;
+}
+
+/* 360px 모바일에서 점수 입력 모달 최적화 */
+@media (max-width: 360px) {
+  .score-input-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .score-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .score-input-group {
+    justify-content: center;
+  }
+
+  .score-input {
+    width: 120px;
+  }
+}
+
+/* 게스트 추가 모달 스타일 */
+.guest-modal {
+  max-width: 350px;
+  width: 90%;
+}
+
+.guest-modal .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.guest-modal .form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.guest-modal .form-input,
+.guest-modal .form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.guest-modal .form-input:focus,
+.guest-modal .form-select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 360px 모바일에서 게스트 모달 최적화 */
+@media (max-width: 360px) {
+  .guest-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .search-input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .search-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .search-group .search-input {
+    width: 160px; /* 메시지가 다 보이도록 늘림 */
+    font-size: 0.85rem;
+    padding: 0.4rem 0.5rem;
+    height: 32px;
+    box-sizing: border-box;
+  }
+
+  .search-input-group {
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+    align-items: center;
+  }
+
+  .search-input-group .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+    height: 32px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: auto;
+    width: auto;
+  }
+
+  .guest-add-btn {
+    margin-top: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    min-height: 32px;
+  }
+
+  .search-buttons {
+    justify-content: center;
+  }
+
+  .guest-modal .form-input,
+  .guest-modal .form-select {
+    padding: 0.6rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -443,6 +792,18 @@
   margin-bottom: 1.5rem;
 }
 
+/* 화면이 줄어들어도 제목이 왼쪽에 유지되도록 */
+@media (max-width: 768px) {
+  .section-header {
+    justify-content: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  .section-header .section-actions {
+    margin-left: auto !important;
+  }
+}
+
 .section-actions {
   display: flex;
   gap: 1rem;
@@ -561,71 +922,27 @@
   }
 }
 
-.teams-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+/* 1100px 이하에서 2팀씩 배치 */
+@media (max-width: 1100px) {
+  .teams-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* 770px 이하에서 1팀씩 세로 배치 */
+@media (max-width: 770px) {
+  .teams-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
 }
 
 /* 팀 순서 고정 - 왼쪽부터 1, 2, 3... 순으로 배치 */
 .teams-grid {
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(300px, 1fr);
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scrollbar-width: thin;
-  scrollbar-color: var(--toss-gray-300) transparent;
-}
-
-/* 스크롤바 스타일링 */
-.teams-grid::-webkit-scrollbar {
-  height: 8px;
-}
-
-.teams-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.teams-grid::-webkit-scrollbar-thumb {
-  background: var(--toss-gray-300);
-  border-radius: 4px;
-}
-
-.teams-grid::-webkit-scrollbar-thumb:hover {
-  background: var(--toss-gray-400);
-}
-
-/* 팀 카드 순서 강제 적용 */
-.team-card[data-team-number='1'] {
-  order: 1;
-}
-.team-card[data-team-number='2'] {
-  order: 2;
-}
-.team-card[data-team-number='3'] {
-  order: 3;
-}
-.team-card[data-team-number='4'] {
-  order: 4;
-}
-.team-card[data-team-number='5'] {
-  order: 5;
-}
-.team-card[data-team-number='6'] {
-  order: 6;
-}
-.team-card[data-team-number='7'] {
-  order: 7;
-}
-.team-card[data-team-number='8'] {
-  order: 8;
-}
-.team-card[data-team-number='9'] {
-  order: 9;
-}
-.team-card[data-team-number='10'] {
-  order: 10;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1rem 0;
 }
 
 .team-card {

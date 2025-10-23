@@ -1722,7 +1722,7 @@ const Points = () => {
                     onKeyPress={(e) =>
                       e.key === 'Enter' && handleMemberSearch()
                     }
-                    placeholder="회원명을 입력하거나 선택하세요"
+                    placeholder="회원명을 입력하세요"
                     className="member-search-input"
                   />
                   {showDropdown && (

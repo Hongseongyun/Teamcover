@@ -1331,7 +1331,7 @@ const Scores = () => {
             </div>
           ) : (
             <div className="member-stats">
-              {memberStats && (
+              {memberStats ? (
                 <>
                   <div className="member-header">
                     <h4>{memberStats.memberName}님의 스코어 통계</h4>
@@ -1595,6 +1595,19 @@ const Scores = () => {
                     </div>
                   </div>
                 </>
+              ) : (
+                <div className="no-results">
+                  <div className="no-results-content">
+                    <h4>검색결과가 없습니다</h4>
+                    <p>해당 회원의 스코어 기록이 없습니다.</p>
+                    <button
+                      className="btn btn-primary"
+                      onClick={resetMemberSearch}
+                    >
+                      다른 회원 검색
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
