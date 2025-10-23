@@ -24,24 +24,6 @@ const TierBadge = ({ tier, size = 'normal' }) => {
     return tierMap[tier] || 'tier-unranked';
   };
 
-  const getTierIconClass = (tier) => {
-    if (!tier) return 'tier-icon-unranked';
-
-    const iconMap = {
-      배치: 'tier-icon-unranked',
-      아이언: 'tier-icon-iron',
-      브론즈: 'tier-icon-bronze',
-      실버: 'tier-icon-silver',
-      골드: 'tier-icon-gold',
-      플레티넘: 'tier-icon-platinum',
-      다이아: 'tier-icon-diamond',
-      마스터: 'tier-icon-master',
-      챌린저: 'tier-icon-challenger',
-    };
-
-    return iconMap[tier] || 'tier-icon-unranked';
-  };
-
   const getDisplayTier = (tier) => {
     const tierMap = {
       배치: 'UNRANKED',
@@ -92,7 +74,6 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    tier: '',
     email: '',
     note: '',
   });
@@ -103,7 +84,6 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    tier: '',
     email: '',
     note: '',
   });
@@ -274,7 +254,6 @@ const Members = () => {
         name: '',
         phone: '',
         gender: '',
-        tier: '',
         email: '',
         note: '',
       });
@@ -319,7 +298,6 @@ const Members = () => {
       name: '',
       phone: '',
       gender: '',
-      tier: '',
       email: '',
       note: '',
     });
@@ -375,7 +353,6 @@ const Members = () => {
       name: member.name,
       phone: member.phone || '',
       gender: member.gender || '',
-      tier: member.tier || '',
       email: member.email || '',
       note: member.note || '',
     });
@@ -388,7 +365,6 @@ const Members = () => {
       name: '',
       phone: '',
       gender: '',
-      tier: '',
       email: '',
       note: '',
     });
@@ -413,7 +389,6 @@ const Members = () => {
                 name: inlineEditData.name,
                 phone: inlineEditData.phone,
                 gender: inlineEditData.gender,
-                tier: inlineEditData.tier,
                 email: inlineEditData.email,
                 note: inlineEditData.note,
               }
@@ -478,7 +453,7 @@ const Members = () => {
           </div>
           <div className="stat-card stat-success">
             <div className="stat-number">{stats.new_members || 0}</div>
-            <div className="stat-label">신규 회원 (30일)</div>
+            <div className="stat-label">신규 회원</div>
           </div>
           <div className="stat-card stat-info">
             <div className="stat-number">{stats.male_count || 0}</div>
@@ -596,27 +571,6 @@ const Members = () => {
                     <option value="">선택</option>
                     <option value="남">남</option>
                     <option value="여">여</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>티어</label>
-                  <select
-                    value={formData.tier}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tier: e.target.value })
-                    }
-                    disabled={submitting}
-                  >
-                    <option value="">선택</option>
-                    <option value="배치">배치</option>
-                    <option value="아이언">아이언</option>
-                    <option value="브론즈">브론즈</option>
-                    <option value="실버">실버</option>
-                    <option value="골드">골드</option>
-                    <option value="플레티넘">플레티넘</option>
-                    <option value="다이아">다이아</option>
-                    <option value="마스터">마스터</option>
-                    <option value="챌린저">챌린저</option>
                   </select>
                 </div>
               </div>
@@ -738,29 +692,6 @@ const Members = () => {
                             <option value="">선택</option>
                             <option value="남">남</option>
                             <option value="여">여</option>
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            className="inline-select"
-                            value={inlineEditData.tier}
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                tier: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">선택</option>
-                            <option value="배치">배치</option>
-                            <option value="아이언">아이언</option>
-                            <option value="브론즈">브론즈</option>
-                            <option value="실버">실버</option>
-                            <option value="골드">골드</option>
-                            <option value="플레티넘">플레티넘</option>
-                            <option value="다이아">다이아</option>
-                            <option value="마스터">마스터</option>
-                            <option value="챌린저">챌린저</option>
                           </select>
                         </td>
                         <td>

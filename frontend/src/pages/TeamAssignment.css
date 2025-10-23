@@ -93,6 +93,10 @@
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
   }
+
+  .btn-sm {
+    min-height: 30px !important;
+  }
 }
 
 /* 검색 결과 */

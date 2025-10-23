@@ -302,6 +302,15 @@
 
 /* 더 작은 모바일 화면 (770px 이하) - 작업 버튼 여백 추가 축소 */
 @media (max-width: 770px) {
+  /* 상단 버튼 최소 높이 설정 */
+  .header-actions .btn {
+    min-height: 30px;
+  }
+
+  .btn-sm {
+    min-height: 30px !important;
+  }
+
   /* 테이블 셀 기본 패딩도 약간 축소 */
   .members-table th,
   .members-table td {
@@ -310,11 +319,10 @@
 
   /* 작업 영역 버튼 간격/크기 대폭 축소 */
   .members-table td:nth-child(7) .btn {
-    padding: 0.25rem 0.35rem;
+    padding: 0.25rem 0.5rem;
     font-size: 0.65rem;
     margin: 0 0.02rem;
-    min-width: auto;
-    width: auto;
+    min-width: 50px;
   }
 
   .inline-actions {
@@ -322,10 +330,9 @@
   }
 
   .inline-actions .btn {
-    padding: 0.25rem 0.35rem;
+    padding: 0.25rem 0.5rem;
     font-size: 0.65rem;
-    min-width: auto;
-    width: auto;
+    min-width: 50px;
   }
 
   /* 작업 컬럼 너비도 더 줄이기 */
@@ -364,15 +371,16 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .stats-section {
   margin-bottom: 2rem;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.members-page .stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
   gap: 1.5rem;
 }
 
@@ -802,42 +810,125 @@
     width: 100%;
     flex-wrap: wrap;
     gap: 0.75rem;
+    justify-content: flex-end;
   }
 
   .header-actions .btn {
-    flex: 1;
+    flex: none;
     min-width: fit-content;
     padding: 0.6rem 1rem;
     font-size: 0.875rem;
   }
 
   /* 통계 카드 */
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+  .members-page .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem;
   }
 
   .stat-card {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 
   .stat-number {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 
   .stat-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+  }
+}
+
+/* 작은 모바일 화면 (360px 이하) */
+@media (max-width: 360px) {
+  /* 페이지 패딩 조정 */
+  .members-page {
+    padding: 1rem;
+  }
+
+  /* 페이지 헤더 */
+  .page-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* 상단 버튼들을 크게 만들기 */
+  .header-actions {
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .header-actions .btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    min-height: 30px;
+    border-radius: 8px;
+  }
+
+  /* 통계 카드 그리드를 두개씩 배치하고 여백 줄이기 */
+  .stats-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .members-page .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+
+  .stat-number {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    font-weight: 500;
   }
 
   /* 폼 섹션 */
   .section-card {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
   .section-title {
     font-size: 1.25rem;
   }
 
+  /* 테이블 섹션 조정 */
+  .members-section {
+    margin-bottom: 1.5rem;
+  }
+
+  /* 테이블 셀 패딩 조정 */
+  .members-table th,
+  .members-table td {
+    padding: 0.25rem 0.1rem;
+    font-size: 0.75rem;
+  }
+
+  /* 작업 버튼 크기 조정 */
+  .members-table td:nth-child(7) .btn {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.65rem;
+    margin: 0 0.05rem;
+  }
+
+  /* 인라인 액션 버튼 조정 */
+  .inline-actions .btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* 모바일 반응형 (1000px 이하) - 추가 스타일 */
+@media (max-width: 1000px) {
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -947,7 +1038,7 @@
   }
 
   .inline-actions .btn {
-    width: auto;
+    min-width: 60px;
     padding: 0.5rem 0.7rem;
     font-size: 0.75rem;
   }

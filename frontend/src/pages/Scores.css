@@ -396,8 +396,7 @@
 
 /* 닫기 버튼 실제 컨테이너 대상 축소 및 자동폭 */
 .form-actions .btn {
-  width: auto !important;
-  min-width: 0 !important;
+  min-width: 80px !important;
   font-size: 0.8rem;
   padding: 0.6em 1.1em;
 }
@@ -781,13 +780,14 @@
 
 .search-row .btn {
   height: 40px !important;
-  padding: 0.5rem 1.5rem;
+  padding: 0.5rem 2.5rem;
   white-space: nowrap;
   margin-top: 0 !important;
   align-self: flex-start !important;
   flex-shrink: 0 !important;
   display: inline-block !important;
   vertical-align: top !important;
+  min-width: 80px;
 }
 
 /* 자동완성 드롭다운 */
@@ -1056,6 +1056,8 @@
   border-radius: var(--toss-radius);
   padding: 0.25rem;
   gap: 0;
+  min-height: 30px;
+  align-items: center;
 }
 
 .view-toggle .btn {
@@ -1602,11 +1604,12 @@
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  /* 섹션 헤더: 제목과 버튼을 세로 배치하여 줄바꿈 시 다음 줄로 */
+  /* 섹션 헤더: 제목과 버튼을 가로 배치하여 오른쪽 정렬 */
   .section-header {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
   }
 
@@ -2012,6 +2015,7 @@
   .btn-sm {
     padding: 0.3rem 0.6rem;
     font-size: 0.7rem;
+    min-height: 30px !important;
   }
 
   /* 티어 배지 작게 */
@@ -2036,6 +2040,96 @@
 
   .page-header h1 {
     font-size: 1.5rem;
+  }
+
+  /* 회원별 평균 순위 섹션의 새로고침 버튼 */
+  .scores-page .section-header .btn.btn-primary.btn-sm {
+    min-height: 30px !important;
+    height: 30px !important;
+  }
+
+  /* 로딩 상태에서 버튼 내용을 가로로 배치 */
+  .scores-page .section-header .btn.btn-primary.btn-sm:disabled {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    min-height: 30px !important;
+    height: 30px !important;
+  }
+
+  .scores-page
+    .section-header
+    .btn.btn-primary.btn-sm:disabled
+    .loading-spinner {
+    margin: 0 !important;
+  }
+
+  /* 더보기 버튼 가로 길이 설정 */
+  .show-more-btn-container .btn.btn-outline-primary.btn-sm {
+    padding: 0.5rem 1.5rem !important;
+    min-width: 120px;
+  }
+
+  /* 날짜 네비게이션 버튼 모바일 최적화 */
+  .date-navigation {
+    gap: 0.2rem !important;
+    padding: 0.2rem !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .date-navigation .nav-btn {
+    padding: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.6rem !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    min-width: 28px !important;
+  }
+
+  .date-navigation .current-date {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.3rem !important;
+    min-width: 60px !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 날짜 카드 내부 요소들 크기 축소 */
+  .single-date-view .date-card {
+    padding: 0.5rem !important;
+  }
+
+  .single-date-view .date-display {
+    font-size: 1rem !important;
+    margin: 0.3rem 0 !important;
+  }
+
+  .single-date-view .participation-badge {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.4rem !important;
+    margin: 0.2rem 0 !important;
+  }
+
+  .single-date-view .date-counter {
+    font-size: 0.5rem !important;
+    margin: 0.3rem 0 !important;
+  }
+
+  .single-date-view .participant-count {
+    font-size: 0.7rem !important;
+  }
+
+  .current-date-info {
+    min-width: 80px !important;
+    max-width: 100px !important;
   }
 
   .section-title {
@@ -2109,16 +2203,17 @@
   .view-toggle .btn,
   .search-row .btn {
     height: auto !important;
-    padding: 0.35rem 0.6rem !important;
+    padding: 0.35rem 1.2rem !important;
     font-size: 0.75rem !important;
+    min-width: 60px;
+    min-height: 30px !important;
   }
 
   /* 인원 추가/스코어 저장/다른 이미지 선택/닫기 - 줄 폭 채우지 않도록 */
   .add-person-row .btn,
   .ocr-actions .btn,
   .modal-actions .btn {
-    width: auto !important;
-    min-width: 0 !important;
+    min-width: 50px !important;
     display: inline-flex !important;
   }
 
@@ -2158,8 +2253,8 @@
   .view-toggle .btn,
   .search-row .btn {
     flex: 0 0 auto !important; /* 남는 공간 채우지 않음 */
-    width: auto !important;
-    min-width: 0 !important;
+    min-width: 60px !important;
+    min-height: 30px !important;
     height: auto !important;
     align-self: flex-start;
   }
@@ -2175,19 +2270,17 @@
   }
 
   .member-header h4 {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 65%;
+    line-height: 1.2;
+    flex: 1;
   }
 
   .member-header .btn {
     font-size: 0.65rem;
     padding: 0.4em 0.65em;
     flex: 0 0 auto;
-    width: auto;
+    min-width: 50px;
   }
 }
 
@@ -2283,6 +2376,7 @@
   .btn-sm {
     padding: 0.2rem 0.4rem;
     font-size: 0.6rem;
+    min-height: 30px !important;
   }
 
   .header-actions .btn {
@@ -2293,15 +2387,15 @@
   .view-toggle .btn,
   .search-row .btn {
     height: auto !important;
-    padding: 0.3rem 0.5rem !important;
+    padding: 0.3rem 1rem !important;
     font-size: 0.7rem !important;
+    min-width: 50px;
   }
 
   .add-person-row .btn,
   .ocr-actions .btn,
   .modal-actions .btn {
-    width: auto !important;
-    min-width: 0 !important;
+    min-width: 45px !important;
     display: inline-flex !important;
   }
 
@@ -2392,6 +2486,7 @@
   .btn-sm {
     padding: 0.15rem 0.3rem;
     font-size: 0.55rem;
+    min-height: 30px !important;
   }
 
   .header-actions .btn {
@@ -2409,8 +2504,7 @@
   .add-person-row .btn,
   .ocr-actions .btn,
   .modal-actions .btn {
-    width: auto !important;
-    min-width: 0 !important;
+    min-width: 40px !important;
     display: inline-flex !important;
   }
 
@@ -2881,7 +2975,8 @@
   }
 
   .member-header h4 {
-    font-size: 1.25rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .recent-games h5,
@@ -2959,6 +3054,17 @@
     flex-shrink: 0 !important;
     margin-top: 0 !important;
     display: inline-block !important;
+    padding: 0.4rem 1.5rem !important;
+    min-width: 70px;
+  }
+}
+
+/* 360px 이하 - 매우 작은 모바일 화면 */
+@media (max-width: 360px) {
+  .search-row .btn {
+    padding: 0.3rem 1.2rem !important;
+    min-width: 60px;
+    font-size: 0.8rem;
   }
 
   /* 날짜 선택기 크기 축소 */
@@ -3195,6 +3301,22 @@
   margin-bottom: 1rem;
 }
 
+@media (max-width: 770px) {
+  .section-header {
+    justify-content: flex-end !important;
+    align-items: flex-start !important;
+  }
+
+  .scores-page .section-header .view-toggle {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .scores-page .section-header .section-title {
+    margin-right: auto !important;
+  }
+}
+
 /* 줄바꿈 시 다음 줄 배치 및 버튼 감싸기 */
 .section-header,
 .header-actions,
@@ -3206,6 +3328,41 @@
 .view-toggle {
   display: flex;
   gap: 0.5rem;
+}
+
+@media (max-width: 770px) {
+  .view-toggle {
+    margin-left: auto !important;
+  }
+
+  .scores-page .section-header {
+    justify-content: space-between !important;
+  }
+
+  .scores-page .section-header .view-toggle {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  /* 헤더 오른쪽 영역 스타일 */
+  .scores-header .header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+
+  /* 선택 삭제 버튼 스타일 */
+  .scores-header .header-right .btn.btn-danger.btn-sm {
+    font-size: 0.7rem !important;
+    padding: 0.3rem 0.6rem !important;
+  }
+}
+
+/* 헤더 오른쪽 영역 기본 스타일 */
+.scores-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .section-title {

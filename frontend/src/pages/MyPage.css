@@ -230,6 +230,6 @@
   }
 
   .btn {
-    width: 100%;
+    min-width: 80px;
   }
 }

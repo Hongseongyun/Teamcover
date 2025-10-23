@@ -1300,7 +1300,7 @@ const Scores = () => {
                     onKeyPress={(e) =>
                       e.key === 'Enter' && handleMemberSearch()
                     }
-                    placeholder="회원명을 입력하거나 선택하세요"
+                    placeholder="회원명을 입력하세요"
                     className="member-search-input"
                   />
                   {showDropdown && (
@@ -2377,6 +2377,8 @@ const Scores = () => {
           <div className="scores-header">
             <div className="header-left">
               <h3 className="section-title">스코어 기록</h3>
+            </div>
+            <div className="header-right">
               {selectedScores.length > 0 && (
                 <button
                   className="btn btn-danger btn-sm"
@@ -2393,27 +2395,27 @@ const Scores = () => {
                   )}
                 </button>
               )}
-            </div>
-            <div className="view-toggle">
-              <button
-                className={`btn btn-sm ${
-                  showAllDates ? 'btn-primary' : 'btn-outline-secondary'
-                }`}
-                onClick={() => setShowAllDates(true)}
-              >
-                전체 보기
-              </button>
-              <button
-                className={`btn btn-sm ${
-                  !showAllDates ? 'btn-primary' : 'btn-outline-secondary'
-                }`}
-                onClick={() => {
-                  setShowAllDates(false);
-                  setCurrentDateIndex(0);
-                }}
-              >
-                단일 날짜 보기
-              </button>
+              <div className="view-toggle">
+                <button
+                  className={`btn btn-sm ${
+                    showAllDates ? 'btn-primary' : 'btn-outline-secondary'
+                  }`}
+                  onClick={() => setShowAllDates(true)}
+                >
+                  전체 보기
+                </button>
+                <button
+                  className={`btn btn-sm ${
+                    !showAllDates ? 'btn-primary' : 'btn-outline-secondary'
+                  }`}
+                  onClick={() => {
+                    setShowAllDates(false);
+                    setCurrentDateIndex(0);
+                  }}
+                >
+                  단일 날짜 보기
+                </button>
+              </div>
             </div>
           </div>
 
