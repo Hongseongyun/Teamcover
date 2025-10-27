@@ -701,6 +701,17 @@
   transform: translateY(-2px);
 }
 
+/* 클릭 가능한 카드 */
+.game-payment-card[style*='cursor: pointer']:hover {
+  cursor: pointer;
+  background-color: var(--toss-gray-50);
+}
+
+.game-payment-card[style*='cursor: pointer']:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .game-card-header {
   display: flex;
   justify-content: center;

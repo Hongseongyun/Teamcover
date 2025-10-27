@@ -8,6 +8,7 @@ const GamePaymentsByDate = ({
   payments,
   onEdit,
   onDelete,
+  onToggle,
   isAdmin,
   deleting,
   formatNumber,
@@ -44,7 +45,12 @@ const GamePaymentsByDate = ({
           </div>
           <div className="game-payments-grid">
             {groupByDate[date].map((payment) => (
-              <div key={payment.id} className="game-payment-card">
+              <div
+                key={payment.id}
+                className="game-payment-card"
+                onClick={() => isAdmin && onToggle && onToggle(payment)}
+                style={{ cursor: isAdmin ? 'pointer' : 'default' }}
+              >
                 <div className="game-card-header">
                   <span className="game-member-name">
                     {payment.member_name}
@@ -233,6 +239,19 @@ const Payments = () => {
         m.member_id === memberId ? { ...m, is_paid: !m.is_paid } : m
       )
     );
+  };
+
+  // 정기전 게임비 카드에서 직접 토글
+  const toggleGamePaymentCard = async (payment) => {
+    try {
+      await paymentAPI.updatePayment(payment.id, {
+        is_paid: !payment.is_paid,
+      });
+      loadPayments(); // 목록 새로고침
+    } catch (error) {
+      console.error('납입 상태 변경 실패:', error);
+      alert('납입 상태 변경에 실패했습니다.');
+    }
   };
 
   const saveGamePayments = async () => {
@@ -1135,6 +1154,7 @@ const Payments = () => {
                 payments={payments.filter((p) => p.payment_type === 'game')}
                 onEdit={startEdit}
                 onDelete={handleDelete}
+                onToggle={toggleGamePaymentCard}
                 isAdmin={isAdmin}
                 deleting={deleting}
                 formatNumber={formatNumber}
