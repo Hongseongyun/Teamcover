@@ -76,7 +76,6 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    email: '',
     note: '',
     is_staff: false,
   });
@@ -87,7 +86,6 @@ const Members = () => {
     name: '',
     phone: '',
     gender: '',
-    email: '',
     note: '',
     is_staff: false,
     join_date: '',
@@ -378,8 +376,8 @@ const Members = () => {
       name: '',
       phone: '',
       gender: '',
-      email: '',
       note: '',
+      is_staff: false,
     });
     setEditingMember(null);
     setShowAddForm(false);
@@ -433,7 +431,6 @@ const Members = () => {
       name: member.name,
       phone: member.phone || '',
       gender: member.gender || '',
-      email: member.email || '',
       note: member.note || '',
       is_staff: member.is_staff || false,
       join_date: member.join_date || '',
@@ -629,9 +626,20 @@ const Members = () => {
               onSubmit={handleSubmit}
               className={`member-form ${submitting ? 'submitting' : ''}`}
             >
-              <div className="form-row">
-                <div className="form-group">
-                  <label>이름 *</label>
+              <div
+                className="form-row"
+                style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}
+              >
+                <div style={{ flex: 2 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    이름 *
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
@@ -640,10 +648,24 @@ const Members = () => {
                     }
                     required
                     disabled={submitting}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                    }}
                   />
                 </div>
-                <div className="form-group">
-                  <label>전화번호</label>
+                <div style={{ flex: 2 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    전화번호
+                  </label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -651,39 +673,52 @@ const Members = () => {
                       setFormData({ ...formData, phone: e.target.value })
                     }
                     disabled={submitting}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                    }}
                   />
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>성별</label>
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    성별
+                  </label>
                   <select
                     value={formData.gender}
                     onChange={(e) =>
                       setFormData({ ...formData, gender: e.target.value })
                     }
                     disabled={submitting}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                    }}
                   >
                     <option value="">선택</option>
                     <option value="남">남</option>
                     <option value="여">여</option>
                   </select>
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>이메일</label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    disabled={submitting}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>비고</label>
+                <div style={{ flex: 2 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: 500,
+                    }}
+                  >
+                    비고
+                  </label>
                   <input
                     type="text"
                     value={formData.note}
@@ -691,29 +726,41 @@ const Members = () => {
                       setFormData({ ...formData, note: e.target.value })
                     }
                     disabled={submitting}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '0.5rem',
+                    }}
                   />
                 </div>
-              </div>
-              {isAdmin && (
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={formData.is_staff}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            is_staff: e.target.checked,
-                          })
-                        }
-                        disabled={submitting}
-                      />
-                      운영진 회원
+                {isAdmin && (
+                  <div
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      paddingBottom: '0.5rem',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.is_staff}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_staff: e.target.checked,
+                        })
+                      }
+                      disabled={submitting}
+                    />
+                    <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      운영진
                     </label>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
               <div className="form-actions">
                 <button
                   type="submit"

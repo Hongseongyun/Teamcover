@@ -11,7 +11,7 @@ const Landing = () => {
   // 표시될 카드 개수 계산
   const getVisibleCardCount = () => {
     if (!isAuthenticated) return 2; // 로그인하지 않은 사용자: 스코어, 포인트
-    if (user?.role === 'admin' || user?.role === 'super_admin') return 4; // 관리자: 모든 카드
+    if (user?.role === 'admin' || user?.role === 'super_admin') return 5; // 관리자: 모든 카드
     return 2; // 일반 사용자: 스코어, 포인트
   };
 
@@ -168,6 +168,23 @@ const Landing = () => {
                     <h3>팀 배정</h3>
                     <p>공정한 팀 구성과 균형잡힌 매치를 만들어보세요</p>
                     <div className="feature-link">팀 배정 페이지 →</div>
+                  </div>
+                </div>
+              )}
+
+            {/* 관리자만 볼 수 있는 회비관리 카드 */}
+            {isAuthenticated &&
+              (user?.role === 'admin' || user?.role === 'super_admin') && (
+                <div
+                  className="feature-card left-aligned"
+                  ref={(el) => (featureRefs.current[4] = el)}
+                  onClick={() => handleCardClick('/payments')}
+                >
+                  <div className="feature-icon">💰</div>
+                  <div className="feature-content">
+                    <h3>회비관리</h3>
+                    <p>월회비와 정기전 게임비를 효율적으로 관리하세요</p>
+                    <div className="feature-link">회비관리 페이지 →</div>
                   </div>
                 </div>
               )}

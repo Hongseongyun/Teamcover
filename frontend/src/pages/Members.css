@@ -449,13 +449,12 @@
 .member-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  display: flex;
+  gap: 0.75rem;
 }
 
 .form-group {
@@ -471,6 +470,7 @@
 .form-group label {
   font-weight: 500;
   color: var(--toss-gray-700);
+  margin-bottom: 0.25rem;
 }
 
 .form-group input,
@@ -927,10 +927,52 @@
   }
 }
 
+/* 작은 모바일 (360px 이하) - 회원 등록 폼 */
+@media (max-width: 360px) {
+  .member-form .form-row {
+    flex-wrap: wrap;
+  }
+
+  /* 첫 줄: 이름, 전화번호 (50%) */
+  .member-form .form-row > div:first-child,
+  .member-form .form-row > div:nth-child(2) {
+    flex: 0 0 calc(50% - 0.5rem);
+    min-width: 0;
+  }
+
+  /* 둘째 줄: 성별, 비고, 운영진 (33.33%) */
+  .member-form .form-row > div:nth-child(3),
+  .member-form .form-row > div:nth-child(4),
+  .member-form .form-row > div:nth-child(5) {
+    flex: 0 0 calc(33.33% - 0.4rem);
+    min-width: 0;
+  }
+}
+
 /* 모바일 반응형 (1000px 이하) - 추가 스타일 */
 @media (max-width: 1000px) {
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  /* 회원 등록 폼 모바일 최적화 */
+  .member-form .form-row {
+    flex-wrap: wrap;
+  }
+
+  /* 첫 줄: 이름, 전화번호 */
+  .member-form .form-row > div:first-child,
+  .member-form .form-row > div:nth-child(2) {
+    flex: 0 0 calc(50% - 0.5rem);
+    min-width: 0;
+  }
+
+  /* 둘째 줄: 성별, 비고, 운영진 */
+  .member-form .form-row > div:nth-child(3),
+  .member-form .form-row > div:nth-child(4),
+  .member-form .form-row > div:nth-child(5) {
+    flex: 0 0 calc(33.33% - 0.4rem);
+    min-width: 0;
   }
 
   /* 테이블 */
