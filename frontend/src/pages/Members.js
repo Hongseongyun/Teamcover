@@ -100,6 +100,85 @@ const Members = () => {
     worksheetName: '',
   });
 
+  // 정렬 상태
+  const [sortField, setSortField] = useState('name'); // name, tier, join_date
+  const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
+
+  // 정렬 함수
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // 같은 필드를 클릭하면 순서 변경
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 다른 필드를 클릭하면 필드 변경하고 오름차순으로
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 정렬된 회원 목록
+  const sortedMembers = [...members].sort((a, b) => {
+    let valueA, valueB;
+
+    switch (sortField) {
+      case 'name':
+        valueA = a.name || '';
+        valueB = b.name || '';
+        break;
+      case 'tier':
+        // 티어별 우선순위 정의
+        const tierOrder = {
+          챌린저: 0,
+          마스터: 1,
+          다이아: 2,
+          다이아몬드: 2,
+          플레티넘: 3,
+          플래티넘: 3,
+          골드: 4,
+          실버: 5,
+          브론즈: 6,
+          아이언: 7,
+          배치: 8,
+          언랭크: 8,
+          '': 9,
+        };
+        valueA = tierOrder[a.tier] !== undefined ? tierOrder[a.tier] : 9;
+        valueB = tierOrder[b.tier] !== undefined ? tierOrder[b.tier] : 9;
+        break;
+      case 'join_date':
+        valueA = a.join_date || a.created_at || '';
+        valueB = b.join_date || b.created_at || '';
+        break;
+      default:
+        return 0;
+    }
+
+    // 날짜 비교
+    if (sortField === 'join_date') {
+      const dateA = valueA ? new Date(valueA) : new Date(0);
+      const dateB = valueB ? new Date(valueB) : new Date(0);
+      if (sortOrder === 'asc') {
+        return dateA - dateB;
+      } else {
+        return dateB - dateA;
+      }
+    }
+
+    // 티어는 숫자 비교
+    if (sortField === 'tier') {
+      if (sortOrder === 'asc') {
+        return valueA - valueB;
+      } else {
+        return valueB - valueA;
+      }
+    }
+
+    // 문자열 비교
+    if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+    if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   useEffect(() => {
     loadMembers();
     checkPasswordStatus();
@@ -674,17 +753,39 @@ const Members = () => {
             <table>
               <thead>
                 <tr>
-                  <th>이름</th>
+                  <th
+                    className="sortable"
+                    onClick={() => handleSort('name')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    이름{' '}
+                    {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th>전화번호</th>
                   <th>성별</th>
-                  <th>티어</th>
+                  <th
+                    className="sortable"
+                    onClick={() => handleSort('tier')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    티어{' '}
+                    {sortField === 'tier' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th>운영진</th>
-                  <th>가입일</th>
+                  <th
+                    className="sortable"
+                    onClick={() => handleSort('join_date')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    가입일{' '}
+                    {sortField === 'join_date' &&
+                      (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th>작업</th>
                 </tr>
               </thead>
               <tbody>
-                {members.map((member) => (
+                {sortedMembers.map((member) => (
                   <tr key={member.id}>
                     {inlineEditingId === member.id ? (
                       <>

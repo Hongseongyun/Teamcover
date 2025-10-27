@@ -1107,3 +1107,23 @@
   height: auto;
   min-height: 70px;
 }
+
+/* 정렬 가능한 헤더 스타일 */
+.members-table th.sortable {
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.members-table th.sortable:hover {
+  background-color: var(--toss-gray-100);
+}
+
+.members-table th.sortable::after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--toss-gray-500);
+}
