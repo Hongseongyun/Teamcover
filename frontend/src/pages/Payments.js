@@ -925,12 +925,40 @@ const Payments = () => {
                           );
                         }
 
-                        // 가입일 이전 월은 비활성화
+                        // 가입일 기준 비활성화 체크
                         const isBeforeJoinDate = (() => {
                           if (!member.join_date) return false;
+
                           const joinDate = new Date(member.join_date);
-                          const monthDate = new Date(month + '-01');
-                          return monthDate < joinDate;
+                          const year = joinDate.getFullYear();
+                          const monthIndex = joinDate.getMonth(); // 0-11
+                          const day = joinDate.getDate();
+
+                          const targetMonth = new Date(month + '-01');
+                          const targetYear = targetMonth.getFullYear();
+                          const targetMonthIndex = targetMonth.getMonth(); // 0-11
+
+                          // 가입월보다 이전인 경우 비활성화
+                          if (
+                            year < targetYear ||
+                            (year === targetYear &&
+                              monthIndex < targetMonthIndex)
+                          ) {
+                            return false; // 가입 후 월이므로 활성화
+                          }
+
+                          // 가입월보다 이후인 경우 비활성화
+                          if (
+                            year > targetYear ||
+                            (year === targetYear &&
+                              monthIndex > targetMonthIndex)
+                          ) {
+                            return true; // 가입 전 월이므로 비활성화
+                          }
+
+                          // 같은 년도, 같은 월인 경우
+                          // 15일 이전에 가입했으면 그 달부터 활성화, 15일 이후에 가입했으면 그 달은 비활성화
+                          return day > 15;
                         })();
 
                         const payment = getPaymentStatus(
