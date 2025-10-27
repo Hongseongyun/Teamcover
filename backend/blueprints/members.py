@@ -103,7 +103,17 @@ def get_members():
             pass
         
         total_members = len(members)
-        new_members = len([m for m in members if (datetime.utcnow() - m.created_at).days <= 30])
+        # 신규 회원: 가입 후 30일 이내 (join_date 우선, 없으면 created_at)
+        now = datetime.utcnow().date()
+        def is_new_member(member):
+            if member.join_date:
+                days_since_join = (now - member.join_date).days
+                return days_since_join <= 30
+            else:
+                days_since_created = (datetime.utcnow() - member.created_at).days
+                return days_since_created <= 30
+        
+        new_members = len([m for m in members if is_new_member(m)])
         male_count = len([m for m in members if m.gender == '남'])
         female_count = len([m for m in members if m.gender == '여'])
         
