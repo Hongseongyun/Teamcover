@@ -76,6 +76,7 @@ const Members = () => {
     gender: '',
     email: '',
     note: '',
+    is_staff: false,
   });
 
   // 인라인 편집 상태
@@ -86,6 +87,7 @@ const Members = () => {
     gender: '',
     email: '',
     note: '',
+    is_staff: false,
   });
 
   // 구글시트 가져오기 관련 상태
@@ -141,11 +143,6 @@ const Members = () => {
   const maskPhone = (phone) => {
     if (!phone) return '-';
     return phone;
-  };
-
-  const maskEmail = (email) => {
-    if (!email) return '-';
-    return email;
   };
 
   // 개인정보 클릭 핸들러
@@ -256,6 +253,7 @@ const Members = () => {
         gender: '',
         email: '',
         note: '',
+        is_staff: false,
       });
       loadMembers();
     } catch (error) {
@@ -355,6 +353,7 @@ const Members = () => {
       gender: member.gender || '',
       email: member.email || '',
       note: member.note || '',
+      is_staff: member.is_staff || false,
     });
   };
 
@@ -367,6 +366,7 @@ const Members = () => {
       gender: '',
       email: '',
       note: '',
+      is_staff: false,
     });
   };
 
@@ -380,24 +380,37 @@ const Members = () => {
         return;
       }
 
-      // 전체 새로고침 없이 상태 갱신
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === memberId
-            ? {
-                ...m,
-                name: inlineEditData.name,
-                phone: inlineEditData.phone,
-                gender: inlineEditData.gender,
-                email: inlineEditData.email,
-                note: inlineEditData.note,
-              }
-            : m
-        )
-      );
+      console.log('서버 응답:', response.data);
+
+      // 서버 응답 데이터로 상태 갱신
+      if (response.data && response.data.member) {
+        setMembers((prev) =>
+          prev.map((m) => (m.id === memberId ? response.data.member : m))
+        );
+      } else {
+        // 전체 새로고침 없이 상태 갱신
+        setMembers((prev) =>
+          prev.map((m) =>
+            m.id === memberId
+              ? {
+                  ...m,
+                  name: inlineEditData.name,
+                  phone: inlineEditData.phone,
+                  gender: inlineEditData.gender,
+                  email: inlineEditData.email,
+                  note: inlineEditData.note,
+                  is_staff: inlineEditData.is_staff,
+                }
+              : m
+          )
+        );
+      }
 
       alert('회원 정보가 수정되었습니다.');
       cancelInlineEdit();
+
+      // 데이터베이스와 동기화를 위해 다시 로드
+      loadMembers();
     } catch (error) {
       if (error.code === 'ERR_NETWORK') {
         alert(
@@ -598,6 +611,26 @@ const Members = () => {
                   />
                 </div>
               </div>
+              {isSuperAdmin && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={formData.is_staff}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            is_staff: e.target.checked,
+                          })
+                        }
+                        disabled={submitting}
+                      />
+                      운영진 회원
+                    </label>
+                  </div>
+                </div>
+              )}
               <div className="form-actions">
                 <button
                   type="submit"
@@ -641,7 +674,7 @@ const Members = () => {
                   <th>전화번호</th>
                   <th>성별</th>
                   <th>티어</th>
-                  <th>이메일</th>
+                  <th>운영진</th>
                   <th>등록일</th>
                   <th>작업</th>
                 </tr>
@@ -695,17 +728,34 @@ const Members = () => {
                           </select>
                         </td>
                         <td>
-                          <input
-                            className="inline-input"
-                            type="email"
-                            value={inlineEditData.email}
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                email: e.target.value,
-                              }))
-                            }
-                          />
+                          <TierBadge tier={member.tier} size="small" />
+                        </td>
+                        <td>
+                          {isSuperAdmin ? (
+                            <label
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={inlineEditData.is_staff}
+                                onChange={(e) =>
+                                  setInlineEditData((prev) => ({
+                                    ...prev,
+                                    is_staff: e.target.checked,
+                                  }))
+                                }
+                              />
+                              운영진
+                            </label>
+                          ) : (
+                            <span>
+                              {inlineEditData.is_staff ? '예' : '아니오'}
+                            </span>
+                          )}
                         </td>
                         <td>
                           {new Date(member.created_at)
@@ -754,19 +804,22 @@ const Members = () => {
                         <td>
                           <TierBadge tier={member.tier} size="small" />
                         </td>
-                        <td className="privacy-cell-wrapper">
-                          <span className="privacy-text">
-                            {maskEmail(member.email)}
-                          </span>
-                          {!privacyUnlocked && (
-                            <button
-                              className="privacy-lock-btn"
-                              onClick={handlePrivacyClick}
-                              title="클릭하여 개인정보 보기"
+                        <td>
+                          {member.is_staff ? (
+                            <span
+                              style={{
+                                padding: '2px 6px',
+                                backgroundColor: '#e7f3ff',
+                                color: '#0066cc',
+                                borderRadius: '3px',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                              }}
                             >
-                              <span className="lock-icon">🔒</span>
-                              <span className="unlock-icon">🔓</span>
-                            </button>
+                              운영진
+                            </span>
+                          ) : (
+                            '-'
                           )}
                         </td>
                         <td>

@@ -1,0 +1,1062 @@
+.payments-page {
+  padding: var(--responsive-padding, 2rem);
+  font-size: var(--responsive-font-base, 1rem);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: var(--responsive-font-h1, 2rem);
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* 통계 섹션 */
+.stats-section {
+  margin-bottom: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius);
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--toss-shadow-lg);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-primary .stat-number {
+  color: var(--toss-primary);
+}
+
+.stat-success .stat-number {
+  color: var(--toss-success);
+}
+
+.stat-info .stat-number {
+  color: var(--toss-secondary);
+}
+
+.stat-warning .stat-number {
+  color: var(--toss-warning);
+}
+
+/* 검색 필터 */
+.filter-section {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+  font-size: 0.875rem;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 0.5rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.section-card {
+  background: var(--toss-white);
+  border-radius: var(--toss-radius-lg);
+  padding: 2rem;
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.section-title {
+  font-size: var(--responsive-font-h2, 1.5rem);
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin-bottom: 1.5rem;
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.payments-section {
+  margin-bottom: 2rem;
+}
+
+.payments-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.payments-table table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.payments-table th,
+.payments-table td {
+  padding: clamp(0.5rem, 0.3rem + 0.5vw, 1rem);
+  text-align: center;
+  border-bottom: 1px solid var(--toss-gray-200);
+  font-size: var(--responsive-table-font, 0.875rem);
+}
+
+.payments-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.payments-table tbody tr:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.payment-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.payment-type.monthly {
+  background-color: var(--toss-success-light);
+  color: var(--toss-success);
+}
+
+.payment-type.game {
+  background-color: var(--toss-info-light);
+  color: var(--toss-info);
+}
+
+.status-paid {
+  color: var(--toss-success);
+  font-weight: 600;
+}
+
+.status-unpaid {
+  color: var(--toss-danger);
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: var(--toss-gray-500);
+  font-style: italic;
+}
+
+.btn {
+  padding: var(--responsive-button-padding, 0.75rem 1.5rem);
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: var(--responsive-button-font, 1rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--toss-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--toss-gray-600);
+}
+
+.btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--toss-danger-dark);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--toss-gray-300);
+  color: var(--toss-gray-700);
+}
+
+.btn-outline:hover {
+  background-color: var(--toss-gray-50);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: var(--toss-gray-600);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* CSS 변수 정의 */
+:root {
+  --toss-white: #ffffff;
+  --toss-gray-50: #f9fafb;
+  --toss-gray-200: #e5e7eb;
+  --toss-gray-300: #d1d5db;
+  --toss-gray-500: #6b7280;
+  --toss-gray-600: #4b5563;
+  --toss-gray-700: #374151;
+  --toss-gray-900: #111827;
+  --toss-primary: #3b82f6;
+  --toss-primary-dark: #2563eb;
+  --toss-success: #10b981;
+  --toss-success-light: #d1fae5;
+  --toss-secondary: #8b5cf6;
+  --toss-info: #06b6d4;
+  --toss-info-light: #ecfeff;
+  --toss-warning: #f59e0b;
+  --toss-danger: #ef4444;
+  --toss-danger-dark: #dc2626;
+  --toss-danger-light: #fee2e2;
+  --toss-radius: 0.5rem;
+  --toss-radius-lg: 0.75rem;
+  --toss-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --toss-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 뷰 모드 전환 */
+.view-toggle-section {
+  margin-bottom: 2rem;
+}
+
+/* 일괄 저장 버튼 */
+.batch-actions {
+  margin-bottom: 2rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.batch-actions-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.batch-info {
+  color: var(--toss-gray-700);
+  font-weight: 500;
+}
+
+.batch-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* 연도 네비게이션 */
+.year-navigation-section {
+  margin-bottom: 2rem;
+}
+
+.year-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.year-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.year-input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 2px solid var(--toss-primary);
+  border-radius: var(--toss-radius);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--toss-primary);
+}
+
+.year-input:focus {
+  outline: none;
+  border-color: var(--toss-primary-dark);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.year-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.view-toggle {
+  display: inline-flex;
+  background: var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 0.25rem;
+  gap: 0;
+}
+
+.view-toggle .btn {
+  border-radius: var(--toss-radius);
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: none;
+}
+
+.view-toggle .btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  font-weight: 600;
+}
+
+.view-toggle .btn-outline-secondary {
+  background-color: transparent;
+  color: var(--toss-gray-700);
+  border: none;
+  font-weight: 500;
+}
+
+/* 월별 표 형식 */
+.monthly-calendar-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.monthly-calendar-table table {
+  width: 100%;
+  min-width: 1200px;
+  border-collapse: collapse;
+}
+
+.monthly-calendar-table th,
+.monthly-calendar-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: 1px solid var(--toss-gray-200);
+  font-size: 0.875rem;
+}
+
+.monthly-calendar-table th {
+  background-color: var(--toss-gray-50);
+  font-weight: 600;
+  color: var(--toss-gray-700);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.member-col {
+  min-width: 120px;
+  font-weight: 600;
+  background-color: var(--toss-gray-50);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.month-col {
+  min-width: 80px;
+  font-size: 0.8rem;
+}
+
+.status-cell {
+  min-width: 50px;
+  height: 40px;
+}
+
+.member-name {
+  font-weight: 500;
+  color: var(--toss-gray-900);
+}
+
+.payment-status {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  line-height: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.payment-status:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.payment-status:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.payment-status.paid {
+  background-color: var(--toss-success-light);
+  color: var(--toss-success);
+  border: 2px solid var(--toss-success);
+}
+
+.payment-status.unpaid {
+  background-color: var(--toss-danger-light);
+  color: var(--toss-danger);
+  border: 2px solid var(--toss-danger);
+}
+
+.payment-status.exempt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height: 24px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #e0e7ff;
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  cursor: default;
+}
+
+.payment-status.exempt:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.btn-add {
+  background-color: transparent;
+  color: var(--toss-gray-400);
+  border: 1px dashed var(--toss-gray-300);
+}
+
+.btn-add:hover:not(:disabled) {
+  background-color: var(--toss-primary-light);
+  color: var(--toss-primary);
+  border-color: var(--toss-primary);
+}
+
+/* 정기전 게임비 스타일 */
+.game-payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.game-filter {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.game-date-filter {
+  padding: 0.5rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+}
+
+.game-payments-list {
+  margin-top: 1.5rem;
+}
+
+.game-payments-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 카드형식 스타일 */
+.game-payments-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.game-date-card {
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+}
+
+.game-date-group {
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  overflow: hidden;
+}
+
+.game-payments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.game-payment-card {
+  background: white;
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-gray-200);
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.game-payment-card:hover {
+  border-color: var(--toss-primary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.game-card-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.game-member-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--toss-gray-900);
+}
+
+.game-card-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-card-status {
+  padding: 0.4rem 1rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.game-card-status.status-paid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.game-card-status.status-unpaid {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.game-date-header {
+  background: var(--toss-primary);
+  color: white;
+  padding: 1rem;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-date-header h4 {
+  margin: 0;
+}
+
+/* 편집 버튼 스타일 (파란 배경 위에서 잘 보이도록) */
+.game-date-header .btn-primary {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.game-date-header .btn-primary:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.game-date-header .btn-sm {
+  padding: 0.375rem 1rem;
+  font-weight: 600;
+}
+
+.game-payments-items {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.game-payment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: var(--toss-gray-50);
+  border-radius: var(--toss-radius);
+  border: 1px solid var(--toss-gray-200);
+  transition: all 0.2s ease;
+}
+
+.game-payment-item:hover {
+  background: var(--toss-gray-100);
+  border-color: var(--toss-primary);
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.game-date {
+  font-weight: 600;
+  color: var(--toss-gray-700);
+}
+
+.game-member {
+  font-weight: 500;
+  color: var(--toss-gray-900);
+}
+
+.game-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.game-amount {
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  min-width: 100px;
+  text-align: right;
+}
+
+.game-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.game-status.paid {
+  background: var(--toss-success-light);
+  color: var(--toss-success);
+}
+
+.game-status.unpaid {
+  background: var(--toss-danger-light);
+  color: var(--toss-danger);
+}
+
+.game-note {
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.game-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 1rem;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .filter-section {
+    flex-direction: column;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .month-col {
+    min-width: 60px;
+    font-size: 0.7rem;
+  }
+
+  .status-cell {
+    min-width: 40px;
+    height: 35px;
+  }
+
+  .payment-status {
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    font-size: 0.875rem;
+  }
+
+  .btn-xs {
+    min-width: 24px;
+    min-height: 24px;
+    font-size: 0.7rem;
+  }
+
+  /* 정기전 게임비 모바일 */
+  .game-payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .game-payment-item {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .game-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .game-details {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* 정기전 게임비 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.game-payment-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.search-member-wrapper {
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  z-index: 10;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 2px;
+}
+
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.member-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.member-item:hover:not(.added) {
+  background-color: #f3f4f6;
+}
+
+.member-item.added {
+  background-color: #d1fae5;
+  color: #065f46;
+  cursor: not-allowed;
+}
+
+.badge {
+  background-color: #10b981;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.added-members-list {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e5e7eb;
+}
+
+.added-members-list h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+.game-payment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.game-payment-table th,
+.game-payment-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.game-payment-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.game-payment-table td {
+  vertical-align: middle;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}

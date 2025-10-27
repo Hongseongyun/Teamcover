@@ -181,4 +181,16 @@ export const sheetsAPI = {
   },
 };
 
+// 납입 관리 API
+export const paymentAPI = {
+  getPayments: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/payments/?${queryString}`);
+  },
+  addPayment: (data) => api.post('/api/payments/', data),
+  updatePayment: (id, data) => api.put(`/api/payments/${id}`, data),
+  deletePayment: (id) => api.delete(`/api/payments/${id}`),
+  getPaymentStats: () => api.get('/api/payments/stats'),
+};
+
 export default api;

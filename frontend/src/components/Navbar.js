@@ -27,6 +27,7 @@ const Navbar = () => {
       '/members': hasRole('admin'),
       '/scores': hasRole('user'),
       '/points': hasRole('user'),
+      '/payments': hasRole('admin'),
       '/team-assignment': hasRole('admin'),
       '/user-management': hasRole('super_admin'),
     };
@@ -91,6 +92,17 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
+            {canAccessPage('/payments') && (
+              <li className="nav-item">
+                <Link
+                  to="/payments"
+                  className={`nav-link ${isActive('/payments')}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  회비관리
+                </Link>
+              </li>
+            )}
             {canAccessPage('/team-assignment') && (
               <li className="nav-item">
                 <Link
@@ -128,7 +140,11 @@ const Navbar = () => {
                 </div>
                 <span className="user-name">{user?.name}</span>
                 <span className="user-role">({user?.role})</span>
-                <span className="dropdown-arrow">▲</span>
+                <span
+                  className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`}
+                >
+                  ▲
+                </span>
               </button>
 
               {showUserMenu && (

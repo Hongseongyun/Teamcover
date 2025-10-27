@@ -15,6 +15,7 @@ from blueprints.scores import scores_bp
 from blueprints.points import points_bp
 from blueprints.teams import teams_bp
 from blueprints.ocr import ocr_bp
+from blueprints.payments import payments_bp
 
 # Google Sheets 기능을 선택적으로 로드
 try:
@@ -92,6 +93,7 @@ app.register_blueprint(scores_bp)
 app.register_blueprint(points_bp)
 app.register_blueprint(teams_bp)
 app.register_blueprint(ocr_bp)
+app.register_blueprint(payments_bp)
 
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:

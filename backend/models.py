@@ -79,6 +79,7 @@ class Member(db.Model):
     average_score = db.Column(db.Float, nullable=True)  # 정기전 평균 점수
     email = db.Column(db.String(100), nullable=True)
     note = db.Column(db.Text, nullable=True)
+    is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -264,6 +265,7 @@ class Member(db.Model):
             'tier': self.tier,
             'average_score': self.average_score,  # 이미 자연수로 저장됨
             'note': self.note,
+            'is_staff': self.is_staff,  # 운영진 여부
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None
         }
@@ -363,4 +365,41 @@ class AppSetting(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     
     def __repr__(self):
-        return f'<AppSetting {self.setting_key}>' 
+        return f'<AppSetting {self.setting_key}>'
+
+class Payment(db.Model):
+    """납입 관리 모델"""
+    __tablename__ = 'payments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    payment_type = db.Column(db.String(20), nullable=False)  # 'monthly', 'game' (월회비, 정기전 게임비)
+    amount = db.Column(db.Integer, nullable=False)  # 금액
+    payment_date = db.Column(db.Date, nullable=False)  # 납입일
+    month = db.Column(db.String(10), nullable=True)  # 'YYYY-MM' 형식 (검색/통계용)
+    is_paid = db.Column(db.Boolean, default=True)  # 납입 여부 (기본값: True)
+    note = db.Column(db.Text, nullable=True)  # 비고
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 등록 시간
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계 설정
+    member = db.relationship('Member', backref=db.backref('payments', lazy=True))
+    
+    def __repr__(self):
+        return f'<Payment {self.member.name} {self.payment_type} {self.amount}원>'
+    
+    def to_dict(self):
+        """딕셔너리 형태로 변환"""
+        return {
+            'id': self.id,
+            'member_id': self.member_id,
+            'member_name': self.member.name if self.member else None,
+            'payment_type': self.payment_type,
+            'amount': self.amount,
+            'payment_date': self.payment_date.strftime('%Y-%m-%d') if self.payment_date else None,
+            'month': self.month,
+            'is_paid': self.is_paid,
+            'note': self.note,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+        } 

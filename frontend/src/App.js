@@ -12,6 +12,7 @@ import VerifyCode from './pages/VerifyCode';
 import Members from './pages/Members';
 import Scores from './pages/Scores';
 import Points from './pages/Points';
+import Payments from './pages/Payments';
 import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
@@ -50,6 +51,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="user">
                   <Points />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <Payments />
                 </ProtectedRoute>
               }
             />

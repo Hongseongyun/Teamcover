@@ -150,6 +150,14 @@ def add_member():
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
+        # 운영진 여부 확인 (admin/super_admin만 설정 가능)
+        user_id = get_jwt_identity()
+        is_staff = False
+        if user_id:
+            current_user = User.query.get(int(user_id))
+            if current_user and current_user.role in ['admin', 'super_admin']:
+                is_staff = data.get('is_staff', False)
+        
         new_member = Member(
             name=name,
             phone=data.get('phone', '').strip(),
@@ -157,7 +165,8 @@ def add_member():
             level=data.get('level', '').strip(),  # 레거시 호환성
             tier=data.get('tier', '').strip(),
             email=data.get('email', '').strip(),
-            note=data.get('note', '').strip()
+            note=data.get('note', '').strip(),
+            is_staff=is_staff
         )
         
         db.session.add(new_member)
@@ -176,6 +185,7 @@ def add_member():
 
 @members_bp.route('/<int:member_id>/', methods=['PUT'])
 @members_bp.route('/<int:member_id>', methods=['PUT'])
+@jwt_required()
 def update_member(member_id):
     """회원 정보 수정 API"""
     try:
@@ -194,6 +204,14 @@ def update_member(member_id):
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
+        # 현재 사용자 확인
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id))
+        
+        print(f"[DEBUG] Received data: {data}")
+        print(f"[DEBUG] User ID: {user_id}, Current User: {current_user.name if current_user else None}, Role: {current_user.role if current_user else None}")
+        print(f"[DEBUG] is_staff from request: {data.get('is_staff')}")
+        
         member.name = name
         member.phone = data.get('phone', '').strip()
         member.gender = data.get('gender', '').strip()
@@ -201,6 +219,15 @@ def update_member(member_id):
         member.tier = data.get('tier', '').strip()
         member.email = data.get('email', '').strip()
         member.note = data.get('note', '').strip()
+        
+        # 운영진 여부 업데이트 (admin/super_admin만 수정 가능)
+        if current_user and current_user.role in ['admin', 'super_admin']:
+            is_staff_value = data.get('is_staff', False)
+            print(f"[DEBUG] Setting is_staff to: {is_staff_value}")
+            member.is_staff = is_staff_value
+        else:
+            print(f"[DEBUG] User doesn't have permission to update is_staff")
+        
         member.updated_at = datetime.utcnow()
         
         db.session.commit()

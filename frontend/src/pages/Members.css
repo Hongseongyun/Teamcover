@@ -582,32 +582,32 @@
 
 .members-table th:nth-child(2),
 .members-table td:nth-child(2) {
-  width: 16%;
+  width: 18%;
 }
 
 .members-table th:nth-child(3),
 .members-table td:nth-child(3) {
-  width: 6%;
+  width: 8%;
 }
 
 .members-table th:nth-child(4),
 .members-table td:nth-child(4) {
-  width: 8%;
+  width: 14%;
 }
 
 .members-table th:nth-child(5),
 .members-table td:nth-child(5) {
-  width: 24%;
+  width: 10%;
 }
 
 .members-table th:nth-child(6),
 .members-table td:nth-child(6) {
-  width: 13%;
+  width: 14%;
 }
 
 .members-table th:nth-child(7),
 .members-table td:nth-child(7) {
-  width: 15%;
+  width: 18%;
 }
 
 /* 작업 컬럼은 overflow visible로 버튼이 잘리지 않도록 */
@@ -623,7 +623,7 @@
 
 .members-table th:nth-child(2),
 .members-table td:nth-child(2) {
-  min-width: 150px;
+  min-width: 170px;
 }
 
 .members-table th:nth-child(3),
@@ -633,12 +633,12 @@
 
 .members-table th:nth-child(4),
 .members-table td:nth-child(4) {
-  min-width: 60px;
+  min-width: 80px;
 }
 
 .members-table th:nth-child(5),
 .members-table td:nth-child(5) {
-  min-width: 150px;
+  min-width: 80px;
 }
 
 .members-table th:nth-child(6),
@@ -1067,4 +1067,43 @@
     height: auto;
     min-height: 60px;
   }
+}
+
+/* 인라인 입력 필드 스타일 개선 */
+.inline-input,
+.inline-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background-color: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.inline-input:focus,
+.inline-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inline-input:hover,
+.inline-select:hover {
+  border-color: #9ca3af;
+}
+
+/* 인라인 편집 행 스타일 */
+.members-table tbody tr:has(.inline-input):not(:has(.inline-input:empty)),
+.members-table tbody tr:has(.inline-select) {
+  background-color: #f9fafb;
+}
+
+/* 인라인 편집 행의 높이 맞춤 */
+.members-table tbody tr:has(.inline-input),
+.members-table tbody tr:has(.inline-select) {
+  height: auto;
+  min-height: 70px;
 }
