@@ -480,7 +480,8 @@
 
 /* 월별 표 형식 */
 .monthly-calendar-table {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: calc(100vh - 300px);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -513,7 +514,7 @@
   background-color: var(--toss-gray-50);
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 11;
 }
 
 .month-col {
