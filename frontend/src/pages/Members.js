@@ -54,6 +54,7 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 const Members = () => {
   const { user } = useAuth();
   const isSuperAdmin = user && user.role === 'super_admin';
+  const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
 
   // 개인정보 보호 상태
   const [privacyUnlocked, setPrivacyUnlocked] = useState(false);
@@ -611,7 +612,7 @@ const Members = () => {
                   />
                 </div>
               </div>
-              {isSuperAdmin && (
+              {isAdmin && (
                 <div className="form-row">
                   <div className="form-group">
                     <label>
@@ -731,7 +732,7 @@ const Members = () => {
                           <TierBadge tier={member.tier} size="small" />
                         </td>
                         <td>
-                          {isSuperAdmin ? (
+                          {isAdmin ? (
                             <label
                               style={{
                                 display: 'flex',
@@ -741,7 +742,7 @@ const Members = () => {
                             >
                               <input
                                 type="checkbox"
-                                checked={inlineEditData.is_staff}
+                                checked={inlineEditData.is_staff || false}
                                 onChange={(e) =>
                                   setInlineEditData((prev) => ({
                                     ...prev,
@@ -751,10 +752,10 @@ const Members = () => {
                               />
                               운영진
                             </label>
+                          ) : member.is_staff ? (
+                            <span className="badge badge-info">운영진</span>
                           ) : (
-                            <span>
-                              {inlineEditData.is_staff ? '예' : '아니오'}
-                            </span>
+                            <span>-</span>
                           )}
                         </td>
                         <td>

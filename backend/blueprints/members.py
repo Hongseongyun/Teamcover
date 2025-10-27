@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from models import db, Member, Score, User, AppSetting
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
+from sqlalchemy import text
 
 # 회원 관리 Blueprint
 members_bp = Blueprint('members', __name__, url_prefix='/api/members')
@@ -526,4 +527,57 @@ def check_privacy_status():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'개인정보 보호 상태 확인 중 오류가 발생했습니다: {str(e)}'})
+
+# 임시: is_staff 컬럼 확인용 엔드포인트
+@members_bp.route('/check-staff-column', methods=['GET'])
+def check_staff_column():
+    """is_staff 컬럼 확인용 임시 엔드포인트"""
+    try:
+        # is_staff 컬럼 존재 여부 확인
+        result = db.session.execute(text("""
+            SELECT column_name, data_type, column_default
+            FROM information_schema.columns 
+            WHERE table_name = 'members' AND column_name = 'is_staff'
+        """))
+        
+        column_info = None
+        for row in result:
+            column_info = {
+                'name': row[0],
+                'type': row[1],
+                'default': row[2]
+            }
+            break
+        
+        # 회원 정보 확인
+        member = Member.query.first()
+        
+        if column_info:
+            return jsonify({
+                'success': True,
+                'column_exists': True,
+                'column_name': column_info['name'],
+                'column_type': column_info['type'],
+                'column_default': column_info['default'],
+                'member_exists': member is not None,
+                'member_id': member.id if member else None,
+                'member_name': member.name if member else None,
+                'member_is_staff': member.is_staff if member else None,
+                'member_is_staff_type': str(type(member.is_staff)) if member else None
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'column_exists': False,
+                'message': 'is_staff 컬럼이 존재하지 않습니다',
+                'member_exists': member is not None,
+                'member_id': member.id if member else None,
+                'member_name': member.name if member else None
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False, 
+            'error': str(e),
+            'message': f'DB 확인 중 오류: {str(e)}'
+        })
 
