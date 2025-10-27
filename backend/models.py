@@ -79,6 +79,7 @@ class Member(db.Model):
     average_score = db.Column(db.Float, nullable=True)  # 정기전 평균 점수
     email = db.Column(db.String(100), nullable=True)
     note = db.Column(db.Text, nullable=True)
+    join_date = db.Column(db.Date, nullable=True)  # 가입일 (수정 가능)
     is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -265,6 +266,7 @@ class Member(db.Model):
             'tier': self.tier,
             'average_score': self.average_score,  # 이미 자연수로 저장됨
             'note': self.note,
+            'join_date': self.join_date.strftime('%Y-%m-%d') if self.join_date else None,
             'is_staff': self.is_staff,  # 운영진 여부
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None

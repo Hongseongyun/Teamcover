@@ -54,7 +54,8 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 const Members = () => {
   const { user } = useAuth();
   const isSuperAdmin = user && user.role === 'super_admin';
-  const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
+  const isAdmin =
+    user && (user.role === 'super_admin' || user.role === 'admin');
 
   // 개인정보 보호 상태
   const [privacyUnlocked, setPrivacyUnlocked] = useState(false);
@@ -89,6 +90,7 @@ const Members = () => {
     email: '',
     note: '',
     is_staff: false,
+    join_date: '',
   });
 
   // 구글시트 가져오기 관련 상태
@@ -355,6 +357,7 @@ const Members = () => {
       email: member.email || '',
       note: member.note || '',
       is_staff: member.is_staff || false,
+      join_date: member.join_date || '',
     });
   };
 
@@ -676,7 +679,7 @@ const Members = () => {
                   <th>성별</th>
                   <th>티어</th>
                   <th>운영진</th>
-                  <th>등록일</th>
+                  <th>가입일</th>
                   <th>작업</th>
                 </tr>
               </thead>
@@ -759,14 +762,24 @@ const Members = () => {
                           )}
                         </td>
                         <td>
-                          {new Date(member.created_at)
-                            .toLocaleDateString('ko-KR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                            })
-                            .replace(/\./g, '.')
-                            .replace(/\s/g, '')}
+                          <input
+                            className="inline-input"
+                            type="date"
+                            value={
+                              inlineEditData.join_date ||
+                              (member.created_at
+                                ? new Date(member.created_at)
+                                    .toISOString()
+                                    .split('T')[0]
+                                : '')
+                            }
+                            onChange={(e) =>
+                              setInlineEditData((prev) => ({
+                                ...prev,
+                                join_date: e.target.value,
+                              }))
+                            }
+                          />
                         </td>
                         <td className="inline-actions">
                           <button
@@ -824,14 +837,16 @@ const Members = () => {
                           )}
                         </td>
                         <td>
-                          {new Date(member.created_at)
-                            .toLocaleDateString('ko-KR', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                            })
-                            .replace(/\./g, '.')
-                            .replace(/\s/g, '')}
+                          {member.join_date || member.created_at
+                            ? new Date(member.join_date || member.created_at)
+                                .toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                })
+                                .replace(/\./g, '.')
+                                .replace(/\s/g, '')
+                            : '-'}
                         </td>
                         <td>
                           <button

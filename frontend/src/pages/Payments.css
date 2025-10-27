@@ -593,6 +593,22 @@
   opacity: 0.6;
 }
 
+.payment-status.disabled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  line-height: 28px;
+  font-size: 0.75rem;
+  background-color: var(--toss-gray-200);
+  color: var(--toss-gray-400);
+  border: 1px solid var(--toss-gray-300);
+  cursor: default;
+  opacity: 0.5;
+}
+
 .btn-xs {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;

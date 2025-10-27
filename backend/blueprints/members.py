@@ -221,6 +221,13 @@ def update_member(member_id):
         member.email = data.get('email', '').strip()
         member.note = data.get('note', '').strip()
         
+        # 가입일 업데이트
+        if 'join_date' in data and data['join_date']:
+            try:
+                member.join_date = datetime.strptime(data['join_date'], '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'success': False, 'message': '올바른 날짜 형식이 아닙니다. (YYYY-MM-DD)'})
+        
         # 운영진 여부 업데이트 (admin/super_admin만 수정 가능)
         if current_user and current_user.role in ['admin', 'super_admin']:
             is_staff_value = data.get('is_staff', False)

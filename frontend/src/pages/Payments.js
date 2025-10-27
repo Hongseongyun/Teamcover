@@ -925,6 +925,14 @@ const Payments = () => {
                           );
                         }
 
+                        // 가입일 이전 월은 비활성화
+                        const isBeforeJoinDate = (() => {
+                          if (!member.join_date) return false;
+                          const joinDate = new Date(member.join_date);
+                          const monthDate = new Date(month + '-01');
+                          return monthDate < joinDate;
+                        })();
+
                         const payment = getPaymentStatus(
                           member.id,
                           month,
@@ -932,7 +940,14 @@ const Payments = () => {
                         );
                         return (
                           <td key={month} className="status-cell">
-                            {payment ? (
+                            {isBeforeJoinDate ? (
+                              <span
+                                className="payment-status disabled"
+                                title="가입일 이전입니다"
+                              >
+                                -
+                              </span>
+                            ) : payment ? (
                               (() => {
                                 const paymentId = payment.id;
 
