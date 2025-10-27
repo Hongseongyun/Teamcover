@@ -378,6 +378,7 @@ class Payment(db.Model):
     payment_date = db.Column(db.Date, nullable=False)  # 납입일
     month = db.Column(db.String(10), nullable=True)  # 'YYYY-MM' 형식 (검색/통계용)
     is_paid = db.Column(db.Boolean, default=True)  # 납입 여부 (기본값: True)
+    is_exempt = db.Column(db.Boolean, default=False)  # 면제 여부 (기본값: False)
     note = db.Column(db.Text, nullable=True)  # 비고
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 등록 시간
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -399,6 +400,7 @@ class Payment(db.Model):
             'payment_date': self.payment_date.strftime('%Y-%m-%d') if self.payment_date else None,
             'month': self.month,
             'is_paid': self.is_paid,
+            'is_exempt': self.is_exempt,
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None

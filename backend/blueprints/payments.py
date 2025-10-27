@@ -131,6 +131,7 @@ def add_payment():
             payment_date=payment_date,
             month=month,
             is_paid=data.get('is_paid', True),
+            is_exempt=data.get('is_exempt', False),
             note=data.get('note', '').strip()
         )
         
@@ -185,6 +186,10 @@ def update_payment(payment_id):
         # 납입 여부 수정
         if 'is_paid' in data:
             payment.is_paid = bool(data['is_paid'])
+        
+        # 면제 여부 수정
+        if 'is_exempt' in data:
+            payment.is_exempt = bool(data['is_exempt'])
         
         # 비고 수정
         if 'note' in data:

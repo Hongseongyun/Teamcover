@@ -117,6 +117,14 @@ const Payments = () => {
       const response = await paymentAPI.getPayments();
       if (response.data.success) {
         setPayments(response.data.payments);
+
+        // 디버깅: 면제 상태가 있는 납입 확인
+        const exemptPayments = response.data.payments.filter(
+          (p) => p.is_exempt
+        );
+        if (exemptPayments.length > 0) {
+          console.log('면제 상태 납입 로드:', exemptPayments);
+        }
       }
     } catch (error) {
       console.error('납입 내역 로드 실패:', error);
@@ -436,6 +444,7 @@ const Payments = () => {
       payment_type: paymentType,
       amount: amount,
       is_paid: true,
+      is_exempt: false,
       member_name: members.find((m) => m.id === memberId)?.name || '',
     };
 
@@ -447,26 +456,90 @@ const Payments = () => {
     setTempNewPayments((prev) => prev.filter((p) => p.id !== tempId));
   };
 
-  // 임시 상태 토글 (실제 저장 전)
-  const toggleTempPaymentStatus = (paymentId) => {
-    // 임시 새 납입인지 확인
-    if (paymentId.toString().startsWith('temp_')) {
-      // 임시 새 납입이면 삭제
+  // 면제 상태를 관리하기 위한 별도 state
+  const [tempExemptStates, setTempExemptStates] = useState({});
+  const [tempDeletePayments, setTempDeletePayments] = useState([]);
+
+  // 면제 상태 가져오기
+  const getTempExemptState = (paymentId, originalExemptState) => {
+    if (tempExemptStates[paymentId] !== undefined) {
+      return tempExemptStates[paymentId];
+    }
+    return originalExemptState;
+  };
+
+  // 납입 상태 순환 함수
+  const togglePaymentCycle = (payment) => {
+    const paymentId = payment.id;
+    const isTemp = paymentId.toString().startsWith('temp_');
+
+    // 임시 새 납입인 경우
+    if (isTemp) {
+      // 현재 임시 납입 상태 확인
+      const tempPayment = tempNewPayments.find((p) => p.id === paymentId);
+      if (!tempPayment) return;
+
+      // 상태 순환: 체크 -> 면제 -> x -> 삭제
+      const currentIsExempt = tempPayment.is_exempt || false;
+      const currentIsPaid = tempPayment.is_paid || false;
+
+      // 면제 상태인 경우 → 미납으로 변경
+      if (currentIsExempt) {
+        setTempNewPayments((prev) =>
+          prev.map((p) =>
+            p.id === paymentId ? { ...p, is_exempt: false, is_paid: false } : p
+          )
+        );
+        return;
+      }
+
+      // 납입완료 상태인 경우 → 면제로 변경
+      if (currentIsPaid) {
+        setTempNewPayments((prev) =>
+          prev.map((p) =>
+            p.id === paymentId ? { ...p, is_paid: false, is_exempt: true } : p
+          )
+        );
+        return;
+      }
+
+      // 미납 상태인 경우 → 삭제
       removeTempPayment(paymentId);
       return;
     }
 
-    const payment = payments.find((p) => p.id === parseInt(paymentId));
-    if (!payment) return;
+    // 기존 납입인 경우
+    const currentIsExempt = getTempExemptState(paymentId, payment.is_exempt);
+    const currentIsPaid = getTempPaymentState(paymentId, payment.is_paid);
 
-    // 현재 임시 상태 (없으면 원본 상태)
-    const currentState = getTempPaymentState(paymentId, payment.is_paid);
+    // 1. 면제 상태인 경우 → 미납(x)으로 변경
+    if (currentIsExempt) {
+      setTempExemptStates((prev) => ({
+        ...prev,
+        [paymentId]: false,
+      }));
+      setTempPaymentStates((prev) => ({
+        ...prev,
+        [paymentId]: false,
+      }));
+      return;
+    }
 
-    // 토글
-    setTempPaymentStates((prev) => ({
-      ...prev,
-      [paymentId]: !currentState,
-    }));
+    // 2. 납입완료 상태인 경우 → 면제로 변경
+    if (currentIsPaid) {
+      setTempExemptStates((prev) => ({
+        ...prev,
+        [paymentId]: true,
+      }));
+      setTempPaymentStates((prev) => ({
+        ...prev,
+        [paymentId]: false,
+      }));
+      return;
+    }
+
+    // 3. 미납 상태인 경우 → 삭제
+    setTempDeletePayments((prev) => [...prev, paymentId]);
   };
 
   // 일괄 저장
@@ -474,17 +547,57 @@ const Payments = () => {
     setSubmitting(true);
 
     try {
-      // 기존 납입 상태 업데이트
-      const updates = Object.keys(tempPaymentStates)
-        .map((paymentId) => {
-          const payment = payments.find((p) => p.id === parseInt(paymentId));
-          if (!payment) return null;
+      // 삭제할 납입들
+      const deletePromises = tempDeletePayments.map((paymentId) =>
+        paymentAPI.deletePayment(paymentId)
+      );
 
-          return paymentAPI.updatePayment(payment.id, {
-            is_paid: tempPaymentStates[paymentId],
-          });
-        })
-        .filter(Boolean);
+      // 기존 납입 상태 업데이트
+      const updates = [];
+
+      // 면제 상태가 변경된 납입들
+      for (const [paymentId, isExempt] of Object.entries(tempExemptStates)) {
+        const payment = payments.find((p) => p.id === parseInt(paymentId));
+        if (!payment) continue;
+
+        const updateData = {
+          is_paid:
+            tempPaymentStates[paymentId] !== undefined
+              ? tempPaymentStates[paymentId]
+              : payment.is_paid,
+          is_exempt: isExempt,
+        };
+
+        // 디버깅 로그
+        console.log('면제 상태 저장:', {
+          paymentId,
+          updateData,
+          original: {
+            is_paid: payment.is_paid,
+            is_exempt: payment.is_exempt,
+          },
+        });
+
+        updates.push(paymentAPI.updatePayment(payment.id, updateData));
+      }
+
+      // is_paid만 변경된 납입들 (면제 상태는 그대로)
+      for (const [paymentId, isPaid] of Object.entries(tempPaymentStates)) {
+        // 면제 상태도 변경된 경우는 이미 위에서 처리
+        if (tempExemptStates[paymentId] !== undefined) continue;
+
+        const payment = payments.find((p) => p.id === parseInt(paymentId));
+        if (!payment) continue;
+
+        // 삭제 예정이 아닌 경우만 업데이트
+        if (!tempDeletePayments.includes(parseInt(paymentId))) {
+          updates.push(
+            paymentAPI.updatePayment(payment.id, {
+              is_paid: isPaid,
+            })
+          );
+        }
+      }
 
       // 새로운 납입 추가
       const newPayments = await Promise.all(
@@ -496,13 +609,16 @@ const Payments = () => {
             amount: tempPayment.amount,
             payment_date: paymentDate,
             is_paid: tempPayment.is_paid,
+            is_exempt: tempPayment.is_exempt || false,
             note: '',
           });
         })
       );
 
-      await Promise.all([...updates, ...newPayments]);
+      await Promise.all([...deletePromises, ...updates, ...newPayments]);
       setTempPaymentStates({});
+      setTempExemptStates({});
+      setTempDeletePayments([]);
       setTempNewPayments([]);
       await loadPayments();
       alert('납입 상태가 저장되었습니다.');
@@ -516,6 +632,8 @@ const Payments = () => {
   // 취소
   const cancelTempChanges = () => {
     setTempPaymentStates({});
+    setTempExemptStates({});
+    setTempDeletePayments([]);
     setTempNewPayments([]);
   };
 
@@ -529,7 +647,10 @@ const Payments = () => {
 
   // 변경사항이 있는지 확인
   const hasTempChanges =
-    Object.keys(tempPaymentStates).length > 0 || tempNewPayments.length > 0;
+    Object.keys(tempPaymentStates).length > 0 ||
+    tempNewPayments.length > 0 ||
+    Object.keys(tempExemptStates).length > 0 ||
+    tempDeletePayments.length > 0;
 
   if (loading) {
     return <div className="loading">로딩 중...</div>;
@@ -703,7 +824,9 @@ const Payments = () => {
                 <div className="batch-actions-content">
                   <span className="batch-info">
                     {Object.keys(tempPaymentStates).length +
-                      tempNewPayments.length}
+                      tempNewPayments.length +
+                      Object.keys(tempExemptStates).length +
+                      tempDeletePayments.length}
                     개의 변경사항이 있습니다.
                   </span>
                   <div className="batch-buttons">
@@ -811,28 +934,105 @@ const Payments = () => {
                           <td key={month} className="status-cell">
                             {payment ? (
                               (() => {
-                                const isPaid = getTempPaymentState(
-                                  payment.id,
-                                  payment.is_paid
-                                );
-                                return isPaid ? (
-                                  <button
-                                    className="payment-status paid"
-                                    title="클릭하여 미납으로 변경"
-                                    onClick={() =>
-                                      toggleTempPaymentStatus(payment.id)
-                                    }
-                                    disabled={submitting}
-                                  >
-                                    ✓
-                                  </button>
-                                ) : (
+                                const paymentId = payment.id;
+
+                                // 삭제 예정인 경우 빈 상태(+) 표시
+                                if (tempDeletePayments.includes(paymentId)) {
+                                  return (
+                                    <button
+                                      className="btn btn-xs btn-add"
+                                      onClick={() =>
+                                        handleQuickAdd(
+                                          member.id,
+                                          month,
+                                          'monthly',
+                                          5000
+                                        )
+                                      }
+                                      disabled={submitting}
+                                      title="납입 추가"
+                                    >
+                                      +
+                                    </button>
+                                  );
+                                }
+
+                                const isTemp = paymentId
+                                  .toString()
+                                  .startsWith('temp_');
+                                let isPaid, isExempt;
+
+                                if (isTemp) {
+                                  // 임시 새 납입인 경우
+                                  const tempPayment = tempNewPayments.find(
+                                    (p) => p.id === paymentId
+                                  );
+                                  isPaid = tempPayment?.is_paid || false;
+                                  isExempt = tempPayment?.is_exempt || false;
+                                } else {
+                                  // 기존 납입인 경우
+                                  const currentPaidState =
+                                    tempPaymentStates[paymentId];
+                                  isPaid =
+                                    currentPaidState !== undefined
+                                      ? currentPaidState
+                                      : payment.is_paid;
+                                  // 면제 상태는 원본 또는 임시 상태 확인
+                                  const tempExemptState = getTempExemptState(
+                                    paymentId,
+                                    payment.is_exempt
+                                  );
+                                  isExempt = tempExemptState;
+
+                                  // 디버깅용 로그
+                                  if (payment.is_exempt) {
+                                    console.log('면제 상태 확인:', {
+                                      paymentId,
+                                      payment_is_exempt: payment.is_exempt,
+                                      tempExemptState,
+                                      isExempt,
+                                    });
+                                  }
+                                }
+
+                                // 면제 상태
+                                if (isExempt) {
+                                  return (
+                                    <button
+                                      className="payment-status exempt"
+                                      title="클릭하여 미납으로 변경"
+                                      onClick={() =>
+                                        togglePaymentCycle(payment)
+                                      }
+                                      disabled={submitting}
+                                    >
+                                      면제
+                                    </button>
+                                  );
+                                }
+
+                                // 납입 완료 상태
+                                if (isPaid) {
+                                  return (
+                                    <button
+                                      className="payment-status paid"
+                                      title="클릭하여 면제로 변경"
+                                      onClick={() =>
+                                        togglePaymentCycle(payment)
+                                      }
+                                      disabled={submitting}
+                                    >
+                                      ✓
+                                    </button>
+                                  );
+                                }
+
+                                // 미납 상태
+                                return (
                                   <button
                                     className="payment-status unpaid"
-                                    title="클릭하여 납입완료로 변경"
-                                    onClick={() =>
-                                      toggleTempPaymentStatus(payment.id)
-                                    }
+                                    title="클릭하여 삭제"
+                                    onClick={() => togglePaymentCycle(payment)}
                                     disabled={submitting}
                                   >
                                     ✗

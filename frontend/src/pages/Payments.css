@@ -351,6 +351,7 @@
   --toss-gray-900: #111827;
   --toss-primary: #3b82f6;
   --toss-primary-dark: #2563eb;
+  --toss-primary-light: #dbeafe;
   --toss-success: #10b981;
   --toss-success-light: #d1fae5;
   --toss-secondary: #8b5cf6;
@@ -577,12 +578,18 @@
   background-color: #e0e7ff;
   color: #6366f1;
   border: 1px solid #c7d2fe;
-  cursor: default;
+  cursor: pointer;
 }
 
-.payment-status.exempt:hover {
-  transform: none;
-  box-shadow: none;
+.payment-status.exempt:hover:not(:disabled) {
+  background-color: #c7d2fe;
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.payment-status.exempt:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .btn-xs {
@@ -599,7 +606,7 @@
 }
 
 .btn-add:hover:not(:disabled) {
-  background-color: var(--toss-primary-light);
+  background-color: #dbeafe;
   color: var(--toss-primary);
   border-color: var(--toss-primary);
 }
