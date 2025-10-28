@@ -78,7 +78,10 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
-        'pool_recycle': 300,
+        'pool_recycle': 300,  # 5분마다 연결 재사용
+        'pool_size': 5,  # 기본 연결 풀 크기
+        'max_overflow': 10,  # 추가 연결 가능 수
+        'pool_timeout': 30,  # 연결 풀 타임아웃 (초)
         'connect_args': {
             'connect_timeout': 30,  # 연결 타임아웃 증가
         }

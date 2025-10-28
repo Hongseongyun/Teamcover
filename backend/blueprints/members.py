@@ -123,10 +123,8 @@ def get_members():
             level = member.level or '미정'
             level_counts[level] = level_counts.get(level, 0) + 1
             
-            # 티어가 없으면 점수 기반으로 계산
-            if not member.tier:
-                member.tier = member.calculate_tier_from_score()
-            tier = member.tier or '미정'
+            # 저장된 티어 사용 (DB에서 이미 계산되어 있음)
+            tier = member.tier or '배치'
             tier_counts[tier] = tier_counts.get(tier, 0) + 1
         
         return jsonify({

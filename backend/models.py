@@ -251,11 +251,9 @@ class Member(db.Model):
     
     def to_dict(self, hide_privacy=False):
         """딕셔너리 형태로 변환"""
-        # average_score가 있으면 항상 최신 티어 계산
-        if self.average_score is not None:
-            self.tier = self.calculate_tier_from_score()
-        elif not self.tier:
-            # average_score도 없고 티어도 없으면 배치
+        # 저장된 티어를 사용 (DB에서 이미 계산되어 있음)
+        # 티어가 없으면 기본값 '배치' 설정
+        if not self.tier:
             self.tier = '배치'
         
         data = {

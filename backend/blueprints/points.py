@@ -25,6 +25,9 @@ def handle_preflight():
 def get_points():
     """포인트 목록 조회 API"""
     try:
+        # 모든 회원을 한 번에 조회하여 N+1 쿼리 문제 해결
+        all_members = {member.id: member for member in Member.query.all()}
+        
         # 시간순으로 정렬하여 잔여 포인트를 정확하게 계산
         points = Point.query.order_by(Point.point_date.asc(), Point.created_at.asc()).all()
         points_data = []
@@ -33,7 +36,7 @@ def get_points():
         member_balances = {}
         
         for point in points:
-            member = Member.query.get(point.member_id)
+            member = all_members.get(point.member_id)
             member_name = member.name if member else 'Unknown'
             
             # 회원별 잔여 포인트 초기화

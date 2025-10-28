@@ -25,11 +25,14 @@ def handle_preflight():
 def get_scores():
     """스코어 목록 조회 API"""
     try:
+        # 모든 회원을 한 번에 조회하여 N+1 쿼리 문제 해결
+        all_members = {member.id: member for member in Member.query.all()}
+        
         scores = Score.query.order_by(Score.game_date.desc(), Score.average_score.desc()).all()
         scores_data = []
         
         for score in scores:
-            member = Member.query.get(score.member_id)
+            member = all_members.get(score.member_id)
             scores_data.append({
                 'id': score.id,
                 'member_name': member.name if member else 'Unknown',
