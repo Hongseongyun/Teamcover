@@ -32,6 +32,7 @@
   align-items: flex-start;
   justify-content: flex-start;
   width: 100%;
+  margin-bottom: 0;
 }
 
 .search-group {
@@ -449,32 +450,35 @@
 }
 
 /* 검색 결과 */
-.search-results {
+.team-assignment-page .search-results {
   margin-top: 1.5rem;
+  margin-bottom: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--toss-gray-200);
+  width: 100%;
+  position: relative !important;
 }
 
-.search-results-header {
+.team-assignment-page .search-results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
 
-.search-results-actions {
+.team-assignment-page .search-results-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-.search-results h5 {
+.team-assignment-page .search-results h5 {
   margin: 0;
   color: var(--toss-gray-900);
   font-size: 1rem;
 }
 
-.search-results-grid {
+.team-assignment-page .search-results-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;

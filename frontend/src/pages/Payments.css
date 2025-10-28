@@ -989,7 +989,7 @@
   position: relative;
 }
 
-.search-results {
+.payments-page .search-results {
   position: absolute;
   top: 100%;
   left: 0;

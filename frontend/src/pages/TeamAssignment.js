@@ -2663,7 +2663,7 @@ const TeamAssignment = () => {
               </button>
             </div>
 
-            {/* 검색 결과 */}
+            {/* 검색 결과 - 검색 입력란 바로 아래 표시 */}
             {searchResults.length > 0 && (
               <div className="search-results">
                 <div className="search-results-header">
