@@ -112,11 +112,6 @@ const TeamAssignment = () => {
     setBalancingResult('');
   }, [teamConfig.team_count, teamConfig.team_size]); // 팀 설정이 변경될 때 실행
 
-  // teams 상태 변화 디버깅
-  useEffect(() => {
-    console.log('🔄 teams 상태 업데이트:', teams);
-  }, [teams]);
-
   const loadMembers = async () => {
     try {
       const response = await memberAPI.getMembers();
@@ -760,15 +755,11 @@ const TeamAssignment = () => {
 
       // 이미 팀이 구성된 상태인지 확인
       if (isTeamConfigured && teams.length > 0) {
-        console.log('🔄 기존 팀 상태에서 추가 밸런싱 시작...');
-
         // 기존 팀 상태에서 추가 밸런싱
         const rebalancedTeams = await rebalanceExistingTeams(teams);
-        console.log('🔄 rebalancedTeams:', rebalancedTeams);
 
         // 상태 업데이트
         setTeams(rebalancedTeams);
-        console.log('🔄 setTeams 호출 완료');
 
         // 결과 메시지 설정
         const maxDiff =
@@ -801,7 +792,6 @@ const TeamAssignment = () => {
       }
 
       // 새로운 팀 구성 시작
-      console.log('🆕 새로운 팀 구성 시작...');
 
       // 1단계: 여성 인원 균등 분배를 위한 선수 정렬
 
@@ -920,10 +910,6 @@ const TeamAssignment = () => {
     const femalePlayers = playersByAverage.filter((p) => p.gender === '여');
     const malePlayers = playersByAverage.filter((p) => p.gender === '남');
 
-    console.log(
-      `총 선수: ${playersByAverage.length}명 (여성 ${femalePlayers.length}명, 남성 ${malePlayers.length}명)`
-    );
-
     // 1단계: 여성회원만 따로 스네이크 패턴 적용 (권장 방법)
     distributeFemalePlayersBySnakePattern(
       teams,
@@ -946,14 +932,6 @@ const TeamAssignment = () => {
         team.players.length > 0 ? team.total_average / team.players.length : 0;
     });
 
-    console.log('초기 배치 완료:');
-    teams.forEach((team, index) => {
-      const femaleCount = team.players.filter((p) => p.gender === '여').length;
-      console.log(
-        `팀 ${index + 1}: 총 ${team.total_average}점, 여성 ${femaleCount}명`
-      );
-    });
-
     return teams;
   };
 
@@ -965,10 +943,6 @@ const TeamAssignment = () => {
     team_size
   ) => {
     if (femalePlayers.length === 0) return;
-
-    console.log(
-      `여성 선수 ${femalePlayers.length}명을 ${team_count}팀에 스네이크 패턴으로 분배 시작`
-    );
 
     // 여성 선수들을 에버 순으로 정렬 (내림차순)
     const sortedFemales = [...femalePlayers].sort(
@@ -985,12 +959,6 @@ const TeamAssignment = () => {
       teams[teamIndex].players.push(female);
       teams[teamIndex].total_average += female.average;
 
-      console.log(
-        `팀 ${teamIndex + 1}에 여성 선수 ${female.name}(${
-          female.average
-        }점) 배치`
-      );
-
       // 다음 팀 인덱스 계산 (스네이크 패턴)
       teamIndex += direction;
 
@@ -1003,8 +971,6 @@ const TeamAssignment = () => {
         direction = 1;
       }
     }
-
-    console.log('여성 선수 스네이크 패턴 분배 완료');
   };
 
   // 남성 선수들을 남은 빈자리에 최적화된 방식으로 배치
@@ -1015,10 +981,6 @@ const TeamAssignment = () => {
     team_size
   ) => {
     if (malePlayers.length === 0) return;
-
-    console.log(
-      `남성 선수 ${malePlayers.length}명을 남은 빈자리에 최적화 배치 시작`
-    );
 
     // 남성 선수들을 에버 순으로 정렬 (내림차순)
     const sortedMales = [...malePlayers].sort((a, b) => b.average - a.average);
@@ -1043,15 +1005,7 @@ const TeamAssignment = () => {
       // 가장 낮은 팀에 남성 선수 배치
       teams[lowestTeamIndex].players.push(male);
       teams[lowestTeamIndex].total_average += male.average;
-
-      console.log(
-        `팀 ${lowestTeamIndex + 1}에 남성 선수 ${male.name}(${
-          male.average
-        }점) 배치 (현재 총점: ${teams[lowestTeamIndex].total_average}점)`
-      );
     }
-
-    console.log('남성 선수 최적화 배치 완료');
   };
 
   // 팀 간 선수 스위칭 시도 (새로운 규칙)
@@ -1714,36 +1668,26 @@ const TeamAssignment = () => {
         noImprovementCount++;
       }
 
-      // 4번 규칙: 5점 이내 달성 시 로그만 출력하고 계속 진행 (2000번 모두 시도)
+      // 4번 규칙: 5점 이내 달성 시 계속 진행 (2000번 모두 시도)
       if (currentMaxDiff <= 5) {
-        console.log(
-          `🎯 5점 이내 달성! 최대 차이: ${currentMaxDiff}점, 표준편차: ${standardDeviation.toFixed(
-            2
-          )}점 (계속 시도 중...)`
-        );
+        // 최적 결과 찾았으나 계속 시도
       }
 
       // 무한 루프 방지: 개선이 없으면 다른 방법 시도
       if (noImprovementCount >= maxNoImprovement) {
-        console.log(
-          `⚠️ ${maxNoImprovement}번 연속 개선 없음. 다른 방법 시도...`
-        );
         noImprovementCount = 0;
 
         // 강제로 랜덤한 팀 조합에서 교체 시도
         if (tryRandomTeamSwap(teams)) {
-          console.log('랜덤 팀 교체 성공');
           continue;
         }
 
         // 그래도 안 되면 강제로 선수 셔플
         if (tryForcedShuffle(teams)) {
-          console.log('강제 셔플 성공');
           continue;
         }
 
         // 마지막 수단: 현재까지의 최적해로 복원
-        console.log('더 이상 개선 불가능. 현재까지의 최적해로 복원');
         Object.assign(teams, bestTeams);
         break;
       }
@@ -1751,10 +1695,6 @@ const TeamAssignment = () => {
       // 3단계: 총합 에버가 제일 낮은 팀과 가장 높은 팀의 선수를 교체
       const highTeam = teamStats[0];
       const lowTeam = teamStats[teamStats.length - 1];
-
-      console.log(
-        `밸런싱 시도 ${attempt}: 최고점 팀 ${highTeam.teamNumber}(${highTeam.totalAverage}점) vs 최저점 팀 ${lowTeam.teamNumber}(${lowTeam.totalAverage}점)`
-      );
 
       // 모든 팀 쌍에서 교체 시도 (강화된 교체 전략)
       let bestSwapFound = false;
@@ -1798,13 +1738,11 @@ const TeamAssignment = () => {
 
             // 다른 팀 조합으로 교체 시도
             if (tryAlternativeSwap(teams, highTeam, lowTeam)) {
-              console.log('대안 스위칭 성공');
               continue;
             }
 
             // 고급 스위칭 시도
             if (tryAdvancedSwap(teams)) {
-              console.log('고급 스위칭 성공');
               continue;
             }
 
@@ -1816,30 +1754,22 @@ const TeamAssignment = () => {
           lastSwapHash = currentSwapHash;
         }
 
-        console.log(
-          `스위칭 성공: ${bestSwap.swapResult.player1.name} ↔ ${bestSwap.swapResult.player2.name} (팀 ${bestSwap.team1.teamNumber} ↔ 팀 ${bestSwap.team2.teamNumber}, 개선도: ${bestImprovement}점)`
-        );
         executeGenderSpecificSwap(teams, bestSwap.swapResult);
         continue;
       }
 
       // 5번 규칙: 똑같은 회원끼리의 교체가 반복되면, 그 팀의 다음으로 차이가 적게 나는 회원이나, 다른 팀에서 근소한 차이나는 사람이랑 교체
       if (tryAlternativeSwap(teams, highTeam, lowTeam)) {
-        console.log('대안 스위칭 성공');
         continue;
       }
 
       // 7번 규칙: 6번보다 더 좋은 방법이 있다면 시도해도 좋다
       if (tryAdvancedSwap(teams)) {
-        console.log('고급 스위칭 성공');
         continue;
       }
 
       // 2000회 시도 완료 시 최적 결과 반환
       if (attempt >= maxAttempts) {
-        console.log(
-          `⚠️ 2000회 시도 완료. 최적 결과: ${bestMaxDiff}점 (목표: 5점 이내)`
-        );
         break;
       }
 
@@ -1847,16 +1777,11 @@ const TeamAssignment = () => {
       break;
     }
 
-    console.log(
-      `밸런싱 완료: 최대 차이 ${bestMaxDiff}점 (${attempt}번 시도 완료, 2000번 중 최적 결과)`
-    );
     return bestTeams;
   };
 
   // 기존 팀 상태에서 추가 밸런싱하는 함수
   const rebalanceExistingTeams = async (existingTeams) => {
-    console.log('🔄 기존 팀 상태에서 추가 밸런싱 시작...');
-
     // 기존 팀 데이터를 복사
     const teams = JSON.parse(JSON.stringify(existingTeams));
 
@@ -1871,64 +1796,17 @@ const TeamAssignment = () => {
 
     // 밸런싱 전 상태 저장 (비교용)
     const beforeTeams = JSON.parse(JSON.stringify(teams));
-    console.log('🔄 밸런싱 전 팀 구성:');
-    beforeTeams.forEach((team, index) => {
-      console.log(
-        `  팀 ${team.team_number}: 총 ${team.total_average}점, 선수들:`,
-        team.players.map((p) => `${p.name}(${p.average})`).join(', ')
-      );
-    });
 
     // 1단계: 공격적인 밸런싱 시도 (더 정밀한 최적화)
     const improvedTeams = await aggressiveRebalance(teams);
 
     // 2단계: 기존 밸런싱 로직으로 추가 최적화
     await balanceTeamsWithNewRules(improvedTeams);
-
-    // 밸런싱 후 상태와 비교
-    console.log('🔄 밸런싱 후 팀 구성:');
-    improvedTeams.forEach((team, index) => {
-      console.log(
-        `  팀 ${team.team_number}: 총 ${team.total_average}점, 선수들:`,
-        team.players.map((p) => `${p.name}(${p.average})`).join(', ')
-      );
-    });
-
-    // 변화 확인
-    let hasChanges = false;
-    beforeTeams.forEach((beforeTeam, index) => {
-      const afterTeam = improvedTeams[index];
-      const beforePlayers = beforeTeam.players
-        .map((p) => `${p.name}-${p.average}`)
-        .sort();
-      const afterPlayers = afterTeam.players
-        .map((p) => `${p.name}-${p.average}`)
-        .sort();
-
-      if (JSON.stringify(beforePlayers) !== JSON.stringify(afterPlayers)) {
-        hasChanges = true;
-        console.log(`🔄 팀 ${beforeTeam.team_number}에서 변화 감지!`);
-        console.log(`  이전: ${beforePlayers.join(', ')}`);
-        console.log(`  이후: ${afterPlayers.join(', ')}`);
-      }
-    });
-
-    if (!hasChanges) {
-      console.log(
-        '⚠️ 밸런싱 시도했지만 변화가 없습니다. 이미 최적 상태일 수 있습니다.'
-      );
-    } else {
-      console.log('✅ 밸런싱으로 인한 변화가 감지되었습니다.');
-    }
-
-    console.log('✅ 추가 밸런싱 완료');
     return improvedTeams; // 수정된 teams 배열 반환
   };
 
   // 공격적인 밸런싱 함수 (더 정밀한 최적화)
   const aggressiveRebalance = async (teams) => {
-    console.log('🔧 공격적인 밸런싱 시작...');
-
     const teamsCopy = JSON.parse(JSON.stringify(teams));
 
     // 초기 최대 차이 계산

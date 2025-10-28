@@ -123,14 +123,6 @@ const Payments = () => {
       const response = await paymentAPI.getPayments();
       if (response.data.success) {
         setPayments(response.data.payments);
-
-        // 디버깅: 면제 상태가 있는 납입 확인
-        const exemptPayments = response.data.payments.filter(
-          (p) => p.is_exempt
-        );
-        if (exemptPayments.length > 0) {
-          console.log('면제 상태 납입 로드:', exemptPayments);
-        }
       }
     } catch (error) {
       console.error('납입 내역 로드 실패:', error);
@@ -587,16 +579,6 @@ const Payments = () => {
           is_exempt: isExempt,
         };
 
-        // 디버깅 로그
-        console.log('면제 상태 저장:', {
-          paymentId,
-          updateData,
-          original: {
-            is_paid: payment.is_paid,
-            is_exempt: payment.is_exempt,
-          },
-        });
-
         updates.push(paymentAPI.updatePayment(payment.id, updateData));
       }
 
@@ -1045,16 +1027,6 @@ const Payments = () => {
                                     payment.is_exempt
                                   );
                                   isExempt = tempExemptState;
-
-                                  // 디버깅용 로그
-                                  if (payment.is_exempt) {
-                                    console.log('면제 상태 확인:', {
-                                      paymentId,
-                                      payment_is_exempt: payment.is_exempt,
-                                      tempExemptState,
-                                      isExempt,
-                                    });
-                                  }
                                 }
 
                                 // 면제 상태
