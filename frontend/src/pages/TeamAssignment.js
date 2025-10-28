@@ -2898,7 +2898,7 @@ const TeamAssignment = () => {
               <div className="teams-grid">
                 {teams
                   .slice()
-                  .sort((a, b) => b.total_average - a.total_average)
+                  .sort((a, b) => a.team_number - b.team_number)
                   .map((team, index) => (
                     <div
                       key={index}
