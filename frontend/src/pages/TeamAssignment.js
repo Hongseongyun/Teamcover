@@ -1879,12 +1879,15 @@ const TeamAssignment = () => {
       );
     });
 
-    // 기존 밸런싱 로직 사용 (teams 배열을 직접 수정)
-    await balanceTeamsWithNewRules(teams);
+    // 1단계: 공격적인 밸런싱 시도 (더 정밀한 최적화)
+    const improvedTeams = await aggressiveRebalance(teams);
+
+    // 2단계: 기존 밸런싱 로직으로 추가 최적화
+    await balanceTeamsWithNewRules(improvedTeams);
 
     // 밸런싱 후 상태와 비교
     console.log('🔄 밸런싱 후 팀 구성:');
-    teams.forEach((team, index) => {
+    improvedTeams.forEach((team, index) => {
       console.log(
         `  팀 ${team.team_number}: 총 ${team.total_average}점, 선수들:`,
         team.players.map((p) => `${p.name}(${p.average})`).join(', ')
@@ -1894,7 +1897,7 @@ const TeamAssignment = () => {
     // 변화 확인
     let hasChanges = false;
     beforeTeams.forEach((beforeTeam, index) => {
-      const afterTeam = teams[index];
+      const afterTeam = improvedTeams[index];
       const beforePlayers = beforeTeam.players
         .map((p) => `${p.name}-${p.average}`)
         .sort();
@@ -1919,7 +1922,138 @@ const TeamAssignment = () => {
     }
 
     console.log('✅ 추가 밸런싱 완료');
-    return teams; // 수정된 teams 배열 반환
+    return improvedTeams; // 수정된 teams 배열 반환
+  };
+
+  // 공격적인 밸런싱 함수 (더 정밀한 최적화)
+  const aggressiveRebalance = async (teams) => {
+    console.log('🔧 공격적인 밸런싱 시작...');
+
+    const teamsCopy = JSON.parse(JSON.stringify(teams));
+
+    // 초기 최대 차이 계산
+    const initialTotals = teamsCopy.map((t) => t.total_average);
+    const initialMaxDiff =
+      Math.max(...initialTotals) - Math.min(...initialTotals);
+    console.log(`🔧 초기 최대 차이: ${initialMaxDiff}점`);
+
+    let bestTeams = JSON.parse(JSON.stringify(teamsCopy));
+    let bestDiff = initialMaxDiff;
+
+    // 각 선수의 점수를 기반으로 가능한 모든 조합 시도
+    const maxAttempts = 5000; // 더 많은 시도
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // 현재 점수 계산
+      teamsCopy.forEach((team) => {
+        team.total_average = team.players.reduce(
+          (sum, player) => sum + player.average,
+          0
+        );
+      });
+
+      const totals = teamsCopy.map((t) => t.total_average);
+      const currentMaxDiff = Math.max(...totals) - Math.min(...totals);
+
+      // 최적해 발견
+      if (currentMaxDiff === 0) {
+        console.log(`🎯 완벽한 밸런싱 달성! (${attempt}번 시도)`);
+        bestTeams = JSON.parse(JSON.stringify(teamsCopy));
+        break;
+      }
+
+      // 더 좋은 해를 찾았으면 저장
+      if (currentMaxDiff < bestDiff) {
+        bestDiff = currentMaxDiff;
+        bestTeams = JSON.parse(JSON.stringify(teamsCopy));
+        console.log(`🎯 최대 차이 ${bestDiff}점 달성! (${attempt}번 시도)`);
+      }
+
+      // 모든 팀 쌍에 대해 최적의 선수 교체 찾기
+      let bestSwap = null;
+      let bestImprovement = 0;
+
+      for (let i = 0; i < teamsCopy.length - 1; i++) {
+        for (let j = i + 1; j < teamsCopy.length; j++) {
+          const team1 = teamsCopy[i];
+          const team2 = teamsCopy[j];
+
+          // 모든 선수 조합 시도
+          for (let p1 = 0; p1 < team1.players.length; p1++) {
+            for (let p2 = 0; p2 < team2.players.length; p2++) {
+              const player1 = team1.players[p1];
+              const player2 = team2.players[p2];
+
+              // 같은 성별인 경우만 교체
+              if (player1.gender === player2.gender) {
+                // 교체 후 점수 계산
+                const team1NewTotal =
+                  team1.total_average - player1.average + player2.average;
+                const team2NewTotal =
+                  team2.total_average - player2.average + player1.average;
+
+                // 새로운 최대 차이 계산
+                const newTotals = [...totals];
+                newTotals[i] = team1NewTotal;
+                newTotals[j] = team2NewTotal;
+                const newMaxDiff =
+                  Math.max(...newTotals) - Math.min(...newTotals);
+
+                // 개선도 계산
+                const improvement = currentMaxDiff - newMaxDiff;
+
+                // 더 큰 개선을 찾은 경우 저장
+                if (improvement > 0 && improvement > bestImprovement) {
+                  bestImprovement = improvement;
+                  bestSwap = {
+                    team1Index: i,
+                    team2Index: j,
+                    player1Index: p1,
+                    player2Index: p2,
+                    player1: { ...player1 },
+                    player2: { ...player2 },
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 최적의 교체가 있으면 실행
+      if (bestSwap) {
+        const {
+          team1Index,
+          team2Index,
+          player1Index,
+          player2Index,
+          player1,
+          player2,
+        } = bestSwap;
+        teamsCopy[team1Index].players[player1Index] = player2;
+        teamsCopy[team2Index].players[player2Index] = player1;
+        console.log(
+          `✅ 최적 교체 실행: 팀${team1Index + 1}의 ${player1.name} ↔ 팀${
+            team2Index + 1
+          }의 ${player2.name} (개선: ${bestImprovement}점)`
+        );
+      } else {
+        // 개선이 없으면 종료
+        break;
+      }
+    }
+
+    // 재계산
+    bestTeams.forEach((team) => {
+      team.total_average = team.players.reduce(
+        (sum, player) => sum + player.average,
+        0
+      );
+      team.average_per_player = team.total_average / team.players.length;
+    });
+
+    console.log(`🔧 공격적인 밸런싱 완료. 최대 차이: ${bestDiff}점`);
+    return bestTeams;
   };
 
   // 6번 규칙: 남성회원은 남성끼리, 여성회원은 여성끼리만 교체
