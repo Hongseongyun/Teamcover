@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { teamAPI, memberAPI, scoreAPI } from '../services/api';
+import { teamAPI, memberAPI } from '../services/api';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -105,6 +105,13 @@ const TeamAssignment = () => {
     }
   }, [players.length]); // 선수 수가 변경될 때만 실행
 
+  // 팀 구성 설정이 변경되면 팀 구성 상태 초기화
+  useEffect(() => {
+    setIsTeamConfigured(false);
+    setTeams([]);
+    setBalancingResult('');
+  }, [teamConfig.team_count, teamConfig.team_size]); // 팀 설정이 변경될 때 실행
+
   // teams 상태 변화 디버깅
   useEffect(() => {
     console.log('🔄 teams 상태 업데이트:', teams);
@@ -121,105 +128,24 @@ const TeamAssignment = () => {
     }
   };
 
-  // 스코어 기록에서 평균 에버 계산 (표시용 미리보기)
+  // 회원 데이터에서 평균 에버 사용 (최적화: 불필요한 API 호출 제거)
   const calculateAverageFromScores = async (memberName) => {
     try {
-      const response = await scoreAPI.getScores();
-      const data = response.data;
+      // 회원 목록에서 직접 찾기 (이미 로드되어 있음)
+      const member = members.find((m) => m.name === memberName);
 
-      if (data.success) {
-        const memberScores = data.scores.filter(
-          (score) => score.member_name === memberName
-        );
-
-        if (memberScores.length > 0) {
-          // 날짜별로 정렬
-          const sortedScores = memberScores.sort(
-            (a, b) => new Date(a.game_date) - new Date(b.game_date)
-          );
-
-          // 요구사항: 2025년 7월 이후 > 없으면 2025년 1~6월 > 없으면 2024년
-          const targetYear = 2025;
-          const getDate = (s) => new Date(s.game_date || s.created_at);
-
-          // 1) 2025년 7월 이후
-          let targetScores = sortedScores.filter((score) => {
-            const d = getDate(score);
-            if (isNaN(d)) return false;
-            const y = d.getFullYear();
-            const m = d.getMonth() + 1;
-            return y === targetYear && m >= 7;
-          });
-
-          // 2) 없으면 2025년 1~6월
-          if (targetScores.length === 0) {
-            targetScores = sortedScores.filter((score) => {
-              const d = getDate(score);
-              if (isNaN(d)) return false;
-              const y = d.getFullYear();
-              const m = d.getMonth() + 1;
-              return y === targetYear && m >= 1 && m <= 6;
-            });
-          }
-
-          // 3) 없으면 2024년 전체
-          if (targetScores.length === 0) {
-            targetScores = sortedScores.filter((score) => {
-              const d = getDate(score);
-              if (isNaN(d)) return false;
-              const y = d.getFullYear();
-              return y === 2024;
-            });
-          }
-
-          // 평균 에버 계산
-          if (targetScores.length > 0) {
-            const allScores = targetScores
-              .flatMap((score) => [score.score1, score.score2, score.score3])
-              .filter((score) => score > 0);
-
-            if (allScores.length > 0) {
-              // 계산된 기간 정보 저장 (2025 기준)
-              const periodInfo = getPeriodInfo(targetScores);
-              setCalculatedAverageInfo({
-                period: periodInfo,
-                gameCount: targetScores.length,
-                isCalculated: true,
-                memberName: memberName,
-              });
-
-              // 평균 에버 계산
-            }
-          }
-        }
+      if (member && member.average_score) {
+        // 회원 데이터의 평균 점수 사용
+        setCalculatedAverageInfo({
+          period: '정기전 에버',
+          gameCount: 1,
+          isCalculated: true,
+          memberName: memberName,
+        });
       }
     } catch (error) {
       // 에러 처리
     }
-  };
-
-  // 기간 정보 반환 함수
-  const getPeriodInfo = (scores) => {
-    if (!scores || scores.length === 0) return '';
-    const targetYear = 2025;
-    const getDate = (s) => new Date(s.game_date || s.created_at);
-    const months = scores
-      .map((s) => getDate(s))
-      .filter((d) => !isNaN(d))
-      .map((d) => ({ y: d.getFullYear(), m: d.getMonth() + 1 }));
-
-    const hasAfterJuly = months.some((d) => d.y === targetYear && d.m >= 7);
-    if (hasAfterJuly) return `${targetYear}년 7월 이후`;
-
-    const hasJanToJune = months.some(
-      (d) => d.y === targetYear && d.m >= 1 && d.m <= 6
-    );
-    if (hasJanToJune) return `${targetYear}년 1월~6월`;
-
-    const hasYear2024 = months.some((d) => d.y === 2024);
-    if (hasYear2024) return `2024년`;
-
-    return '';
   };
 
   // 선수 목록으로 스크롤하는 함수
