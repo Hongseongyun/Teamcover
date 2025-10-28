@@ -372,39 +372,60 @@ def update_all_member_averages():
 
 @members_bp.route('/averages/', methods=['GET'])
 def get_all_members_averages():
-    """모든 회원의 에버를 일괄 조회하는 API"""
+    """모든 회원의 에버를 일괄 조회하는 API - 최적화 버전"""
     try:
         members = Member.query.all()
         members_with_averages = []
         
+        # 한 번에 모든 점수를 조회하여 N+1 쿼리 문제 해결
+        june_first = datetime(2025, 6, 1).date()
+        
+        # 모든 점수를 한 번에 조회
+        recent_scores_all = Score.query.filter(Score.game_date >= june_first).all()
+        all_scores_all = Score.query.all()
+        
+        # member_id로 그룹화
+        recent_scores_by_member = {}
+        all_scores_by_member = {}
+        
+        for score in recent_scores_all:
+            if score.member_id not in recent_scores_by_member:
+                recent_scores_by_member[score.member_id] = []
+            recent_scores_by_member[score.member_id].append(score)
+        
+        for score in all_scores_all:
+            if score.member_id not in all_scores_by_member:
+                all_scores_by_member[score.member_id] = []
+            all_scores_by_member[score.member_id].append(score)
+        
+        # 각 회원별 평균 계산
         for member in members:
-            june_first = datetime(2025, 6, 1).date()
-            
-            recent_scores = Score.query.filter(
-                Score.member_id == member.id,
-                Score.game_date >= june_first
-            ).all()
-            
+            member_id = member.id
             average = None
             score_count = 0
             period = '기록 없음'
             
-            if recent_scores:
-                total_average = sum(score.average_score for score in recent_scores if score.average_score)
-                count = len([s for s in recent_scores if s.average_score])
-                if count > 0:
-                    average = round(total_average / count, 1)
-                    score_count = count
-                    period = '6월 이후'
-            else:
-                all_scores = Score.query.filter_by(member_id=member.id).all()
-                if all_scores:
-                    total_average = sum(score.average_score for score in all_scores if score.average_score)
-                    count = len([s for s in all_scores if s.average_score])
+            # 6월 이후 점수가 있는지 확인
+            if member_id in recent_scores_by_member:
+                recent_scores = recent_scores_by_member[member_id]
+                if recent_scores:
+                    total_average = sum(score.average_score for score in recent_scores if score.average_score)
+                    count = len([s for s in recent_scores if s.average_score])
                     if count > 0:
                         average = round(total_average / count, 1)
                         score_count = count
-                        period = '전체 기간'
+                        period = '6월 이후'
+            else:
+                # 6월 이후 점수가 없으면 전체 기간 점수 확인
+                if member_id in all_scores_by_member:
+                    all_scores = all_scores_by_member[member_id]
+                    if all_scores:
+                        total_average = sum(score.average_score for score in all_scores if score.average_score)
+                        count = len([s for s in all_scores if s.average_score])
+                        if count > 0:
+                            average = round(total_average / count, 1)
+                            score_count = count
+                            period = '전체 기간'
             
             members_with_averages.append({
                 'id': member.id,

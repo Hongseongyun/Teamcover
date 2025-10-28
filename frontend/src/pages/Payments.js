@@ -224,7 +224,7 @@ const Payments = () => {
       ]);
     }
     setMemberSearchQuery('');
-    loadMembers(); // 전체 회원 목록 다시 불러오기
+    // 불필요한 전체 회원 목록 재로드 제거 (성능 향상)
   };
 
   const removeMemberFromGamePayment = (memberId) => {

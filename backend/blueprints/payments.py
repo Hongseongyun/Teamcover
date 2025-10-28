@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime, timedelta
 from models import db, Member, Payment, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy.orm import joinedload
 
 # 납입 관리 Blueprint
 payments_bp = Blueprint('payments', __name__, url_prefix='/api/payments')
@@ -50,8 +51,9 @@ def get_payments():
         if month:
             query = query.filter_by(month=month)
         
+        # member 관계를 eager load하여 N+1 쿼리 문제 해결
         # 최신순 정렬
-        payments = query.order_by(Payment.payment_date.desc()).all()
+        payments = query.options(joinedload(Payment.member)).order_by(Payment.payment_date.desc()).all()
         
         payments_data = [payment.to_dict() for payment in payments]
         
@@ -166,7 +168,7 @@ def update_payment(payment_id):
         if not data:
             return jsonify({'success': False, 'message': '요청 데이터가 없습니다.'})
         
-        payment = Payment.query.get_or_404(payment_id)
+        payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
         
         # 금액 수정
         if 'amount' in data:
@@ -221,7 +223,7 @@ def delete_payment(payment_id):
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
         
-        payment = Payment.query.get_or_404(payment_id)
+        payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
         payment_info = f'{payment.member.name if payment.member else ""} ({payment.amount}원)'
         
         db.session.delete(payment)
@@ -257,17 +259,28 @@ def get_payment_stats():
         current_date = datetime.now().date()
         current_month = current_date.strftime('%Y-%m')
         
-        payments = Payment.query.all()
+        # member 관계를 eager load하고 월별 통계를 DB 레벨에서 계산
+        monthly_payments = db.session.query(
+            Payment.month,
+            db.func.sum(Payment.amount).label('total')
+        ).filter(
+            Payment.payment_type == 'monthly'
+        ).group_by(Payment.month).all()
         
-        for payment in payments:
-            if not payment.month:
-                payment.month = payment.payment_date.strftime('%Y-%m')
-                db.session.commit()
-            
-            if payment.payment_type == 'monthly':
-                monthly_stats[payment.month] = monthly_stats.get(payment.month, 0) + payment.amount
-            elif payment.payment_type == 'game':
-                game_stats[payment.month] = game_stats.get(payment.month, 0) + payment.amount
+        game_payments = db.session.query(
+            Payment.month,
+            db.func.sum(Payment.amount).label('total')
+        ).filter(
+            Payment.payment_type == 'game'
+        ).group_by(Payment.month).all()
+        
+        for payment in monthly_payments:
+            if payment.month:
+                monthly_stats[payment.month] = payment.total
+        
+        for payment in game_payments:
+            if payment.month:
+                game_stats[payment.month] = payment.total
         
         return jsonify({
             'success': True,
