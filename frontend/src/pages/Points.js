@@ -2058,9 +2058,8 @@ const Points = () => {
                             className="form-control"
                           >
                             <option value="">유형 선택</option>
-                            <option value="정기전">정기전</option>
+                            <option value="적립">적립</option>
                             <option value="사용">사용</option>
-                            <option value="기타">기타</option>
                           </select>
                         ) : (
                           <span
