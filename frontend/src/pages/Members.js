@@ -998,13 +998,13 @@ const Members = () => {
                         </td>
                         <td>
                           <button
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-edit"
                             onClick={() => startInlineEdit(member)}
                           >
                             수정
                           </button>
                           <button
-                            className="btn btn-sm btn-danger"
+                            className="btn btn-sm btn-delete"
                             onClick={() => handleDelete(member.id)}
                             disabled={deleting}
                           >

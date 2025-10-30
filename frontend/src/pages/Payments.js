@@ -9,6 +9,7 @@ const GamePaymentsByDate = ({
   onEdit,
   onDelete,
   onToggle,
+  onDeleteDate,
   isAdmin,
   deleting,
   formatNumber,
@@ -34,13 +35,22 @@ const GamePaymentsByDate = ({
           <div className="game-date-header">
             <h4>{date}</h4>
             {isAdmin && (
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => onEdit(groupByDate[date][0])}
-                title="편집"
-              >
-                편집
-              </button>
+              <div className="game-date-actions">
+                <button
+                  className="btn btn-sm btn-edit"
+                  onClick={() => onEdit(groupByDate[date][0])}
+                  title="편집"
+                >
+                  편집
+                </button>
+                <button
+                  className="btn btn-sm btn-delete"
+                  onClick={() => onDeleteDate && onDeleteDate(date)}
+                  title="이 날짜 전체 삭제"
+                >
+                  삭제
+                </button>
+              </div>
             )}
           </div>
           <div className="game-payments-grid">
@@ -62,7 +72,11 @@ const GamePaymentsByDate = ({
                       payment.is_paid ? 'status-paid' : 'status-unpaid'
                     }`}
                   >
-                    {payment.is_paid ? '납입완료' : '미납'}
+                    {payment.paid_with_points
+                      ? '포인트납부'
+                      : payment.is_paid
+                      ? '납입완료'
+                      : '미납'}
                   </div>
                 </div>
               </div>
@@ -176,6 +190,7 @@ const Payments = () => {
         member_id: payment.member_id,
         member_name: payment.member_name,
         is_paid: payment.is_paid,
+        paid_with_points: payment.paid_with_points || false,
         payment_id: payment.id,
       }));
 
@@ -211,6 +226,7 @@ const Payments = () => {
           member_id: member.id,
           member_name: member.name,
           is_paid: false,
+          paid_with_points: false,
           payment_id: null, // 새로 추가된 회원
         },
       ]);
@@ -227,17 +243,27 @@ const Payments = () => {
 
   const toggleGamePaymentStatus = (memberId) => {
     setGamePaymentMembers((prev) =>
-      prev.map((m) =>
-        m.member_id === memberId ? { ...m, is_paid: !m.is_paid } : m
-      )
+      prev.map((m) => {
+        if (m.member_id !== memberId) return m;
+        // 상태 순환: 미납 -> 납입완료 -> 포인트납부 -> 미납
+        if (!m.is_paid && !m.paid_with_points) {
+          return { ...m, is_paid: true, paid_with_points: false };
+        }
+        if (m.is_paid && !m.paid_with_points) {
+          return { ...m, is_paid: true, paid_with_points: true };
+        }
+        return { ...m, is_paid: false, paid_with_points: false };
+      })
     );
   };
 
   // 정기전 게임비 카드에서 직접 토글
   const toggleGamePaymentCard = async (payment) => {
     try {
+      // 카드 클릭 토글: 납입완료 ↔ 미납, 포인트납부 상태는 유지
       await paymentAPI.updatePayment(payment.id, {
         is_paid: !payment.is_paid,
+        paid_with_points: payment.paid_with_points || false,
       });
       loadPayments(); // 목록 새로고침
     } catch (error) {
@@ -247,11 +273,6 @@ const Payments = () => {
   };
 
   const saveGamePayments = async () => {
-    if (gamePaymentMembers.length === 0) {
-      alert('추가된 회원이 없습니다.');
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -272,6 +293,15 @@ const Payments = () => {
         }
       }
 
+      // 모두 삭제 케이스: 모달에 0명 -> 해당 날짜 전체 삭제
+      if (gamePaymentMembers.length === 0) {
+        await Promise.all(promises);
+        await loadPayments();
+        closeGamePaymentModal();
+        alert('해당 날짜의 정기전 게임비 내역이 삭제되었습니다.');
+        return;
+      }
+
       // 추가/수정해야 할 납입
       for (const memberPayment of gamePaymentMembers) {
         const paymentData = {
@@ -280,6 +310,7 @@ const Payments = () => {
           amount: 14000,
           payment_date: gamePaymentDate,
           is_paid: memberPayment.is_paid,
+          paid_with_points: !!memberPayment.paid_with_points,
           note: '',
         };
 
@@ -1127,6 +1158,27 @@ const Payments = () => {
                 onEdit={startEdit}
                 onDelete={handleDelete}
                 onToggle={toggleGamePaymentCard}
+                onDeleteDate={async (date) => {
+                  if (
+                    !window.confirm(
+                      `${date}의 정기전 게임비 내역을 모두 삭제할까요?`
+                    )
+                  )
+                    return;
+                  try {
+                    const toDelete = payments.filter(
+                      (p) =>
+                        p.payment_type === 'game' && p.payment_date === date
+                    );
+                    await Promise.all(
+                      toDelete.map((p) => paymentAPI.deletePayment(p.id))
+                    );
+                    await loadPayments();
+                    alert('해당 날짜의 정기전 게임비 내역이 삭제되었습니다.');
+                  } catch (e) {
+                    alert('삭제에 실패했습니다.');
+                  }
+                }}
                 isAdmin={isAdmin}
                 deleting={deleting}
                 formatNumber={formatNumber}
@@ -1187,13 +1239,13 @@ const Payments = () => {
                         {isAdmin && (
                           <td>
                             <button
-                              className="btn btn-sm btn-primary"
+                              className="btn btn-sm btn-edit"
                               onClick={() => startEdit(payment)}
                             >
                               수정
                             </button>
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm btn-delete"
                               onClick={() => handleDelete(payment.id)}
                               disabled={deleting}
                             >
@@ -1321,7 +1373,9 @@ const Payments = () => {
                           <td>
                             <button
                               className={`btn btn-sm ${
-                                memberPayment.is_paid
+                                memberPayment.paid_with_points
+                                  ? 'btn-info'
+                                  : memberPayment.is_paid
                                   ? 'btn-success'
                                   : 'btn-outline-danger'
                               }`}
@@ -1330,12 +1384,16 @@ const Payments = () => {
                               }
                               disabled={submitting}
                             >
-                              {memberPayment.is_paid ? '✓ 납입완료' : '✗ 미납'}
+                              {memberPayment.paid_with_points
+                                ? 'P 포인트납부'
+                                : memberPayment.is_paid
+                                ? '✓ 납입완료'
+                                : '✗ 미납'}
                             </button>
                           </td>
                           <td>
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm btn-delete"
                               onClick={() =>
                                 removeMemberFromGamePayment(
                                   memberPayment.member_id
@@ -1365,9 +1423,13 @@ const Payments = () => {
               <button
                 className="btn btn-primary"
                 onClick={saveGamePayments}
-                disabled={submitting || gamePaymentMembers.length === 0}
+                disabled={submitting}
               >
-                {submitting ? '저장 중...' : '저장'}
+                {submitting
+                  ? '저장 중...'
+                  : gamePaymentMembers.length === 0
+                  ? '저장'
+                  : '저장'}
               </button>
             </div>
           </div>

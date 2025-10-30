@@ -49,14 +49,25 @@ def get_points():
             else:
                 member_balances[member_name] -= point.amount
             
+            # 표시용 금액/유형 보정
+            display_note = point.note
+            is_payment_linked = isinstance(display_note, str) and display_note.startswith('PAYMENT:')
+            # PAYMENT 연동 포인트는 유형을 강제로 '사용'으로 표기
+            display_point_type = '사용' if is_payment_linked else point.point_type
+            # 사용은 음수로 반환하여 UI에 -값이 보이도록 처리
+            display_amount = point.amount if display_point_type in ['적립', '보너스'] else -abs(point.amount)
+            # PAYMENT 링크 메모는 응답에서 숨김 처리
+            if is_payment_linked:
+                display_note = ''
+
             points_data.append({
                 'id': point.id,
                 'member_name': member_name,
                 'member_id': point.member_id,
-                'point_type': point.point_type,
-                'amount': point.amount,
+                'point_type': display_point_type,
+                'amount': display_amount,
                 'reason': point.reason,
-                'note': point.note,
+                'note': display_note,
                 'point_date': point.point_date.strftime('%Y-%m-%d') if point.point_date else None,
                 'created_at': point.created_at.strftime('%Y-%m-%d') if point.created_at else None,
                 'balance': member_balances[member_name]  # 잔여 포인트 추가

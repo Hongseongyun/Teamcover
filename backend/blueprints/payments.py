@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime, timedelta
-from models import db, Member, Payment, User
+from models import db, Member, Payment, User, Point
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
 
@@ -134,11 +134,35 @@ def add_payment():
             month=month,
             is_paid=data.get('is_paid', True),
             is_exempt=data.get('is_exempt', False),
+            paid_with_points=data.get('paid_with_points', False),
             note=data.get('note', '').strip()
         )
         
         db.session.add(new_payment)
         db.session.commit()
+
+        # 포인트 자동 차감 처리: 정기전(game) + 납입완료 + 포인트로 납부 + 면제 아님
+        try:
+            should_create_point = (
+                new_payment.payment_type == 'game'
+                and new_payment.is_paid is True
+                and new_payment.is_exempt is False
+                and new_payment.paid_with_points is True
+            )
+            if should_create_point:
+                point = Point(
+                    member_id=new_payment.member_id,
+                    point_type='사용',
+                    amount=abs(new_payment.amount),  # 사용은 양수 저장, 계산 시 차감
+                    reason='정기전 게임비',
+                    point_date=new_payment.payment_date,
+                    note=f'PAYMENT:{new_payment.id}'
+                )
+                db.session.add(point)
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+            # 포인트 생성 실패가 전체 결제 생성에 영향을 주지 않도록 함
         
         return jsonify({
             'success': True,
@@ -169,6 +193,13 @@ def update_payment(payment_id):
             return jsonify({'success': False, 'message': '요청 데이터가 없습니다.'})
         
         payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
+
+        # 기존 상태 보존 (포인트 동기화 비교용)
+        prev_paid_with_points = payment.paid_with_points
+        prev_is_paid = payment.is_paid
+        prev_is_exempt = payment.is_exempt
+        prev_payment_date = payment.payment_date
+        prev_amount = payment.amount
         
         # 금액 수정
         if 'amount' in data:
@@ -192,6 +223,10 @@ def update_payment(payment_id):
         # 면제 여부 수정
         if 'is_exempt' in data:
             payment.is_exempt = bool(data['is_exempt'])
+
+        # 포인트 납부 여부 수정
+        if 'paid_with_points' in data:
+            payment.paid_with_points = bool(data['paid_with_points'])
         
         # 비고 수정
         if 'note' in data:
@@ -199,6 +234,47 @@ def update_payment(payment_id):
         
         payment.updated_at = datetime.utcnow()
         db.session.commit()
+
+        # 포인트 동기화
+        try:
+            # 연결된 포인트 내역 찾기
+            linked_point = Point.query.filter_by(note=f'PAYMENT:{payment.id}').first()
+
+            should_have_point = (
+                payment.payment_type == 'game'
+                and payment.is_paid is True
+                and payment.is_exempt is False
+                and payment.paid_with_points is True
+            )
+
+            if should_have_point and linked_point is None:
+                # 새로 생성
+                new_point = Point(
+                    member_id=payment.member_id,
+                    point_type='사용',
+                    amount=abs(payment.amount),
+                    reason='정기전 게임비',
+                    point_date=payment.payment_date,
+                    note=f'PAYMENT:{payment.id}'
+                )
+                db.session.add(new_point)
+                db.session.commit()
+            elif not should_have_point and linked_point is not None:
+                # 기존 것 삭제
+                db.session.delete(linked_point)
+                db.session.commit()
+            elif linked_point is not None:
+                # 포인트는 유지되지만 금액/날짜가 바뀐 경우 동기화
+                needs_update = (
+                    (payment.payment_date != prev_payment_date)
+                    or (abs(payment.amount) != linked_point.amount)
+                )
+                if needs_update:
+                    linked_point.point_date = payment.payment_date
+                    linked_point.amount = abs(payment.amount)
+                    db.session.commit()
+        except Exception:
+            db.session.rollback()
         
         return jsonify({
             'success': True,
@@ -225,6 +301,15 @@ def delete_payment(payment_id):
         
         payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
         payment_info = f'{payment.member.name if payment.member else ""} ({payment.amount}원)'
+        
+        # 연결된 포인트 있으면 먼저 삭제
+        try:
+            linked_point = Point.query.filter_by(note=f'PAYMENT:{payment.id}').first()
+            if linked_point:
+                db.session.delete(linked_point)
+        except Exception:
+            db.session.rollback()
+            # 계속 진행
         
         db.session.delete(payment)
         db.session.commit()

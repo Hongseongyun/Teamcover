@@ -379,6 +379,7 @@ class Payment(db.Model):
     month = db.Column(db.String(10), nullable=True)  # 'YYYY-MM' 형식 (검색/통계용)
     is_paid = db.Column(db.Boolean, default=True)  # 납입 여부 (기본값: True)
     is_exempt = db.Column(db.Boolean, default=False)  # 면제 여부 (기본값: False)
+    paid_with_points = db.Column(db.Boolean, default=False)  # 포인트로 납부 여부
     note = db.Column(db.Text, nullable=True)  # 비고
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 등록 시간
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -401,6 +402,7 @@ class Payment(db.Model):
             'month': self.month,
             'is_paid': self.is_paid,
             'is_exempt': self.is_exempt,
+            'paid_with_points': self.paid_with_points,
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None

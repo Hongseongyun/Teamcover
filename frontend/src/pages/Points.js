@@ -2170,13 +2170,13 @@ const Points = () => {
                         ) : (
                           <div className="inline-edit-actions">
                             <button
-                              className="btn btn-sm btn-primary"
+                              className="btn btn-sm btn-edit"
                               onClick={() => startInlineEdit(point)}
                             >
                               수정
                             </button>
                             <button
-                              className="btn btn-sm btn-danger"
+                              className="btn btn-sm btn-delete"
                               onClick={() => handleDelete(point.id)}
                               disabled={deleting}
                             >

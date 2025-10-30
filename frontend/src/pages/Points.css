@@ -595,6 +595,15 @@
 /* 작업 컬럼은 overflow visible로 버튼이 보이도록 */
 .points-table td:last-child {
   overflow: visible;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.points-table th:last-child {
+  text-align: center;
 }
 
 /* 포인트 테이블 각 셀 최소 너비 보장 */
