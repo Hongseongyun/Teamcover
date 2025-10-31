@@ -2131,12 +2131,11 @@ const Points = () => {
                             className="inline-select"
                           >
                             <option value="">사유 선택</option>
-                            <option value="경기 참여">경기 참여</option>
-                            <option value="스트라이크">스트라이크</option>
-                            <option value="스페어">스페어</option>
-                            <option value="200점 이상">200점 이상</option>
-                            <option value="상품 교환">상품 교환</option>
-                            <option value="기타">기타</option>
+                            {reasonOptions.map((reason) => (
+                              <option key={reason.name} value={reason.name}>
+                                {reason.name}
+                              </option>
+                            ))}
                           </select>
                         ) : (
                           point.reason || '-'

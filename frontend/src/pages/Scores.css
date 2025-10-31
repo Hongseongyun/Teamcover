@@ -2633,8 +2633,21 @@
   text-align: center;
 }
 
+/* 인라인 액션 버튼 */
+.inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.scores-table td.inline-actions {
+  text-align: center;
+}
+
 .inline-actions .btn + .btn {
-  margin-left: 0.5rem;
+  margin-left: 0;
 }
 
 .form-group input.readonly {

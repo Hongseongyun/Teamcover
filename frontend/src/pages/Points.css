@@ -892,6 +892,11 @@
   gap: 0.5rem;
   align-items: center;
   justify-content: center;
+  text-align: center;
+}
+
+.points-table td.inline-actions {
+  text-align: center;
 }
 
 .inline-actions .btn + .btn {
