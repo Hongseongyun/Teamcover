@@ -190,7 +190,17 @@ export const paymentAPI = {
   addPayment: (data) => api.post('/api/payments/', data),
   updatePayment: (id, data) => api.put(`/api/payments/${id}`, data),
   deletePayment: (id) => api.delete(`/api/payments/${id}`),
-  getPaymentStats: () => api.get('/api/payments/stats'),
+  getPaymentStats: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/payments/stats?${queryString}`);
+  },
+  getBalance: () => api.get('/api/payments/balance'),
+  updateBalance: (data) => api.put('/api/payments/balance', data),
+  getFundLedger: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/payments/fund/ledger?${queryString}`);
+  },
+  addFundLedger: (data) => api.post('/api/payments/fund/ledger', data),
 };
 
 export default api;

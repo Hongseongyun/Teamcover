@@ -367,6 +367,41 @@ class AppSetting(db.Model):
     def __repr__(self):
         return f'<AppSetting {self.setting_key}>'
 
+
+class FundState(db.Model):
+    """회비 시작 월 및 시작 잔액 보관"""
+    __tablename__ = 'fund_state'
+
+    id = db.Column(db.Integer, primary_key=True)
+    start_month = db.Column(db.String(7), nullable=False)  # 'YYYY-MM'
+    opening_balance = db.Column(db.BigInteger, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    def __repr__(self):
+        return f'<FundState {self.start_month} {self.opening_balance}>'
+
+
+class FundLedger(db.Model):
+    """회비 장부: 월회비, 정기전, 수기 조정 등 모든 이벤트 기록"""
+    __tablename__ = 'fund_ledger'
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+    month = db.Column(db.String(7), nullable=False)  # 'YYYY-MM'
+    entry_type = db.Column(db.String(10), nullable=False)  # 'credit' or 'debit'
+    amount = db.Column(db.BigInteger, nullable=False)
+    source = db.Column(db.String(20), nullable=False)  # 'monthly','game','manual'
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=True)
+    note = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 관계
+    payment = db.relationship('Payment', backref=db.backref('fund_entries', lazy=True))
+
+    def __repr__(self):
+        return f'<FundLedger {self.entry_type} {self.amount} {self.source}>'
+
 class Payment(db.Model):
     """납입 관리 모델"""
     __tablename__ = 'payments'

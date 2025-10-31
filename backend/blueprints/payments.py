@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime, timedelta
-from models import db, Member, Payment, User, Point
+from models import db, Member, Payment, User, Point, AppSetting, FundLedger, FundState
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
 
@@ -141,6 +141,12 @@ def add_payment():
         db.session.add(new_payment)
         db.session.commit()
 
+        # 장부 동기화
+        try:
+            _sync_payment_to_ledger(new_payment)
+        except Exception:
+            db.session.rollback()
+
         # 포인트 자동 차감 처리: 정기전(game) + 납입완료 + 포인트로 납부 + 면제 아님
         try:
             should_create_point = (
@@ -235,6 +241,12 @@ def update_payment(payment_id):
         payment.updated_at = datetime.utcnow()
         db.session.commit()
 
+        # 장부 동기화
+        try:
+            _sync_payment_to_ledger(payment)
+        except Exception:
+            db.session.rollback()
+
         # 포인트 동기화
         try:
             # 연결된 포인트 내역 찾기
@@ -310,6 +322,12 @@ def delete_payment(payment_id):
         except Exception:
             db.session.rollback()
             # 계속 진행
+
+        # 연결된 장부 항목 삭제
+        try:
+            FundLedger.query.filter_by(payment_id=payment.id).delete()
+        except Exception:
+            db.session.rollback()
         
         db.session.delete(payment)
         db.session.commit()
@@ -344,20 +362,31 @@ def get_payment_stats():
         current_date = datetime.now().date()
         current_month = current_date.strftime('%Y-%m')
         
+        # 시작월(from_month) 설정값/파라미터 처리
+        setting_start = AppSetting.query.filter_by(setting_key='fund_start_month').first()
+        default_from_month = setting_start.setting_value if setting_start and setting_start.setting_value else None
+        from_month = request.args.get('from_month') or default_from_month
+
         # member 관계를 eager load하고 월별 통계를 DB 레벨에서 계산
         monthly_payments = db.session.query(
             Payment.month,
             db.func.sum(Payment.amount).label('total')
         ).filter(
             Payment.payment_type == 'monthly'
-        ).group_by(Payment.month).all()
+        )
+        if from_month:
+            monthly_payments = monthly_payments.filter(Payment.month >= from_month)
+        monthly_payments = monthly_payments.group_by(Payment.month).all()
         
         game_payments = db.session.query(
             Payment.month,
             db.func.sum(Payment.amount).label('total')
         ).filter(
             Payment.payment_type == 'game'
-        ).group_by(Payment.month).all()
+        )
+        if from_month:
+            game_payments = game_payments.filter(Payment.month >= from_month)
+        game_payments = game_payments.group_by(Payment.month).all()
         
         for payment in monthly_payments:
             if payment.month:
@@ -372,9 +401,181 @@ def get_payment_stats():
             'stats': {
                 'monthly': monthly_stats,
                 'game': game_stats
-            }
+            },
+            'from_month': from_month
         })
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'납입 통계 조회 중 오류가 발생했습니다: {str(e)}'})
+
+
+# 내부 유틸: 결제-장부 동기화
+def _sync_payment_to_ledger(payment: Payment):
+    """결제 레코드를 장부에 반영/삭제한다."""
+    # 결제 반영 조건: 납입완료 + 면제 아님
+    should_exist = bool(payment.is_paid) and not bool(payment.is_exempt)
+    # 기존 장부
+    existing = FundLedger.query.filter_by(payment_id=payment.id).all()
+
+    if not should_exist:
+        # 존재하면 삭제
+        if existing:
+            for row in existing:
+                db.session.delete(row)
+            db.session.commit()
+        return
+
+    # 있어야 하는 경우 → 1개 기준으로 정규화
+    if existing:
+        entry = existing[0]
+    else:
+        entry = FundLedger(payment_id=payment.id)
+        db.session.add(entry)
+
+    entry.event_date = payment.payment_date
+    entry.month = payment.month or payment.payment_date.strftime('%Y-%m')
+    entry.amount = abs(int(payment.amount))
+    entry.source = payment.payment_type  # 'monthly' or 'game'
+    entry.entry_type = 'credit' if payment.payment_type == 'monthly' else 'debit'
+    entry.note = payment.note
+    db.session.commit()
+
+
+# 장부 API: 조회/수기 추가(관리자)
+@payments_bp.route('/fund/ledger', methods=['GET', 'POST'])
+@jwt_required(optional=True)
+def fund_ledger_endpoint():
+    try:
+        if request.method == 'GET':
+            user_id = get_jwt_identity()
+            current_user = User.query.get(int(user_id)) if user_id else None
+            if not current_user or current_user.role not in ['super_admin', 'admin']:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+
+            from_month = request.args.get('from_month')
+            q = FundLedger.query
+            if from_month:
+                q = q.filter(FundLedger.month >= from_month)
+            q = q.order_by(FundLedger.event_date.desc())
+            rows = q.all()
+            return jsonify({'success': True, 'items': [
+                {
+                    'id': r.id,
+                    'event_date': r.event_date.strftime('%Y-%m-%d') if r.event_date else None,
+                    'month': r.month,
+                    'entry_type': r.entry_type,
+                    'amount': r.amount,
+                    'source': r.source,
+                    'payment_id': r.payment_id,
+                    'note': r.note,
+                } for r in rows
+            ]})
+
+        # POST (수기 추가)
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user or current_user.role not in ['super_admin', 'admin']:
+            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+
+        data = request.get_json() or {}
+        entry_type = data.get('entry_type')  # 'credit' or 'debit'
+        amount = int(data.get('amount', 0))
+        event_date_str = data.get('event_date')  # YYYY-MM-DD
+        source = data.get('source', 'manual')
+        note = data.get('note', '')
+        if entry_type not in ('credit', 'debit'):
+            return jsonify({'success': False, 'message': 'entry_type은 credit/debit 여야 합니다.'})
+        if amount <= 0:
+            return jsonify({'success': False, 'message': 'amount는 양수여야 합니다.'})
+        try:
+            event_date = datetime.strptime(event_date_str, '%Y-%m-%d').date()
+        except Exception:
+            return jsonify({'success': False, 'message': 'event_date는 YYYY-MM-DD 형식이어야 합니다.'})
+        month = event_date.strftime('%Y-%m')
+        entry = FundLedger(
+            event_date=event_date,
+            month=month,
+            entry_type=entry_type,
+            amount=amount,
+            source=source,
+            note=note,
+        )
+        db.session.add(entry)
+        db.session.commit()
+        return jsonify({'success': True, 'item': {
+            'id': entry.id,
+            'event_date': entry.event_date.strftime('%Y-%m-%d'),
+            'month': entry.month,
+            'entry_type': entry.entry_type,
+            'amount': entry.amount,
+            'source': entry.source,
+            'payment_id': entry.payment_id,
+            'note': entry.note,
+        }})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'장부 처리 중 오류: {str(e)}'})
+
+
+@payments_bp.route('/balance', methods=['GET', 'PUT'])
+@jwt_required(optional=True)
+def payment_balance():
+    """회비 잔액 및 시작월 설정 조회/수정 API"""
+    try:
+        if request.method == 'GET':
+            bal = AppSetting.query.filter_by(setting_key='fund_balance').first()
+            start = AppSetting.query.filter_by(setting_key='fund_start_month').first()
+            balance_value = None
+            try:
+                balance_value = int(bal.setting_value) if bal and bal.setting_value is not None else None
+            except Exception:
+                balance_value = None
+            return jsonify({
+                'success': True,
+                'balance': balance_value,
+                'start_month': start.setting_value if start else None,
+            })
+
+        # PUT - 관리자만
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user or current_user.role not in ['super_admin', 'admin']:
+            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+
+        data = request.get_json() or {}
+        balance = data.get('balance')
+        start_month = data.get('start_month')
+
+        if balance is not None:
+            try:
+                balance = int(balance)
+            except Exception:
+                return jsonify({'success': False, 'message': 'balance는 숫자여야 합니다.'})
+            bal = AppSetting.query.filter_by(setting_key='fund_balance').first()
+            if not bal:
+                bal = AppSetting(setting_key='fund_balance', setting_value=str(balance), updated_by=current_user.id)
+                db.session.add(bal)
+            else:
+                bal.setting_value = str(balance)
+                bal.updated_by = current_user.id
+
+        if start_month is not None:
+            # YYYY-MM 형식 검증 (간단)
+            try:
+                datetime.strptime(start_month + '-01', '%Y-%m-%d')
+            except Exception:
+                return jsonify({'success': False, 'message': 'start_month는 YYYY-MM 형식이어야 합니다.'})
+            st = AppSetting.query.filter_by(setting_key='fund_start_month').first()
+            if not st:
+                st = AppSetting(setting_key='fund_start_month', setting_value=start_month, updated_by=current_user.id)
+                db.session.add(st)
+            else:
+                st.setting_value = start_month
+                st.updated_by = current_user.id
+
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'잔액 설정 처리 중 오류: {str(e)}'})
 

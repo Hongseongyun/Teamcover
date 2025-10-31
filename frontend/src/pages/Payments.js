@@ -1,7 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 import { paymentAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Payments.css';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend
+);
 
 // 정기전 게임비 날짜별 그룹 컴포넌트
 const GamePaymentsByDate = ({
@@ -130,10 +149,35 @@ const Payments = () => {
     note: '',
   });
 
+  // 목록 인라인 수정 상태
+  const [inlineEditId, setInlineEditId] = useState(null);
+  const [inlineForm, setInlineForm] = useState({
+    amount: '',
+    payment_date: '',
+    is_paid: true,
+    note: '',
+  });
+
   // 선입 메뉴 표시 대상 셀 (memberId + month)
   const [prepayTarget, setPrepayTarget] = useState(null);
   const [prepayMonths, setPrepayMonths] = useState(1);
   const [prepayStatus, setPrepayStatus] = useState('paid');
+
+  // 상단 대시보드: 잔액 및 그래프
+  const [currentBalance, setCurrentBalance] = useState(1540000);
+  const [startMonth, setStartMonth] = useState(null);
+  const [monthlyStats, setMonthlyStats] = useState({ monthly: {}, game: {} });
+  const [balanceSeries, setBalanceSeries] = useState({ labels: [], data: [] });
+  const [dashLoading, setDashLoading] = useState(false);
+  // 장부 관리 상태
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerItems, setLedgerItems] = useState([]);
+  const [ledgerForm, setLedgerForm] = useState({
+    event_date: new Date().toISOString().split('T')[0],
+    entry_type: 'credit',
+    amount: '',
+    note: '',
+  });
 
   const loadPayments = useCallback(async () => {
     try {
@@ -150,10 +194,126 @@ const Payments = () => {
     }
   }, []);
 
+  // 데이터 초기 로드
   useEffect(() => {
     loadPayments();
     loadMembers();
   }, [loadPayments]);
+
+  const buildBalanceSeries = useCallback(
+    (stats) => {
+      const monthly = stats.monthly || {};
+      const game = stats.game || {};
+      // 시작 기준: 다음 달(미래 기록부터 계산)
+      const today = new Date();
+      let sy = today.getFullYear();
+      let sm = today.getMonth() + 2;
+      if (sm > 12) {
+        sm = 1;
+        sy += 1;
+      }
+      const startMonth = `${sy}-${String(sm).padStart(2, '0')}`;
+      const all = Array.from(
+        new Set([...Object.keys(monthly), ...Object.keys(game)])
+      ).sort();
+      const months = all.filter((mm) => mm >= startMonth);
+      if (months.length === 0) {
+        setBalanceSeries({ labels: [], data: [] });
+        return;
+      }
+      const labels = [];
+      const data = [];
+      let run = currentBalance;
+      months.forEach((mm) => {
+        const net = (monthly[mm] || 0) - (game[mm] || 0);
+        run += net;
+        labels.push(mm);
+        data.push(run);
+      });
+      setBalanceSeries({ labels, data });
+    },
+    [currentBalance]
+  );
+
+  const loadPaymentStats = useCallback(async () => {
+    try {
+      setDashLoading(true);
+      const params = startMonth ? { from_month: startMonth } : {};
+      const res = await paymentAPI.getPaymentStats(params);
+      if (res.data?.success) {
+        setMonthlyStats(res.data.stats || { monthly: {}, game: {} });
+        buildBalanceSeries(res.data.stats || { monthly: {}, game: {} });
+      }
+    } catch (e) {
+      // 통계 로드 실패는 대시보드만 영향
+    } finally {
+      setDashLoading(false);
+    }
+  }, [buildBalanceSeries]);
+
+  // 장부 로드
+  const loadFundLedger = useCallback(async () => {
+    try {
+      setLedgerLoading(true);
+      const res = await paymentAPI.getFundLedger(
+        startMonth ? { from_month: startMonth } : {}
+      );
+      if (res.data?.success) {
+        setLedgerItems(res.data.items || []);
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setLedgerLoading(false);
+    }
+  }, [startMonth]);
+
+  const handleLedgerSubmit = async (e) => {
+    e.preventDefault();
+    if (!ledgerForm.amount || parseInt(ledgerForm.amount, 10) <= 0) {
+      alert('금액을 입력하세요');
+      return;
+    }
+    try {
+      setLedgerLoading(true);
+      await paymentAPI.addFundLedger({
+        event_date: ledgerForm.event_date,
+        entry_type: ledgerForm.entry_type,
+        amount: parseInt(ledgerForm.amount, 10),
+        source: 'manual',
+        note: ledgerForm.note || '',
+      });
+      setLedgerForm({
+        event_date: new Date().toISOString().split('T')[0],
+        entry_type: 'credit',
+        amount: '',
+        note: '',
+      });
+      await loadFundLedger();
+      await loadPaymentStats();
+    } catch (e) {
+      alert('장부 저장 실패');
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
+
+  // 통계 초기 로드 (잔액/그래프)
+  useEffect(() => {
+    (async () => {
+      try {
+        const balRes = await paymentAPI.getBalance();
+        if (balRes.data?.success) {
+          if (typeof balRes.data.balance === 'number')
+            setCurrentBalance(balRes.data.balance);
+          if (balRes.data.start_month) setStartMonth(balRes.data.start_month);
+        }
+      } finally {
+        await loadPaymentStats();
+        await loadFundLedger();
+      }
+    })();
+  }, [loadPaymentStats, loadFundLedger]);
 
   const loadMembers = async () => {
     try {
@@ -391,6 +551,40 @@ const Payments = () => {
     });
     setEditingId(null);
     setShowAddForm(false);
+  };
+
+  // 인라인 수정 핸들러
+  const handleInlineEdit = (payment) => {
+    setInlineEditId(payment.id);
+    setInlineForm({
+      amount: payment.amount,
+      payment_date: payment.payment_date,
+      is_paid: payment.is_paid,
+      note: payment.note || '',
+    });
+  };
+
+  const handleInlineCancel = () => {
+    setInlineEditId(null);
+    setInlineForm({ amount: '', payment_date: '', is_paid: true, note: '' });
+  };
+
+  const handleInlineSave = async (paymentId) => {
+    try {
+      setSubmitting(true);
+      await paymentAPI.updatePayment(paymentId, {
+        amount: parseInt(inlineForm.amount, 10),
+        payment_date: inlineForm.payment_date,
+        is_paid: !!inlineForm.is_paid,
+        note: inlineForm.note || '',
+      });
+      setInlineEditId(null);
+      await loadPayments();
+    } catch (e) {
+      alert('수정에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const startEdit = (payment) => {
@@ -754,6 +948,231 @@ const Payments = () => {
       <div className="page-header">
         <h1>회비관리</h1>
       </div>
+
+      {/* 상단 대시보드: 잔액/월별 적립·소비 및 그래프 */}
+      <div className="payments-section">
+        <div className="section-card balance-dashboard">
+          <div className="balance-top">
+            <div className="balance-summary">
+              <div className="balance-row">
+                <span className="label">현재 잔액</span>
+                <span className="value">{formatNumber(currentBalance)}원</span>
+                {isAdmin && (
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={async () => {
+                      const v = prompt(
+                        '현재 잔액을 입력하세요',
+                        currentBalance.toString()
+                      );
+                      if (v === null) return;
+                      const n = parseInt(v, 10);
+                      if (isNaN(n)) return;
+                      try {
+                        await paymentAPI.updateBalance({
+                          balance: n,
+                          start_month: startMonth || undefined,
+                        });
+                        setCurrentBalance(n);
+                        buildBalanceSeries(monthlyStats);
+                      } catch (e) {
+                        alert('잔액 저장에 실패했습니다.');
+                      }
+                    }}
+                  >
+                    수정
+                  </button>
+                )}
+              </div>
+              {(() => {
+                const today = new Date();
+                const cy = today.getFullYear();
+                const cm = today.getMonth() + 1;
+                let sy = cy;
+                let sm = cm + 1; // 다음 달부터 집계
+                if (sm > 12) {
+                  sm = 1;
+                  sy += 1;
+                }
+                const ym = `${sy}-${String(sm).padStart(2, '0')}`;
+                const income = monthlyStats.monthly?.[ym] || 0;
+                const expense = monthlyStats.game?.[ym] || 0;
+                const net = income - expense;
+                return (
+                  <div className="balance-month">
+                    <div className="item">
+                      <span className="label">이번달 적립</span>
+                      <span className="value plus">
+                        {formatNumber(income)}원
+                      </span>
+                    </div>
+                    <div className="item">
+                      <span className="label">이번달 소비</span>
+                      <span className="value minus">
+                        {formatNumber(expense)}원
+                      </span>
+                    </div>
+                    <div className="item">
+                      <span className="label">순증감</span>
+                      <span className={`value ${net >= 0 ? 'plus' : 'minus'}`}>
+                        {formatNumber(net)}원
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="balance-chart">
+              {dashLoading || balanceSeries.labels.length === 0 ? (
+                <div className="chart-loading">그래프 준비 중...</div>
+              ) : (
+                <Line
+                  data={{
+                    labels: balanceSeries.labels,
+                    datasets: [
+                      {
+                        label: '잔액 추이(예측 포함)',
+                        data: balanceSeries.data,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      x: { grid: { display: false } },
+                      y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                    },
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 장부 관리(수기 조정) */}
+      {isAdmin && (
+        <div className="payments-section">
+          <div className="section-card">
+            <h3 className="section-title">장부 관리 (수기 조정)</h3>
+            <form className="payment-form" onSubmit={handleLedgerSubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>날짜</label>
+                  <input
+                    type="date"
+                    value={ledgerForm.event_date}
+                    onChange={(e) =>
+                      setLedgerForm({
+                        ...ledgerForm,
+                        event_date: e.target.value,
+                      })
+                    }
+                    disabled={ledgerLoading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>유형</label>
+                  <select
+                    value={ledgerForm.entry_type}
+                    onChange={(e) =>
+                      setLedgerForm({
+                        ...ledgerForm,
+                        entry_type: e.target.value,
+                      })
+                    }
+                    disabled={ledgerLoading}
+                  >
+                    <option value="credit">입금(credit)</option>
+                    <option value="debit">출금(debit)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>금액</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={ledgerForm.amount}
+                    onChange={(e) =>
+                      setLedgerForm({ ...ledgerForm, amount: e.target.value })
+                    }
+                    disabled={ledgerLoading}
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>비고</label>
+                  <input
+                    type="text"
+                    value={ledgerForm.note}
+                    onChange={(e) =>
+                      setLedgerForm({ ...ledgerForm, note: e.target.value })
+                    }
+                    disabled={ledgerLoading}
+                    placeholder="메모"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>&nbsp;</label>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={ledgerLoading}
+                  >
+                    {ledgerLoading ? '저장 중...' : '추가'}
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <div className="payments-table" style={{ marginTop: '0.75rem' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>날짜</th>
+                    <th>유형</th>
+                    <th>금액</th>
+                    <th>출처</th>
+                    <th>비고</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledgerLoading ? (
+                    <tr>
+                      <td colSpan="5" className="no-data">
+                        불러오는 중...
+                      </td>
+                    </tr>
+                  ) : ledgerItems.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="no-data">
+                        장부 항목이 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    ledgerItems.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.event_date}</td>
+                        <td>
+                          {item.entry_type === 'credit' ? '입금' : '출금'}
+                        </td>
+                        <td>{formatNumber(item.amount)}원</td>
+                        <td>{item.source}</td>
+                        <td>{item.note || '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 납입 추가/수정 폼 */}
       {isAdmin && showAddForm && (
@@ -1343,7 +1762,23 @@ const Payments = () => {
                   ) : (
                     payments.map((payment) => (
                       <tr key={payment.id}>
-                        <td>{payment.payment_date}</td>
+                        <td>
+                          {inlineEditId === payment.id ? (
+                            <input
+                              type="date"
+                              value={inlineForm.payment_date}
+                              onChange={(e) =>
+                                setInlineForm({
+                                  ...inlineForm,
+                                  payment_date: e.target.value,
+                                })
+                              }
+                              disabled={submitting}
+                            />
+                          ) : (
+                            payment.payment_date
+                          )}
+                        </td>
                         <td>{payment.member_name}</td>
                         <td>
                           <span
@@ -1352,39 +1787,113 @@ const Payments = () => {
                             {formatPaymentType(payment.payment_type)}
                           </span>
                         </td>
-                        <td>{formatNumber(payment.amount)}원</td>
                         <td>
-                          <span
-                            className={
-                              payment.is_paid ? 'status-paid' : 'status-unpaid'
-                            }
-                          >
-                            {payment.is_paid ? '완료' : '미납'}
-                          </span>
+                          {inlineEditId === payment.id ? (
+                            <input
+                              type="number"
+                              min="0"
+                              value={inlineForm.amount}
+                              onChange={(e) =>
+                                setInlineForm({
+                                  ...inlineForm,
+                                  amount: e.target.value,
+                                })
+                              }
+                              disabled={submitting}
+                              style={{ width: 100 }}
+                            />
+                          ) : (
+                            `${formatNumber(payment.amount)}원`
+                          )}
                         </td>
-                        <td>{payment.note || '-'}</td>
+                        <td>
+                          {inlineEditId === payment.id ? (
+                            <select
+                              value={inlineForm.is_paid}
+                              onChange={(e) =>
+                                setInlineForm({
+                                  ...inlineForm,
+                                  is_paid: e.target.value === 'true',
+                                })
+                              }
+                              disabled={submitting}
+                            >
+                              <option value="true">완료</option>
+                              <option value="false">미납</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={
+                                payment.is_paid
+                                  ? 'status-paid'
+                                  : 'status-unpaid'
+                              }
+                            >
+                              {payment.is_paid ? '완료' : '미납'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {inlineEditId === payment.id ? (
+                            <input
+                              type="text"
+                              value={inlineForm.note}
+                              onChange={(e) =>
+                                setInlineForm({
+                                  ...inlineForm,
+                                  note: e.target.value,
+                                })
+                              }
+                              disabled={submitting}
+                              placeholder="비고"
+                            />
+                          ) : (
+                            payment.note || '-'
+                          )}
+                        </td>
                         {isAdmin && (
                           <td>
-                            <button
-                              className="btn btn-sm btn-edit"
-                              onClick={() => startEdit(payment)}
-                            >
-                              수정
-                            </button>
-                            <button
-                              className="btn btn-sm btn-delete"
-                              onClick={() => handleDelete(payment.id)}
-                              disabled={deleting}
-                            >
-                              {deleting ? (
-                                <>
-                                  <div className="loading-spinner"></div>
-                                  삭제 중...
-                                </>
-                              ) : (
-                                '삭제'
-                              )}
-                            </button>
+                            {inlineEditId === payment.id ? (
+                              <div className="inline-actions">
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  onClick={() => handleInlineSave(payment.id)}
+                                  disabled={submitting}
+                                >
+                                  완료
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-secondary"
+                                  onClick={handleInlineCancel}
+                                  disabled={submitting}
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  className="btn btn-sm btn-edit"
+                                  onClick={() => handleInlineEdit(payment)}
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-delete"
+                                  onClick={() => handleDelete(payment.id)}
+                                  disabled={deleting}
+                                >
+                                  {deleting ? (
+                                    <>
+                                      <div className="loading-spinner"></div>
+                                      삭제 중...
+                                    </>
+                                  ) : (
+                                    '삭제'
+                                  )}
+                                </button>
+                              </>
+                            )}
                           </td>
                         )}
                       </tr>

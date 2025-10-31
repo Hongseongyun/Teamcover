@@ -236,6 +236,46 @@
   font-weight: 600;
 }
 
+/* 인라인 편집 액션(완료/취소) 영역 - 이미지와 동일한 우측 정렬/간격 */
+.inline-actions {
+  display: flex;
+  justify-content: center; /* 가운데 정렬 */
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* 인라인 편집 입력란을 부드럽고 둥글게 */
+.payments-table input[type='text'],
+.payments-table input[type='number'],
+.payments-table input[type='date'],
+.payments-table select,
+.payments-table textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.payments-table input[type='text']:focus,
+.payments-table input[type='number']:focus,
+.payments-table input[type='date']:focus,
+.payments-table select:focus,
+.payments-table textarea:focus {
+  outline: none;
+  border-color: var(--toss-primary, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+/* placeholder/비어있을 때 배경 살짝 톤 다운 */
+.payments-table input::placeholder,
+.payments-table textarea::placeholder {
+  color: var(--toss-gray-400);
+}
+
 .no-data {
   text-align: center;
   padding: 2rem;
@@ -1192,4 +1232,76 @@
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #374151;
+}
+
+/* ===== Balance Dashboard ===== */
+.balance-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.balance-top {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.balance-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.1rem;
+}
+
+.balance-row .label {
+  color: var(--toss-gray-700);
+}
+.balance-row .value {
+  font-weight: 700;
+  color: var(--toss-gray-900);
+}
+
+.balance-month {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  background: var(--toss-gray-50);
+}
+
+.balance-month .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.balance-month .label {
+  color: var(--toss-gray-700);
+}
+.balance-month .value {
+  font-weight: 600;
+}
+.balance-month .plus {
+  color: #0f766e;
+}
+.balance-month .minus {
+  color: #b91c1c;
+}
+
+.balance-chart {
+  min-height: 180px;
+}
+.chart-loading {
+  color: var(--toss-gray-600);
+  font-size: 0.9rem;
+  padding: 1rem 0;
 }
