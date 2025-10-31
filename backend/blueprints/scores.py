@@ -203,44 +203,42 @@ def update_score(score_id):
 @scores_bp.route('/averages', methods=['GET'])
 @jwt_required(optional=True)
 def get_member_averages():
-    """회원별 평균(에버) 순위 조회 API - 저장된 평균 점수 사용"""
+    """회원별 평균(에버) 순위 조회 API - 저장된 평균 점수만 빠르게 조회
+
+    - 재계산 없이 members.average_score가 있는 행만 사용
+    - 순위는 DB 윈도우 함수(DENSE_RANK)로 계산
+    """
     try:
-        # 모든 회원 조회
-        members = Member.query.all()
-        
-        # 각 회원의 평균 및 순위 매기기
-        member_averages = []
-        
-        for member in members:
-            # 저장된 평균 점수 사용 (없으면 계산하여 업데이트)
-            if member.average_score is None:
-                # 저장된 값이 없으면 계산하여 업데이트
-                calculated_avg = member.calculate_regular_season_average()
-                if calculated_avg is not None:
-                    member.average_score = calculated_avg  # 이미 자연수로 반올림됨
-                    member.tier = member.calculate_tier_from_score()
-                    db.session.commit()
-            
-            if member.average_score is not None:
-                member_averages.append({
-                    'member_id': member.id,
-                    'member_name': member.name,
-                    'average_score': member.average_score,
-                    'tier': member.tier or '배치'
-                })
-        
-        # 평균 점수 기준으로 내림차순 정렬 (높은 점수부터)
-        member_averages.sort(key=lambda x: x['average_score'], reverse=True)
-        
-        # 순위 추가 (1등부터 시작)
-        for i, member in enumerate(member_averages):
-            member['rank'] = i + 1
-        
-        return jsonify({
-            'success': True,
-            'averages': member_averages
-        })
-        
+        from sqlalchemy import text
+
+        sql = text(
+            """
+            SELECT
+                id AS member_id,
+                name AS member_name,
+                average_score,
+                COALESCE(tier, '배치') AS tier,
+                DENSE_RANK() OVER (ORDER BY average_score DESC) AS rank
+            FROM members
+            WHERE average_score IS NOT NULL
+            ORDER BY rank, member_name
+            """
+        )
+
+        rows = db.session.execute(sql).mappings().all()
+        averages = [
+            {
+                'member_id': row['member_id'],
+                'member_name': row['member_name'],
+                'average_score': row['average_score'],
+                'tier': row['tier'],
+                'rank': row['rank'],
+            }
+            for row in rows
+        ]
+
+        return jsonify({'success': True, 'averages': averages})
+
     except Exception as e:
         return jsonify({'success': False, 'message': f'회원별 평균 조회 중 오류가 발생했습니다: {str(e)}'})
 

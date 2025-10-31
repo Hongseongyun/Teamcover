@@ -3240,6 +3240,13 @@
   box-shadow: var(--toss-shadow);
 }
 
+/* 가상 스크롤 컨테이너: 세로 스크롤 전용 */
+.averages-virtual-container {
+  overflow-y: auto;
+  max-height: 400px;
+  border-top: 1px solid var(--toss-gray-200);
+}
+
 .averages-table-new {
   width: 100%;
   border-collapse: collapse;

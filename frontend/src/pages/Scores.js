@@ -275,22 +275,62 @@ const Scores = () => {
     }
   }, []);
 
+  // 가상 스크롤용 컴포넌트 (회원별 평균 순위)
+  const VirtualizedAveragesList = ({ items, height = 400, rowHeight = 48 }) => {
+    const [scrollTop, setScrollTop] = useState(0);
+    const onScroll = (e) => setScrollTop(e.currentTarget.scrollTop);
+    const total = items.length;
+    const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - 5);
+    const endIndex = Math.min(
+      total,
+      Math.ceil((scrollTop + height) / rowHeight) + 5
+    );
+    const visible = items.slice(startIndex, endIndex);
+    const offsetTop = startIndex * rowHeight;
+    const offsetBottom = (total - endIndex) * rowHeight;
+
+    return (
+      <div
+        className="averages-virtual-container"
+        style={{ height: `${height}px` }}
+        onScroll={onScroll}
+      >
+        <div style={{ height: offsetTop }} />
+        <table className="averages-table-new">
+          <tbody>
+            {visible.map((member) => (
+              <tr key={member.member_id} style={{ height: rowHeight }}>
+                <td className="rank-column">{renderMedalIcon(member.rank)}</td>
+                <td className="name-column">{member.member_name}</td>
+                <td className="score-column">{member.average_score}</td>
+                <td className="tier-column">
+                  <TierBadge tier={member.tier} size="small" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div style={{ height: offsetBottom }} />
+      </div>
+    );
+  };
+
   useEffect(() => {
     loadScores();
     loadMembers();
-    // 페이지 로드 시 평균 점수 업데이트 후 로드
-    refreshMemberAverages();
-  }, [loadScores, loadMembers, refreshMemberAverages]);
+    // 초기 로드: 빠른 표시를 위해 재계산 없이 저장값만 로드
+    loadMemberAverages();
+  }, [loadScores, loadMembers, loadMemberAverages]);
 
-  // 페이지 포커스 시 평균 순위 업데이트
+  // 페이지 포커스 시 평균 순위 재요청(빠른 조회 버전)
   useEffect(() => {
     const handleFocus = () => {
-      refreshMemberAverages();
+      loadMemberAverages();
     };
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshMemberAverages]);
+  }, [loadMemberAverages]);
 
   const calculateStats = (scoreList) => {
     // 통계 계산 로직 (현재 사용하지 않음)
@@ -1140,36 +1180,47 @@ const Scores = () => {
                         <th>티어</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {memberAverages && memberAverages.length > 0 ? (
-                        (showAllAverages
-                          ? memberAverages
-                          : memberAverages.slice(0, 10)
-                        ).map((member) => (
-                          <tr key={member.member_id}>
-                            <td className="rank-column">
-                              {renderMedalIcon(member.rank)}
-                            </td>
-                            <td className="name-column">
-                              {member.member_name}
-                            </td>
-                            <td className="score-column">
-                              {member.average_score}
-                            </td>
-                            <td className="tier-column">
-                              <TierBadge tier={member.tier} size="small" />
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
+                  </table>
+                  {memberAverages && memberAverages.length > 0 ? (
+                    showAllAverages ? (
+                      <VirtualizedAveragesList
+                        items={memberAverages}
+                        height={400}
+                        rowHeight={48}
+                      />
+                    ) : (
+                      <table className="averages-table-new">
+                        <tbody>
+                          {memberAverages.slice(0, 10).map((member) => (
+                            <tr key={member.member_id}>
+                              <td className="rank-column">
+                                {renderMedalIcon(member.rank)}
+                              </td>
+                              <td className="name-column">
+                                {member.member_name}
+                              </td>
+                              <td className="score-column">
+                                {member.average_score}
+                              </td>
+                              <td className="tier-column">
+                                <TierBadge tier={member.tier} size="small" />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )
+                  ) : (
+                    <table className="averages-table-new">
+                      <tbody>
                         <tr>
                           <td colSpan="4" className="no-data">
                             정기전 기록이 있는 회원이 없습니다.
                           </td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
+                      </tbody>
+                    </table>
+                  )}
 
                   {/* 더보기 버튼 */}
                   {memberAverages && memberAverages.length > 10 && (
