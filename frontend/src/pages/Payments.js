@@ -130,6 +130,11 @@ const Payments = () => {
     note: '',
   });
 
+  // 선입 메뉴 표시 대상 셀 (memberId + month)
+  const [prepayTarget, setPrepayTarget] = useState(null);
+  const [prepayMonths, setPrepayMonths] = useState(2);
+  const [prepayStatus, setPrepayStatus] = useState('paid');
+
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true);
@@ -473,6 +478,62 @@ const Payments = () => {
         p.payment_type === paymentType
     );
     return payment;
+  };
+
+  // YYYY-MM 다음 달 계산
+  const getNextMonth = (monthStr) => {
+    try {
+      const [y, m] = monthStr.split('-').map((v) => parseInt(v, 10));
+      const next = new Date(y, m, 1); // JS month는 0-11이므로 m 그대로 넣으면 +1달 효과
+      const ny = next.getFullYear();
+      const nm = String(next.getMonth() + 1).padStart(2, '0');
+      return `${ny}-${nm}`;
+    } catch (e) {
+      return monthStr;
+    }
+  };
+
+  // 선입 임시 납입 생성 (연속 월, 중복/기존 납입 건너뛰기)
+  const handlePrepay = (
+    memberId,
+    startMonth,
+    monthsCount,
+    amountPerMonth = 5000,
+    status = 'paid'
+  ) => {
+    let monthCursor = startMonth;
+    const toAdd = [];
+
+    for (let i = 0; i < monthsCount; i++) {
+      const exists = getPaymentStatus(memberId, monthCursor, 'monthly');
+      const alreadyTemp = tempNewPayments.find(
+        (p) =>
+          p.member_id === memberId &&
+          p.month === monthCursor &&
+          p.payment_type === 'monthly'
+      );
+      if (!exists && !alreadyTemp) {
+        const tempId = `temp_${memberId}_${monthCursor}_${Date.now()}_${i}`;
+        const isPaid = status === 'paid';
+        const isExempt = status === 'exempt';
+        toAdd.push({
+          id: tempId,
+          member_id: memberId,
+          month: monthCursor,
+          payment_type: 'monthly',
+          amount: amountPerMonth,
+          is_paid: isPaid,
+          is_exempt: isExempt,
+          member_name: members.find((m) => m.id === memberId)?.name || '',
+        });
+      }
+      monthCursor = getNextMonth(monthCursor);
+    }
+
+    if (toAdd.length > 0) {
+      setTempNewPayments((prev) => [...prev, ...toAdd]);
+    }
+    setPrepayTarget(null);
   };
 
   // 빠른 납입 추가 (임시 상태로만 표시)
@@ -1104,19 +1165,84 @@ const Payments = () => {
                                   </button>
                                 );
                               })()
+                            ) : prepayTarget &&
+                              prepayTarget.memberId === member.id &&
+                              prepayTarget.month === month ? (
+                              <div className="prepay-menu">
+                                <select
+                                  className="prepay-select"
+                                  value={prepayMonths}
+                                  onChange={(e) =>
+                                    setPrepayMonths(
+                                      parseInt(e.target.value, 10)
+                                    )
+                                  }
+                                  disabled={submitting}
+                                  title="선입 개월 수"
+                                >
+                                  {Array.from(
+                                    { length: 12 },
+                                    (_, i) => i + 1
+                                  ).map((m) => (
+                                    <option
+                                      key={m}
+                                      value={m}
+                                    >{`${m}개월`}</option>
+                                  ))}
+                                </select>
+                                <select
+                                  className="prepay-select"
+                                  value={prepayStatus}
+                                  onChange={(e) =>
+                                    setPrepayStatus(e.target.value)
+                                  }
+                                  disabled={submitting}
+                                  title="상태 선택"
+                                >
+                                  <option value="paid">납입</option>
+                                  <option value="exempt">면제</option>
+                                  <option value="unpaid">미납</option>
+                                </select>
+                                <div className="prepay-actions">
+                                  <button
+                                    className="btn btn-xxs prepay-add"
+                                    onClick={() =>
+                                      handlePrepay(
+                                        member.id,
+                                        month,
+                                        prepayMonths,
+                                        5000,
+                                        prepayStatus
+                                      )
+                                    }
+                                    disabled={submitting}
+                                    title="선입 추가"
+                                  >
+                                    추가
+                                  </button>
+                                  <button
+                                    className="btn btn-xxs prepay-cancel"
+                                    onClick={() => setPrepayTarget(null)}
+                                    disabled={submitting}
+                                    title="닫기"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
                             ) : (
                               <button
                                 className="btn btn-xs btn-add"
-                                onClick={() =>
-                                  handleQuickAdd(
-                                    member.id,
+                                onClick={() => {
+                                  setPrepayMonths(2);
+                                  setPrepayStatus('paid');
+                                  setPrepayTarget({
+                                    memberId: member.id,
                                     month,
-                                    'monthly',
-                                    5000
-                                  )
-                                }
+                                  });
+                                }}
                                 disabled={submitting}
-                                title="납입 추가"
+                                title="선입 추가"
                               >
                                 +
                               </button>

@@ -300,6 +300,13 @@
   font-size: 0.875rem;
 }
 
+/* 초소형 버튼 (선입 메뉴 전용) */
+.btn-xxs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: calc(var(--toss-radius) - 2px);
+}
+
 .loading {
   display: flex;
   justify-content: center;
@@ -626,6 +633,97 @@
   background-color: #dbeafe;
   color: var(--toss-primary);
   border-color: var(--toss-primary);
+}
+
+/* 선입 메뉴 (개월/상태 선택) */
+.prepay-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  background: var(--toss-white);
+  border: 1px solid var(--toss-gray-200);
+  border-radius: var(--toss-radius);
+  padding: 0.5rem;
+  min-width: 110px;
+  box-shadow: var(--toss-shadow);
+}
+
+.prepay-menu .prepay-select {
+  width: 100%;
+  appearance: none;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  font-size: 0.875rem;
+  background-color: var(--toss-white);
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px 16px;
+  padding-right: 28px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prepay-menu .prepay-select:focus {
+  outline: none;
+  border-color: var(--toss-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.prepay-menu .btn-xxs.btn-outline-secondary {
+  border: 1px solid var(--toss-gray-300);
+  background: var(--toss-white);
+  color: var(--toss-gray-700);
+}
+
+.prepay-menu .btn-xxs.btn-outline-secondary:hover {
+  background: var(--toss-gray-50);
+}
+
+.prepay-menu .btn-xxs.btn-secondary {
+  background: var(--toss-gray-50);
+  color: var(--toss-gray-600);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.prepay-menu .btn-xxs.btn-secondary:hover {
+  background: var(--toss-gray-200);
+}
+
+/* 선입 액션 영역 가로 배치 */
+.prepay-actions {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.prepay-actions .btn-xxs {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* 선입 추가/취소 구분 스타일 */
+.prepay-add {
+  background: var(--toss-primary);
+  color: #fff;
+  border: 1px solid var(--toss-primary);
+}
+
+.prepay-add:hover:not(:disabled) {
+  background: var(--toss-primary-dark);
+  border-color: var(--toss-primary-dark);
+}
+
+.prepay-cancel {
+  background: var(--toss-gray-50);
+  color: var(--toss-gray-600);
+  border: 1px solid var(--toss-gray-200);
+}
+
+.prepay-cancel:hover:not(:disabled) {
+  background: var(--toss-gray-200);
 }
 
 /* 정기전 게임비 스타일 */
