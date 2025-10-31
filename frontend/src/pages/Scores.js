@@ -2681,7 +2681,7 @@ const Scores = () => {
                               </td>
                               <td>{score.note || '-'}</td>
                               {isAdmin && (
-                                <td>
+                                <td className="inline-actions">
                                   <button
                                     className="btn btn-sm btn-edit"
                                     onClick={() => startInlineEdit(score)}
@@ -2929,6 +2929,7 @@ const Scores = () => {
                                 )}
                                 <td>
                                   <select
+                                    className="inline-select"
                                     value={inlineEditData.member_name}
                                     onChange={(e) =>
                                       setInlineEditData((prev) => ({
@@ -2947,6 +2948,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -2961,6 +2963,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -2975,6 +2978,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="number"
                                     min="0"
                                     max="300"
@@ -3003,6 +3007,7 @@ const Scores = () => {
                                 </td>
                                 <td>
                                   <input
+                                    className="inline-input"
                                     type="text"
                                     value={inlineEditData.note}
                                     onChange={(e) =>
@@ -3013,7 +3018,7 @@ const Scores = () => {
                                     }
                                   />
                                 </td>
-                                <td>
+                                <td className="inline-actions">
                                   <button
                                     className="btn btn-sm btn-primary"
                                     onClick={() => saveInlineEdit(score.id)}
@@ -3061,7 +3066,7 @@ const Scores = () => {
                                 </td>
                                 <td>{score.note || '-'}</td>
                                 {isAdmin && (
-                                  <td>
+                                  <td className="inline-actions">
                                     <button
                                       className="btn btn-sm btn-edit"
                                       onClick={() => startInlineEdit(score)}

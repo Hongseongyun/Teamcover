@@ -860,6 +860,44 @@
   border-color: var(--toss-warning);
 }
 
+/* 인라인 입력 필드 스타일 */
+.inline-input,
+.inline-select {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background-color: white;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.inline-input:focus,
+.inline-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inline-input:hover,
+.inline-select:hover {
+  border-color: #9ca3af;
+}
+
+/* 인라인 액션 버튼 */
+.inline-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.inline-actions .btn + .btn {
+  margin-left: 0;
+}
+
 /* 멀티 모드 토글 */
 .multi-mode-toggle {
   display: flex;

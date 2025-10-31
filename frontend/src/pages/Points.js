@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Line } from 'react-chartjs-2';
@@ -38,6 +38,7 @@ const Points = () => {
   const [showImportForm, setShowImportForm] = useState(false);
   const [editingPoint, setEditingPoint] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const editingRowRef = useRef(null);
   const [formData, setFormData] = useState({
     member_name: '',
     point_type: '',
@@ -804,6 +805,21 @@ const Points = () => {
     });
   };
 
+  // 편집 시작 시 해당 행이 가로 스크롤 없이 화면에 보이도록 가운데로 스크롤
+  useEffect(() => {
+    if (editingId && editingRowRef.current) {
+      try {
+        editingRowRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        });
+      } catch (e) {
+        // noop
+      }
+    }
+  }, [editingId]);
+
   const cancelInlineEdit = () => {
     setEditingId(null);
     setFormData({
@@ -1447,7 +1463,7 @@ const Points = () => {
                         setFormData({ ...formData, amount: e.target.value })
                       }
                       required
-                      min="1"
+                      step="500"
                       disabled={submitting}
                     />
                   </div>
@@ -2004,6 +2020,7 @@ const Points = () => {
                     <tr
                       key={point.id}
                       className={editingId === point.id ? 'editing' : ''}
+                      ref={editingId === point.id ? editingRowRef : null}
                     >
                       <td>
                         {editingId === point.id ? (
@@ -2016,7 +2033,7 @@ const Points = () => {
                                 point_date: e.target.value,
                               })
                             }
-                            className="form-control"
+                            className="inline-input"
                           />
                         ) : (
                           point.point_date || point.created_at
@@ -2032,7 +2049,7 @@ const Points = () => {
                                 member_name: e.target.value,
                               })
                             }
-                            className="form-control"
+                            className="inline-select"
                           >
                             <option value="">회원 선택</option>
                             {members.map((member) => (
@@ -2055,7 +2072,7 @@ const Points = () => {
                                 point_type: e.target.value,
                               })
                             }
-                            className="form-control"
+                            className="inline-select"
                           >
                             <option value="">유형 선택</option>
                             <option value="적립">적립</option>
@@ -2086,8 +2103,8 @@ const Points = () => {
                                 amount: e.target.value,
                               })
                             }
-                            className="form-control"
-                            min="1"
+                            className="inline-input"
+                            step="500"
                           />
                         ) : (
                           <span
@@ -2111,7 +2128,7 @@ const Points = () => {
                                 reason: e.target.value,
                               })
                             }
-                            className="form-control"
+                            className="inline-select"
                           >
                             <option value="">사유 선택</option>
                             <option value="경기 참여">경기 참여</option>
@@ -2143,18 +2160,18 @@ const Points = () => {
                             onChange={(e) =>
                               setFormData({ ...formData, note: e.target.value })
                             }
-                            className="form-control"
+                            className="inline-input"
                             placeholder="메모"
                           />
                         ) : (
                           point.note || '-'
                         )}
                       </td>
-                      <td>
+                      <td className="inline-actions">
                         {editingId === point.id ? (
-                          <div className="inline-edit-actions">
+                          <>
                             <button
-                              className="btn btn-sm btn-success"
+                              className="btn btn-sm btn-primary"
                               onClick={saveInlineEdit}
                             >
                               완료
@@ -2165,9 +2182,9 @@ const Points = () => {
                             >
                               취소
                             </button>
-                          </div>
+                          </>
                         ) : (
-                          <div className="inline-edit-actions">
+                          <>
                             <button
                               className="btn btn-sm btn-edit"
                               onClick={() => startInlineEdit(point)}
@@ -2188,7 +2205,7 @@ const Points = () => {
                                 '삭제'
                               )}
                             </button>
-                          </div>
+                          </>
                         )}
                       </td>
                     </tr>
