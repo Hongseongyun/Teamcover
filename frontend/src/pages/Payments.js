@@ -132,7 +132,7 @@ const Payments = () => {
 
   // 선입 메뉴 표시 대상 셀 (memberId + month)
   const [prepayTarget, setPrepayTarget] = useState(null);
-  const [prepayMonths, setPrepayMonths] = useState(2);
+  const [prepayMonths, setPrepayMonths] = useState(1);
   const [prepayStatus, setPrepayStatus] = useState('paid');
 
   const loadPayments = useCallback(async () => {
@@ -910,45 +910,7 @@ const Payments = () => {
       {/* 월별 표 형식 뷰 */}
       {viewMode === 'calendar' && (
         <div className="payments-section">
-          {/* 일괄 저장 버튼 */}
-          {hasTempChanges && (
-            <div className="batch-actions">
-              <div className="section-card">
-                <div className="batch-actions-content">
-                  <span className="batch-info">
-                    {Object.keys(tempPaymentStates).length +
-                      tempNewPayments.length +
-                      Object.keys(tempExemptStates).length +
-                      tempDeletePayments.length}
-                    개의 변경사항이 있습니다.
-                  </span>
-                  <div className="batch-buttons">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={cancelTempChanges}
-                      disabled={submitting}
-                    >
-                      취소
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={savePaymentStates}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="loading-spinner"></div>
-                          저장 중...
-                        </>
-                      ) : (
-                        '저장'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* 일괄 저장 버튼 - 월별 납입 현황 섹션 아래로 이동 */}
 
           {/* 연도 네비게이션 */}
           <div className="year-navigation-section">
@@ -1234,7 +1196,7 @@ const Payments = () => {
                               <button
                                 className="btn btn-xs btn-add"
                                 onClick={() => {
-                                  setPrepayMonths(2);
+                                  setPrepayMonths(1);
                                   setPrepayStatus('paid');
                                   setPrepayTarget({
                                     memberId: member.id,
@@ -1256,6 +1218,45 @@ const Payments = () => {
               </table>
             </div>
           </div>
+
+          {hasTempChanges && (
+            <div className="batch-actions">
+              <div className="section-card">
+                <div className="batch-actions-content">
+                  <span className="batch-info">
+                    {Object.keys(tempPaymentStates).length +
+                      tempNewPayments.length +
+                      Object.keys(tempExemptStates).length +
+                      tempDeletePayments.length}
+                    개의 변경사항이 있습니다.
+                  </span>
+                  <div className="batch-buttons">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={cancelTempChanges}
+                      disabled={submitting}
+                    >
+                      취소
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={savePaymentStates}
+                      disabled={submitting}
+                    >
+                      {submitting ? (
+                        <>
+                          <div className="loading-spinner"></div>
+                          저장 중...
+                        </>
+                      ) : (
+                        '저장'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

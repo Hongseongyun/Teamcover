@@ -7,6 +7,8 @@ const TeamAssignment = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState([]);
+  // 평균 점수 캐시 (이름 -> average)
+  const [memberAverageMap, setMemberAverageMap] = useState(new Map());
 
   const [teamConfig, setTeamConfig] = useState({
     team_count: 3,
@@ -117,6 +119,34 @@ const TeamAssignment = () => {
       const response = await memberAPI.getMembers();
       if (response.data.success) {
         setMembers(response.data.members);
+        // 멤버 응답 기반 기본 맵 구성
+        const baseMap = new Map();
+        response.data.members.forEach((m) => {
+          if (
+            m &&
+            m.name &&
+            m.average_score !== null &&
+            m.average_score !== undefined
+          ) {
+            baseMap.set(m.name, Math.round(m.average_score));
+          }
+        });
+        // 일괄 평균 조회로 맵 보강 (가능 시)
+        try {
+          const avgRes = await memberAPI.getAllMembersAverages();
+          if (avgRes?.data?.success && Array.isArray(avgRes.data.averages)) {
+            avgRes.data.averages.forEach((a) => {
+              const name = a.member_name || a.name;
+              const avg = a.average_score ?? a.average;
+              if (name && avg !== null && avg !== undefined) {
+                baseMap.set(name, Math.round(avg));
+              }
+            });
+          }
+        } catch (e) {
+          // 무시: 네트워크 실패 시 members만으로 사용
+        }
+        setMemberAverageMap(baseMap);
       }
     } catch (error) {
       // 에러 처리
@@ -393,29 +423,46 @@ const TeamAssignment = () => {
         // 중복되지 않은 회원들만 추가 (다시 로딩 상태 설정)
         setIsLoading(true);
         setLoadingType('중복되지 않은 회원 추가');
-
-        for (const member of nonDuplicateMembers) {
-          const average = await getMemberAverage(member.name);
-
-          await teamAPI.addPlayer({
-            name: member.name,
-            average: average,
-            gender: member.gender || '',
-          });
-        }
+        const avgList = await runWithConcurrency(
+          nonDuplicateMembers,
+          async (member) => ({
+            member,
+            average: await getMemberAverage(member.name),
+          }),
+          6
+        );
+        const withAvg = avgList.filter((x) => x && x.average !== null);
+        await runWithConcurrency(
+          withAvg,
+          async ({ member, average }) =>
+            teamAPI.addPlayer({
+              name: member.name,
+              average,
+              gender: member.gender || '',
+            }),
+          6
+        );
       } else {
         // 모든 검색 결과를 순차적으로 추가
-        for (const member of searchResults) {
-          const average = await getMemberAverage(member.name);
-
-          const playerData = {
-            name: member.name,
-            average: average,
-            gender: member.gender || '',
-          };
-
-          await teamAPI.addPlayer(playerData);
-        }
+        const avgList = await runWithConcurrency(
+          searchResults,
+          async (member) => ({
+            member,
+            average: await getMemberAverage(member.name),
+          }),
+          6
+        );
+        const withAvg = avgList.filter((x) => x && x.average !== null);
+        await runWithConcurrency(
+          withAvg,
+          async ({ member, average }) =>
+            teamAPI.addPlayer({
+              name: member.name,
+              average,
+              gender: member.gender || '',
+            }),
+          6
+        );
       }
 
       // 검색 결과 초기화
@@ -507,40 +554,54 @@ const TeamAssignment = () => {
         // 중복되지 않은 회원들만 추가 (다시 로딩 상태 설정)
         setIsLoading(true);
         setLoadingType('중복되지 않은 회원 추가');
-
-        for (const member of nonDuplicateMembers) {
-          const average = await getMemberAverage(member.name);
-
-          await teamAPI.addPlayer({
-            name: member.name,
-            average: average,
-            gender: member.gender || '',
-          });
-        }
+        const avgList = await runWithConcurrency(
+          nonDuplicateMembers,
+          async (member) => ({
+            member,
+            average: await getMemberAverage(member.name),
+          }),
+          6
+        );
+        const withAvg = avgList.filter((x) => x && x.average !== null);
+        await runWithConcurrency(
+          withAvg,
+          async ({ member, average }) =>
+            teamAPI.addPlayer({
+              name: member.name,
+              average,
+              gender: member.gender || '',
+            }),
+          6
+        );
       } else {
         // 모든 선택된 회원 추가
-        const membersWithScores = [];
-        const membersWithoutScores = [];
-
-        for (const member of selectedMembers) {
-          const average = await getMemberAverage(member.name);
-
-          if (average !== null) {
-            membersWithScores.push({ ...member, average });
-          } else {
-            membersWithoutScores.push(member);
-          }
-        }
+        const avgList = await runWithConcurrency(
+          selectedMembers,
+          async (member) => ({
+            member,
+            average: await getMemberAverage(member.name),
+          }),
+          6
+        );
+        const membersWithScores = avgList
+          .filter((x) => x && x.average !== null)
+          .map(({ member, average }) => ({ ...member, average }));
+        const membersWithoutScores = avgList
+          .filter((x) => !x || x.average === null)
+          .map((x) => x?.member)
+          .filter(Boolean);
 
         // 점수가 있는 회원들 먼저 추가
-        for (const member of membersWithScores) {
-          const playerData = {
-            name: member.name,
-            average: member.average,
-            gender: member.gender || '',
-          };
-          await teamAPI.addPlayer(playerData);
-        }
+        await runWithConcurrency(
+          membersWithScores,
+          async (member) =>
+            teamAPI.addPlayer({
+              name: member.name,
+              average: member.average,
+              gender: member.gender || '',
+            }),
+          6
+        );
 
         // 점수가 없는 회원들은 모달로 처리
         if (membersWithoutScores.length > 0) {
@@ -579,6 +640,10 @@ const TeamAssignment = () => {
   // 회원의 저장된 평균 에버 가져오기 (선수 추가용)
   const getMemberAverage = async (memberName) => {
     try {
+      // 캐시 우선
+      if (memberAverageMap && memberAverageMap.has(memberName)) {
+        return memberAverageMap.get(memberName);
+      }
       // 회원 목록에서 해당 회원 찾기
       const member = members.find((m) => m.name === memberName);
 
@@ -588,14 +653,26 @@ const TeamAssignment = () => {
         member.average_score !== undefined
       ) {
         // 저장된 평균 점수가 있으면 반환
-        return Math.round(member.average_score);
+        const avg = Math.round(member.average_score);
+        setMemberAverageMap((prev) => {
+          const next = new Map(prev);
+          next.set(memberName, avg);
+          return next;
+        });
+        return avg;
       }
 
       // 저장된 평균 점수가 없으면 API로 조회
       if (member) {
         const response = await memberAPI.getMemberAverage(member.id);
         if (response.data.success) {
-          return Math.round(response.data.average);
+          const avg = Math.round(response.data.average);
+          setMemberAverageMap((prev) => {
+            const next = new Map(prev);
+            next.set(memberName, avg);
+            return next;
+          });
+          return avg;
         }
       }
     } catch (error) {
@@ -604,6 +681,28 @@ const TeamAssignment = () => {
 
     // 점수가 없는 경우 null 반환 (사용자 입력 필요)
     return null;
+  };
+
+  // 동시성 제한 유틸
+  const runWithConcurrency = async (items, worker, limit = 6) => {
+    const results = new Array(items.length);
+    let index = 0;
+    const runners = Array.from(
+      { length: Math.min(limit, items.length) },
+      async () => {
+        while (true) {
+          const current = index++;
+          if (current >= items.length) break;
+          try {
+            results[current] = await worker(items[current], current);
+          } catch (e) {
+            results[current] = { error: e };
+          }
+        }
+      }
+    );
+    await Promise.all(runners);
+    return results;
   };
 
   // 점수 입력 모달 핸들러
@@ -1797,182 +1896,311 @@ const TeamAssignment = () => {
     // 밸런싱 전 상태 저장 (비교용)
     const beforeTeams = JSON.parse(JSON.stringify(teams));
 
-    // 1단계: 공격적인 밸런싱 시도 (더 정밀한 최적화)
-    const improvedTeams = await aggressiveRebalance(teams);
+    // 1단계: 다중 시작으로 공격적인 밸런싱 시도 (최적 해 선택)
+    const restarts = 10;
+    let best = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+    for (let r = 0; r < restarts; r++) {
+      // 각 재시도마다 약간의 무작위 셔플로 시작 다양화
+      const seedTeams = JSON.parse(JSON.stringify(teams));
+      seedTeams.forEach((t) => t.players.sort(() => Math.random() - 0.5));
+      const candidate = await aggressiveRebalance(seedTeams, {
+        timeLimitMs: 1400,
+      });
+      const totals = candidate.map((t) =>
+        t.players.reduce((s, p) => s + p.average, 0)
+      );
+      const maxDiff = Math.max(...totals) - Math.min(...totals);
+      const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
+      const variance =
+        totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
+      const stdev = Math.sqrt(variance);
+      const composite = maxDiff + stdev * 0.2; // 최대차 우선 + 분산 가중(강화)
+      if (composite < bestScore) {
+        bestScore = composite;
+        best = candidate;
+        // 조기 종료: 최대 차이 0 달성 시 즉시 채택
+        if (maxDiff === 0) {
+          break;
+        }
+      }
+    }
 
     // 2단계: 기존 밸런싱 로직으로 추가 최적화
-    await balanceTeamsWithNewRules(improvedTeams);
-    return improvedTeams; // 수정된 teams 배열 반환
+    await balanceTeamsWithNewRules(best);
+    return best; // 수정된 teams 배열 반환
   };
 
   // 공격적인 밸런싱 함수 (더 정밀한 최적화)
-  const aggressiveRebalance = async (teams) => {
+  const aggressiveRebalance = async (teams, options = {}) => {
     const teamsCopy = JSON.parse(JSON.stringify(teams));
 
-    // 초기 최대 차이 계산
-    const initialTotals = teamsCopy.map((t) => t.total_average);
-    const initialMaxDiff =
-      Math.max(...initialTotals) - Math.min(...initialTotals);
-    console.log(`🔧 초기 최대 차이: ${initialMaxDiff}점`);
+    // 목적함수: 최대 차이 + 표준편차 가중
+    const computeTotals = (ts) =>
+      ts.map((t) => t.players.reduce((s, p) => s + p.average, 0));
+    const scoreOfTotals = (totals) => {
+      const maxDiff = Math.max(...totals) - Math.min(...totals);
+      const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
+      const variance =
+        totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
+      const stdev = Math.sqrt(variance);
+      return maxDiff + stdev * 0.1; // 복합 점수(낮을수록 좋음)
+    };
 
-    let bestTeams = JSON.parse(JSON.stringify(teamsCopy));
-    let bestDiff = initialMaxDiff;
+    // 성비 제약: 팀당 여성 수를 균등(floor/ceil) 유지
+    const totalFemales = teamsCopy
+      .map((t) => t.players.filter((p) => p.gender === '여').length)
+      .reduce((a, b) => a + b, 0);
+    const teamCount = teamsCopy.length || 1;
+    const minFemales = Math.floor(totalFemales / teamCount);
+    const maxFemales = Math.ceil(totalFemales / teamCount);
+    const getFemaleCount = (team) =>
+      team.players.filter((p) => p.gender === '여').length;
 
-    // 각 선수의 점수를 기반으로 가능한 모든 조합 시도
-    const maxAttempts = 5000; // 더 많은 시도
+    // 성비 편차 함수 (범위 내면 0, 벗어나면 거리)
+    const deviation = (cnt) =>
+      cnt < minFemales
+        ? minFemales - cnt
+        : cnt > maxFemales
+        ? cnt - maxFemales
+        : 0;
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // 현재 점수 계산
-      teamsCopy.forEach((team) => {
-        team.total_average = team.players.reduce(
-          (sum, player) => sum + player.average,
-          0
-        );
+    // 0단계: 성비 사전 균등화 (초기 상태가 깨져 있어도 탐색 시작 가능하게)
+    // surplus팀(여초과) ↔ deficit팀(여부족) 간 여↔남 교체를 우선 수행
+    for (let iter = 0; iter < 100; iter++) {
+      let surplusIndex = -1;
+      let deficitIndex = -1;
+      let maxSurplus = 0;
+      let maxDeficit = 0;
+
+      teamsCopy.forEach((t, idx) => {
+        const f = getFemaleCount(t);
+        const over = Math.max(0, f - maxFemales);
+        const under = Math.max(0, minFemales - f);
+        if (over > maxSurplus) {
+          maxSurplus = over;
+          surplusIndex = idx;
+        }
+        if (under > maxDeficit) {
+          maxDeficit = under;
+          deficitIndex = idx;
+        }
       });
 
-      const totals = teamsCopy.map((t) => t.total_average);
-      const currentMaxDiff = Math.max(...totals) - Math.min(...totals);
+      if (maxSurplus === 0 && maxDeficit === 0) break; // 모두 범위 내
+      if (surplusIndex === -1 || deficitIndex === -1) break; // 교정 불가
 
-      // 최적해 발견
-      if (currentMaxDiff === 0) {
-        console.log(`🎯 완벽한 밸런싱 달성! (${attempt}번 시도)`);
-        bestTeams = JSON.parse(JSON.stringify(teamsCopy));
-        break;
-      }
+      const surplusTeam = teamsCopy[surplusIndex];
+      const deficitTeam = teamsCopy[deficitIndex];
 
-      // 더 좋은 해를 찾았으면 저장
-      if (currentMaxDiff < bestDiff) {
-        bestDiff = currentMaxDiff;
-        bestTeams = JSON.parse(JSON.stringify(teamsCopy));
-        console.log(`🎯 최대 차이 ${bestDiff}점 달성! (${attempt}번 시도)`);
-      }
+      const female = surplusTeam.players.find((p) => p.gender === '여');
+      const male = deficitTeam.players.find((p) => p.gender !== '여');
+      if (!female || !male) break;
 
-      // 모든 팀 쌍에 대해 최적의 선수 교체 찾기
-      let bestSwap = null;
-      let bestImprovement = 0;
+      // 점수 영향 최소화를 위해 간단 교체 적용
+      surplusTeam.players = surplusTeam.players.map((p) =>
+        p === female ? male : p
+      );
+      deficitTeam.players = deficitTeam.players.map((p) =>
+        p === male ? female : p
+      );
 
-      for (let i = 0; i < teamsCopy.length - 1; i++) {
+      // 총합 갱신
+      surplusTeam.total_average = surplusTeam.players.reduce(
+        (s, p) => s + p.average,
+        0
+      );
+      deficitTeam.total_average = deficitTeam.players.reduce(
+        (s, p) => s + p.average,
+        0
+      );
+    }
+
+    // 초기 점수
+    teamsCopy.forEach(
+      (t) => (t.total_average = t.players.reduce((s, p) => s + p.average, 0))
+    );
+    let totals = computeTotals(teamsCopy);
+    let bestTeams = JSON.parse(JSON.stringify(teamsCopy));
+    let bestScore = scoreOfTotals(totals);
+
+    // 어닐링 파라미터
+    const timeLimitMs = Math.max(500, options.timeLimitMs || 2500); // 탐색 시간 제한(기본 상향)
+    const start = Date.now();
+    let temperature = 5 + bestScore * 0.02; // 초기 온도
+    const cooling = 0.997; // 더 천천히 냉각하여 탐색 심화
+    // 현재 점수(수용 기준)
+    let currentScore = bestScore;
+
+    // 빠른 후보 추출: 팀 쌍을 라운드로빈, 같은 성별만 교체
+    while (Date.now() - start < timeLimitMs) {
+      let improved = false;
+
+      for (let i = 0; i < teamsCopy.length; i++) {
         for (let j = i + 1; j < teamsCopy.length; j++) {
           const team1 = teamsCopy[i];
           const team2 = teamsCopy[j];
 
-          // 모든 선수 조합 시도
-          for (let p1 = 0; p1 < team1.players.length; p1++) {
-            for (let p2 = 0; p2 < team2.players.length; p2++) {
-              const player1 = team1.players[p1];
-              const player2 = team2.players[p2];
+          // 무작위 소수 후보 선택(로컬 검색 가속)
+          const candidates1 = team1.players
+            .slice()
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(7, team1.players.length));
+          const candidates2 = team2.players
+            .slice()
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(7, team2.players.length));
 
-              // 같은 성별인 경우만 교체
-              if (player1.gender === player2.gender) {
-                // 교체 후 점수 계산
-                const team1NewTotal =
-                  team1.total_average - player1.average + player2.average;
-                const team2NewTotal =
-                  team2.total_average - player2.average + player1.average;
+          let localBest = null;
+          let localBestDelta = 0;
 
-                // 새로운 최대 차이 계산
-                const newTotals = [...totals];
-                newTotals[i] = team1NewTotal;
-                newTotals[j] = team2NewTotal;
-                const newMaxDiff =
-                  Math.max(...newTotals) - Math.min(...newTotals);
+          for (const p1 of candidates1) {
+            for (const p2 of candidates2) {
+              // 성비 제약 검사: 교체 후 여성 수가 [minFemales, maxFemales] 내인지 확인
+              const t1Fem = getFemaleCount(team1);
+              const t2Fem = getFemaleCount(team2);
+              let t1FemNew = t1Fem;
+              let t2FemNew = t2Fem;
+              if (p1.gender === '여' && p2.gender !== '여') {
+                t1FemNew -= 1;
+                t2FemNew += 1;
+              } else if (p1.gender !== '여' && p2.gender === '여') {
+                t1FemNew += 1;
+                t2FemNew -= 1;
+              }
+              // 성비 제약: 범위 내 유지가 아니라, 편차 합이 감소/유지되면 허용 (불가피한 교정 경로 허용)
+              const devBefore = deviation(t1Fem) + deviation(t2Fem);
+              const devAfter = deviation(t1FemNew) + deviation(t2FemNew);
+              if (devAfter > devBefore) {
+                continue; // 성비 편차가 악화되면 제외
+              }
 
-                // 개선도 계산
-                const improvement = currentMaxDiff - newMaxDiff;
+              const t1New = team1.total_average - p1.average + p2.average;
+              const t2New = team2.total_average - p2.average + p1.average;
+              const newTotals = totals.slice();
+              newTotals[i] = t1New;
+              newTotals[j] = t2New;
+              const newScore = scoreOfTotals(newTotals);
+              const delta = currentScore - newScore; // 현재 기준 개선도
 
-                // 더 큰 개선을 찾은 경우 저장
-                if (improvement > 0 && improvement > bestImprovement) {
-                  bestImprovement = improvement;
-                  bestSwap = {
-                    team1Index: i,
-                    team2Index: j,
-                    player1Index: p1,
-                    player2Index: p2,
-                    player1: { ...player1 },
-                    player2: { ...player2 },
-                  };
-                }
+              if (delta > localBestDelta) {
+                localBestDelta = delta;
+                localBest = { i, j, p1, p2, t1New, t2New, newTotals, newScore };
               }
             }
           }
+
+          // 로컬 최적 스왑 시도 (어닐링 허용 포함)
+          if (localBest) {
+            const shouldAccept =
+              localBestDelta > 0 ||
+              Math.exp(localBestDelta / Math.max(temperature, 1e-6)) >
+                Math.random();
+            if (shouldAccept) {
+              // 실제 교체 적용
+              team1.players = team1.players.map((p) =>
+                p === localBest.p1 ? localBest.p2 : p
+              );
+              team2.players = team2.players.map((p) =>
+                p === localBest.p2 ? localBest.p1 : p
+              );
+              team1.total_average = localBest.t1New;
+              team2.total_average = localBest.t2New;
+              totals = localBest.newTotals;
+
+              const acceptedScore = localBest.newScore;
+              currentScore = acceptedScore; // 현재 상태 갱신
+              if (acceptedScore < bestScore) {
+                bestScore = acceptedScore;
+                bestTeams = JSON.parse(JSON.stringify(teamsCopy));
+                // 조기 종료: 현 상태에서 최대 차이 0이라면 반환
+                const currentTotals = totals;
+                const currentMaxDiff =
+                  Math.max(...currentTotals) - Math.min(...currentTotals);
+                if (currentMaxDiff === 0) {
+                  bestTeams.forEach((team) => {
+                    team.total_average = team.players.reduce(
+                      (sum, p) => sum + p.average,
+                      0
+                    );
+                    team.average_per_player =
+                      team.total_average / team.players.length;
+                  });
+                  return bestTeams;
+                }
+              }
+              improved = improved || localBestDelta > 0;
+            }
+          }
+
+          if (Date.now() - start >= timeLimitMs) break;
         }
+        if (Date.now() - start >= timeLimitMs) break;
       }
 
-      // 최적의 교체가 있으면 실행
-      if (bestSwap) {
-        const {
-          team1Index,
-          team2Index,
-          player1Index,
-          player2Index,
-          player1,
-          player2,
-        } = bestSwap;
-        teamsCopy[team1Index].players[player1Index] = player2;
-        teamsCopy[team2Index].players[player2Index] = player1;
-        console.log(
-          `✅ 최적 교체 실행: 팀${team1Index + 1}의 ${player1.name} ↔ 팀${
-            team2Index + 1
-          }의 ${player2.name} (개선: ${bestImprovement}점)`
-        );
-      } else {
-        // 개선이 없으면 종료
-        break;
-      }
+      // 냉각
+      temperature *= cooling;
+      if (!improved && temperature < 0.1) break; // 수렴
     }
 
-    // 재계산
+    // 평균 재계산
     bestTeams.forEach((team) => {
-      team.total_average = team.players.reduce(
-        (sum, player) => sum + player.average,
-        0
-      );
+      team.total_average = team.players.reduce((sum, p) => sum + p.average, 0);
       team.average_per_player = team.total_average / team.players.length;
     });
 
-    console.log(`🔧 공격적인 밸런싱 완료. 최대 차이: ${bestDiff}점`);
     return bestTeams;
   };
 
-  // 6번 규칙: 남성회원은 남성끼리, 여성회원은 여성끼리만 교체
+  // 6번 규칙: 보조 스왑 탐색 (성비 편차가 악화되지 않는 한 허용)
   const tryGenderSpecificSwap = (highTeam, lowTeam, teams) => {
+    // 성별 동일 제약 제거, 대신 성비 편차 악화 금지
+    const getFemaleCount = (teamPlayers) =>
+      teamPlayers.filter((p) => p.gender === '여').length;
+    const teamsArr = teams;
+    const highIndex = teamsArr.findIndex(
+      (t) => t.team_number === highTeam.teamNumber
+    );
+    const lowIndex = teamsArr.findIndex(
+      (t) => t.team_number === lowTeam.teamNumber
+    );
+    if (highIndex === -1 || lowIndex === -1) return null;
+
+    const totalFemales = teamsArr.reduce(
+      (acc, t) => acc + getFemaleCount(t.players),
+      0
+    );
+    const teamCount = teamsArr.length || 1;
+    const minFem = Math.floor(totalFemales / teamCount);
+    const maxFem = Math.ceil(totalFemales / teamCount);
+    const deviation = (cnt) =>
+      cnt < minFem ? minFem - cnt : cnt > maxFem ? cnt - maxFem : 0;
+
     let bestSwap = null;
     let bestImprovement = 0;
 
-    // 남성 선수들만 교체 시도
-    const highTeamMales = highTeam.players.filter((p) => p.gender === '남');
-    const lowTeamMales = lowTeam.players.filter((p) => p.gender === '남');
-
-    for (const highPlayer of highTeamMales) {
-      for (const lowPlayer of lowTeamMales) {
-        const improvement = calculateSwapImprovement(
-          highTeam,
-          lowTeam,
-          highPlayer,
-          lowPlayer
-        );
-        if (improvement > bestImprovement) {
-          bestImprovement = improvement;
-          bestSwap = { player1: highPlayer, player2: lowPlayer };
+    for (const p1 of highTeam.players) {
+      for (const p2 of lowTeam.players) {
+        // 교체 후 성비 체크: 편차 합이 줄거나 같으면 허용
+        const highFem = getFemaleCount(highTeam.players);
+        const lowFem = getFemaleCount(lowTeam.players);
+        let highFemNew = highFem;
+        let lowFemNew = lowFem;
+        if (p1.gender === '여' && p2.gender !== '여') {
+          highFemNew -= 1;
+          lowFemNew += 1;
+        } else if (p1.gender !== '여' && p2.gender === '여') {
+          highFemNew += 1;
+          lowFemNew -= 1;
         }
-      }
-    }
+        const devBefore = deviation(highFem) + deviation(lowFem);
+        const devAfter = deviation(highFemNew) + deviation(lowFemNew);
+        if (devAfter > devBefore) continue;
 
-    // 여성 선수들만 교체 시도
-    const highTeamFemales = highTeam.players.filter((p) => p.gender === '여');
-    const lowTeamFemales = lowTeam.players.filter((p) => p.gender === '여');
-
-    for (const highPlayer of highTeamFemales) {
-      for (const lowPlayer of lowTeamFemales) {
-        const improvement = calculateSwapImprovement(
-          highTeam,
-          lowTeam,
-          highPlayer,
-          lowPlayer
-        );
+        const improvement = calculateSwapImprovement(highTeam, lowTeam, p1, p2);
         if (improvement > bestImprovement) {
           bestImprovement = improvement;
-          bestSwap = { player1: highPlayer, player2: lowPlayer };
+          bestSwap = { player1: p1, player2: p2 };
         }
       }
     }
@@ -2720,9 +2948,21 @@ const TeamAssignment = () => {
                     data-member-id={member.id}
                   >
                     <div className="member-info">
-                      <div className="member-name">{member.name}</div>
-                      <div className="member-gender">
-                        {member.gender || '미지정'}
+                      <div className="member-name">
+                        {member.name}
+                        {member.gender && (
+                          <span
+                            className={`gender-badge ${
+                              member.gender === '남'
+                                ? 'male'
+                                : member.gender === '여'
+                                ? 'female'
+                                : ''
+                            }`}
+                          >
+                            {member.gender}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="selection-indicator">
@@ -2807,9 +3047,23 @@ const TeamAssignment = () => {
                 return (
                   <div key={index} className="player-card">
                     <div className="player-info">
-                      <div className="player-name">{playerName}</div>
+                      <div className="player-name">
+                        {playerName}
+                        {playerGender && (
+                          <span
+                            className={`gender-badge ${
+                              playerGender === '남'
+                                ? 'male'
+                                : playerGender === '여'
+                                ? 'female'
+                                : ''
+                            }`}
+                          >
+                            {playerGender}
+                          </span>
+                        )}
+                      </div>
                       <div className="player-average">{playerAverage} 에버</div>
-                      <div className="player-gender">{playerGender || '-'}</div>
                     </div>
                     <button
                       className="btn btn-sm btn-danger"

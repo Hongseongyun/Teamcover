@@ -480,15 +480,15 @@
 
 .team-assignment-page .search-results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
 }
 
 .search-result-card {
   background: var(--toss-white);
   border: 1px solid var(--toss-gray-200);
   border-radius: var(--toss-radius);
-  padding: 1rem;
+  padding: 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -632,9 +632,9 @@
 /* 회원 그리드 */
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.625rem;
+  margin-bottom: 0.75rem;
 }
 
 /* 회원 카드 - 선택 상태별 스타일 */
@@ -642,7 +642,7 @@
   background: var(--toss-white);
   border: 2px solid var(--toss-gray-200);
   border-radius: var(--toss-radius);
-  padding: 1rem;
+  padding: 0.625rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
@@ -680,14 +680,15 @@
 
 /* 선택 표시기 스타일 */
 .selection-indicator {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  display: flex;
+  display: inline-flex; /* 글리프 기준선 영향 제거 */
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  line-height: 20px; /* 고정 라인 높이로 수직 중앙 보정 */
   transition: all 0.3s ease;
   flex-shrink: 0;
   /* 정확한 중앙 정렬을 위한 추가 설정 */
@@ -695,6 +696,7 @@
   margin: 0;
   text-align: center;
   vertical-align: middle;
+  transform: translateY(-0.5px); /* 글리프 시각적 중심 미세 보정 */
 }
 
 /* 선택되지 않은 회원의 표시기 */
@@ -727,8 +729,30 @@
 
 .member-name {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--toss-gray-900);
+}
+
+/* 이름 옆 성별 배지 (컴팩트) */
+.gender-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  line-height: 1;
+  background: var(--toss-gray-100);
+  color: var(--toss-gray-600);
+  border-radius: 10px;
+}
+
+.gender-badge.male {
+  background: #e0f2fe; /* light blue */
+  color: #075985; /* deep blue */
+}
+
+.gender-badge.female {
+  background: #fde2e9; /* light pink */
+  color: #9d174d; /* deep pink */
 }
 
 .member-card.unselected .member-name {
@@ -740,9 +764,9 @@
 }
 
 .member-gender {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: var(--toss-gray-600);
-  padding: 0.25rem 0.5rem;
+  padding: 0.125rem 0.375rem;
   background-color: var(--toss-gray-100);
   border-radius: var(--toss-radius-sm);
   display: inline-block;

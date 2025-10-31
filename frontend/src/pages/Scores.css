@@ -3286,6 +3286,8 @@
   color: var(--toss-gray-900);
 }
 
+/* (성별 배지 제거로 원상복구) */
+
 .averages-table-new .score-column {
   width: 100px;
   font-size: 1.1rem;
