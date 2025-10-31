@@ -222,11 +222,21 @@ def update_member(member_id):
         print(f"[DEBUG] is_staff from request: {data.get('is_staff')}")
         
         member.name = name
-        member.phone = data.get('phone', '').strip()
+        # 마스킹 값 방어: '*'를 포함한 값 또는 전형적 마스킹 패턴(***-****-****)은 무시하고 기존 값 유지
+        incoming_phone = (data.get('phone', '') or '').strip()
+        if incoming_phone and ('*' in incoming_phone or incoming_phone == '***-****-****'):
+            pass  # 기존 member.phone 유지
+        else:
+            member.phone = incoming_phone
         member.gender = data.get('gender', '').strip()
         member.level = data.get('level', '').strip()  # 레거시 호환성
         member.tier = data.get('tier', '').strip()
-        member.email = data.get('email', '').strip()
+        # 이메일도 마스킹 패턴(*** 포함)일 경우 기존 값 유지
+        incoming_email = (data.get('email', '') or '').strip()
+        if incoming_email and ('***' in incoming_email):
+            pass
+        else:
+            member.email = incoming_email
         member.note = data.get('note', '').strip()
         
         # 가입일 업데이트
@@ -475,10 +485,10 @@ def verify_privacy_access():
             from flask_jwt_extended import create_access_token
             from datetime import timedelta
             
-            # 1분간 유효한 개인정보 접근 토큰 생성 (테스트용)
+            # 30분간 유효한 개인정보 접근 토큰 생성
             privacy_token = create_access_token(
                 identity=str(current_user_obj.id),  # 문자열로 변환
-                expires_delta=timedelta(minutes=1),
+                expires_delta=timedelta(minutes=30),
                 additional_claims={
                     'privacy_access_granted': True,
                     'user_role': current_user_obj.role

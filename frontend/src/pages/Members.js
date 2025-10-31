@@ -453,7 +453,16 @@ const Members = () => {
   // 인라인 편집 저장
   const saveInlineEdit = async (memberId) => {
     try {
-      const response = await memberAPI.updateMember(memberId, inlineEditData);
+      // 잠금 상태이거나 마스킹 값이면 해당 필드는 전송하지 않도록 정제
+      const payload = { ...inlineEditData };
+      if (!privacyUnlocked || (payload.phone && payload.phone.includes('*'))) {
+        delete payload.phone;
+      }
+      if (payload.email && payload.email.includes('***')) {
+        delete payload.email;
+      }
+
+      const response = await memberAPI.updateMember(memberId, payload);
 
       if (response.data && !response.data.success) {
         alert(response.data.message || '회원 수정에 실패했습니다.');
@@ -860,6 +869,12 @@ const Members = () => {
                                 ...prev,
                                 phone: e.target.value,
                               }))
+                            }
+                            disabled={!privacyUnlocked}
+                            placeholder={
+                              !privacyUnlocked
+                                ? '잠금 해제 후 편집 가능'
+                                : undefined
                             }
                           />
                         </td>
