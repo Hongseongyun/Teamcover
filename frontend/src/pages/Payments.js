@@ -49,6 +49,8 @@ const Payments = () => {
   const [gamePaymentMembers, setGamePaymentMembers] = useState([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [availableMembers, setAvailableMembers] = useState([]);
+  // 정기전 게임비 임시 상태 관리 (일괄 저장용)
+  const [tempGamePaymentStates, setTempGamePaymentStates] = useState({});
 
   // 임시 상태 관리 (여러 개 수정 후 일괄 저장)
   const [tempPaymentStates, setTempPaymentStates] = useState({});
@@ -341,28 +343,58 @@ const Payments = () => {
     );
   };
 
-  // 정기전 게임비 카드에서 직접 토글 (3단계 순환: 미납 -> 납입 -> 포인트납부 -> 미납)
-  const toggleGamePaymentCard = async (payment) => {
-    try {
-      let newState;
-      // 상태 순환: 미납 -> 납입 -> 포인트납부 -> 미납
-      if (!payment.is_paid && !payment.paid_with_points) {
-        // 미납 -> 납입
-        newState = { is_paid: true, paid_with_points: false };
-      } else if (payment.is_paid && !payment.paid_with_points) {
-        // 납입 -> 포인트납부
-        newState = { is_paid: true, paid_with_points: true };
-      } else {
-        // 포인트납부 -> 미납
-        newState = { is_paid: false, paid_with_points: false };
-      }
+  // 정기전 게임비 카드에서 임시 상태 토글 (3단계 순환: 미납 -> 납입 -> 포인트납부 -> 미납)
+  const toggleGamePaymentCard = (payment) => {
+    const currentState = tempGamePaymentStates[payment.id] || {
+      is_paid: payment.is_paid,
+      paid_with_points: payment.paid_with_points || false,
+    };
 
-      await paymentAPI.updatePayment(payment.id, newState);
-      loadPayments(); // 목록 새로고침
-    } catch (error) {
-      console.error('납입 상태 변경 실패:', error);
-      alert('납입 상태 변경에 실패했습니다.');
+    let newState;
+    // 상태 순환: 미납 -> 납입 -> 포인트납부 -> 미납
+    if (!currentState.is_paid && !currentState.paid_with_points) {
+      // 미납 -> 납입
+      newState = { is_paid: true, paid_with_points: false };
+    } else if (currentState.is_paid && !currentState.paid_with_points) {
+      // 납입 -> 포인트납부
+      newState = { is_paid: true, paid_with_points: true };
+    } else {
+      // 포인트납부 -> 미납
+      newState = { is_paid: false, paid_with_points: false };
     }
+
+    // 임시 상태에 저장
+    setTempGamePaymentStates((prev) => ({
+      ...prev,
+      [payment.id]: newState,
+    }));
+  };
+
+  // 정기전 게임비 일괄 저장
+  const saveGamePaymentCardStates = async () => {
+    setSubmitting(true);
+    try {
+      const promises = Object.entries(tempGamePaymentStates).map(
+        ([paymentId, newState]) => {
+          return paymentAPI.updatePayment(parseInt(paymentId, 10), newState);
+        }
+      );
+
+      await Promise.all(promises);
+      setTempGamePaymentStates({});
+      await loadPayments();
+      alert('정기전 게임비 상태가 저장되었습니다.');
+    } catch (error) {
+      console.error('정기전 게임비 상태 저장 실패:', error);
+      alert('정기전 게임비 상태 저장에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 정기전 게임비 임시 상태 취소
+  const cancelGamePaymentCardStates = () => {
+    setTempGamePaymentStates({});
   };
 
   const saveGamePayments = async () => {
@@ -1998,10 +2030,9 @@ const Payments = () => {
               {/* 날짜별 정기전 게임비 내역 */}
               <div className="payments-table">
                 {(() => {
-                  // 정기전 게임비만 필터링
+                  // 정기전 게임비만 필터링 (미납 포함, 면제 제외)
                   const gamePayments = payments.filter(
-                    (p) =>
-                      p.payment_type === 'game' && p.is_paid && !p.is_exempt
+                    (p) => p.payment_type === 'game' && !p.is_exempt
                   );
 
                   // 날짜별로 그룹화
@@ -2047,15 +2078,24 @@ const Payments = () => {
                             <h4 className="game-payment-date-title">{date}</h4>
                             <div className="game-payment-cards-grid">
                               {sortedPayments.map((payment) => {
+                                // 임시 상태가 있으면 임시 상태 사용, 없으면 원본 상태 사용
+                                const tempState =
+                                  tempGamePaymentStates[payment.id];
+                                const currentState = tempState || {
+                                  is_paid: payment.is_paid,
+                                  paid_with_points:
+                                    payment.paid_with_points || false,
+                                };
+
                                 // 납입 상태 결정
                                 let statusText = '';
                                 let statusClass = '';
                                 let cardClass = '';
-                                if (payment.paid_with_points) {
+                                if (currentState.paid_with_points) {
                                   statusText = '포인트납부';
                                   statusClass = 'status-point';
                                   cardClass = 'game-payment-card point';
-                                } else if (payment.is_paid) {
+                                } else if (currentState.is_paid) {
                                   statusText = '납입';
                                   statusClass = 'status-paid';
                                   cardClass = 'game-payment-card paid';
@@ -2112,9 +2152,9 @@ const Payments = () => {
                                         padding: '0.25rem 0.75rem',
                                         borderRadius: '12px',
                                         backgroundColor:
-                                          payment.paid_with_points
+                                          currentState.paid_with_points
                                             ? 'rgba(59, 130, 246, 0.1)'
-                                            : payment.is_paid
+                                            : currentState.is_paid
                                             ? 'rgba(16, 185, 129, 0.1)'
                                             : 'rgba(239, 68, 68, 0.1)',
                                       }}
@@ -2132,6 +2172,41 @@ const Payments = () => {
                   );
                 })()}
               </div>
+
+              {/* 일괄 저장 버튼 */}
+              {Object.keys(tempGamePaymentStates).length > 0 && (
+                <div className="section-card" style={{ marginTop: '1rem' }}>
+                  <div className="batch-actions-content">
+                    <span className="batch-info">
+                      {Object.keys(tempGamePaymentStates).length}개의 변경사항이
+                      있습니다.
+                    </span>
+                    <div className="batch-buttons">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={cancelGamePaymentCardStates}
+                        disabled={submitting}
+                      >
+                        취소
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        onClick={saveGamePaymentCardStates}
+                        disabled={submitting}
+                      >
+                        {submitting ? (
+                          <>
+                            <div className="loading-spinner"></div>
+                            저장 중...
+                          </>
+                        ) : (
+                          '수정'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
