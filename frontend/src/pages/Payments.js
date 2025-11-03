@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -93,6 +93,8 @@ const Payments = () => {
     amount: '',
     note: '',
   });
+  // 금액 스피너를 위한 이전 값 추적
+  const prevAmountRef = useRef(null);
 
   const loadPayments = useCallback(async () => {
     try {
@@ -185,7 +187,7 @@ const Payments = () => {
 
   const handleLedgerSubmit = async (e) => {
     e.preventDefault();
-    if (!ledgerForm.amount || parseInt(ledgerForm.amount, 10) <= 0) {
+    if (!ledgerForm.amount || parseInt(ledgerForm.amount, 10) === 0) {
       alert('금액을 입력하세요');
       return;
     }
@@ -1012,11 +1014,83 @@ const Payments = () => {
                   <label>금액</label>
                   <input
                     type="number"
-                    min="1"
+                    step="500"
                     value={ledgerForm.amount}
-                    onChange={(e) =>
-                      setLedgerForm({ ...ledgerForm, amount: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // 숫자, -, 빈 문자열만 허용
+                      if (
+                        value === '' ||
+                        value === '-' ||
+                        /^-?\d*$/.test(value)
+                      ) {
+                        setLedgerForm({ ...ledgerForm, amount: value });
+                        prevAmountRef.current = value;
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      // 허용할 키들
+                      const allowedKeys = [
+                        'Backspace',
+                        'Delete',
+                        'ArrowLeft',
+                        'ArrowRight',
+                        'ArrowUp',
+                        'ArrowDown',
+                        'Tab',
+                        'Enter',
+                        'Escape',
+                      ];
+
+                      // ArrowUp/Down은 커스텀 처리
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const currentValue =
+                          parseInt(ledgerForm.amount, 10) || 0;
+                        const prevValue = prevAmountRef.current
+                          ? parseInt(prevAmountRef.current, 10)
+                          : null;
+                        const increment =
+                          prevValue === null || prevValue === currentValue
+                            ? 1
+                            : 500;
+                        const newValue = currentValue + increment;
+                        setLedgerForm({
+                          ...ledgerForm,
+                          amount: newValue.toString(),
+                        });
+                        prevAmountRef.current = newValue.toString();
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const currentValue =
+                          parseInt(ledgerForm.amount, 10) || 0;
+                        const prevValue = prevAmountRef.current
+                          ? parseInt(prevAmountRef.current, 10)
+                          : null;
+                        const increment =
+                          prevValue === null || prevValue === currentValue
+                            ? 1
+                            : 500;
+                        const newValue = currentValue - increment;
+                        setLedgerForm({
+                          ...ledgerForm,
+                          amount: newValue.toString(),
+                        });
+                        prevAmountRef.current = newValue.toString();
+                      }
+
+                      // 숫자, -, 백스페이스, 삭제, 화살표 키만 허용
+                      if (
+                        !/[\d-]/.test(e.key) &&
+                        !allowedKeys.includes(e.key)
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onBlur={() => {
+                      // 포커스를 잃을 때 이전 값 추적 리셋 (다음 스피너 조작 시 첫 번째로 인식)
+                      prevAmountRef.current = null;
+                    }}
                     disabled={ledgerLoading}
                   />
                 </div>
