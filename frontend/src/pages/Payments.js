@@ -1053,13 +1053,14 @@ const Payments = () => {
                     <th>유형</th>
                     <th>금액</th>
                     <th>출처</th>
+                    <th>회원</th>
                     <th>비고</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ledgerLoading ? (
                     <tr>
-                      <td colSpan="5" className="no-data">
+                      <td colSpan="6" className="no-data">
                         불러오는 중...
                       </td>
                     </tr>
@@ -1068,6 +1069,14 @@ const Payments = () => {
                       // 납입 내역과 동일하게 연속된 개월 납입 처리
                       const processedLedgerItems = [];
                       const hiddenLedgerIds = new Set();
+
+                      // 모든 납입 내역을 payment_id로 매핑 (월회비 + 정기전 게임비)
+                      const paymentsByPaymentId = {};
+                      payments
+                        .filter((p) => p.is_paid && !p.is_exempt)
+                        .forEach((payment) => {
+                          paymentsByPaymentId[payment.id] = payment;
+                        });
 
                       // 월회비 관련 장부 항목만 처리 (payment_id가 있고 source가 'monthly')
                       const monthlyLedgerItems = ledgerItems.filter(
@@ -1082,19 +1091,6 @@ const Payments = () => {
                           item.source !== 'monthly' ||
                           item.entry_type !== 'credit'
                       );
-
-                      // 납입 내역을 payment_id로 매핑
-                      const paymentsByPaymentId = {};
-                      payments
-                        .filter(
-                          (p) =>
-                            p.payment_type === 'monthly' &&
-                            p.is_paid &&
-                            !p.is_exempt
-                        )
-                        .forEach((payment) => {
-                          paymentsByPaymentId[payment.id] = payment;
-                        });
 
                       // 장부 항목을 회원별로 그룹화
                       const groupedByMember = {};
@@ -1196,24 +1192,37 @@ const Payments = () => {
                       if (finalLedgerItems.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="5" className="no-data">
+                            <td colSpan="6" className="no-data">
                               장부 항목이 없습니다.
                             </td>
                           </tr>
                         );
                       }
 
-                      return finalLedgerItems.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.event_date}</td>
-                          <td>
-                            {item.entry_type === 'credit' ? '입금' : '출금'}
-                          </td>
-                          <td>{formatNumber(item.amount)}원</td>
-                          <td>{item.source}</td>
-                          <td>{item.note || '-'}</td>
-                        </tr>
-                      ));
+                      // 출처를 한글로 변환하는 함수
+                      const formatSource = (source) => {
+                        if (source === 'monthly') return '월회비';
+                        if (source === 'game') return '정기전 게임비';
+                        return source;
+                      };
+
+                      return finalLedgerItems.map((item) => {
+                        const payment = paymentsByPaymentId[item.payment_id];
+                        const memberName = payment ? payment.member_name : '-';
+
+                        return (
+                          <tr key={item.id}>
+                            <td>{item.event_date}</td>
+                            <td>
+                              {item.entry_type === 'credit' ? '입금' : '출금'}
+                            </td>
+                            <td>{formatNumber(item.amount)}원</td>
+                            <td>{formatSource(item.source)}</td>
+                            <td>{memberName}</td>
+                            <td>{item.note || '-'}</td>
+                          </tr>
+                        );
+                      });
                     })()
                   )}
                 </tbody>
