@@ -978,7 +978,7 @@ const Payments = () => {
             <h3 className="section-title">장부 관리 (수기 조정)</h3>
             <form className="payment-form" onSubmit={handleLedgerSubmit}>
               <div className="form-row">
-                <div className="form-group">
+                <div className="form-group" style={{ flex: '0 0 140px' }}>
                   <label>날짜</label>
                   <input
                     type="date"
@@ -992,7 +992,7 @@ const Payments = () => {
                     disabled={ledgerLoading}
                   />
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ flex: '0 0 130px' }}>
                   <label>유형</label>
                   <select
                     value={ledgerForm.entry_type}
@@ -1008,7 +1008,7 @@ const Payments = () => {
                     <option value="debit">출금(debit)</option>
                   </select>
                 </div>
-                <div className="form-group">
+                <div className="form-group" style={{ flex: '0 0 120px' }}>
                   <label>금액</label>
                   <input
                     type="number"
@@ -1032,7 +1032,10 @@ const Payments = () => {
                     placeholder="메모"
                   />
                 </div>
-                <div className="form-group">
+                <div
+                  className="form-group"
+                  style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}
+                >
                   <label>&nbsp;</label>
                   <button
                     className="btn btn-primary"
