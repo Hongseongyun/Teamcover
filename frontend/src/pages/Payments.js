@@ -2008,6 +2008,44 @@ const Payments = () => {
             </div>
           </div>
 
+          {/* 월별 납입 현황 저장 버튼 */}
+          {hasTempChanges && (
+            <div className="section-card">
+              <div className="batch-actions-content">
+                <span className="batch-info">
+                  {Object.keys(tempPaymentStates).length +
+                    tempNewPayments.length +
+                    Object.keys(tempExemptStates).length +
+                    tempDeletePayments.length}
+                  개의 변경사항이 있습니다.
+                </span>
+                <div className="batch-buttons">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={cancelTempChanges}
+                    disabled={submitting}
+                  >
+                    취소
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={savePaymentStates}
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="loading-spinner"></div>
+                        저장 중...
+                      </>
+                    ) : (
+                      '저장'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 정기전 게임비 관리 섹션 */}
           {isAdmin && (
             <div className="section-card">
@@ -2200,52 +2238,13 @@ const Payments = () => {
                             저장 중...
                           </>
                         ) : (
-                          '수정'
+                          '저장'
                         )}
                       </button>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {hasTempChanges && (
-            <div className="batch-actions">
-              <div className="section-card">
-                <div className="batch-actions-content">
-                  <span className="batch-info">
-                    {Object.keys(tempPaymentStates).length +
-                      tempNewPayments.length +
-                      Object.keys(tempExemptStates).length +
-                      tempDeletePayments.length}
-                    개의 변경사항이 있습니다.
-                  </span>
-                  <div className="batch-buttons">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={cancelTempChanges}
-                      disabled={submitting}
-                    >
-                      취소
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={savePaymentStates}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="loading-spinner"></div>
-                          저장 중...
-                        </>
-                      ) : (
-                        '저장'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
