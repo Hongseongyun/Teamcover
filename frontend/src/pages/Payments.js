@@ -1614,8 +1614,10 @@ const Payments = () => {
                 </thead>
                 <tbody>
                   {(() => {
-                    // 면제 상태인 납입 내역은 목록에서 제외
-                    let filteredPayments = payments.filter((p) => !p.is_exempt);
+                    // 면제 상태 및 미납 상태인 납입 내역은 목록에서 제외 (납입 완료된 항목만 표시)
+                    let filteredPayments = payments.filter(
+                      (p) => !p.is_exempt && p.is_paid
+                    );
 
                     // 같은 회원의 연속된 개월 납입을 그룹화
                     const processedPayments = [];
