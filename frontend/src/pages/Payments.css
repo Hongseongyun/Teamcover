@@ -238,6 +238,11 @@
   font-weight: 600;
 }
 
+.status-point {
+  color: var(--toss-primary);
+  font-weight: 600;
+}
+
 /* 인라인 편집 액션(완료/취소) 영역 - 이미지와 동일한 우측 정렬/간격 */
 .inline-actions {
   display: flex;
@@ -1090,7 +1095,7 @@
   background: white;
   border-radius: 12px;
   padding: 0;
-  max-width: 800px;
+  max-width: 600px;
   width: 90%;
   max-height: 90vh;
   display: flex;
@@ -1099,7 +1104,7 @@
 }
 
 .modal-header {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
@@ -1112,13 +1117,13 @@
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1rem;
   overflow-y: auto;
   flex: 1;
 }
 
 .modal-footer {
-  padding: 1.5rem;
+  padding: 1rem 1.25rem;
   border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
@@ -1177,9 +1182,13 @@
   font-size: 0.75rem;
 }
 
+.game-payment-modal .form-group {
+  margin-bottom: 1rem;
+}
+
 .added-members-list {
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
   border-top: 2px solid #e5e7eb;
 }
 
@@ -1196,8 +1205,8 @@
 
 .game-payment-table th,
 .game-payment-table td {
-  padding: 0.75rem;
-  text-align: left;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -1306,4 +1315,55 @@
   color: var(--toss-gray-600);
   font-size: 0.9rem;
   padding: 1rem 0;
+}
+
+/* 정기전 게임비 카드 레이아웃 */
+.game-payment-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.game-payment-date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.game-payment-date-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--toss-gray-900);
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--toss-gray-200);
+}
+
+.game-payment-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.game-payment-card {
+  min-height: 80px;
+}
+
+.game-payment-card.paid {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.game-payment-card.point {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.game-payment-card.unpaid {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@media (max-width: 768px) {
+  .game-payment-cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
 }

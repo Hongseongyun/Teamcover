@@ -95,6 +95,8 @@ const Payments = () => {
   });
   // 금액 스피너를 위한 이전 값 추적
   const prevAmountRef = useRef(null);
+  // 납입 내역 페이지네이션
+  const [displayedPaymentCount, setDisplayedPaymentCount] = useState(10);
 
   const loadPayments = useCallback(async () => {
     try {
@@ -339,14 +341,23 @@ const Payments = () => {
     );
   };
 
-  // 정기전 게임비 카드에서 직접 토글
+  // 정기전 게임비 카드에서 직접 토글 (3단계 순환: 미납 -> 납입 -> 포인트납부 -> 미납)
   const toggleGamePaymentCard = async (payment) => {
     try {
-      // 카드 클릭 토글: 납입완료 ↔ 미납, 포인트납부 상태는 유지
-      await paymentAPI.updatePayment(payment.id, {
-        is_paid: !payment.is_paid,
-        paid_with_points: payment.paid_with_points || false,
-      });
+      let newState;
+      // 상태 순환: 미납 -> 납입 -> 포인트납부 -> 미납
+      if (!payment.is_paid && !payment.paid_with_points) {
+        // 미납 -> 납입
+        newState = { is_paid: true, paid_with_points: false };
+      } else if (payment.is_paid && !payment.paid_with_points) {
+        // 납입 -> 포인트납부
+        newState = { is_paid: true, paid_with_points: true };
+      } else {
+        // 포인트납부 -> 미납
+        newState = { is_paid: false, paid_with_points: false };
+      }
+
+      await paymentAPI.updatePayment(payment.id, newState);
       loadPayments(); // 목록 새로고침
     } catch (error) {
       console.error('납입 상태 변경 실패:', error);
@@ -906,7 +917,9 @@ const Payments = () => {
         const monthNum = parseInt(month, 10);
         const monthDisplay = `${year}년 ${monthNum}월`;
 
-        const note = `${monthDisplay} ${monthsCount}개월 선납`;
+        // 1개월인 경우 선납 표시 없음, 2개월 이상인 경우만 선납 표시
+        const note =
+          monthsCount === 1 ? '' : `${monthDisplay} ${monthsCount}개월 선납`;
 
         return paymentAPI.addPayment({
           member_id: group.member_id,
@@ -1963,6 +1976,165 @@ const Payments = () => {
             </div>
           </div>
 
+          {/* 정기전 게임비 관리 섹션 */}
+          {isAdmin && (
+            <div className="section-card">
+              <h3 className="section-title">정기전 게임비 관리 (날짜별)</h3>
+              <div
+                style={{
+                  padding: '1rem',
+                  textAlign: 'center',
+                  marginBottom: '1rem',
+                }}
+              >
+                <button
+                  className="btn btn-primary"
+                  onClick={openGamePaymentModal}
+                >
+                  정기전 게임비 관리
+                </button>
+              </div>
+
+              {/* 날짜별 정기전 게임비 내역 */}
+              <div className="payments-table">
+                {(() => {
+                  // 정기전 게임비만 필터링
+                  const gamePayments = payments.filter(
+                    (p) =>
+                      p.payment_type === 'game' && p.is_paid && !p.is_exempt
+                  );
+
+                  // 날짜별로 그룹화
+                  const paymentsByDate = {};
+                  gamePayments.forEach((payment) => {
+                    const date = payment.payment_date;
+                    if (!paymentsByDate[date]) {
+                      paymentsByDate[date] = [];
+                    }
+                    paymentsByDate[date].push(payment);
+                  });
+
+                  // 날짜순 정렬 (최신순)
+                  const sortedDates = Object.keys(paymentsByDate).sort(
+                    (a, b) => new Date(b) - new Date(a)
+                  );
+
+                  if (sortedDates.length === 0) {
+                    return (
+                      <div
+                        style={{
+                          padding: '1rem',
+                          textAlign: 'center',
+                          color: '#666',
+                        }}
+                      >
+                        등록된 정기전 게임비 내역이 없습니다.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="game-payment-cards-container">
+                      {sortedDates.map((date) => {
+                        const datePayments = paymentsByDate[date];
+                        // 회원명으로 정렬
+                        const sortedPayments = [...datePayments].sort((a, b) =>
+                          a.member_name.localeCompare(b.member_name)
+                        );
+
+                        return (
+                          <div key={date} className="game-payment-date-section">
+                            <h4 className="game-payment-date-title">{date}</h4>
+                            <div className="game-payment-cards-grid">
+                              {sortedPayments.map((payment) => {
+                                // 납입 상태 결정
+                                let statusText = '';
+                                let statusClass = '';
+                                let cardClass = '';
+                                if (payment.paid_with_points) {
+                                  statusText = '포인트납부';
+                                  statusClass = 'status-point';
+                                  cardClass = 'game-payment-card point';
+                                } else if (payment.is_paid) {
+                                  statusText = '납입';
+                                  statusClass = 'status-paid';
+                                  cardClass = 'game-payment-card paid';
+                                } else {
+                                  statusText = '미납';
+                                  statusClass = 'status-unpaid';
+                                  cardClass = 'game-payment-card unpaid';
+                                }
+
+                                return (
+                                  <div
+                                    key={payment.id}
+                                    className={cardClass}
+                                    onClick={() =>
+                                      toggleGamePaymentCard(payment)
+                                    }
+                                    style={{
+                                      cursor: 'pointer',
+                                      padding: '0.75rem',
+                                      borderRadius: '8px',
+                                      border: '1px solid #e0e0e0',
+                                      backgroundColor: '#fff',
+                                      transition: 'all 0.2s',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.transform =
+                                        'translateY(-2px)';
+                                      e.currentTarget.style.boxShadow =
+                                        '0 4px 8px rgba(0,0,0,0.1)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.transform =
+                                        'translateY(0)';
+                                      e.currentTarget.style.boxShadow = 'none';
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: '0.875rem',
+                                        fontWeight: '600',
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      {payment.member_name}
+                                    </div>
+                                    <div
+                                      className={statusClass}
+                                      style={{
+                                        fontSize: '0.75rem',
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '12px',
+                                        backgroundColor:
+                                          payment.paid_with_points
+                                            ? 'rgba(59, 130, 246, 0.1)'
+                                            : payment.is_paid
+                                            ? 'rgba(16, 185, 129, 0.1)'
+                                            : 'rgba(239, 68, 68, 0.1)',
+                                      }}
+                                    >
+                                      {statusText}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
           {hasTempChanges && (
             <div className="batch-actions">
               <div className="section-card">
@@ -2128,156 +2300,206 @@ const Payments = () => {
                     });
 
                     // 최종 목록: 처리된 월회비 + 정기전 게임비
-                    const finalPayments = [
+                    let finalPayments = [
                       ...processedPayments,
                       ...nonMonthlyPayments,
                     ].filter((p) => !hiddenPaymentIds.has(p.id));
 
-                    return finalPayments.length === 0 ? (
-                      <tr>
-                        <td colSpan={isAdmin ? 7 : 6} className="no-data">
-                          납입 내역이 없습니다.
-                        </td>
-                      </tr>
-                    ) : (
-                      finalPayments.map((payment) => (
-                        <tr key={payment.id}>
-                          <td>
-                            {inlineEditId === payment.id ? (
-                              <input
-                                type="date"
-                                value={inlineForm.payment_date}
-                                onChange={(e) =>
-                                  setInlineForm({
-                                    ...inlineForm,
-                                    payment_date: e.target.value,
-                                  })
-                                }
-                                disabled={submitting}
-                              />
-                            ) : (
-                              payment.payment_date
-                            )}
-                          </td>
-                          <td>{payment.member_name}</td>
-                          <td>
-                            <span
-                              className={`payment-type ${payment.payment_type}`}
-                            >
-                              {formatPaymentType(payment.payment_type)}
-                            </span>
-                          </td>
-                          <td>
-                            {inlineEditId === payment.id ? (
-                              <input
-                                type="number"
-                                min="0"
-                                value={inlineForm.amount}
-                                onChange={(e) =>
-                                  setInlineForm({
-                                    ...inlineForm,
-                                    amount: e.target.value,
-                                  })
-                                }
-                                disabled={submitting}
-                                style={{ width: 100 }}
-                              />
-                            ) : (
-                              `${formatNumber(payment.amount)}원`
-                            )}
-                          </td>
-                          <td>
-                            {inlineEditId === payment.id ? (
-                              <select
-                                value={inlineForm.is_paid}
-                                onChange={(e) =>
-                                  setInlineForm({
-                                    ...inlineForm,
-                                    is_paid: e.target.value === 'true',
-                                  })
-                                }
-                                disabled={submitting}
-                              >
-                                <option value="true">완료</option>
-                                <option value="false">미납</option>
-                              </select>
-                            ) : (
-                              <span
-                                className={
-                                  payment.is_paid
-                                    ? 'status-paid'
-                                    : 'status-unpaid'
-                                }
-                              >
-                                {payment.is_paid ? '완료' : '미납'}
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            {inlineEditId === payment.id ? (
-                              <input
-                                type="text"
-                                value={inlineForm.note}
-                                onChange={(e) =>
-                                  setInlineForm({
-                                    ...inlineForm,
-                                    note: e.target.value,
-                                  })
-                                }
-                                disabled={submitting}
-                                placeholder="비고"
-                              />
-                            ) : (
-                              payment.note || '-'
-                            )}
-                          </td>
-                          {isAdmin && (
-                            <td>
-                              {inlineEditId === payment.id ? (
-                                <div className="inline-actions">
-                                  <button
-                                    className="btn btn-sm btn-primary"
-                                    onClick={() => handleInlineSave(payment.id)}
-                                    disabled={submitting}
-                                  >
-                                    완료
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-secondary"
-                                    onClick={handleInlineCancel}
-                                    disabled={submitting}
-                                  >
-                                    취소
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <button
-                                    className="btn btn-sm btn-edit"
-                                    onClick={() => handleInlineEdit(payment)}
-                                  >
-                                    수정
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-delete"
-                                    onClick={() => handleDelete(payment.id)}
-                                    disabled={deleting}
-                                  >
-                                    {deleting ? (
-                                      <>
-                                        <div className="loading-spinner"></div>
-                                        삭제 중...
-                                      </>
-                                    ) : (
-                                      '삭제'
-                                    )}
-                                  </button>
-                                </>
-                              )}
+                    // 날짜 최신순 정렬 (내림차순)
+                    finalPayments.sort((a, b) => {
+                      const dateA = new Date(a.payment_date);
+                      const dateB = new Date(b.payment_date);
+                      return dateB - dateA; // 최신이 위로
+                    });
+
+                    const totalPayments = finalPayments.length;
+                    const visiblePayments = finalPayments.slice(
+                      0,
+                      displayedPaymentCount
+                    );
+                    const hasMore = totalPayments > displayedPaymentCount;
+
+                    return (
+                      <>
+                        {totalPayments === 0 ? (
+                          <tr>
+                            <td colSpan={isAdmin ? 7 : 6} className="no-data">
+                              납입 내역이 없습니다.
                             </td>
-                          )}
-                        </tr>
-                      ))
+                          </tr>
+                        ) : (
+                          <>
+                            {visiblePayments.map((payment) => (
+                              <tr key={payment.id}>
+                                <td>
+                                  {inlineEditId === payment.id ? (
+                                    <input
+                                      type="date"
+                                      value={inlineForm.payment_date}
+                                      onChange={(e) =>
+                                        setInlineForm({
+                                          ...inlineForm,
+                                          payment_date: e.target.value,
+                                        })
+                                      }
+                                      disabled={submitting}
+                                    />
+                                  ) : (
+                                    payment.payment_date
+                                  )}
+                                </td>
+                                <td>{payment.member_name}</td>
+                                <td>
+                                  <span
+                                    className={`payment-type ${payment.payment_type}`}
+                                  >
+                                    {formatPaymentType(payment.payment_type)}
+                                  </span>
+                                </td>
+                                <td>
+                                  {inlineEditId === payment.id ? (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={inlineForm.amount}
+                                      onChange={(e) =>
+                                        setInlineForm({
+                                          ...inlineForm,
+                                          amount: e.target.value,
+                                        })
+                                      }
+                                      disabled={submitting}
+                                      style={{ width: 100 }}
+                                    />
+                                  ) : (
+                                    `${formatNumber(payment.amount)}원`
+                                  )}
+                                </td>
+                                <td>
+                                  {inlineEditId === payment.id ? (
+                                    <select
+                                      value={inlineForm.is_paid}
+                                      onChange={(e) =>
+                                        setInlineForm({
+                                          ...inlineForm,
+                                          is_paid: e.target.value === 'true',
+                                        })
+                                      }
+                                      disabled={submitting}
+                                    >
+                                      <option value="true">완료</option>
+                                      <option value="false">미납</option>
+                                    </select>
+                                  ) : (
+                                    <span
+                                      className={
+                                        payment.is_paid
+                                          ? 'status-paid'
+                                          : 'status-unpaid'
+                                      }
+                                    >
+                                      {payment.is_paid ? '완료' : '미납'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td>
+                                  {inlineEditId === payment.id ? (
+                                    <input
+                                      type="text"
+                                      value={inlineForm.note}
+                                      onChange={(e) =>
+                                        setInlineForm({
+                                          ...inlineForm,
+                                          note: e.target.value,
+                                        })
+                                      }
+                                      disabled={submitting}
+                                      placeholder="비고"
+                                    />
+                                  ) : (
+                                    payment.note || '-'
+                                  )}
+                                </td>
+                                {isAdmin && (
+                                  <td>
+                                    {inlineEditId === payment.id ? (
+                                      <div className="inline-actions">
+                                        <button
+                                          className="btn btn-sm btn-primary"
+                                          onClick={() =>
+                                            handleInlineSave(payment.id)
+                                          }
+                                          disabled={submitting}
+                                        >
+                                          완료
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-secondary"
+                                          onClick={handleInlineCancel}
+                                          disabled={submitting}
+                                        >
+                                          취소
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button
+                                          className="btn btn-sm btn-edit"
+                                          onClick={() =>
+                                            handleInlineEdit(payment)
+                                          }
+                                        >
+                                          수정
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-delete"
+                                          onClick={() =>
+                                            handleDelete(payment.id)
+                                          }
+                                          disabled={deleting}
+                                        >
+                                          {deleting ? (
+                                            <>
+                                              <div className="loading-spinner"></div>
+                                              삭제 중...
+                                            </>
+                                          ) : (
+                                            '삭제'
+                                          )}
+                                        </button>
+                                      </>
+                                    )}
+                                  </td>
+                                )}
+                              </tr>
+                            ))}
+                            {hasMore && (
+                              <tr>
+                                <td
+                                  colSpan={isAdmin ? 7 : 6}
+                                  style={{
+                                    textAlign: 'center',
+                                    padding: '1rem',
+                                  }}
+                                >
+                                  <button
+                                    className="btn btn-secondary"
+                                    onClick={() =>
+                                      setDisplayedPaymentCount(
+                                        (prev) => prev + 10
+                                      )
+                                    }
+                                  >
+                                    더보기 (
+                                    {totalPayments - displayedPaymentCount}개
+                                    남음)
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        )}
+                      </>
                     );
                   })()}
                 </tbody>
