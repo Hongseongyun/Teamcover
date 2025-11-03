@@ -1684,68 +1684,93 @@ const Payments = () => {
                             ) : prepayTarget &&
                               prepayTarget.memberId === member.id &&
                               prepayTarget.month === month ? (
-                              <div className="prepay-menu">
-                                <select
-                                  className="prepay-select"
-                                  value={prepayMonths}
-                                  onChange={(e) =>
-                                    setPrepayMonths(
-                                      parseInt(e.target.value, 10)
-                                    )
-                                  }
-                                  disabled={submitting}
-                                  title="선입 개월 수"
-                                >
-                                  {Array.from(
-                                    { length: 12 },
-                                    (_, i) => i + 1
-                                  ).map((m) => (
-                                    <option
-                                      key={m}
-                                      value={m}
-                                    >{`${m}개월`}</option>
-                                  ))}
-                                </select>
-                                <select
-                                  className="prepay-select"
-                                  value={prepayStatus}
-                                  onChange={(e) =>
-                                    setPrepayStatus(e.target.value)
-                                  }
-                                  disabled={submitting}
-                                  title="상태 선택"
-                                >
-                                  <option value="paid">납입</option>
-                                  <option value="exempt">면제</option>
-                                  <option value="unpaid">미납</option>
-                                </select>
-                                <div className="prepay-actions">
-                                  <button
-                                    className="btn btn-xxs prepay-add"
-                                    onClick={() =>
-                                      handlePrepay(
-                                        member.id,
-                                        month,
-                                        prepayMonths,
-                                        5000,
-                                        prepayStatus
-                                      )
-                                    }
-                                    disabled={submitting}
-                                    title="선입 추가"
-                                  >
-                                    추가
-                                  </button>
-                                  <button
-                                    className="btn btn-xxs prepay-cancel"
-                                    onClick={() => setPrepayTarget(null)}
-                                    disabled={submitting}
-                                    title="닫기"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
+                              (() => {
+                                // 선택한 월부터 12월까지의 남은 개월 수 계산
+                                const monthStr = month; // YYYY-MM 형식
+                                const monthNum = parseInt(
+                                  monthStr.split('-')[1],
+                                  10
+                                ); // MM 추출
+                                const maxMonths = 13 - monthNum; // 선택한 월 포함해서 12월까지
+                                const maxMonthsLimited = Math.max(
+                                  1,
+                                  Math.min(maxMonths, 12)
+                                ); // 최소 1개월, 최대 12개월
+
+                                // 현재 선택된 개월 수가 최대값을 초과하면 최대값으로 조정
+                                const validPrepayMonths = Math.min(
+                                  prepayMonths,
+                                  maxMonthsLimited
+                                );
+                                if (prepayMonths > maxMonthsLimited) {
+                                  setPrepayMonths(maxMonthsLimited);
+                                }
+
+                                return (
+                                  <div className="prepay-menu">
+                                    <select
+                                      className="prepay-select"
+                                      value={validPrepayMonths}
+                                      onChange={(e) =>
+                                        setPrepayMonths(
+                                          parseInt(e.target.value, 10)
+                                        )
+                                      }
+                                      disabled={submitting}
+                                      title="선입 개월 수"
+                                    >
+                                      {Array.from(
+                                        { length: maxMonthsLimited },
+                                        (_, i) => i + 1
+                                      ).map((m) => (
+                                        <option
+                                          key={m}
+                                          value={m}
+                                        >{`${m}개월`}</option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      className="prepay-select"
+                                      value={prepayStatus}
+                                      onChange={(e) =>
+                                        setPrepayStatus(e.target.value)
+                                      }
+                                      disabled={submitting}
+                                      title="상태 선택"
+                                    >
+                                      <option value="paid">납입</option>
+                                      <option value="exempt">면제</option>
+                                      <option value="unpaid">미납</option>
+                                    </select>
+                                    <div className="prepay-actions">
+                                      <button
+                                        className="btn btn-xxs prepay-add"
+                                        onClick={() =>
+                                          handlePrepay(
+                                            member.id,
+                                            month,
+                                            prepayMonths,
+                                            5000,
+                                            prepayStatus
+                                          )
+                                        }
+                                        disabled={submitting}
+                                        title="선입 추가"
+                                      >
+                                        추가
+                                      </button>
+                                      <button
+                                        className="btn btn-xxs prepay-cancel"
+                                        onClick={() => setPrepayTarget(null)}
+                                        disabled={submitting}
+                                        title="닫기"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })()
                             ) : (
                               <button
                                 className="btn btn-xs btn-add"
