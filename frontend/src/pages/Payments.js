@@ -588,7 +588,57 @@ const Payments = () => {
         p.month === month &&
         p.payment_type === paymentType
     );
-    return payment;
+    if (payment) return payment;
+
+    // 선납인 경우 해당 월 범위에 납입이 있는 것으로 표시
+    if (paymentType === 'monthly') {
+      const [year, currentMonthNum] = month
+        .split('-')
+        .map((v) => parseInt(v, 10));
+
+      // 현재 확인하는 월이 1월~12월 범위 안인지 확인
+      if (currentMonthNum >= 1 && currentMonthNum <= 12) {
+        // 같은 연도의 모든 선납 납입 확인 (payment_date를 기준으로 찾음)
+        const prepayPayments = payments.filter(
+          (p) =>
+            p.member_id === memberId &&
+            p.payment_type === paymentType &&
+            p.is_paid &&
+            !p.is_exempt &&
+            p.note?.includes('개월 선납') &&
+            p.payment_date?.startsWith(`${year}-`)
+        );
+
+        for (const prepayPayment of prepayPayments) {
+          // note에서 선납 정보 파싱: "2025년 1월 12개월 선납" 또는 "2025년 3월 6개월 선납"
+          const noteMatch = prepayPayment.note.match(
+            /(\d{4})년\s*(\d+)월\s*(\d+)개월 선납/
+          );
+          if (noteMatch) {
+            const [, noteYear, noteMonth, monthsCount] = noteMatch;
+            const startMonthNum = parseInt(noteMonth, 10);
+            const count = parseInt(monthsCount, 10);
+
+            // 현재 월이 선납 범위 안에 있는지 확인
+            if (
+              parseInt(noteYear, 10) === year &&
+              currentMonthNum >= startMonthNum &&
+              currentMonthNum < startMonthNum + count
+            ) {
+              // 선납 정보를 복사해서 현재 월 정보로 반환
+              return {
+                ...prepayPayment,
+                month: month,
+                payment_date: `${month}-01`,
+                amount: 5000, // 각 월별로 5000원 표시
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return null;
   };
 
   // YYYY-MM 다음 달 계산
@@ -615,6 +665,9 @@ const Payments = () => {
     let monthCursor = startMonth;
     const toAdd = [];
 
+    // 모든 선납에 그룹 ID 생성 (통합 저장용)
+    const prepayGroupId = `prepay_${memberId}_${startMonth}_${monthsCount}_${Date.now()}`;
+
     for (let i = 0; i < monthsCount; i++) {
       const exists = getPaymentStatus(memberId, monthCursor, 'monthly');
       const alreadyTemp = tempNewPayments.find(
@@ -627,15 +680,20 @@ const Payments = () => {
         const tempId = `temp_${memberId}_${monthCursor}_${Date.now()}_${i}`;
         const isPaid = status === 'paid';
         const isExempt = status === 'exempt';
+
+        // 월별 납입 현황에서는 항상 정상 금액으로 표시 (5000원)
+        // 저장 시에만 1월 할인을 적용
         toAdd.push({
           id: tempId,
           member_id: memberId,
           month: monthCursor,
           payment_type: 'monthly',
-          amount: amountPerMonth,
+          amount: amountPerMonth, // 표시용으로는 항상 정상 금액
           is_paid: isPaid,
           is_exempt: isExempt,
           member_name: members.find((m) => m.id === memberId)?.name || '',
+          // 1월에 12개월 선납인 경우 그룹 ID
+          prepayGroupId: prepayGroupId,
         });
       }
       monthCursor = getNextMonth(monthCursor);
@@ -804,20 +862,81 @@ const Payments = () => {
       }
 
       // 새로운 납입 추가
-      const newPayments = await Promise.all(
-        tempNewPayments.map((tempPayment) => {
-          const paymentDate = `${tempPayment.month}-01`;
-          return paymentAPI.addPayment({
-            member_id: tempPayment.member_id,
-            payment_type: tempPayment.payment_type,
-            amount: tempPayment.amount,
-            payment_date: paymentDate,
-            is_paid: tempPayment.is_paid,
-            is_exempt: tempPayment.is_exempt || false,
-            note: '',
-          });
-        })
-      );
+      // 모든 선납을 하나의 레코드로 통합 저장
+      const prepayGroups = {};
+      const otherPayments = [];
+
+      tempNewPayments.forEach((tempPayment) => {
+        if (tempPayment.prepayGroupId) {
+          // 선납인 경우 그룹화
+          const groupId = tempPayment.prepayGroupId;
+          if (!prepayGroups[groupId]) {
+            prepayGroups[groupId] = {
+              member_id: tempPayment.member_id,
+              payment_type: tempPayment.payment_type,
+              months: [],
+              is_paid: tempPayment.is_paid,
+              is_exempt: tempPayment.is_exempt || false,
+            };
+          }
+          prepayGroups[groupId].months.push(tempPayment.month);
+        } else {
+          otherPayments.push(tempPayment);
+        }
+      });
+
+      // 선납 그룹을 하나의 레코드로 저장
+      const prepayGroupPayments = Object.values(prepayGroups).map((group) => {
+        const sortedMonths = group.months.sort();
+        const firstMonth = sortedMonths[0]; // 시작 월
+        const monthsCount = sortedMonths.length;
+        const isJanuary12Months =
+          firstMonth.endsWith('-01') && monthsCount === 12;
+
+        // 1월에 12개월 선납인 경우만 할인 적용, 나머지는 총합
+        const totalAmount = isJanuary12Months
+          ? monthsCount * 5000 - 5000 // 할인 적용
+          : monthsCount * 5000; // 할인 없음
+
+        // 첫 번째 월의 payment_date 사용
+        const paymentDate = `${firstMonth}-01`;
+
+        // 월 표시 형식: "2025-01" -> "2025년 1월"
+        const [year, month] = firstMonth.split('-');
+        const monthNum = parseInt(month, 10);
+        const monthDisplay = `${year}년 ${monthNum}월`;
+
+        const note = `${monthDisplay} ${monthsCount}개월 선납`;
+
+        return paymentAPI.addPayment({
+          member_id: group.member_id,
+          payment_type: group.payment_type,
+          amount: totalAmount,
+          payment_date: paymentDate,
+          is_paid: group.is_paid,
+          is_exempt: group.is_exempt || false,
+          note: note,
+        });
+      });
+
+      // 나머지 납입들 저장 (개별 납입)
+      const otherNewPayments = otherPayments.map((tempPayment) => {
+        const paymentDate = `${tempPayment.month}-01`;
+        return paymentAPI.addPayment({
+          member_id: tempPayment.member_id,
+          payment_type: tempPayment.payment_type,
+          amount: tempPayment.amount,
+          payment_date: paymentDate,
+          is_paid: tempPayment.is_paid,
+          is_exempt: tempPayment.is_exempt || false,
+          note: '',
+        });
+      });
+
+      const newPayments = await Promise.all([
+        ...prepayGroupPayments,
+        ...otherNewPayments,
+      ]);
 
       await Promise.all([...deletePromises, ...updates, ...newPayments]);
       setTempPaymentStates({});
@@ -1169,13 +1288,29 @@ const Payments = () => {
                           item.entry_type !== 'credit'
                       );
 
-                      // 장부 항목을 회원별로 그룹화
-                      const groupedByMember = {};
+                      // 선납과 일반 납입 분리
+                      const prepayLedgerItems = [];
+                      const regularLedgerItems = [];
+
                       monthlyLedgerItems.forEach((ledgerItem) => {
                         const payment =
                           paymentsByPaymentId[ledgerItem.payment_id];
                         if (!payment) return;
 
+                        if (payment.note?.includes('개월 선납')) {
+                          // 선납은 그대로 추가 (이미 하나의 레코드로 저장됨)
+                          prepayLedgerItems.push(ledgerItem);
+                        } else {
+                          regularLedgerItems.push({ ledgerItem, payment });
+                        }
+                      });
+
+                      // 선납은 그대로 추가
+                      processedLedgerItems.push(...prepayLedgerItems);
+
+                      // 장부 항목을 회원별로 그룹화 (일반 납입만)
+                      const groupedByMember = {};
+                      regularLedgerItems.forEach(({ ledgerItem, payment }) => {
                         const key = payment.member_id;
                         if (!groupedByMember[key]) {
                           groupedByMember[key] = [];
@@ -1876,9 +2011,20 @@ const Payments = () => {
                       (p) => p.payment_type !== 'monthly'
                     );
 
-                    // 회원별로 그룹화
+                    // 선납과 일반 납입 분리
+                    const prepayPayments = monthlyPayments.filter((p) =>
+                      p.note?.includes('개월 선납')
+                    );
+                    const regularPayments = monthlyPayments.filter(
+                      (p) => !p.note?.includes('개월 선납')
+                    );
+
+                    // 선납은 그대로 추가 (이미 하나의 레코드로 저장됨)
+                    processedPayments.push(...prepayPayments);
+
+                    // 회원별로 그룹화 (일반 납입만)
                     const groupedByMember = {};
-                    monthlyPayments.forEach((payment) => {
+                    regularPayments.forEach((payment) => {
                       const key = payment.member_id;
                       if (!groupedByMember[key]) {
                         groupedByMember[key] = [];
@@ -1886,7 +2032,7 @@ const Payments = () => {
                       groupedByMember[key].push(payment);
                     });
 
-                    // 각 회원별로 연속된 개월 납입 찾기
+                    // 각 회원별로 연속된 개월 납입 찾기 (일반 납입만)
                     Object.keys(groupedByMember).forEach((memberId) => {
                       const memberPayments = groupedByMember[memberId];
 
