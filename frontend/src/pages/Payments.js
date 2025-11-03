@@ -1063,24 +1063,158 @@ const Payments = () => {
                         불러오는 중...
                       </td>
                     </tr>
-                  ) : ledgerItems.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="no-data">
-                        장부 항목이 없습니다.
-                      </td>
-                    </tr>
                   ) : (
-                    ledgerItems.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.event_date}</td>
-                        <td>
-                          {item.entry_type === 'credit' ? '입금' : '출금'}
-                        </td>
-                        <td>{formatNumber(item.amount)}원</td>
-                        <td>{item.source}</td>
-                        <td>{item.note || '-'}</td>
-                      </tr>
-                    ))
+                    (() => {
+                      // 납입 내역과 동일하게 연속된 개월 납입 처리
+                      const processedLedgerItems = [];
+                      const hiddenLedgerIds = new Set();
+
+                      // 월회비 관련 장부 항목만 처리 (payment_id가 있고 source가 'monthly')
+                      const monthlyLedgerItems = ledgerItems.filter(
+                        (item) =>
+                          item.payment_id &&
+                          item.source === 'monthly' &&
+                          item.entry_type === 'credit'
+                      );
+                      const otherLedgerItems = ledgerItems.filter(
+                        (item) =>
+                          !item.payment_id ||
+                          item.source !== 'monthly' ||
+                          item.entry_type !== 'credit'
+                      );
+
+                      // 납입 내역을 payment_id로 매핑
+                      const paymentsByPaymentId = {};
+                      payments
+                        .filter(
+                          (p) =>
+                            p.payment_type === 'monthly' &&
+                            p.is_paid &&
+                            !p.is_exempt
+                        )
+                        .forEach((payment) => {
+                          paymentsByPaymentId[payment.id] = payment;
+                        });
+
+                      // 장부 항목을 회원별로 그룹화
+                      const groupedByMember = {};
+                      monthlyLedgerItems.forEach((ledgerItem) => {
+                        const payment =
+                          paymentsByPaymentId[ledgerItem.payment_id];
+                        if (!payment) return;
+
+                        const key = payment.member_id;
+                        if (!groupedByMember[key]) {
+                          groupedByMember[key] = [];
+                        }
+                        groupedByMember[key].push({
+                          ledgerItem,
+                          payment,
+                        });
+                      });
+
+                      // 각 회원별로 연속된 개월 납입 찾기
+                      Object.keys(groupedByMember).forEach((memberId) => {
+                        const memberItems = groupedByMember[memberId];
+
+                        // 날짜로 정렬
+                        memberItems.sort((a, b) =>
+                          a.payment.payment_date.localeCompare(
+                            b.payment.payment_date
+                          )
+                        );
+
+                        // 연속된 개월 납입 그룹 찾기
+                        let i = 0;
+                        while (i < memberItems.length) {
+                          const consecutiveGroup = [memberItems[i]];
+                          let j = i + 1;
+
+                          // 연속된 개월인지 확인하며 그룹 만들기
+                          while (j < memberItems.length) {
+                            const prevDate = new Date(
+                              consecutiveGroup[
+                                consecutiveGroup.length - 1
+                              ].payment.payment_date
+                            );
+                            const currDate = new Date(
+                              memberItems[j].payment.payment_date
+                            );
+
+                            // 예상 다음 달 계산
+                            const expectedDate = new Date(prevDate);
+                            expectedDate.setMonth(expectedDate.getMonth() + 1);
+
+                            // 실제 날짜가 예상 날짜와 같은 달인지 확인
+                            if (
+                              expectedDate.getFullYear() ===
+                                currDate.getFullYear() &&
+                              expectedDate.getMonth() === currDate.getMonth()
+                            ) {
+                              consecutiveGroup.push(memberItems[j]);
+                              j++;
+                            } else {
+                              break;
+                            }
+                          }
+
+                          if (consecutiveGroup.length > 1) {
+                            // 연속된 개월이 2개 이상인 경우 첫 달에 금액 합산
+                            const firstLedgerItem = {
+                              ...consecutiveGroup[0].ledgerItem,
+                            };
+                            firstLedgerItem.amount = consecutiveGroup.reduce(
+                              (sum, item) =>
+                                sum + (parseInt(item.ledgerItem.amount) || 0),
+                              0
+                            );
+                            processedLedgerItems.push(firstLedgerItem);
+
+                            // 나머지 달 장부 항목은 숨기기
+                            for (let k = 1; k < consecutiveGroup.length; k++) {
+                              hiddenLedgerIds.add(
+                                consecutiveGroup[k].ledgerItem.id
+                              );
+                            }
+                          } else {
+                            // 연속이 아니면 그대로 추가
+                            processedLedgerItems.push(
+                              consecutiveGroup[0].ledgerItem
+                            );
+                          }
+
+                          i = j;
+                        }
+                      });
+
+                      // 최종 목록: 처리된 월회비 장부 항목 + 기타 장부 항목
+                      const finalLedgerItems = [
+                        ...processedLedgerItems,
+                        ...otherLedgerItems,
+                      ].filter((item) => !hiddenLedgerIds.has(item.id));
+
+                      if (finalLedgerItems.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan="5" className="no-data">
+                              장부 항목이 없습니다.
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return finalLedgerItems.map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.event_date}</td>
+                          <td>
+                            {item.entry_type === 'credit' ? '입금' : '출금'}
+                          </td>
+                          <td>{formatNumber(item.amount)}원</td>
+                          <td>{item.source}</td>
+                          <td>{item.note || '-'}</td>
+                        </tr>
+                      ));
+                    })()
                   )}
                 </tbody>
               </table>
