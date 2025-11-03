@@ -1396,10 +1396,39 @@ const Payments = () => {
                       });
 
                       // 최종 목록: 처리된 월회비 장부 항목 + 기타 장부 항목
-                      const finalLedgerItems = [
+                      let finalLedgerItems = [
                         ...processedLedgerItems,
                         ...otherLedgerItems,
                       ].filter((item) => !hiddenLedgerIds.has(item.id));
+
+                      // 2025년 10월 잔여 회비 항목 추가
+                      const remainingFeeItem = {
+                        id: 'remaining_fee_2025_10',
+                        event_date: '2025-10-01',
+                        entry_type: 'credit',
+                        amount: 1540000,
+                        source: 'manual',
+                        payment_id: null,
+                        note: '잔여 회비',
+                      };
+                      finalLedgerItems.push(remainingFeeItem);
+
+                      // 2025년 11월부터의 기록만 표시 (2025년 10월 잔여 회비 항목은 포함)
+                      finalLedgerItems = finalLedgerItems.filter((item) => {
+                        // 잔여 회비 항목은 항상 포함
+                        if (item.id === 'remaining_fee_2025_10') {
+                          return true;
+                        }
+                        // 나머지는 2025년 11월부터만
+                        const itemDate = new Date(item.event_date);
+                        const cutoffDate = new Date('2025-11-01');
+                        return itemDate >= cutoffDate;
+                      });
+
+                      // 날짜순으로 정렬
+                      finalLedgerItems.sort((a, b) =>
+                        a.event_date.localeCompare(b.event_date)
+                      );
 
                       if (finalLedgerItems.length === 0) {
                         return (
@@ -1415,7 +1444,8 @@ const Payments = () => {
                       const formatSource = (source) => {
                         if (source === 'monthly') return '월회비';
                         if (source === 'game') return '정기전 게임비';
-                        return source;
+                        if (source === 'manual') return '수기';
+                        return source || '-';
                       };
 
                       return finalLedgerItems.map((item) => {
