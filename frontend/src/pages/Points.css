@@ -586,6 +586,30 @@
   background-color: var(--toss-gray-50);
   font-weight: 600;
   color: var(--toss-gray-700);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* 회원 이름 열 sticky (두 번째 열) */
+.points-table th:nth-child(2),
+.points-table td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.points-table th:nth-child(2) {
+  background-color: var(--toss-gray-50);
+}
+
+.points-table td:nth-child(2) {
+  background-color: var(--toss-white);
+}
+
+.points-table tr:hover td:nth-child(2) {
+  background-color: var(--toss-gray-50);
 }
 
 .points-table tr:hover {

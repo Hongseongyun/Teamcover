@@ -568,7 +568,8 @@
   background-color: var(--toss-gray-50);
   position: sticky;
   left: 0;
-  z-index: 11;
+  z-index: 12;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .month-col {
@@ -584,6 +585,11 @@
 .member-name {
   font-weight: 500;
   color: var(--toss-gray-900);
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background-color: var(--toss-white);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .payment-status {

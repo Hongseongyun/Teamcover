@@ -2447,7 +2447,7 @@ const Scores = () => {
                 <thead>
                   <tr>
                     {isAdmin && (
-                      <th style={{ width: '50px' }}>
+                      <th className="checkbox-col" style={{ width: '50px' }}>
                         <input
                           type="checkbox"
                           checked={selectAll}
@@ -2456,7 +2456,7 @@ const Scores = () => {
                         />
                       </th>
                     )}
-                    <th>회원명</th>
+                    <th className="member-name-col">회원명</th>
                     <th>게임 날짜</th>
                     <th>1게임</th>
                     <th>2게임</th>
@@ -2533,7 +2533,7 @@ const Scores = () => {
                           {inlineEditingId === score.id ? (
                             <>
                               {isAdmin && (
-                                <td>
+                                <td className="checkbox-col">
                                   <input
                                     type="checkbox"
                                     checked={selectedScores.includes(score.id)}
@@ -2542,7 +2542,7 @@ const Scores = () => {
                                   />
                                 </td>
                               )}
-                              <td>
+                              <td className="member-name-col">
                                 <select
                                   className="inline-select"
                                   value={inlineEditData.member_name}
@@ -2664,7 +2664,7 @@ const Scores = () => {
                           ) : (
                             <>
                               {isAdmin && (
-                                <td>
+                                <td className="checkbox-col">
                                   <input
                                     type="checkbox"
                                     checked={selectedScores.includes(score.id)}
@@ -2673,7 +2673,9 @@ const Scores = () => {
                                   />
                                 </td>
                               )}
-                              <td>{score.member_name}</td>
+                              <td className="member-name-col">
+                                {score.member_name}
+                              </td>
                               <td>{score.game_date}</td>
                               <td>{score.score1}</td>
                               <td>{score.score2}</td>
@@ -2897,7 +2899,10 @@ const Scores = () => {
                       <thead>
                         <tr>
                           {isAdmin && (
-                            <th style={{ width: '50px' }}>
+                            <th
+                              className="checkbox-col"
+                              style={{ width: '50px' }}
+                            >
                               <input
                                 type="checkbox"
                                 checked={selectAll}
@@ -2906,7 +2911,7 @@ const Scores = () => {
                               />
                             </th>
                           )}
-                          <th>회원명</th>
+                          <th className="member-name-col">회원명</th>
                           <th>1게임</th>
                           <th>2게임</th>
                           <th>3게임</th>
@@ -2922,7 +2927,7 @@ const Scores = () => {
                             {inlineEditingId === score.id ? (
                               <>
                                 {isAdmin && (
-                                  <td>
+                                  <td className="checkbox-col">
                                     <input
                                       type="checkbox"
                                       checked={selectedScores.includes(
@@ -2935,7 +2940,7 @@ const Scores = () => {
                                     />
                                   </td>
                                 )}
-                                <td>
+                                <td className="member-name-col">
                                   <select
                                     className="inline-select"
                                     value={inlineEditData.member_name}
@@ -3044,7 +3049,7 @@ const Scores = () => {
                             ) : (
                               <>
                                 {isAdmin && (
-                                  <td>
+                                  <td className="checkbox-col">
                                     <input
                                       type="checkbox"
                                       checked={selectedScores.includes(
@@ -3057,7 +3062,9 @@ const Scores = () => {
                                     />
                                   </td>
                                 )}
-                                <td>{score.member_name}</td>
+                                <td className="member-name-col">
+                                  {score.member_name}
+                                </td>
                                 <td>{score.score1}</td>
                                 <td>{score.score2}</td>
                                 <td>{score.score3}</td>
