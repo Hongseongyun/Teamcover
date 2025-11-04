@@ -249,8 +249,61 @@ def update_member(member_id):
         # 운영진 여부 업데이트 (admin/super_admin만 수정 가능)
         if current_user and current_user.role in ['admin', 'super_admin']:
             is_staff_value = data.get('is_staff', False)
+            prev_is_staff = member.is_staff
             print(f"[DEBUG] Setting is_staff to: {is_staff_value}")
             member.is_staff = is_staff_value
+            
+            # 운영진 변경 시 납입 내역의 면제 상태 자동 업데이트
+            if prev_is_staff != is_staff_value:
+                from models import Payment
+                current_year = datetime.utcnow().year
+                
+                if not is_staff_value:
+                    # 운영진에서 일반 회원으로 변경: 현재 연도의 면제 해제
+                    current_year_payments = Payment.query.filter(
+                        Payment.member_id == member_id,
+                        Payment.payment_type == 'monthly',
+                        Payment.month.like(f'{current_year}-%'),
+                        Payment.is_exempt == True
+                    ).all()
+                    
+                    for payment in current_year_payments:
+                        payment.is_exempt = False
+                        
+                else:
+                    # 일반 회원에서 운영진으로 변경: 현재 연도의 1년 면제 적용
+                    # 현재 연도의 모든 월회비 납입 내역 조회
+                    current_year_payments = Payment.query.filter(
+                        Payment.member_id == member_id,
+                        Payment.payment_type == 'monthly',
+                        Payment.month.like(f'{current_year}-%')
+                    ).all()
+                    
+                    # 해당 월의 납입 내역이 없으면 생성, 있으면 면제로 설정
+                    for month_num in range(1, 13):
+                        month_key = f'{current_year}-{str(month_num).zfill(2)}'
+                        existing_payment = next(
+                            (p for p in current_year_payments if p.month == month_key),
+                            None
+                        )
+                        
+                        if existing_payment:
+                            # 기존 납입 내역이 있으면 면제로 설정
+                            existing_payment.is_exempt = True
+                            existing_payment.is_paid = False  # 면제는 납입 완료가 아님
+                        else:
+                            # 납입 내역이 없으면 새로 생성 (면제 상태)
+                            new_payment = Payment(
+                                member_id=member_id,
+                                payment_type='monthly',
+                                amount=5000,  # 월회비 기본 금액
+                                payment_date=datetime.strptime(f'{month_key}-01', '%Y-%m-%d').date(),
+                                month=month_key,
+                                is_paid=False,
+                                is_exempt=True,
+                                note='운영진 회비 면제'
+                            )
+                            db.session.add(new_payment)
         else:
             print(f"[DEBUG] User doesn't have permission to update is_staff")
         

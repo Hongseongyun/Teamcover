@@ -1864,8 +1864,10 @@ const Payments = () => {
                     <tr key={member.id}>
                       <td className="member-name">{member.name}</td>
                       {months.map((month) => {
-                        // 운영진 회원은 면제 표시
-                        if (member.is_staff) {
+                        // 운영진 회원은 현재 연도에만 면제 표시
+                        // month는 "YYYY-MM" 형식이므로 연도 추출
+                        const monthYear = parseInt(month.split('-')[0]);
+                        if (member.is_staff && monthYear === selectedYear) {
                           return (
                             <td key={month} className="status-cell">
                               <span
