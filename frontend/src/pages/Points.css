@@ -2009,7 +2009,7 @@
   opacity: 1;
 }
 
-.member-name {
+.member-balance-card .member-name {
   font-weight: 600;
   color: #1f2937;
   font-size: 0.9rem;
@@ -2019,6 +2019,14 @@
   text-overflow: ellipsis;
   max-width: 100%;
   letter-spacing: -0.025em;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  position: static !important;
+  left: auto !important;
+  z-index: auto !important;
 }
 
 .member-balance {
