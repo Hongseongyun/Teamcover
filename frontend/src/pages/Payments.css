@@ -612,7 +612,8 @@
 
 .monthly-calendar-table table {
   width: 100%;
-  min-width: 1200px;
+  min-width: 0; /* 12개월이 한 화면에 보이도록 최소 너비 제한 해제 */
+  table-layout: fixed; /* 남은 너비를 12개월 열에 균등 분배 */
   border-collapse: collapse;
 }
 
@@ -622,6 +623,14 @@
   text-align: center;
   border: 1px solid var(--toss-gray-200);
   font-size: 0.875rem;
+  overflow: hidden; /* 고정 레이아웃에서 넘침 방지 */
+  text-overflow: ellipsis;
+}
+
+/* 첫 번째(회원) 열은 고정 너비로, 나머지 12개월은 균등 분배 */
+.monthly-calendar-table th.member-col,
+.monthly-calendar-table td.member-name {
+  width: 120px;
 }
 
 .monthly-calendar-table th {
@@ -1102,7 +1111,8 @@
   }
 
   .monthly-calendar-table table {
-    min-width: 800px;
+    min-width: 0;
+    table-layout: fixed;
   }
 
   .section-card {
@@ -1201,7 +1211,8 @@
   }
 
   .monthly-calendar-table table {
-    min-width: 500px;
+    min-width: 0;
+    table-layout: fixed;
     font-size: 0.75rem;
   }
 
