@@ -97,8 +97,9 @@ const Payments = () => {
   });
   // 금액 스피너를 위한 이전 값 추적
   const prevAmountRef = useRef(null);
-  // 납입 내역 페이지네이션
+  // 납입 내역 페이지네이션 및 월 필터
   const [displayedPaymentCount, setDisplayedPaymentCount] = useState(10);
+  const [selectedPaymentMonth, setSelectedPaymentMonth] = useState(''); // 목록 보기 월 필터(YYYY-MM)
 
   const loadPayments = useCallback(async () => {
     try {
@@ -1233,7 +1234,7 @@ const Payments = () => {
                     labels: balanceSeries.labels,
                     datasets: [
                       {
-                        label: '잔액 추이(예측 포함)',
+                        label: '잔액',
                         data: balanceSeries.data,
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -2533,7 +2534,69 @@ const Payments = () => {
       {viewMode === 'list' && (
         <div className="payments-section">
           <div className="section-card">
-            <h3 className="section-title">납입 내역</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <h3 className="section-title" style={{ marginBottom: 0 }}>
+                납입 내역
+              </h3>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <label
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  월별 보기:
+                </label>
+                <select
+                  value={selectedPaymentMonth}
+                  onChange={(e) => {
+                    setSelectedPaymentMonth(e.target.value);
+                    setDisplayedPaymentCount(10);
+                  }}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid var(--toss-gray-300)',
+                    borderRadius: 'var(--toss-radius)',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    maxWidth: '150px',
+                    minWidth: '100px',
+                  }}
+                >
+                  <option value="">전체</option>
+                  {(() => {
+                    // 납입 완료이고 면제가 아닌 내역이 존재하는 달만 표시
+                    const months = new Set();
+                    payments
+                      .filter(
+                        (p) => p.is_paid && !p.is_exempt && p.payment_date
+                      )
+                      .forEach((p) => {
+                        const d = new Date(p.payment_date);
+                        const key = `${d.getFullYear()}-${String(
+                          d.getMonth() + 1
+                        ).padStart(2, '0')}`;
+                        months.add(key);
+                      });
+                    return Array.from(months).sort().reverse();
+                  })().map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="payments-table">
               <table>
                 <thead>
@@ -2657,6 +2720,17 @@ const Payments = () => {
                       ...processedPayments,
                       ...nonMonthlyPayments,
                     ].filter((p) => !hiddenPaymentIds.has(p.id));
+
+                    // 월별 필터 적용 (선택 시 해당 월만 표시)
+                    if (selectedPaymentMonth) {
+                      finalPayments = finalPayments.filter((p) => {
+                        const d = new Date(p.payment_date);
+                        const key = `${d.getFullYear()}-${String(
+                          d.getMonth() + 1
+                        ).padStart(2, '0')}`;
+                        return key === selectedPaymentMonth;
+                      });
+                    }
 
                     // 날짜 최신순 정렬 (내림차순)
                     finalPayments.sort((a, b) => {
