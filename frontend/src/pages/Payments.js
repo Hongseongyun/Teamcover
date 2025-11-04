@@ -126,11 +126,6 @@ const Payments = () => {
       return;
     }
 
-    // 초기 잔액: 2024년 10월 1,540,000원
-    const initialBalance = 1540000;
-    const initialDate = new Date('2024-10-01');
-    const graphStartDate = new Date('2025-10-01');
-
     // 장부 항목을 날짜순으로 정렬
     const sortedItems = [...ledgerItems].sort((a, b) => {
       const dateA = new Date(a.event_date);
@@ -138,31 +133,9 @@ const Payments = () => {
       return dateA - dateB;
     });
 
-    // 2025년 10월 1일 이전의 항목들로 초기 잔액 계산
-    const itemsBeforeOct2025 = sortedItems.filter((item) => {
-      const itemDate = new Date(item.event_date);
-      return itemDate >= initialDate && itemDate < graphStartDate;
-    });
-
-    // 2025년 10월 1일 이후의 항목만 필터링 (그래프용)
-    const itemsAfterOct2025 = sortedItems.filter((item) => {
-      const itemDate = new Date(item.event_date);
-      return itemDate >= graphStartDate;
-    });
-
-    // 2025년 10월 1일 시점의 잔액 계산
-    let balanceAtOct2025 = initialBalance;
-    itemsBeforeOct2025.forEach((item) => {
-      if (item.entry_type === 'credit') {
-        balanceAtOct2025 += parseInt(item.amount) || 0;
-      } else if (item.entry_type === 'debit') {
-        balanceAtOct2025 -= parseInt(item.amount) || 0;
-      }
-    });
-
-    // 월별로 그룹화하여 처리 (2025년 10월 이후만)
+    // 월별로 그룹화하여 처리
     const monthlyData = {};
-    itemsAfterOct2025.forEach((item) => {
+    sortedItems.forEach((item) => {
       const date = new Date(item.event_date);
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
@@ -179,33 +152,50 @@ const Payments = () => {
       }
     });
 
-    // 그래프 데이터 생성 (2025년 10월부터)
+    // 그래프 시작 월의 시작 잔액 계산
+    // 첫 번째 월의 첫 항목이 "수기"이고 "잔여 회비"인 경우, 그 금액을 시작 잔액으로 사용
+    const firstMonth = Object.keys(monthlyData).sort()[0];
+    const firstMonthItems = sortedItems.filter((item) => {
+      const date = new Date(item.event_date);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      return monthKey === firstMonth;
+    });
+
+    // 첫 달의 첫 항목이 "수기"이고 "잔여 회비"인 경우, 그 금액을 시작 잔액으로 사용
+    let initialBalance = 0;
+    if (firstMonthItems.length > 0) {
+      const firstItem = firstMonthItems[0];
+      if (
+        firstItem.source === '수기' &&
+        (firstItem.note === '잔여 회비' || firstItem.note?.includes('잔여'))
+      ) {
+        // 첫 항목이 잔여 회비인 경우, 그 금액을 시작 잔액으로 설정
+        initialBalance = parseInt(firstItem.amount) || 0;
+        // 첫 달의 잔여 회비는 초기 잔액이므로 첫 달 계산에서 제외
+        if (firstItem.entry_type === 'credit') {
+          monthlyData[firstMonth].credit -= initialBalance;
+        } else if (firstItem.entry_type === 'debit') {
+          monthlyData[firstMonth].debit -= initialBalance;
+        }
+      }
+    }
+
+    // 그래프 데이터 생성
     const labels = [];
     const data = [];
-    let runningBalance = balanceAtOct2025;
+    let runningBalance = initialBalance;
 
     // 월별로 순회하며 그래프 데이터 생성
     const sortedMonths = Object.keys(monthlyData).sort();
 
-    // 2025-10이 있으면 먼저 처리
-    if (monthlyData['2025-10']) {
-      const monthData = monthlyData['2025-10'];
-      const netChange = monthData.credit - monthData.debit;
-      runningBalance += netChange;
-      labels.push('2025-10');
-      data.push(runningBalance);
-    } else if (itemsAfterOct2025.length > 0) {
-      // 2025-10 데이터가 없어도 그래프 시작점으로 추가
-      labels.push('2025-10');
-      data.push(balanceAtOct2025);
-    }
-
-    // 나머지 월들 처리
     sortedMonths.forEach((monthKey) => {
-      if (monthKey === '2025-10') return; // 이미 처리했음
-
       const monthData = monthlyData[monthKey];
       const netChange = monthData.credit - monthData.debit;
+
+      // 첫 달: 초기 잔액을 표시 (잔여 회비가 있는 경우 이미 initialBalance에 설정됨)
+      // 그 다음 변경사항을 더함
       runningBalance += netChange;
       labels.push(monthKey);
       data.push(runningBalance);
@@ -213,37 +203,27 @@ const Payments = () => {
 
     setBalanceSeries({ labels, data });
 
-    // 현재 잔액 계산 (장부의 총합)
-    const totalCredit = sortedItems.reduce(
-      (sum, item) =>
-        sum + (item.entry_type === 'credit' ? parseInt(item.amount) || 0 : 0),
-      0
-    );
-    const totalDebit = sortedItems.reduce(
-      (sum, item) =>
-        sum + (item.entry_type === 'debit' ? parseInt(item.amount) || 0 : 0),
-      0
-    );
-    const calculatedBalance = initialBalance + totalCredit - totalDebit;
-    setCurrentBalance(calculatedBalance);
+    // 현재 잔액 계산 (최종 runningBalance 사용)
+    setCurrentBalance(runningBalance);
   }, [ledgerItems]);
 
   // 장부 로드
   const loadFundLedger = useCallback(async () => {
     try {
       setLedgerLoading(true);
-      const res = await paymentAPI.getFundLedger(
-        startMonth ? { from_month: startMonth } : {}
-      );
+      // 수기 항목은 항상 조회되도록 from_month 필터 제거
+      const res = await paymentAPI.getFundLedger({});
       if (res.data?.success) {
         setLedgerItems(res.data.items || []);
+      } else {
+        console.error('장부 조회 실패:', res.data?.message);
       }
     } catch (e) {
-      // ignore
+      console.error('장부 조회 오류:', e);
     } finally {
       setLedgerLoading(false);
     }
-  }, [startMonth]);
+  }, []);
 
   // 장부 데이터가 변경되면 잔액 및 그래프 재계산
   useEffect(() => {
@@ -260,13 +240,19 @@ const Payments = () => {
     }
     try {
       setLedgerLoading(true);
-      await paymentAPI.addFundLedger({
+      const response = await paymentAPI.addFundLedger({
         event_date: ledgerForm.event_date,
         entry_type: ledgerForm.entry_type,
         amount: parseInt(ledgerForm.amount, 10),
         source: 'manual',
         note: ledgerForm.note || '',
       });
+
+      if (response.data && !response.data.success) {
+        alert(response.data.message || '장부 저장 실패');
+        return;
+      }
+
       setLedgerForm({
         event_date: new Date().toISOString().split('T')[0],
         entry_type: 'credit',
@@ -275,7 +261,10 @@ const Payments = () => {
       });
       await loadFundLedger();
     } catch (e) {
-      alert('장부 저장 실패');
+      console.error('장부 저장 오류:', e);
+      const errorMessage =
+        e.response?.data?.message || e.message || '장부 저장 실패';
+      alert(errorMessage);
     } finally {
       setLedgerLoading(false);
     }
@@ -1503,34 +1492,11 @@ const Payments = () => {
                       });
 
                       // 최종 목록: 처리된 월회비 장부 항목 + 기타 장부 항목
+                      // DB에서 가져온 실제 장부 항목만 사용 (하드코딩된 항목 제거)
                       let finalLedgerItems = [
                         ...processedLedgerItems,
                         ...otherLedgerItems,
                       ].filter((item) => !hiddenLedgerIds.has(item.id));
-
-                      // 2025년 10월 잔여 회비 항목 추가
-                      const remainingFeeItem = {
-                        id: 'remaining_fee_2025_10',
-                        event_date: '2025-10-01',
-                        entry_type: 'credit',
-                        amount: 1540000,
-                        source: 'manual',
-                        payment_id: null,
-                        note: '잔여 회비',
-                      };
-                      finalLedgerItems.push(remainingFeeItem);
-
-                      // 2025년 11월부터의 기록만 표시 (2025년 10월 잔여 회비 항목은 포함)
-                      finalLedgerItems = finalLedgerItems.filter((item) => {
-                        // 잔여 회비 항목은 항상 포함
-                        if (item.id === 'remaining_fee_2025_10') {
-                          return true;
-                        }
-                        // 나머지는 2025년 11월부터만
-                        const itemDate = new Date(item.event_date);
-                        const cutoffDate = new Date('2025-11-01');
-                        return itemDate >= cutoffDate;
-                      });
 
                       // 날짜순으로 정렬
                       finalLedgerItems.sort((a, b) =>
