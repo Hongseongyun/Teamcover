@@ -1081,31 +1081,6 @@ const Payments = () => {
               <div className="balance-row">
                 <span className="label">현재 잔액</span>
                 <span className="value">{formatNumber(currentBalance)}원</span>
-                {isAdmin && (
-                  <button
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={async () => {
-                      const v = prompt(
-                        '현재 잔액을 입력하세요',
-                        currentBalance.toString()
-                      );
-                      if (v === null) return;
-                      const n = parseInt(v, 10);
-                      if (isNaN(n)) return;
-                      try {
-                        await paymentAPI.updateBalance({
-                          balance: n,
-                        });
-                        // 장부 데이터를 다시 로드하여 재계산
-                        await loadFundLedger();
-                      } catch (e) {
-                        alert('잔액 저장에 실패했습니다.');
-                      }
-                    }}
-                  >
-                    수정
-                  </button>
-                )}
               </div>
               {(() => {
                 const today = new Date();
@@ -1182,7 +1157,15 @@ const Payments = () => {
                     plugins: { legend: { display: false } },
                     scales: {
                       x: { grid: { display: false } },
-                      y: { grid: { color: 'rgba(0,0,0,0.05)' } },
+                      y: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                          stepSize: 100000, // 10만원 단위
+                          callback: function (value) {
+                            return (value / 10000).toFixed(0) + '만';
+                          },
+                        },
+                      },
                     },
                   }}
                 />
