@@ -848,6 +848,10 @@
   margin-bottom: 1.5rem;
 }
 
+.game-payment-header .section-title {
+  margin-bottom: 0;
+}
+
 .game-filter {
   display: flex;
   gap: 1rem;
@@ -1164,6 +1168,17 @@
   .filter-group {
     width: 100%;
   }
+
+  .btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  /* 납입내역 테이블의 버튼 스타일 */
+  .payments-table .btn-sm {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.8rem !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1205,6 +1220,17 @@
   .btn {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
+  }
+
+  .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  /* 납입내역 테이블의 버튼 스타일 */
+  .payments-table .btn-sm {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.75rem !important;
   }
 
   .month-col {
@@ -1663,6 +1689,17 @@
     width: 100%;
     padding: 0.75rem;
     font-size: 0.9rem;
+  }
+
+  .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  /* 납입내역 테이블의 버튼 스타일 */
+  .payments-table .btn-sm {
+    padding: 0.3rem 0.6rem !important;
+    font-size: 0.7rem !important;
   }
 
   /* 섹션 카드 패딩 조정 */

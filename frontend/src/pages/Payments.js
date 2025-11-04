@@ -1278,7 +1278,7 @@ const Payments = () => {
                 marginBottom: '1.5rem',
               }}
             >
-              <h3 className="section-title">장부 관리 (수기 조정)</h3>
+              <h3 className="section-title">장부 관리</h3>
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               >
@@ -1928,7 +1928,7 @@ const Payments = () => {
           </div>
 
           <div className="section-card">
-            <h3 className="section-title">월별 납입 현황 (월회비)</h3>
+            <h3 className="section-title">월회비 납입 현황</h3>
             <div className="monthly-calendar-table">
               <table>
                 <thead>
@@ -2334,14 +2334,8 @@ const Payments = () => {
           {/* 정기전 게임비 관리 섹션 */}
           {isAdmin && (
             <div className="section-card">
-              <h3 className="section-title">정기전 게임비 관리 (날짜별)</h3>
-              <div
-                style={{
-                  padding: '1rem',
-                  textAlign: 'center',
-                  marginBottom: '1rem',
-                }}
-              >
+              <div className="game-payment-header">
+                <h3 className="section-title">정기전 게임비 관리</h3>
                 <button
                   className="btn btn-primary"
                   onClick={openGamePaymentModal}
