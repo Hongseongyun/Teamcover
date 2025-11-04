@@ -429,6 +429,9 @@
 
 .form-section {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .section-card {
@@ -437,6 +440,9 @@
   padding: 2rem;
   box-shadow: var(--toss-shadow);
   border: 1px solid var(--toss-gray-200);
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .section-title {
@@ -454,13 +460,66 @@
 
 .form-row {
   display: flex;
-  gap: 0.75rem;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--toss-gray-700);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+}
+
+.form-group input:disabled,
+.form-group select:disabled {
+  background-color: var(--toss-gray-100);
+  color: var(--toss-gray-500);
+}
+
+/* 기본 flex 비율 (데스크톱) */
+.form-group-name,
+.form-group-phone {
+  flex: 2;
+}
+
+.form-group-gender,
+.form-group-staff {
+  flex: 1;
+}
+
+.form-group-note {
+  flex: 2;
+}
+
+.form-group-staff {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.form-group-staff label {
+  cursor: pointer;
+  white-space: nowrap;
+  margin-bottom: 0;
 }
 
 .form-group.full-width {
@@ -944,28 +1003,6 @@
   }
 }
 
-/* 작은 모바일 (360px 이하) - 회원 등록 폼 */
-@media (max-width: 360px) {
-  .member-form .form-row {
-    flex-wrap: wrap;
-  }
-
-  /* 첫 줄: 이름, 전화번호 (50%) */
-  .member-form .form-row > div:first-child,
-  .member-form .form-row > div:nth-child(2) {
-    flex: 0 0 calc(50% - 0.5rem);
-    min-width: 0;
-  }
-
-  /* 둘째 줄: 성별, 비고, 운영진 (33.33%) */
-  .member-form .form-row > div:nth-child(3),
-  .member-form .form-row > div:nth-child(4),
-  .member-form .form-row > div:nth-child(5) {
-    flex: 0 0 calc(33.33% - 0.4rem);
-    min-width: 0;
-  }
-}
-
 /* 모바일 반응형 (1000px 이하) - 추가 스타일 */
 @media (max-width: 1000px) {
   .form-row {
@@ -978,6 +1015,7 @@
   }
 
   /* 첫 줄: 이름, 전화번호 */
+  /* 360px 이하는 별도 규칙이 있으므로 제외 */
   .member-form .form-row > div:first-child,
   .member-form .form-row > div:nth-child(2) {
     flex: 0 0 calc(50% - 0.5rem);
@@ -985,6 +1023,7 @@
   }
 
   /* 둘째 줄: 성별, 비고, 운영진 */
+  /* 360px 이하는 별도 규칙이 있으므로 제외 */
   .member-form .form-row > div:nth-child(3),
   .member-form .form-row > div:nth-child(4),
   .member-form .form-row > div:nth-child(5) {
@@ -1139,6 +1178,46 @@
   .members-table tbody tr:has(.inline-select) {
     height: auto;
     min-height: 60px;
+  }
+}
+
+/* 작은 모바일 (360px 이하) - 회원 등록 폼 */
+/* 1000px 미디어 쿼리 뒤에 배치하여 우선순위 확보 */
+@media (max-width: 360px) {
+  .member-form .form-row {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  /* 첫 줄: 이름(30%), 전화번호(70%) - 비율 3:7 */
+  /* 전체 너비에서 gap 1개(0.5rem)를 빼고 비율 적용 */
+  .member-form .form-row > div:first-child {
+    flex: 0 0 calc((100% - 0.5rem) * 0.35) !important;
+    min-width: 0 !important;
+  }
+
+  .member-form .form-row > div:nth-child(2) {
+    flex: 0 0 calc((100% - 0.5rem) * 0.65) !important;
+    min-width: 0 !important;
+  }
+
+  /* 둘째 줄: 성별(30%), 비고(60%), 운영진(10%) - 비율 3:6:1 */
+  /* 전체 너비에서 gap 2개(1rem) + margin-right(0.25rem) = 1.25rem을 빼고 비율 적용 */
+  .member-form .form-row > div:nth-child(3) {
+    flex: 0 0 calc((100% - 1.25rem) * 0.35) !important;
+    min-width: 0 !important;
+  }
+
+  .member-form .form-row > div:nth-child(4) {
+    flex: 0 0 calc((100% - 1.25rem) * 0.55) !important;
+    min-width: 0 !important;
+    margin-right: 0.25rem !important; /* 비고와 운영진 사이 여백 추가 */
+  }
+
+  .member-form .form-row > div:nth-child(5) {
+    flex: 0 0 calc((100% - 1.25rem) * 0.1) !important;
+    min-width: 0 !important;
   }
 }
 

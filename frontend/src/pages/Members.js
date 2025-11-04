@@ -635,20 +635,9 @@ const Members = () => {
               onSubmit={handleSubmit}
               className={`member-form ${submitting ? 'submitting' : ''}`}
             >
-              <div
-                className="form-row"
-                style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}
-              >
-                <div style={{ flex: 2 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    이름 *
-                  </label>
+              <div className="form-row">
+                <div className="form-group form-group-name">
+                  <label>이름 *</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -657,24 +646,10 @@ const Members = () => {
                     }
                     required
                     disabled={submitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.5rem',
-                    }}
                   />
                 </div>
-                <div style={{ flex: 2 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    전화번호
-                  </label>
+                <div className="form-group form-group-phone">
+                  <label>전화번호</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -682,52 +657,24 @@ const Members = () => {
                       setFormData({ ...formData, phone: e.target.value })
                     }
                     disabled={submitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.5rem',
-                    }}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    성별
-                  </label>
+                <div className="form-group form-group-gender">
+                  <label>성별</label>
                   <select
                     value={formData.gender}
                     onChange={(e) =>
                       setFormData({ ...formData, gender: e.target.value })
                     }
                     disabled={submitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.5rem',
-                    }}
                   >
                     <option value="">선택</option>
                     <option value="남">남</option>
                     <option value="여">여</option>
                   </select>
                 </div>
-                <div style={{ flex: 2 }}>
-                  <label
-                    style={{
-                      display: 'block',
-                      marginBottom: '0.5rem',
-                      fontWeight: 500,
-                    }}
-                  >
-                    비고
-                  </label>
+                <div className="form-group form-group-note">
+                  <label>비고</label>
                   <input
                     type="text"
                     value={formData.note}
@@ -735,24 +682,10 @@ const Members = () => {
                       setFormData({ ...formData, note: e.target.value })
                     }
                     disabled={submitting}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '0.5rem',
-                    }}
                   />
                 </div>
                 {isAdmin && (
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      paddingBottom: '0.5rem',
-                    }}
-                  >
+                  <div className="form-group form-group-staff">
                     <input
                       type="checkbox"
                       checked={formData.is_staff}
@@ -764,9 +697,7 @@ const Members = () => {
                       }
                       disabled={submitting}
                     />
-                    <label style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                      운영진
-                    </label>
+                    <label>운영진</label>
                   </div>
                 )}
               </div>
