@@ -179,6 +179,52 @@ def add_member():
         )
         
         db.session.add(new_member)
+        db.session.flush()  # member.id를 얻기 위해 flush
+        
+        # 운영진으로 추가된 경우 현재 연도 전체 면제 적용
+        if is_staff:
+            from models import Payment
+            now = datetime.utcnow()
+            current_year = now.year
+            current_month = now.month
+            
+            print(f"[DEBUG] 신규 운영진 추가: {name}, {current_year}년 전체 면제 적용")
+            
+            # 현재 연도의 1월부터 12월까지 면제 적용
+            for month_num in range(1, 13):
+                month_key = f'{current_year}-{str(month_num).zfill(2)}'
+                
+                # 해당 월의 납입 내역이 이미 있는지 확인
+                existing_payment = Payment.query.filter(
+                    Payment.member_id == new_member.id,
+                    Payment.payment_type == 'monthly',
+                    Payment.month == month_key
+                ).first()
+                
+                if existing_payment:
+                    # 기존 납입 내역이 있으면 면제로 설정
+                    existing_payment.is_exempt = True
+                    existing_payment.is_paid = False
+                    if '운영진' not in (existing_payment.note or ''):
+                        existing_payment.note = (existing_payment.note or '').strip()
+                        if existing_payment.note:
+                            existing_payment.note += ', 운영진 회비 면제'
+                        else:
+                            existing_payment.note = '운영진 회비 면제'
+                else:
+                    # 납입 내역이 없으면 새로 생성 (면제 상태)
+                    new_payment = Payment(
+                        member_id=new_member.id,
+                        payment_type='monthly',
+                        amount=5000,
+                        payment_date=datetime.strptime(f'{month_key}-01', '%Y-%m-%d').date(),
+                        month=month_key,
+                        is_paid=False,
+                        is_exempt=True,
+                        note='운영진 회비 면제'
+                    )
+                    db.session.add(new_payment)
+        
         db.session.commit()
         
         result = {
@@ -223,20 +269,35 @@ def update_member(member_id):
         
         member.name = name
         # 마스킹 값 방어: '*'를 포함한 값 또는 전형적 마스킹 패턴(***-****-****)은 무시하고 기존 값 유지
-        incoming_phone = (data.get('phone', '') or '').strip()
-        if incoming_phone and ('*' in incoming_phone or incoming_phone == '***-****-****'):
-            pass  # 기존 member.phone 유지
-        else:
-            member.phone = incoming_phone
+        # 프론트엔드에서 phone 필드를 보내지 않으면 (None) 기존 값 유지
+        if 'phone' in data:
+            incoming_phone = (data.get('phone') or '').strip() if data.get('phone') else ''
+            if incoming_phone and ('*' in incoming_phone or incoming_phone == '***-****-****'):
+                pass  # 기존 member.phone 유지
+            else:
+                member.phone = incoming_phone
+        # phone 필드가 요청에 없으면 기존 값 유지 (아무것도 하지 않음)
         member.gender = data.get('gender', '').strip()
         member.level = data.get('level', '').strip()  # 레거시 호환성
-        member.tier = data.get('tier', '').strip()
-        # 이메일도 마스킹 패턴(*** 포함)일 경우 기존 값 유지
-        incoming_email = (data.get('email', '') or '').strip()
-        if incoming_email and ('***' in incoming_email):
-            pass
+        # 티어는 average_score 기반으로 자동 계산되므로, 프론트엔드에서 보낸 값이 있으면 사용하고 없으면 자동 계산
+        incoming_tier = data.get('tier', '').strip() if data.get('tier') else None
+        if incoming_tier:
+            member.tier = incoming_tier
+        # 티어가 없고 average_score가 있으면 자동 계산
+        elif member.average_score is not None:
+            member.tier = member.calculate_tier_from_score()
         else:
-            member.email = incoming_email
+            # average_score도 없으면 티어 유지 (기존 값 그대로)
+            pass
+        # 이메일도 마스킹 패턴(*** 포함)일 경우 기존 값 유지
+        # 프론트엔드에서 email 필드를 보내지 않으면 (None) 기존 값 유지
+        if 'email' in data:
+            incoming_email = (data.get('email') or '').strip() if data.get('email') else ''
+            if incoming_email and ('***' in incoming_email):
+                pass
+            else:
+                member.email = incoming_email
+        # email 필드가 요청에 없으면 기존 값 유지 (아무것도 하지 않음)
         member.note = data.get('note', '').strip()
         
         # 가입일 업데이트
@@ -251,59 +312,140 @@ def update_member(member_id):
             is_staff_value = data.get('is_staff', False)
             prev_is_staff = member.is_staff
             print(f"[DEBUG] Setting is_staff to: {is_staff_value}")
+            print(f"[DEBUG] prev_is_staff: {prev_is_staff}, is_staff_value: {is_staff_value}, 변경 여부: {prev_is_staff != is_staff_value}")
             member.is_staff = is_staff_value
             
-            # 운영진 변경 시 납입 내역의 면제 상태 자동 업데이트
+            # 운영진 변경 시 납입 내역의 면제 상태 자동 업데이트 (다음 달부터 적용)
             if prev_is_staff != is_staff_value:
+                print(f"[DEBUG] 운영진 상태 변경 감지! prev={prev_is_staff} -> new={is_staff_value}")
                 from models import Payment
-                current_year = datetime.utcnow().year
+                now = datetime.utcnow()
+                current_year = now.year
+                current_month = now.month
+                
+                # 다음 달 계산 (12월이면 다음 해 1월)
+                if current_month == 12:
+                    start_year = current_year + 1
+                    start_month = 1
+                else:
+                    start_year = current_year
+                    start_month = current_month + 1
                 
                 if not is_staff_value:
-                    # 운영진에서 일반 회원으로 변경: 현재 연도의 면제 해제
-                    current_year_payments = Payment.query.filter(
+                    # 운영진에서 일반 회원으로 변경: 다음 달부터 면제 해제
+                    # 다음 달부터 미래의 모든 운영진 면제만 해제
+                    start_month_key = f'{start_year}-{str(start_month).zfill(2)}'
+                    
+                    print(f"[DEBUG] 운영진 해제: 현재 {current_year}년 {current_month}월, 다음 달부터 {start_year}년 {start_month}월부터 면제 해제")
+                    
+                    # 모든 면제된 납입 내역을 조회 (운영진 면제만 - note에 '운영진'이 포함된 경우만)
+                    all_exempt_payments = Payment.query.filter(
                         Payment.member_id == member_id,
                         Payment.payment_type == 'monthly',
-                        Payment.month.like(f'{current_year}-%'),
                         Payment.is_exempt == True
                     ).all()
                     
-                    for payment in current_year_payments:
-                        payment.is_exempt = False
-                        
-                else:
-                    # 일반 회원에서 운영진으로 변경: 현재 연도의 1년 면제 적용
-                    # 현재 연도의 모든 월회비 납입 내역 조회
-                    current_year_payments = Payment.query.filter(
-                        Payment.member_id == member_id,
-                        Payment.payment_type == 'monthly',
-                        Payment.month.like(f'{current_year}-%')
-                    ).all()
+                    print(f"[DEBUG] 조회된 면제 납입 내역 수: {len(all_exempt_payments)}")
+                    for p in all_exempt_payments:
+                        print(f"[DEBUG] 조회된 면제: month={p.month}, note={p.note}, is_exempt={p.is_exempt}")
                     
-                    # 해당 월의 납입 내역이 없으면 생성, 있으면 면제로 설정
-                    for month_num in range(1, 13):
-                        month_key = f'{current_year}-{str(month_num).zfill(2)}'
-                        existing_payment = next(
-                            (p for p in current_year_payments if p.month == month_key),
-                            None
-                        )
+                    # 다음 달부터의 운영진 면제만 해제
+                    exempt_count = 0
+                    skip_count = 0
+                    for payment in all_exempt_payments:
+                        if not payment.month:
+                            continue
                         
-                        if existing_payment:
-                            # 기존 납입 내역이 있으면 면제로 설정
-                            existing_payment.is_exempt = True
-                            existing_payment.is_paid = False  # 면제는 납입 완료가 아님
-                        else:
-                            # 납입 내역이 없으면 새로 생성 (면제 상태)
-                            new_payment = Payment(
-                                member_id=member_id,
-                                payment_type='monthly',
-                                amount=5000,  # 월회비 기본 금액
-                                payment_date=datetime.strptime(f'{month_key}-01', '%Y-%m-%d').date(),
-                                month=month_key,
-                                is_paid=False,
-                                is_exempt=True,
-                                note='운영진 회비 면제'
-                            )
-                            db.session.add(new_payment)
+                        # note에 '운영진'이 포함되어 있지 않으면 스킵 (운영진 면제가 아님)
+                        if not payment.note or '운영진' not in payment.note:
+                            print(f"[DEBUG] 스킵: {payment.month} - note에 '운영진' 없음: {payment.note}")
+                            continue
+                            
+                        # month 필드를 연도와 월로 분리해서 정확히 비교
+                        try:
+                            payment_year, payment_month = map(int, payment.month.split('-'))
+                            
+                            # 다음 달 이후인지 확인 (현재 연도와 정확히 비교)
+                            # 1. 다음 해인 경우: 해제
+                            # 2. 같은 해인 경우: start_month 이상인 경우만 해제
+                            is_future_month = False
+                            if payment_year > current_year:
+                                # 다음 해인 경우 모두 해제
+                                is_future_month = True
+                            elif payment_year == current_year:
+                                # 같은 해인 경우: start_month 이상인 경우만 해제
+                                is_future_month = payment_month >= start_month
+                            # payment_year < current_year인 경우는 과거이므로 해제하지 않음
+                            
+                            print(f"[DEBUG] {payment.month}: payment_year={payment_year}, payment_month={payment_month}, current_year={current_year}, current_month={current_month}, start_year={start_year}, start_month={start_month}, is_future_month={is_future_month}")
+                            
+                            if is_future_month:
+                                # 다음 달부터의 운영진 면제만 해제
+                                print(f"[DEBUG] 면제 해제: {payment.month} - {payment.note}")
+                                payment.is_exempt = False
+                                # 비고에서 운영진 면제 메모 제거
+                                note_parts = payment.note.split(',')
+                                note_parts = [p.strip() for p in note_parts if '운영진' not in p]
+                                payment.note = ', '.join(note_parts) if note_parts else None
+                                exempt_count += 1
+                            else:
+                                print(f"[DEBUG] 스킵 (과거 달): {payment.month} - {payment.note}")
+                                skip_count += 1
+                        except (ValueError, AttributeError) as e:
+                            # month 형식이 잘못된 경우 건너뛰기
+                            print(f"[DEBUG] 에러: {payment.month} 파싱 실패 - {e}")
+                            continue
+                    
+                    print(f"[DEBUG] 면제 해제 완료: {exempt_count}개 해제, {skip_count}개 스킵")
+                else:
+                    # 일반 회원에서 운영진으로 변경: 다음 달부터 면제 적용
+                    # 다음 달부터 현재 연도 말까지 면제 적용
+                    print(f"[DEBUG] 운영진 설정: 현재 {current_year}년 {current_month}월, 다음 달부터 {start_year}년 {start_month}월부터 면제 적용")
+                    
+                    # 현재 연도인 경우에만 처리
+                    if start_year == current_year:
+                        print(f"[DEBUG] 현재 연도 처리: {start_year}년 {start_month}월부터 12월까지")
+                        exempt_applied_count = 0
+                        for month_num in range(start_month, 13):
+                            month_key = f'{start_year}-{str(month_num).zfill(2)}'
+                            
+                            print(f"[DEBUG] 운영진 면제 처리: {month_key}")
+                            
+                            existing_payment = Payment.query.filter(
+                                Payment.member_id == member_id,
+                                Payment.payment_type == 'monthly',
+                                Payment.month == month_key
+                            ).first()
+                            
+                            if existing_payment:
+                                # 기존 납입 내역이 있으면 면제로 설정
+                                print(f"[DEBUG] 기존 납입 내역 발견: {month_key}, 면제로 변경")
+                                existing_payment.is_exempt = True
+                                existing_payment.is_paid = False  # 면제는 납입 완료가 아님
+                                if '운영진' not in (existing_payment.note or ''):
+                                    existing_payment.note = (existing_payment.note or '').strip()
+                                    if existing_payment.note:
+                                        existing_payment.note += ', 운영진 회비 면제'
+                                    else:
+                                        existing_payment.note = '운영진 회비 면제'
+                            else:
+                                # 납입 내역이 없으면 새로 생성 (면제 상태)
+                                print(f"[DEBUG] 새 납입 내역 생성: {month_key}, 면제로 설정")
+                                new_payment = Payment(
+                                    member_id=member_id,
+                                    payment_type='monthly',
+                                    amount=5000,  # 월회비 기본 금액
+                                    payment_date=datetime.strptime(f'{month_key}-01', '%Y-%m-%d').date(),
+                                    month=month_key,
+                                    is_paid=False,
+                                    is_exempt=True,
+                                    note='운영진 회비 면제'
+                                )
+                                db.session.add(new_payment)
+                                exempt_applied_count += 1
+                        print(f"[DEBUG] 운영진 면제 적용 완료: {exempt_applied_count}개 월 처리")
+                    else:
+                        print(f"[DEBUG] 스킵: start_year({start_year}) != current_year({current_year}), 다음 해는 처리하지 않음")
         else:
             print(f"[DEBUG] User doesn't have permission to update is_staff")
         

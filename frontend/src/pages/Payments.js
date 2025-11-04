@@ -1864,15 +1864,21 @@ const Payments = () => {
                     <tr key={member.id}>
                       <td className="member-name">{member.name}</td>
                       {months.map((month) => {
-                        // 운영진 회원은 현재 연도에만 면제 표시
-                        // month는 "YYYY-MM" 형식이므로 연도 추출
-                        const monthYear = parseInt(month.split('-')[0]);
-                        if (member.is_staff && monthYear === selectedYear) {
+                        // 실제 납입 데이터에서 면제 여부 확인 (DB의 is_exempt 값 사용)
+                        const paymentStatus = getPaymentStatus(
+                          member.id,
+                          month,
+                          'monthly'
+                        );
+                        const isExempt = paymentStatus?.is_exempt === true;
+
+                        // 면제인 경우 면제 표시
+                        if (isExempt) {
                           return (
                             <td key={month} className="status-cell">
                               <span
                                 className="payment-status exempt"
-                                title="운영진 회원은 회비 면제"
+                                title="회비 면제"
                               >
                                 면제
                               </span>
@@ -1921,6 +1927,7 @@ const Payments = () => {
                           month,
                           'monthly'
                         );
+
                         return (
                           <td key={month} className="status-cell">
                             {isBeforeJoinDate ? (
@@ -2011,6 +2018,41 @@ const Payments = () => {
                                       disabled={submitting}
                                     >
                                       ✓
+                                    </button>
+                                  );
+                                }
+
+                                // 면제가 해제된 경우 (is_exempt = false, is_paid = false)는 빈 상태로 표시
+                                // 원본 payment의 is_exempt가 false이고, 임시 상태 변경도 없는 경우
+                                const originalIsExempt =
+                                  payment.is_exempt === false;
+                                const noTempExemptChange =
+                                  getTempExemptState(
+                                    paymentId,
+                                    payment.is_exempt
+                                  ) === payment.is_exempt;
+
+                                if (
+                                  originalIsExempt &&
+                                  noTempExemptChange &&
+                                  !isPaid
+                                ) {
+                                  // 빈 상태로 표시 (납입 내역이 없는 것처럼)
+                                  return (
+                                    <button
+                                      className="btn btn-xs btn-add"
+                                      onClick={() =>
+                                        handleQuickAdd(
+                                          member.id,
+                                          month,
+                                          'monthly',
+                                          5000
+                                        )
+                                      }
+                                      disabled={submitting}
+                                      title="납입 추가"
+                                    >
+                                      +
                                     </button>
                                   );
                                 }
