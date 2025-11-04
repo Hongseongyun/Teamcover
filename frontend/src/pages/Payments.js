@@ -87,6 +87,8 @@ const Payments = () => {
   // 장부 관리 상태
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerItems, setLedgerItems] = useState([]);
+  const [displayedLedgerCount, setDisplayedLedgerCount] = useState(10); // 표시할 장부 항목 수
+  const [selectedLedgerMonth, setSelectedLedgerMonth] = useState(''); // 선택된 월 (YYYY-MM 형식, 빈 문자열이면 전체)
   const [ledgerForm, setLedgerForm] = useState({
     event_date: new Date().toISOString().split('T')[0],
     entry_type: 'credit',
@@ -259,6 +261,8 @@ const Payments = () => {
         amount: '',
         note: '',
       });
+      // 새 항목 추가 후 목록 초기화
+      setDisplayedLedgerCount(10);
       await loadFundLedger();
     } catch (e) {
       console.error('장부 저장 오류:', e);
@@ -1192,7 +1196,57 @@ const Payments = () => {
       {isAdmin && (
         <div className="payments-section">
           <div className="section-card">
-            <h3 className="section-title">장부 관리 (수기 조정)</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <h3 className="section-title">장부 관리 (수기 조정)</h3>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                  월별 보기:
+                </label>
+                <select
+                  value={selectedLedgerMonth}
+                  onChange={(e) => {
+                    setSelectedLedgerMonth(e.target.value);
+                    setDisplayedLedgerCount(10); // 월 변경 시 목록 초기화
+                  }}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    border: '1px solid var(--toss-gray-300)',
+                    borderRadius: 'var(--toss-radius)',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="">전체</option>
+                  {(() => {
+                    // 장부 항목에서 고유한 월 목록 추출
+                    const months = new Set();
+                    ledgerItems.forEach((item) => {
+                      if (item.event_date) {
+                        const date = new Date(item.event_date);
+                        const monthKey = `${date.getFullYear()}-${String(
+                          date.getMonth() + 1
+                        ).padStart(2, '0')}`;
+                        months.add(monthKey);
+                      }
+                    });
+                    return Array.from(months).sort().reverse(); // 최신순
+                  })().map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <form className="payment-form" onSubmit={handleLedgerSubmit}>
               <div className="form-row">
                 <div className="form-group" style={{ flex: '0 0 140px' }}>
@@ -1498,9 +1552,21 @@ const Payments = () => {
                         ...otherLedgerItems,
                       ].filter((item) => !hiddenLedgerIds.has(item.id));
 
-                      // 날짜순으로 정렬
+                      // 월별 필터 적용
+                      if (selectedLedgerMonth) {
+                        finalLedgerItems = finalLedgerItems.filter((item) => {
+                          if (!item.event_date) return false;
+                          const date = new Date(item.event_date);
+                          const monthKey = `${date.getFullYear()}-${String(
+                            date.getMonth() + 1
+                          ).padStart(2, '0')}`;
+                          return monthKey === selectedLedgerMonth;
+                        });
+                      }
+
+                      // 최근 날짜순으로 정렬 (내림차순)
                       finalLedgerItems.sort((a, b) =>
-                        a.event_date.localeCompare(b.event_date)
+                        b.event_date.localeCompare(a.event_date)
                       );
 
                       if (finalLedgerItems.length === 0) {
@@ -1521,23 +1587,63 @@ const Payments = () => {
                         return source || '-';
                       };
 
-                      return finalLedgerItems.map((item) => {
-                        const payment = paymentsByPaymentId[item.payment_id];
-                        const memberName = payment ? payment.member_name : '-';
+                      // 표시할 항목 (10개씩)
+                      const displayedItems = finalLedgerItems.slice(
+                        0,
+                        displayedLedgerCount
+                      );
+                      const hasMore =
+                        finalLedgerItems.length > displayedLedgerCount;
 
-                        return (
-                          <tr key={item.id}>
-                            <td>{item.event_date}</td>
-                            <td>
-                              {item.entry_type === 'credit' ? '입금' : '출금'}
-                            </td>
-                            <td>{formatNumber(item.amount)}원</td>
-                            <td>{formatSource(item.source)}</td>
-                            <td>{memberName}</td>
-                            <td>{item.note || '-'}</td>
-                          </tr>
-                        );
-                      });
+                      return (
+                        <>
+                          {displayedItems.map((item) => {
+                            const payment =
+                              paymentsByPaymentId[item.payment_id];
+                            const memberName = payment
+                              ? payment.member_name
+                              : '-';
+
+                            return (
+                              <tr key={item.id}>
+                                <td>{item.event_date}</td>
+                                <td>
+                                  {item.entry_type === 'credit'
+                                    ? '입금'
+                                    : '출금'}
+                                </td>
+                                <td>{formatNumber(item.amount)}원</td>
+                                <td>{formatSource(item.source)}</td>
+                                <td>{memberName}</td>
+                                <td>{item.note || '-'}</td>
+                              </tr>
+                            );
+                          })}
+                          {hasMore && (
+                            <tr>
+                              <td
+                                colSpan="6"
+                                style={{ textAlign: 'center', padding: '1rem' }}
+                              >
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary"
+                                  onClick={() =>
+                                    setDisplayedLedgerCount(
+                                      displayedLedgerCount + 10
+                                    )
+                                  }
+                                >
+                                  더보기 (
+                                  {finalLedgerItems.length -
+                                    displayedLedgerCount}
+                                  개 더)
+                                </button>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
                     })()
                   )}
                 </tbody>
