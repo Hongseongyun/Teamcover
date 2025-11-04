@@ -528,6 +528,7 @@
   padding: 2rem;
   box-shadow: var(--toss-shadow);
   border: 1px solid var(--toss-gray-200);
+  width: 100%;
 }
 
 .section-title {

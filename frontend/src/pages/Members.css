@@ -441,8 +441,6 @@
   box-shadow: var(--toss-shadow);
   border: 1px solid var(--toss-gray-200);
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
 }
 
 .section-title {

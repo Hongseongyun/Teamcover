@@ -854,28 +854,132 @@ const TeamAssignment = () => {
 
       // 이미 팀이 구성된 상태인지 확인
       if (isTeamConfigured && teams.length > 0) {
-        // 기존 팀 상태에서 추가 밸런싱
-        const rebalancedTeams = await rebalanceExistingTeams(teams);
+        // 밸런싱 개선: 각 팀의 1시드를 제외한 선수들을 30번 섞고 다시 팀 배정
 
-        // 상태 업데이트
-        setTeams(rebalancedTeams);
+        // 1단계: 각 팀에서 1시드(가장 높은 에버 선수) 추출 (팀 번호와 함께 저장)
+        const firstSeedsByTeam = []; // [{team_number, player}]
+        const remainingPlayers = [];
+
+        teams.forEach((team) => {
+          // 각 팀의 선수들을 에버 순으로 정렬 (내림차순)
+          const sortedTeamPlayers = [...team.players].sort(
+            (a, b) => b.average - a.average
+          );
+
+          if (sortedTeamPlayers.length > 0) {
+            // 1시드 추출 (가장 높은 에버 선수) - 원래 팀 번호와 함께 저장
+            firstSeedsByTeam.push({
+              team_number: team.team_number,
+              player: sortedTeamPlayers[0],
+            });
+
+            // 나머지 선수들 추가
+            remainingPlayers.push(...sortedTeamPlayers.slice(1));
+          }
+        });
+
+        // 2단계: 나머지 선수들을 랜덤으로 30번 섞기 (정렬하지 않음!)
+        for (let i = 0; i < 30; i++) {
+          // Fisher-Yates 셔플 알고리즘
+          for (let j = remainingPlayers.length - 1; j > 0; j--) {
+            const k = Math.floor(Math.random() * (j + 1));
+            [remainingPlayers[j], remainingPlayers[k]] = [
+              remainingPlayers[k],
+              remainingPlayers[j],
+            ];
+          }
+        }
+
+        // 3단계: 1시드를 각 팀에 먼저 배치하고, 섞인 나머지 선수들을 배치
+        const { team_count, team_size } = teamConfig;
+        const newTeams = [];
+
+        // 팀 초기화 및 1시드 배치
+        for (let i = 1; i <= team_count; i++) {
+          const firstSeed = firstSeedsByTeam.find(
+            (seed) => seed.team_number === i
+          );
+          newTeams.push({
+            team_number: i,
+            players: firstSeed ? [firstSeed.player] : [],
+            total_average: firstSeed ? firstSeed.player.average : 0,
+            average_per_player: firstSeed ? firstSeed.player.average : 0,
+          });
+        }
+
+        // 4단계: 섞인 나머지 선수들을 순서대로 배치 (스네이크 패턴)
+        let currentTeam = 0;
+        let direction = 1; // 1: 정방향, -1: 역방향
+
+        for (const player of remainingPlayers) {
+          // 현재 팀에 자리가 있는지 확인
+          if (newTeams[currentTeam].players.length >= team_size) {
+            // 방향 전환 (스네이크 패턴)
+            if (direction === 1) {
+              currentTeam = team_count - 1;
+              direction = -1;
+            } else {
+              currentTeam = 0;
+              direction = 1;
+            }
+          }
+
+          // 자리가 있으면 현재 팀에 배치
+          if (newTeams[currentTeam].players.length < team_size) {
+            newTeams[currentTeam].players.push(player);
+            newTeams[currentTeam].total_average += player.average;
+            newTeams[currentTeam].average_per_player =
+              newTeams[currentTeam].total_average /
+              newTeams[currentTeam].players.length;
+
+            // 다음 팀으로 이동
+            currentTeam += direction;
+
+            // 경계 체크
+            if (currentTeam < 0) {
+              currentTeam = 0;
+              direction = 1;
+            } else if (currentTeam >= team_count) {
+              currentTeam = team_count - 1;
+              direction = -1;
+            }
+          }
+        }
+
+        // 5단계: 각 팀의 평균 재계산
+        newTeams.forEach((team) => {
+          team.total_average = team.players.reduce(
+            (sum, player) => sum + player.average,
+            0
+          );
+          team.average_per_player = team.total_average / team.players.length;
+        });
+
+        // 6단계: 새로운 규칙에 따른 밸런싱 적용 (1시드는 고정)
+        const finalTeams = await balanceTeamsWithNewRules(newTeams);
+
+        // 7단계: 팀 번호 순으로 정렬하여 UI에 설정
+        const sortedTeams = finalTeams.sort(
+          (a, b) => a.team_number - b.team_number
+        );
+        setTeams(sortedTeams);
 
         // 결과 메시지 설정
         const maxDiff =
-          Math.max(...rebalancedTeams.map((t) => t.total_average)) -
-          Math.min(...rebalancedTeams.map((t) => t.total_average));
+          Math.max(...sortedTeams.map((t) => t.total_average)) -
+          Math.min(...sortedTeams.map((t) => t.total_average));
 
         if (maxDiff <= 5) {
           setBalancingResult(
-            `✅ 추가 밸런싱 완료! 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+            `✅ 밸런싱 개선 완료! 1시드 유지 + 30번 랜덤 셔플 후 재배정 (최대 차이: ${maxDiff}점)`
           );
         } else if (maxDiff <= 10) {
           setBalancingResult(
-            `⚠️ 추가 밸런싱 완료. 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+            `⚠️ 밸런싱 개선 완료. 1시드 유지 + 30번 랜덤 셔플 후 재배정 (최대 차이: ${maxDiff}점)`
           );
         } else {
           setBalancingResult(
-            `⚠️ 추가 밸런싱 완료. 최대 차이: ${maxDiff}점 (2000회 시도 중 최적 결과)`
+            `⚠️ 밸런싱 개선 완료. 1시드 유지 + 30번 랜덤 셔플 후 재배정 (최대 차이: ${maxDiff}점)`
           );
         }
 

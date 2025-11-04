@@ -820,8 +820,19 @@ const Payments = () => {
 
   // 면제 상태 가져오기
   const getTempExemptState = (paymentId, originalExemptState) => {
+    // paymentId를 문자열과 숫자 모두 확인
+    const idStr = String(paymentId);
+    const idNum =
+      typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+
     if (tempExemptStates[paymentId] !== undefined) {
       return tempExemptStates[paymentId];
+    }
+    if (tempExemptStates[idStr] !== undefined) {
+      return tempExemptStates[idStr];
+    }
+    if (tempExemptStates[idNum] !== undefined) {
+      return tempExemptStates[idNum];
     }
     return originalExemptState;
   };
@@ -837,7 +848,7 @@ const Payments = () => {
       const tempPayment = tempNewPayments.find((p) => p.id === paymentId);
       if (!tempPayment) return;
 
-      // 상태 순환: 체크 -> 면제 -> x -> 삭제
+      // 상태 순환: 납입완료 → 면제 → 미납 → 삭제
       const currentIsExempt = tempPayment.is_exempt || false;
       const currentIsPaid = tempPayment.is_paid || false;
 
@@ -867,37 +878,106 @@ const Payments = () => {
     }
 
     // 기존 납입인 경우
-    const currentIsExempt = getTempExemptState(paymentId, payment.is_exempt);
+    // 삭제 예정인 경우 먼저 처리
+    // paymentId를 숫자로 통일하여 비교
+    const id =
+      typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+    const isInDeleteList = tempDeletePayments.some((pId) => {
+      const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+      return pIdNum === id;
+    });
+
+    if (isInDeleteList) {
+      // 삭제 예정 상태(초기화)에서 클릭 → 납입완료로 전환 (순환 완성)
+      // 초기화(+) → 납입완료(✓) → 면제 → 미납(✗) → 초기화(+) → ...
+      // 원래 상태와 관계없이 항상 납입완료로 전환하여 순환 완성
+      setTempExemptStates((prev) => {
+        const newExempt = { ...prev };
+        delete newExempt[id];
+        delete newExempt[String(id)];
+        return newExempt;
+      });
+      setTempPaymentStates((prev) => ({
+        ...prev,
+        [id]: true,
+      }));
+      setTempDeletePayments((prev) =>
+        prev.filter((pId) => {
+          const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+          return pIdNum !== id;
+        })
+      );
+      return;
+    }
+
+    // 현재 상태 확인 (임시 상태가 있으면 그것을 사용, 없으면 원본 상태 사용)
     const currentIsPaid = getTempPaymentState(paymentId, payment.is_paid);
+    const currentIsExempt = getTempExemptState(paymentId, payment.is_exempt);
 
-    // 1. 면제 상태인 경우 → 미납(x)으로 변경
-    if (currentIsExempt) {
+    // 상태 순환: 납입완료(✓) → 면제 → 미납(✗) → 초기화(삭제) → 납입완료(✓) → ...
+
+    // 1. 납입완료 상태인 경우 → 면제로 변경 (면제보다 먼저 확인)
+    if (currentIsPaid === true && currentIsExempt !== true) {
+      // 면제로 설정하고 납입 완료 해제
+      // paymentId를 숫자로 통일하여 저장
+      const paidId =
+        typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
       setTempExemptStates((prev) => ({
         ...prev,
-        [paymentId]: false,
+        [paidId]: true,
       }));
       setTempPaymentStates((prev) => ({
         ...prev,
-        [paymentId]: false,
+        [paidId]: false,
       }));
+      // 삭제 목록에서 제거 (이미 삭제 예정이었던 경우 취소)
+      setTempDeletePayments((prev) =>
+        prev.filter((pId) => {
+          const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+          return pIdNum !== paidId;
+        })
+      );
       return;
     }
 
-    // 2. 납입완료 상태인 경우 → 면제로 변경
-    if (currentIsPaid) {
+    // 2. 면제 상태인 경우 → 미납(x)으로 변경
+    if (currentIsExempt === true) {
+      // 면제 해제하고 미납으로 설정
+      // paymentId를 숫자로 통일하여 저장
+      const id =
+        typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
       setTempExemptStates((prev) => ({
         ...prev,
-        [paymentId]: true,
+        [id]: false,
       }));
       setTempPaymentStates((prev) => ({
         ...prev,
-        [paymentId]: false,
+        [id]: false,
       }));
+      // 삭제 목록에서 제거 (이미 삭제 예정이었던 경우 취소)
+      setTempDeletePayments((prev) =>
+        prev.filter((pId) => {
+          const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+          return pIdNum !== id;
+        })
+      );
       return;
     }
 
-    // 3. 미납 상태인 경우 → 삭제
-    setTempDeletePayments((prev) => [...prev, paymentId]);
+    // 3. 미납 상태인 경우 → 초기화(삭제)로 변경
+    // 삭제 목록에 추가
+    // paymentId를 숫자로 통일하여 저장
+    const unpaidId =
+      typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+    setTempDeletePayments((prev) => {
+      // 이미 존재하는지 확인 (중복 방지)
+      const exists = prev.some((pId) => {
+        const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+        return pIdNum === unpaidId;
+      });
+      if (exists) return prev;
+      return [...prev, unpaidId];
+    });
   };
 
   // 일괄 저장
@@ -1050,8 +1130,19 @@ const Payments = () => {
 
   // 임시 상태 가져오기
   const getTempPaymentState = (paymentId, originalState) => {
+    // paymentId를 문자열과 숫자 모두 확인
+    const idStr = String(paymentId);
+    const idNum =
+      typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+
     if (tempPaymentStates[paymentId] !== undefined) {
       return tempPaymentStates[paymentId];
+    }
+    if (tempPaymentStates[idStr] !== undefined) {
+      return tempPaymentStates[idStr];
+    }
+    if (tempPaymentStates[idNum] !== undefined) {
+      return tempPaymentStates[idNum];
     }
     return originalState;
   };
@@ -1191,7 +1282,13 @@ const Payments = () => {
               <div
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               >
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+                <label
+                  style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   월별 보기:
                 </label>
                 <select
@@ -1206,6 +1303,8 @@ const Payments = () => {
                     borderRadius: 'var(--toss-radius)',
                     fontSize: '0.875rem',
                     cursor: 'pointer',
+                    maxWidth: '150px',
+                    minWidth: '100px',
                   }}
                 >
                   <option value="">전체</option>
@@ -1346,7 +1445,7 @@ const Payments = () => {
                     disabled={ledgerLoading}
                   />
                 </div>
-                <div className="form-group" style={{ flex: 1 }}>
+                <div className="form-group" style={{ flex: '1 1 150px' }}>
                   <label>비고</label>
                   <input
                     type="text"
@@ -1847,27 +1946,15 @@ const Payments = () => {
                     <tr key={member.id}>
                       <td className="member-name">{member.name}</td>
                       {months.map((month) => {
-                        // 실제 납입 데이터에서 면제 여부 확인 (DB의 is_exempt 값 사용)
+                        // 실제 납입 데이터 확인
                         const paymentStatus = getPaymentStatus(
                           member.id,
                           month,
                           'monthly'
                         );
-                        const isExempt = paymentStatus?.is_exempt === true;
 
-                        // 면제인 경우 면제 표시
-                        if (isExempt) {
-                          return (
-                            <td key={month} className="status-cell">
-                              <span
-                                className="payment-status exempt"
-                                title="회비 면제"
-                              >
-                                면제
-                              </span>
-                            </td>
-                          );
-                        }
+                        // 면제 상태를 먼저 확인하는 로직 제거
+                        // 아래에서 납입완료 상태를 먼저 확인한 후 면제 상태를 확인하도록 변경
 
                         // 가입일 기준 비활성화 체크
                         const isBeforeJoinDate = (() => {
@@ -1925,20 +2012,31 @@ const Payments = () => {
                                 const paymentId = payment.id;
 
                                 // 삭제 예정인 경우 빈 상태(+) 표시
-                                if (tempDeletePayments.includes(paymentId)) {
+                                // 클릭 시 원래 상태로 복귀
+                                // paymentId 타입을 일관되게 확인
+                                const checkId =
+                                  typeof paymentId === 'string'
+                                    ? parseInt(paymentId, 10)
+                                    : paymentId;
+                                const isInDeleteList = tempDeletePayments.some(
+                                  (pId) => {
+                                    const pIdNum =
+                                      typeof pId === 'string'
+                                        ? parseInt(pId, 10)
+                                        : pId;
+                                    return pIdNum === checkId;
+                                  }
+                                );
+
+                                if (isInDeleteList) {
                                   return (
                                     <button
                                       className="btn btn-xs btn-add"
                                       onClick={() =>
-                                        handleQuickAdd(
-                                          member.id,
-                                          month,
-                                          'monthly',
-                                          5000
-                                        )
+                                        togglePaymentCycle(payment)
                                       }
                                       disabled={submitting}
-                                      title="납입 추가"
+                                      title="클릭하여 원래 상태로 복귀"
                                     >
                                       +
                                     </button>
@@ -1959,38 +2057,20 @@ const Payments = () => {
                                   isExempt = tempPayment?.is_exempt || false;
                                 } else {
                                   // 기존 납입인 경우
-                                  const currentPaidState =
-                                    tempPaymentStates[paymentId];
-                                  isPaid =
-                                    currentPaidState !== undefined
-                                      ? currentPaidState
-                                      : payment.is_paid;
+                                  // 임시 상태를 가져올 때 getTempPaymentState 함수 사용 (타입 일관성)
+                                  isPaid = getTempPaymentState(
+                                    paymentId,
+                                    payment.is_paid
+                                  );
                                   // 면제 상태는 원본 또는 임시 상태 확인
-                                  const tempExemptState = getTempExemptState(
+                                  isExempt = getTempExemptState(
                                     paymentId,
                                     payment.is_exempt
                                   );
-                                  isExempt = tempExemptState;
                                 }
 
-                                // 면제 상태
-                                if (isExempt) {
-                                  return (
-                                    <button
-                                      className="payment-status exempt"
-                                      title="클릭하여 미납으로 변경"
-                                      onClick={() =>
-                                        togglePaymentCycle(payment)
-                                      }
-                                      disabled={submitting}
-                                    >
-                                      면제
-                                    </button>
-                                  );
-                                }
-
-                                // 납입 완료 상태
-                                if (isPaid) {
+                                // 납입 완료 상태 (면제보다 먼저 확인)
+                                if (isPaid === true) {
                                   return (
                                     <button
                                       className="payment-status paid"
@@ -2005,42 +2085,86 @@ const Payments = () => {
                                   );
                                 }
 
-                                // 면제가 해제된 경우 (is_exempt = false, is_paid = false)는 빈 상태로 표시
-                                // 원본 payment의 is_exempt가 false이고, 임시 상태 변경도 없는 경우
-                                const originalIsExempt =
-                                  payment.is_exempt === false;
-                                const noTempExemptChange =
-                                  getTempExemptState(
-                                    paymentId,
-                                    payment.is_exempt
-                                  ) === payment.is_exempt;
-
-                                if (
-                                  originalIsExempt &&
-                                  noTempExemptChange &&
-                                  !isPaid
-                                ) {
-                                  // 빈 상태로 표시 (납입 내역이 없는 것처럼)
+                                // 면제 상태 (납입완료가 아닐 때만)
+                                if (isExempt === true) {
                                   return (
                                     <button
-                                      className="btn btn-xs btn-add"
+                                      className="payment-status exempt"
+                                      title="클릭하여 미납으로 변경"
                                       onClick={() =>
-                                        handleQuickAdd(
-                                          member.id,
-                                          month,
-                                          'monthly',
-                                          5000
-                                        )
+                                        togglePaymentCycle(payment)
                                       }
                                       disabled={submitting}
-                                      title="납입 추가"
                                     >
-                                      +
+                                      면제
                                     </button>
                                   );
                                 }
 
-                                // 미납 상태
+                                // 임시 납입인 경우 미납 상태로 바로 표시
+                                if (isTemp && !isPaid && !isExempt) {
+                                  return (
+                                    <button
+                                      className="payment-status unpaid"
+                                      title="클릭하여 삭제"
+                                      onClick={() =>
+                                        togglePaymentCycle(payment)
+                                      }
+                                      disabled={submitting}
+                                    >
+                                      ✗
+                                    </button>
+                                  );
+                                }
+
+                                // 면제가 해제된 경우 (is_exempt = false, is_paid = false)는 빈 상태로 표시
+                                // 원본 payment의 is_exempt가 false이고, 임시 상태 변경도 없는 경우
+                                // 단, 임시 납입이 아니고, 저장된 납입이 아닌 경우에만 적용
+                                // (저장된 납입은 미납 상태로 표시해야 함)
+                                if (!isTemp) {
+                                  const originalIsExempt =
+                                    payment.is_exempt === false;
+                                  const noTempExemptChange =
+                                    getTempExemptState(
+                                      paymentId,
+                                      payment.is_exempt
+                                    ) === payment.is_exempt;
+
+                                  // 저장된 납입인지 확인 (임시 ID가 아닌 경우)
+                                  const isStoredPayment = !paymentId
+                                    .toString()
+                                    .startsWith('temp_');
+
+                                  // 저장되지 않은 경우에만 빈 상태로 표시
+                                  // 저장된 미납 납입은 X 표시를 해야 함
+                                  if (
+                                    !isStoredPayment &&
+                                    originalIsExempt &&
+                                    noTempExemptChange &&
+                                    !isPaid
+                                  ) {
+                                    // 빈 상태로 표시 (납입 내역이 없는 것처럼)
+                                    return (
+                                      <button
+                                        className="btn btn-xs btn-add"
+                                        onClick={() =>
+                                          handleQuickAdd(
+                                            member.id,
+                                            month,
+                                            'monthly',
+                                            5000
+                                          )
+                                        }
+                                        disabled={submitting}
+                                        title="납입 추가"
+                                      >
+                                        +
+                                      </button>
+                                    );
+                                  }
+                                }
+
+                                // 미납 상태 (저장된 납입 또는 임시 납입)
                                 return (
                                   <button
                                     className="payment-status unpaid"
