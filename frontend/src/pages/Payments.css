@@ -521,6 +521,16 @@
   color: var(--toss-primary);
   flex-shrink: 0;
   box-sizing: border-box;
+  /* 증감 스피너 제거 */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Chrome, Safari, Edge에서 증감 스피너 제거 */
+.year-input::-webkit-inner-spin-button,
+.year-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .year-label {
