@@ -1328,6 +1328,20 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
+.modal-content.prepay-modal,
+.prepay-modal {
+  background: white !important;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 300px !important;
+  width: auto !important;
+  min-width: 280px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
 .modal-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #e5e7eb;

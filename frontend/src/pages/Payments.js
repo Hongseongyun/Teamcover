@@ -79,6 +79,7 @@ const Payments = () => {
   const [prepayTarget, setPrepayTarget] = useState(null);
   const [prepayMonths, setPrepayMonths] = useState(1);
   const [prepayStatus, setPrepayStatus] = useState('paid');
+  const [showPrepayModal, setShowPrepayModal] = useState(false);
 
   // 상단 대시보드: 잔액 및 그래프
   const [currentBalance, setCurrentBalance] = useState(1540000);
@@ -790,6 +791,7 @@ const Payments = () => {
       setTempNewPayments((prev) => [...prev, ...toAdd]);
     }
     setPrepayTarget(null);
+    setShowPrepayModal(false);
   };
 
   // 빠른 납입 추가 (임시 상태로만 표시)
@@ -2177,96 +2179,6 @@ const Payments = () => {
                                   </button>
                                 );
                               })()
-                            ) : prepayTarget &&
-                              prepayTarget.memberId === member.id &&
-                              prepayTarget.month === month ? (
-                              (() => {
-                                // 선택한 월부터 12월까지의 남은 개월 수 계산
-                                const monthStr = month; // YYYY-MM 형식
-                                const monthNum = parseInt(
-                                  monthStr.split('-')[1],
-                                  10
-                                ); // MM 추출
-                                const maxMonths = 13 - monthNum; // 선택한 월 포함해서 12월까지
-                                const maxMonthsLimited = Math.max(
-                                  1,
-                                  Math.min(maxMonths, 12)
-                                ); // 최소 1개월, 최대 12개월
-
-                                // 현재 선택된 개월 수가 최대값을 초과하면 최대값으로 조정
-                                const validPrepayMonths = Math.min(
-                                  prepayMonths,
-                                  maxMonthsLimited
-                                );
-                                if (prepayMonths > maxMonthsLimited) {
-                                  setPrepayMonths(maxMonthsLimited);
-                                }
-
-                                return (
-                                  <div className="prepay-menu">
-                                    <select
-                                      className="prepay-select"
-                                      value={validPrepayMonths}
-                                      onChange={(e) =>
-                                        setPrepayMonths(
-                                          parseInt(e.target.value, 10)
-                                        )
-                                      }
-                                      disabled={submitting}
-                                      title="선입 개월 수"
-                                    >
-                                      {Array.from(
-                                        { length: maxMonthsLimited },
-                                        (_, i) => i + 1
-                                      ).map((m) => (
-                                        <option
-                                          key={m}
-                                          value={m}
-                                        >{`${m}개월`}</option>
-                                      ))}
-                                    </select>
-                                    <select
-                                      className="prepay-select"
-                                      value={prepayStatus}
-                                      onChange={(e) =>
-                                        setPrepayStatus(e.target.value)
-                                      }
-                                      disabled={submitting}
-                                      title="상태 선택"
-                                    >
-                                      <option value="paid">납입</option>
-                                      <option value="exempt">면제</option>
-                                      <option value="unpaid">미납</option>
-                                    </select>
-                                    <div className="prepay-actions">
-                                      <button
-                                        className="btn btn-xxs prepay-add"
-                                        onClick={() =>
-                                          handlePrepay(
-                                            member.id,
-                                            month,
-                                            prepayMonths,
-                                            5000,
-                                            prepayStatus
-                                          )
-                                        }
-                                        disabled={submitting}
-                                        title="선입 추가"
-                                      >
-                                        추가
-                                      </button>
-                                      <button
-                                        className="btn btn-xxs prepay-cancel"
-                                        onClick={() => setPrepayTarget(null)}
-                                        disabled={submitting}
-                                        title="닫기"
-                                      >
-                                        ✕
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })()
                             ) : (
                               <button
                                 className="btn btn-xs btn-add"
@@ -2277,6 +2189,7 @@ const Payments = () => {
                                     memberId: member.id,
                                     month,
                                   });
+                                  setShowPrepayModal(true);
                                 }}
                                 disabled={submitting}
                                 title="선입 추가"
@@ -3096,6 +3009,143 @@ const Payments = () => {
                   : gamePaymentMembers.length === 0
                   ? '저장'
                   : '저장'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 선입 추가 모달 */}
+      {showPrepayModal && prepayTarget && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowPrepayModal(false);
+              setPrepayTarget(null);
+            }
+          }}
+        >
+          <div className="modal-content prepay-modal">
+            <div className="modal-header">
+              <h3>선입 납입 추가</h3>
+              <button
+                className="btn btn-sm btn-secondary"
+                onClick={() => {
+                  setShowPrepayModal(false);
+                  setPrepayTarget(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {(() => {
+                // 선택한 월부터 12월까지의 남은 개월 수 계산
+                const monthStr = prepayTarget.month; // YYYY-MM 형식
+                const monthNum = parseInt(monthStr.split('-')[1], 10); // MM 추출
+                const maxMonths = 13 - monthNum; // 선택한 월 포함해서 12월까지
+                const maxMonthsLimited = Math.max(1, Math.min(maxMonths, 12)); // 최소 1개월, 최대 12개월
+
+                // 현재 선택된 개월 수가 최대값을 초과하면 최대값으로 조정
+                const validPrepayMonths = Math.min(
+                  prepayMonths,
+                  maxMonthsLimited
+                );
+                if (prepayMonths > maxMonthsLimited) {
+                  setPrepayMonths(maxMonthsLimited);
+                }
+
+                const selectedMember = members.find(
+                  (m) => m.id === prepayTarget.memberId
+                );
+
+                return (
+                  <>
+                    <div className="form-group">
+                      <label>회원</label>
+                      <input
+                        type="text"
+                        value={selectedMember?.name || ''}
+                        className="form-control"
+                        disabled
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>시작 월</label>
+                      <input
+                        type="text"
+                        value={prepayTarget.month}
+                        className="form-control"
+                        disabled
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>선입 개월 수</label>
+                      <select
+                        className="form-control"
+                        value={validPrepayMonths}
+                        onChange={(e) =>
+                          setPrepayMonths(parseInt(e.target.value, 10))
+                        }
+                        disabled={submitting}
+                      >
+                        {Array.from(
+                          { length: maxMonthsLimited },
+                          (_, i) => i + 1
+                        ).map((m) => (
+                          <option key={m} value={m}>
+                            {`${m}개월`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>상태 선택</label>
+                      <select
+                        className="form-control"
+                        value={prepayStatus}
+                        onChange={(e) => setPrepayStatus(e.target.value)}
+                        disabled={submitting}
+                      >
+                        <option value="paid">납입</option>
+                        <option value="exempt">면제</option>
+                        <option value="unpaid">미납</option>
+                      </select>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowPrepayModal(false);
+                  setPrepayTarget(null);
+                }}
+                disabled={submitting}
+              >
+                취소
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  if (prepayTarget) {
+                    handlePrepay(
+                      prepayTarget.memberId,
+                      prepayTarget.month,
+                      prepayMonths,
+                      5000,
+                      prepayStatus
+                    );
+                  }
+                }}
+                disabled={submitting}
+              >
+                {submitting ? '추가 중...' : '추가'}
               </button>
             </div>
           </div>
