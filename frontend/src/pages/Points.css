@@ -1510,7 +1510,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid var(--toss-gray-200);
+  border-bottom: none;
 }
 
 .modal-header h3 {
@@ -1544,8 +1544,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-top: 1px solid var(--toss-gray-200);
-  background: var(--toss-gray-50);
+  border: none;
+  border-top: none;
+  background: transparent;
   border-radius: 0 0 var(--toss-radius-lg) var(--toss-radius-lg);
 }
 

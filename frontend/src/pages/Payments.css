@@ -1344,7 +1344,7 @@
 
 .modal-header {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1363,7 +1363,8 @@
 
 .modal-footer {
   padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e7eb;
+  border: none;
+  border-top: none;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
