@@ -428,6 +428,10 @@ def _sync_payment_to_ledger(payment: Payment):
     # 있어야 하는 경우 → 1개 기준으로 정규화
     if existing:
         entry = existing[0]
+        # 중복 항목이 있으면 첫 번째만 남기고 나머지는 삭제
+        if len(existing) > 1:
+            for row in existing[1:]:
+                db.session.delete(row)
     else:
         entry = FundLedger(payment_id=payment.id)
         db.session.add(entry)

@@ -1183,7 +1183,7 @@ const Scores = () => {
                   {memberAverages && memberAverages.length > 10 && (
                     <div className="show-more-btn-container">
                       <button
-                        className="btn btn-outline-primary btn-sm"
+                        className="btn-more"
                         onClick={() => setShowAllAverages(!showAllAverages)}
                       >
                         {showAllAverages

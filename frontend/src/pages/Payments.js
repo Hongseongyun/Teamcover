@@ -1543,91 +1543,9 @@ const Payments = () => {
                       // 선납은 그대로 추가
                       processedLedgerItems.push(...prepayLedgerItems);
 
-                      // 장부 항목을 회원별로 그룹화 (일반 납입만)
-                      const groupedByMember = {};
-                      regularLedgerItems.forEach(({ ledgerItem, payment }) => {
-                        const key = payment.member_id;
-                        if (!groupedByMember[key]) {
-                          groupedByMember[key] = [];
-                        }
-                        groupedByMember[key].push({
-                          ledgerItem,
-                          payment,
-                        });
-                      });
-
-                      // 각 회원별로 연속된 개월 납입 찾기
-                      Object.keys(groupedByMember).forEach((memberId) => {
-                        const memberItems = groupedByMember[memberId];
-
-                        // 날짜로 정렬
-                        memberItems.sort((a, b) =>
-                          a.payment.payment_date.localeCompare(
-                            b.payment.payment_date
-                          )
-                        );
-
-                        // 연속된 개월 납입 그룹 찾기
-                        let i = 0;
-                        while (i < memberItems.length) {
-                          const consecutiveGroup = [memberItems[i]];
-                          let j = i + 1;
-
-                          // 연속된 개월인지 확인하며 그룹 만들기
-                          while (j < memberItems.length) {
-                            const prevDate = new Date(
-                              consecutiveGroup[
-                                consecutiveGroup.length - 1
-                              ].payment.payment_date
-                            );
-                            const currDate = new Date(
-                              memberItems[j].payment.payment_date
-                            );
-
-                            // 예상 다음 달 계산
-                            const expectedDate = new Date(prevDate);
-                            expectedDate.setMonth(expectedDate.getMonth() + 1);
-
-                            // 실제 날짜가 예상 날짜와 같은 달인지 확인
-                            if (
-                              expectedDate.getFullYear() ===
-                                currDate.getFullYear() &&
-                              expectedDate.getMonth() === currDate.getMonth()
-                            ) {
-                              consecutiveGroup.push(memberItems[j]);
-                              j++;
-                            } else {
-                              break;
-                            }
-                          }
-
-                          if (consecutiveGroup.length > 1) {
-                            // 연속된 개월이 2개 이상인 경우 첫 달에 금액 합산
-                            const firstLedgerItem = {
-                              ...consecutiveGroup[0].ledgerItem,
-                            };
-                            firstLedgerItem.amount = consecutiveGroup.reduce(
-                              (sum, item) =>
-                                sum + (parseInt(item.ledgerItem.amount) || 0),
-                              0
-                            );
-                            processedLedgerItems.push(firstLedgerItem);
-
-                            // 나머지 달 장부 항목은 숨기기
-                            for (let k = 1; k < consecutiveGroup.length; k++) {
-                              hiddenLedgerIds.add(
-                                consecutiveGroup[k].ledgerItem.id
-                              );
-                            }
-                          } else {
-                            // 연속이 아니면 그대로 추가
-                            processedLedgerItems.push(
-                              consecutiveGroup[0].ledgerItem
-                            );
-                          }
-
-                          i = j;
-                        }
+                      // 일반 납입도 각각 개별적으로 표시 (날짜별로 입금될 때마다 표시)
+                      regularLedgerItems.forEach(({ ledgerItem }) => {
+                        processedLedgerItems.push(ledgerItem);
                       });
 
                       // 최종 목록: 처리된 월회비 장부 항목 + 기타 장부 항목
@@ -1636,6 +1554,13 @@ const Payments = () => {
                         ...processedLedgerItems,
                         ...otherLedgerItems,
                       ].filter((item) => !hiddenLedgerIds.has(item.id));
+
+                      // 10월 31일 이후 기록만 표시 (2024-10-31 포함)
+                      finalLedgerItems = finalLedgerItems.filter((item) => {
+                        if (!item.event_date) return false;
+                        // 날짜 문자열 비교 (YYYY-MM-DD 형식)
+                        return item.event_date >= '2024-10-31';
+                      });
 
                       // 월별 필터 적용
                       if (selectedLedgerMonth) {
@@ -1712,7 +1637,7 @@ const Payments = () => {
                               >
                                 <button
                                   type="button"
-                                  className="btn btn-outline-secondary"
+                                  className="btn-more"
                                   onClick={() =>
                                     setDisplayedLedgerCount(
                                       displayedLedgerCount + 10
@@ -2823,7 +2748,7 @@ const Payments = () => {
                                   }}
                                 >
                                   <button
-                                    className="btn btn-secondary"
+                                    className="btn-more"
                                     onClick={() =>
                                       setDisplayedPaymentCount(
                                         (prev) => prev + 10
@@ -2832,7 +2757,7 @@ const Payments = () => {
                                   >
                                     더보기 (
                                     {totalPayments - displayedPaymentCount}개
-                                    남음)
+                                    더)
                                   </button>
                                 </td>
                               </tr>

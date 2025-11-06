@@ -2070,11 +2070,7 @@
     margin: 0 !important;
   }
 
-  /* 더보기 버튼 가로 길이 설정 */
-  .show-more-btn-container .btn.btn-outline-primary.btn-sm {
-    padding: 0.5rem 1.5rem !important;
-    min-width: 120px;
-  }
+  /* 더보기 버튼 스타일은 Payments.css에서 통일 관리 */
 
   /* 날짜 네비게이션 버튼 모바일 최적화 */
   .date-navigation {
@@ -3885,7 +3881,7 @@
   }
 }
 
-/* 더보기 버튼 스타일 */
+/* 더보기 버튼 스타일 - Payments.css와 통일 */
 .show-more-container {
   display: flex;
   justify-content: center;
@@ -3893,38 +3889,7 @@
   margin-top: 0.5rem;
 }
 
-.show-more-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: 2px solid #6c757d;
-  border-radius: 0.5rem;
-  background-color: transparent;
-  color: #6c757d;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.show-more-btn:hover {
-  background-color: #6c757d;
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.show-more-btn:active {
-  transform: translateY(0);
-}
-
-.show-more-btn svg {
-  transition: transform 0.2s ease;
-}
-
-.show-more-btn:hover svg {
-  transform: scale(1.1);
-}
+/* 통일된 스타일은 Payments.css에 정의되어 있음 */
 
 /* 새로운 회원별 평균 순위 테이블 반응형 스타일 */
 @media (max-width: 768px) {
