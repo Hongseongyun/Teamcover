@@ -440,7 +440,7 @@ def _sync_payment_to_ledger(payment: Payment):
     entry.month = payment.month or payment.payment_date.strftime('%Y-%m')
     entry.amount = abs(int(payment.amount))
     entry.source = payment.payment_type  # 'monthly' or 'game'
-    entry.entry_type = 'credit' if payment.payment_type == 'monthly' else 'debit'
+    entry.entry_type = 'credit' if payment.payment_type in ('monthly', 'game') else 'debit'
     entry.note = payment.note
     db.session.commit()
 
@@ -462,6 +462,16 @@ def fund_ledger_endpoint():
                 q = q.filter(FundLedger.month >= from_month)
             q = q.order_by(FundLedger.event_date.desc())
             rows = q.all()
+
+            # 과거 데이터 보정: 정기전 게임비는 입금 처리
+            entries_updated = False
+            for row in rows:
+                if row.source == 'game' and row.entry_type != 'credit':
+                    row.entry_type = 'credit'
+                    entries_updated = True
+            if entries_updated:
+                db.session.commit()
+
             return jsonify({'success': True, 'items': [
                 {
                     'id': r.id,

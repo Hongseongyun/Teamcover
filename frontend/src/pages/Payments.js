@@ -2229,6 +2229,14 @@ const Payments = () => {
                           a.member_name.localeCompare(b.member_name)
                         );
 
+                        const changeCount = sortedPayments.reduce(
+                          (count, payment) =>
+                            tempGamePaymentStates[payment.id]
+                              ? count + 1
+                              : count,
+                          0
+                        );
+
                         return (
                           <div key={date} className="game-payment-date-section">
                             <h4 className="game-payment-date-title">{date}</h4>
@@ -2321,6 +2329,43 @@ const Payments = () => {
                                 );
                               })}
                             </div>
+                            {changeCount > 0 && (
+                              <div
+                                className="section-card"
+                                style={{
+                                  marginTop: '0.75rem',
+                                }}
+                              >
+                                <div className="batch-actions-content">
+                                  <span className="batch-info">
+                                    {changeCount}개의 변경사항이 있습니다.
+                                  </span>
+                                  <div className="batch-buttons">
+                                    <button
+                                      className="btn btn-secondary"
+                                      onClick={cancelGamePaymentCardStates}
+                                      disabled={submitting}
+                                    >
+                                      취소
+                                    </button>
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={saveGamePaymentCardStates}
+                                      disabled={submitting}
+                                    >
+                                      {submitting ? (
+                                        <>
+                                          <div className="loading-spinner"></div>
+                                          저장 중...
+                                        </>
+                                      ) : (
+                                        '저장'
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -2328,41 +2373,6 @@ const Payments = () => {
                   );
                 })()}
               </div>
-
-              {/* 일괄 저장 버튼 */}
-              {Object.keys(tempGamePaymentStates).length > 0 && (
-                <div className="section-card" style={{ marginTop: '1rem' }}>
-                  <div className="batch-actions-content">
-                    <span className="batch-info">
-                      {Object.keys(tempGamePaymentStates).length}개의 변경사항이
-                      있습니다.
-                    </span>
-                    <div className="batch-buttons">
-                      <button
-                        className="btn btn-secondary"
-                        onClick={cancelGamePaymentCardStates}
-                        disabled={submitting}
-                      >
-                        취소
-                      </button>
-                      <button
-                        className="btn btn-primary"
-                        onClick={saveGamePaymentCardStates}
-                        disabled={submitting}
-                      >
-                        {submitting ? (
-                          <>
-                            <div className="loading-spinner"></div>
-                            저장 중...
-                          </>
-                        ) : (
-                          '저장'
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
