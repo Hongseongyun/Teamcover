@@ -428,6 +428,7 @@ const Payments = () => {
       await Promise.all(promises);
       setTempGamePaymentStates({});
       await loadPayments();
+      await loadFundLedger();
       alert('정기전 게임비 상태가 저장되었습니다.');
     } catch (error) {
       console.error('정기전 게임비 상태 저장 실패:', error);
@@ -467,6 +468,7 @@ const Payments = () => {
       if (gamePaymentMembers.length === 0) {
         await Promise.all(promises);
         await loadPayments();
+        await loadFundLedger();
         closeGamePaymentModal();
         alert('해당 날짜의 정기전 게임비 내역이 삭제되었습니다.');
         return;
@@ -497,6 +499,7 @@ const Payments = () => {
 
       await Promise.all(promises);
       await loadPayments();
+      await loadFundLedger();
       closeGamePaymentModal();
       alert('정기전 게임비가 저장되었습니다.');
     } catch (error) {
@@ -523,7 +526,8 @@ const Payments = () => {
       setShowAddForm(false);
       setEditingId(null);
       resetForm();
-      loadPayments();
+      await loadPayments();
+      await loadFundLedger();
     } catch (error) {
       alert(error.response?.data?.message || '납입 내역 저장에 실패했습니다.');
     } finally {
@@ -536,7 +540,8 @@ const Payments = () => {
       setDeleting(true);
       try {
         await paymentAPI.deletePayment(id);
-        loadPayments();
+        await loadPayments();
+        await loadFundLedger();
       } catch (error) {
         alert('납입 내역 삭제에 실패했습니다.');
       } finally {
@@ -585,6 +590,7 @@ const Payments = () => {
       });
       setInlineEditId(null);
       await loadPayments();
+      await loadFundLedger();
     } catch (e) {
       alert('수정에 실패했습니다.');
     } finally {
@@ -1115,6 +1121,7 @@ const Payments = () => {
       setTempDeletePayments([]);
       setTempNewPayments([]);
       await loadPayments();
+      await loadFundLedger();
       alert('납입 상태가 저장되었습니다.');
     } catch (error) {
       alert('납입 상태 저장에 실패했습니다.');
