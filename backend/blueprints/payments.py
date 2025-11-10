@@ -413,7 +413,13 @@ def get_payment_stats():
 def _sync_payment_to_ledger(payment: Payment):
     """결제 레코드를 장부에 반영/삭제한다."""
     # 결제 반영 조건: 납입완료 + 면제 아님
-    should_exist = bool(payment.is_paid) and not bool(payment.is_exempt)
+    should_exist = (
+        bool(payment.is_paid)
+        and not bool(payment.is_exempt)
+        and not (
+            payment.payment_type == 'game' and bool(payment.paid_with_points)
+        )
+    )
     # 기존 장부
     existing = FundLedger.query.filter_by(payment_id=payment.id).all()
 
@@ -463,12 +469,31 @@ def fund_ledger_endpoint():
             q = q.order_by(FundLedger.event_date.desc())
             rows = q.all()
 
-            # 과거 데이터 보정: 정기전 게임비는 입금 처리
+            # 과거 데이터 보정: 포인트 납부 정기전 게임비 제거 & 입금 처리 유지
+            game_payment_ids = [
+                row.payment_id for row in rows if row.source == 'game' and row.payment_id
+            ]
+            paid_with_points_ids = set()
+            if game_payment_ids:
+                paid_with_points_payments = Payment.query.filter(
+                    Payment.id.in_(game_payment_ids),
+                    Payment.paid_with_points.is_(True),
+                ).all()
+                paid_with_points_ids = {p.id for p in paid_with_points_payments}
+
             entries_updated = False
+            cleaned_rows = []
             for row in rows:
-                if row.source == 'game' and row.entry_type != 'credit':
-                    row.entry_type = 'credit'
-                    entries_updated = True
+                if row.source == 'game':
+                    if row.payment_id in paid_with_points_ids:
+                        db.session.delete(row)
+                        entries_updated = True
+                        continue
+                    if row.entry_type != 'credit':
+                        row.entry_type = 'credit'
+                        entries_updated = True
+                cleaned_rows.append(row)
+
             if entries_updated:
                 db.session.commit()
 
@@ -482,7 +507,7 @@ def fund_ledger_endpoint():
                     'source': r.source,
                     'payment_id': r.payment_id,
                     'note': r.note,
-                } for r in rows
+                } for r in cleaned_rows
             ]})
 
         # POST (수기 추가)
