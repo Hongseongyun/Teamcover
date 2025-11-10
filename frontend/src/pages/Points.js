@@ -398,26 +398,57 @@ const Points = () => {
       return `${year}-${monthNum}`;
     });
 
+    const earnedData = monthlyData.map(([, data]) => data.earned);
+    const usedData = monthlyData.map(([, data]) => data.used);
     const results = monthlyData.map(([, data]) => data.earned - data.used);
 
     return {
       labels,
       datasets: [
         {
-          label: '월별 포인트 결과',
+          label: '적립',
+          data: earnedData,
+          borderColor: 'rgba(16, 185, 129, 1)',
+          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+          pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+          pointBorderColor: 'rgba(16, 185, 129, 1)',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderWidth: 2,
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+        },
+        {
+          label: '사용',
+          data: usedData,
+          borderColor: 'rgba(239, 68, 68, 1)',
+          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+          pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+          pointBorderColor: 'rgba(239, 68, 68, 1)',
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBorderWidth: 2,
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+        },
+        {
+          label: '결과',
           data: results,
           borderColor: 'rgba(59, 130, 246, 1)',
           backgroundColor: 'transparent',
           pointBackgroundColor: results.map((value) =>
-            value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
+            value >= 0 ? 'rgba(37, 99, 235, 1)' : 'rgba(30, 64, 175, 1)'
           ),
           pointBorderColor: results.map((value) =>
-            value >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
+            value >= 0 ? 'rgba(37, 99, 235, 1)' : 'rgba(30, 64, 175, 1)'
           ),
           pointRadius: 6,
           pointHoverRadius: 8,
           pointBorderWidth: 2,
           borderWidth: 3,
+          borderDash: [6, 4],
           fill: false,
           tension: 0.4,
         },
@@ -434,7 +465,7 @@ const Points = () => {
     },
     plugins: {
       legend: {
-        display: false,
+        display: true,
       },
       title: {
         display: true,
@@ -453,14 +484,18 @@ const Points = () => {
         callbacks: {
           label: function (context) {
             const value = context.parsed.y;
-            return `결과: ${value >= 0 ? '+' : ''}${formatNumber(value)}P`;
+            const prefix = value > 0 ? '+' : value < 0 ? '-' : '';
+            const absValue = Math.abs(value);
+            return `${context.dataset.label}: ${
+              prefix ? prefix : ''
+            }${formatNumber(absValue)}P`;
           },
         },
       },
     },
     scales: {
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
         ticks: {
           callback: function (value) {
             return formatNumber(value) + 'P';
