@@ -3074,7 +3074,7 @@ const TeamAssignment = () => {
                         ? '✓'
                         : isSelected
                         ? '✓'
-                        : '+'}
+                        : '＋'}
                     </div>
                   </div>
                 );
