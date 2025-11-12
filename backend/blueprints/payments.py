@@ -556,6 +556,72 @@ def fund_ledger_endpoint():
         return jsonify({'success': False, 'message': f'장부 처리 중 오류: {str(e)}'})
 
 
+@payments_bp.route('/fund/ledger/<int:ledger_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def manage_fund_ledger_item(ledger_id):
+    try:
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user or current_user.role not in ['super_admin', 'admin']:
+            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+
+        entry = FundLedger.query.get_or_404(ledger_id)
+
+        if request.method == 'DELETE':
+            db.session.delete(entry)
+            db.session.commit()
+            return jsonify({'success': True, 'message': '장부 항목이 삭제되었습니다.'})
+
+        data = request.get_json() or {}
+
+        if 'event_date' in data:
+            try:
+                event_date = datetime.strptime(data['event_date'], '%Y-%m-%d').date()
+            except Exception:
+                return jsonify({'success': False, 'message': 'event_date는 YYYY-MM-DD 형식이어야 합니다.'}), 400
+            entry.event_date = event_date
+            entry.month = event_date.strftime('%Y-%m')
+
+        if 'entry_type' in data:
+            entry_type = data['entry_type']
+            if entry_type not in ('credit', 'debit'):
+                return jsonify({'success': False, 'message': 'entry_type은 credit/debit 여야 합니다.'}), 400
+            entry.entry_type = entry_type
+
+        if 'amount' in data:
+            try:
+                amount = int(data['amount'])
+            except Exception:
+                return jsonify({'success': False, 'message': 'amount는 숫자여야 합니다.'}), 400
+            if amount <= 0:
+                return jsonify({'success': False, 'message': 'amount는 양수여야 합니다.'}), 400
+            entry.amount = amount
+
+        if 'note' in data:
+            entry.note = (data.get('note') or '').strip()
+
+        if 'source' in data and data['source']:
+            entry.source = data['source']
+
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'item': {
+                'id': entry.id,
+                'event_date': entry.event_date.strftime('%Y-%m-%d') if entry.event_date else None,
+                'month': entry.month,
+                'entry_type': entry.entry_type,
+                'amount': entry.amount,
+                'source': entry.source,
+                'payment_id': entry.payment_id,
+                'note': entry.note,
+            },
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'장부 항목 처리 중 오류: {str(e)}'}), 500
+
+
 @payments_bp.route('/balance', methods=['GET', 'PUT'])
 @jwt_required(optional=True)
 def payment_balance():

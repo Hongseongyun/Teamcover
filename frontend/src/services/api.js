@@ -201,6 +201,9 @@ export const paymentAPI = {
     return api.get(`/api/payments/fund/ledger?${queryString}`);
   },
   addFundLedger: (data) => api.post('/api/payments/fund/ledger', data),
+  updateFundLedger: (id, data) =>
+    api.put(`/api/payments/fund/ledger/${id}`, data),
+  deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
 };
 
 export default api;

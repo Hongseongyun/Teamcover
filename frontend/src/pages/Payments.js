@@ -96,6 +96,15 @@ const Payments = () => {
     amount: '',
     note: '',
   });
+  const [ledgerInlineEditId, setLedgerInlineEditId] = useState(null);
+  const [ledgerInlineForm, setLedgerInlineForm] = useState({
+    event_date: '',
+    entry_type: 'credit',
+    amount: '',
+    note: '',
+  });
+  const [ledgerSubmitting, setLedgerSubmitting] = useState(false);
+  const [ledgerDeletingId, setLedgerDeletingId] = useState(null);
   // 금액 스피너를 위한 이전 값 추적
   const prevAmountRef = useRef(null);
   // 납입 내역 페이지네이션 및 월 필터
@@ -595,6 +604,80 @@ const Payments = () => {
       alert('수정에 실패했습니다.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleLedgerInlineEdit = (item) => {
+    setLedgerInlineEditId(item.id);
+    setLedgerInlineForm({
+      event_date: item.event_date || '',
+      entry_type: item.entry_type || 'credit',
+      amount:
+        item.amount !== undefined && item.amount !== null
+          ? String(item.amount)
+          : '',
+      note: item.note || '',
+    });
+  };
+
+  const handleLedgerInlineCancel = () => {
+    setLedgerInlineEditId(null);
+    setLedgerInlineForm({
+      event_date: '',
+      entry_type: 'credit',
+      amount: '',
+      note: '',
+    });
+  };
+
+  const handleLedgerInlineSave = async (ledgerId) => {
+    if (!ledgerInlineForm.event_date) {
+      alert('날짜를 입력하세요.');
+      return;
+    }
+
+    const parsedAmount = parseInt(ledgerInlineForm.amount, 10);
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert('금액은 양수여야 합니다.');
+      return;
+    }
+
+    try {
+      setLedgerSubmitting(true);
+      await paymentAPI.updateFundLedger(ledgerId, {
+        event_date: ledgerInlineForm.event_date,
+        entry_type: ledgerInlineForm.entry_type,
+        amount: parsedAmount,
+        note: ledgerInlineForm.note || '',
+      });
+      setLedgerInlineEditId(null);
+      setLedgerInlineForm({
+        event_date: '',
+        entry_type: 'credit',
+        amount: '',
+        note: '',
+      });
+      await loadFundLedger();
+    } catch (error) {
+      alert(error.response?.data?.message || '장부 항목 수정에 실패했습니다.');
+    } finally {
+      setLedgerSubmitting(false);
+    }
+  };
+
+  const handleLedgerDelete = async (ledgerId) => {
+    if (!window.confirm('이 장부 항목을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      setLedgerDeletingId(ledgerId);
+      await paymentAPI.deleteFundLedger(ledgerId);
+      await loadFundLedger();
+    } catch (error) {
+      alert(error.response?.data?.message || '장부 항목 삭제에 실패했습니다.');
+    } finally {
+      setLedgerDeletingId(null);
     }
   };
 
@@ -1493,12 +1576,13 @@ const Payments = () => {
                     <th>출처</th>
                     <th>회원</th>
                     <th>비고</th>
+                    <th>관리</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ledgerLoading ? (
                     <tr>
-                      <td colSpan="6" className="no-data">
+                      <td colSpan="7" className="no-data">
                         불러오는 중...
                       </td>
                     </tr>
@@ -1589,7 +1673,7 @@ const Payments = () => {
                       if (finalLedgerItems.length === 0) {
                         return (
                           <tr>
-                            <td colSpan="6" className="no-data">
+                            <td colSpan="7" className="no-data">
                               장부 항목이 없습니다.
                             </td>
                           </tr>
@@ -1623,23 +1707,139 @@ const Payments = () => {
 
                             return (
                               <tr key={item.id}>
-                                <td>{item.event_date}</td>
                                 <td>
-                                  {item.entry_type === 'credit'
-                                    ? '입금'
-                                    : '출금'}
+                                  {ledgerInlineEditId === item.id ? (
+                                    <input
+                                      type="date"
+                                      value={ledgerInlineForm.event_date}
+                                      onChange={(e) =>
+                                        setLedgerInlineForm((prev) => ({
+                                          ...prev,
+                                          event_date: e.target.value,
+                                        }))
+                                      }
+                                      disabled={ledgerSubmitting}
+                                    />
+                                  ) : (
+                                    item.event_date
+                                  )}
                                 </td>
-                                <td>{formatNumber(item.amount)}원</td>
+                                <td>
+                                  {ledgerInlineEditId === item.id ? (
+                                    <select
+                                      value={ledgerInlineForm.entry_type}
+                                      onChange={(e) =>
+                                        setLedgerInlineForm((prev) => ({
+                                          ...prev,
+                                          entry_type: e.target.value,
+                                        }))
+                                      }
+                                      disabled={ledgerSubmitting}
+                                    >
+                                      <option value="credit">입금</option>
+                                      <option value="debit">출금</option>
+                                    </select>
+                                  ) : item.entry_type === 'credit' ? (
+                                    '입금'
+                                  ) : (
+                                    '출금'
+                                  )}
+                                </td>
+                                <td>
+                                  {ledgerInlineEditId === item.id ? (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={ledgerInlineForm.amount}
+                                      onChange={(e) =>
+                                        setLedgerInlineForm((prev) => ({
+                                          ...prev,
+                                          amount: e.target.value,
+                                        }))
+                                      }
+                                      disabled={ledgerSubmitting}
+                                      style={{ width: 120 }}
+                                    />
+                                  ) : (
+                                    `${formatNumber(item.amount)}원`
+                                  )}
+                                </td>
                                 <td>{formatSource(item.source)}</td>
                                 <td>{memberName}</td>
-                                <td>{item.note || '-'}</td>
+                                <td>
+                                  {ledgerInlineEditId === item.id ? (
+                                    <input
+                                      type="text"
+                                      value={ledgerInlineForm.note}
+                                      onChange={(e) =>
+                                        setLedgerInlineForm((prev) => ({
+                                          ...prev,
+                                          note: e.target.value,
+                                        }))
+                                      }
+                                      disabled={ledgerSubmitting}
+                                      placeholder="비고"
+                                    />
+                                  ) : (
+                                    item.note || '-'
+                                  )}
+                                </td>
+                                <td>
+                                  {ledgerInlineEditId === item.id ? (
+                                    <div className="inline-actions">
+                                      <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() =>
+                                          handleLedgerInlineSave(item.id)
+                                        }
+                                        disabled={ledgerSubmitting}
+                                      >
+                                        완료
+                                      </button>
+                                      <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={handleLedgerInlineCancel}
+                                        disabled={ledgerSubmitting}
+                                      >
+                                        취소
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <button
+                                        className="btn btn-sm btn-edit"
+                                        onClick={() =>
+                                          handleLedgerInlineEdit(item)
+                                        }
+                                      >
+                                        수정
+                                      </button>
+                                      <button
+                                        className="btn btn-sm btn-delete"
+                                        onClick={() =>
+                                          handleLedgerDelete(item.id)
+                                        }
+                                        disabled={ledgerDeletingId === item.id}
+                                      >
+                                        {ledgerDeletingId === item.id ? (
+                                          <>
+                                            <div className="loading-spinner"></div>
+                                            삭제 중...
+                                          </>
+                                        ) : (
+                                          '삭제'
+                                        )}
+                                      </button>
+                                    </>
+                                  )}
+                                </td>
                               </tr>
                             );
                           })}
                           {hasMore && (
                             <tr>
                               <td
-                                colSpan="6"
+                                colSpan="7"
                                 style={{ textAlign: 'center', padding: '1rem' }}
                               >
                                 <button
