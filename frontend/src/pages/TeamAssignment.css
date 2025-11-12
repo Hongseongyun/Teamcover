@@ -288,12 +288,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .member-name {
   font-weight: 600;
   color: var(--toss-gray-900);
   font-size: 1rem;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .member-gender {
@@ -726,12 +730,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  box-shadow: none;
+  text-shadow: none;
 }
 
 .member-name {
   font-weight: 600;
   font-size: 1rem;
   color: var(--toss-gray-900);
+  box-shadow: none;
+  text-shadow: none;
 }
 
 /* 이름 옆 성별 배지 (컴팩트) */
