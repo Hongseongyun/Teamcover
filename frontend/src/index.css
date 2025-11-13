@@ -1,12 +1,17 @@
 /* 공통 액션 버튼 스타일 */
 .btn-edit {
-  background-color: #e5e7eb; /* gray-200 */
-  border-color: #e5e7eb;
-  color: #111827; /* gray-900 text */
+  background-color: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: var(--primary-color);
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 .btn-edit:hover {
-  background-color: #d1d5db; /* gray-300 */
-  border-color: #d1d5db;
+  background-color: rgba(59, 130, 246, 0.18);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+  transform: translateY(-1px);
 }
 
 .btn-delete {
@@ -23,6 +28,19 @@
 .btn-edit + .btn-delete,
 .btn-delete + .btn-edit {
   margin-left: 8px;
+}
+
+[data-theme='dark'] .btn-edit {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #e2e8f0;
+}
+
+[data-theme='dark'] .btn-edit:hover {
+  background-color: rgba(59, 130, 246, 0.35);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
 }
 
 /* 액션 버튼 그룹 래퍼(선택적) */

@@ -8,13 +8,14 @@
 }
 
 .login-card {
-  background: white;
+  background: var(--surface-card);
   border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--toss-shadow-lg);
   padding: 3rem;
   width: 100%;
   max-width: 400px;
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .login-header {
@@ -25,12 +26,12 @@
 .login-header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--color-text);
   margin: 0 0 0.5rem 0;
 }
 
 .login-header p {
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin: 0;
   font-size: 1rem;
 }
@@ -38,7 +39,7 @@
 .login-tabs {
   display: flex;
   margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tab-button {
@@ -48,25 +49,25 @@
   background: none;
   font-size: 1rem;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--color-text-muted);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
 }
 
 .tab-button.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
 }
 
 .tab-button:hover {
-  color: #3b82f6;
+  color: var(--primary-color);
 }
 
 .error-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: var(--alert-danger-bg);
+  border: 1px solid var(--alert-danger-border);
+  color: var(--alert-danger-text);
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
@@ -74,9 +75,9 @@
 }
 
 .success-message {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #16a34a;
+  background: var(--alert-success-bg);
+  border: 1px solid var(--alert-success-border);
+  color: var(--alert-success-text);
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
@@ -97,29 +98,31 @@
 
 .form-group label {
   font-weight: 500;
-  color: #374151;
+  color: var(--color-text);
   font-size: 0.875rem;
 }
 
 .form-group input,
 .form-group select {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-size: 1rem;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
 .login-button {
-  background: #3b82f6;
-  color: white;
+  background: var(--primary-color);
+  color: #ffffff;
   border: none;
   padding: 0.875rem;
   border-radius: 0.5rem;
@@ -130,11 +133,11 @@
 }
 
 .login-button:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--primary-color-hover);
 }
 
 .login-button:disabled {
-  background: #9ca3af;
+  background: var(--toss-gray-400);
   cursor: not-allowed;
 }
 
@@ -150,20 +153,20 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: var(--border-color);
 }
 
 .divider::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: var(--border-color);
 }
 
 .divider span {
-  background: white;
+  background: var(--surface-card);
   padding: 0 1rem;
-  color: #6b7280;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
   white-space: nowrap;
 }
@@ -175,10 +178,10 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 0.875rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
-  background: white;
-  color: #374151;
+  background: var(--surface-card);
+  color: var(--color-text);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -186,8 +189,8 @@
 }
 
 .google-login-button:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  background: var(--surface-subtle);
+  border-color: var(--border-color);
 }
 
 .google-login-button:disabled {

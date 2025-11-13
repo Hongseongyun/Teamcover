@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import './Navbar.css';
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasRole, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -129,6 +131,17 @@ const Navbar = () => {
         )}
 
         <div className="navbar-actions">
+          <button
+            type="button"
+            className="theme-toggle-button"
+            onClick={toggleTheme}
+            aria-label={
+              theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'
+            }
+            title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
+          >
+            <span aria-hidden="true">{theme === 'dark' ? '🌞' : '🌙'}</span>
+          </button>
           {isAuthenticated ? (
             <div className="user-menu">
               <button

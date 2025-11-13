@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAuthCallback from './components/GoogleAuthCallback';
@@ -20,77 +21,79 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   return (
-    <AuthProvider>
-      <div className="App">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/verify-email" element={<EmailVerification />} />
-            <Route path="/verify-code" element={<VerifyCode />} />
-            <Route path="/google-callback" element={<GoogleAuthCallback />} />
-            <Route
-              path="/members"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Members />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/scores"
-              element={
-                <ProtectedRoute requiredRole="user">
-                  <Scores />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/points"
-              element={
-                <ProtectedRoute requiredRole="user">
-                  <Points />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payments"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <Payments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/team-assignment"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <TeamAssignment />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/user-management"
-              element={
-                <ProtectedRoute requiredRole="super_admin">
-                  <UserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/mypage"
-              element={
-                <ProtectedRoute requiredRole="user">
-                  <MyPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </main>
-        <SpeedInsights />
-      </div>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="App">
+          <Navbar />
+          <main className="main-content">
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/verify-email" element={<EmailVerification />} />
+              <Route path="/verify-code" element={<VerifyCode />} />
+              <Route path="/google-callback" element={<GoogleAuthCallback />} />
+              <Route
+                path="/members"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Members />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/scores"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <Scores />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/points"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <Points />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/payments"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Payments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/team-assignment"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <TeamAssignment />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user-management"
+                element={
+                  <ProtectedRoute requiredRole="super_admin">
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mypage"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <MyPage />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </main>
+          <SpeedInsights />
+        </div>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

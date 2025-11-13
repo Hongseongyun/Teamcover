@@ -447,8 +447,9 @@
 
 .page-header h1 {
   margin: 0;
-  color: var(--toss-gray-900);
+  color: var(--color-text);
   font-size: var(--responsive-font-h1, 2rem);
+  font-weight: 700;
 }
 
 .header-actions {
@@ -471,14 +472,15 @@
   gap: 1rem;
   margin: 1.5rem 0;
   padding: 1rem;
-  background: var(--toss-gray-50);
+  background: var(--surface-card);
   border-radius: var(--toss-radius);
-  border: 1px solid var(--toss-gray-200);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-base);
 }
 
 .game-date-selector label {
   font-weight: 600;
-  color: var(--toss-gray-700);
+  color: var(--color-text);
   font-size: 1rem;
 }
 
@@ -486,25 +488,26 @@
   flex: 1;
   max-width: 200px;
   padding: 0.75rem;
-  border: 2px solid var(--toss-gray-300);
+  border: 2px solid var(--border-color);
   border-radius: var(--toss-radius);
   font-size: 1rem;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--surface-card);
+  color: var(--color-text);
 }
 
 .date-input-large:hover {
-  border-color: var(--toss-primary);
+  border-color: var(--primary-color);
 }
 
 .date-input-large:focus {
   outline: none;
-  border-color: var(--toss-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .date-hint {
-  color: var(--toss-gray-500);
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   font-style: italic;
 }
@@ -512,14 +515,15 @@
 .image-preview-result {
   margin: 1.5rem 0;
   padding: 1rem;
-  background: var(--toss-gray-50);
+  background: var(--surface-card);
   border-radius: var(--toss-radius);
-  border: 1px solid var(--toss-gray-200);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-base);
 }
 
 .image-preview-result h5 {
   margin: 0 0 1rem 0;
-  color: var(--toss-gray-700);
+  color: var(--color-text);
   font-size: 1rem;
 }
 
@@ -535,32 +539,72 @@
   max-height: 300px;
   object-fit: contain;
   border-radius: var(--toss-radius);
-  border: 1px solid var(--toss-gray-300);
+  border: 1px solid var(--border-color);
   display: block;
-  background: white;
+  background: var(--surface-card);
+}
+
+[data-theme='dark'] .game-date-selector,
+[data-theme='dark'] .image-preview-result {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 20px 45px rgba(8, 15, 31, 0.45);
+}
+
+[data-theme='dark'] .game-date-selector label,
+[data-theme='dark'] .image-preview-result h5 {
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .date-input-large {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme='dark'] .date-input-large:hover {
+  border-color: var(--primary-color);
+}
+
+[data-theme='dark'] .editable-input {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme='dark'] .editable-input:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme='dark'] .ocr-summary {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+[data-theme='dark'] .ocr-results-table th {
+  background-color: rgba(37, 99, 235, 0.12);
 }
 
 .editable-input {
   width: 100%;
   padding: 0.5rem;
-  border: 2px solid var(--toss-gray-300);
+  border: 2px solid var(--border-color);
   border-radius: 4px;
   font-size: 1rem;
   text-align: center;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--surface-card);
+  color: var(--color-text);
 }
 
 .editable-input:hover {
-  border-color: var(--toss-primary);
-  background: var(--toss-gray-50);
+  border-color: var(--primary-color);
+  background: var(--surface-subtle);
 }
 
 .editable-input:focus {
   outline: none;
-  border-color: var(--toss-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: white;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: var(--surface-card);
 }
 
 .name-input {
@@ -650,12 +694,14 @@
 }
 
 .ai-analyzing-content {
-  background: white;
+  background: var(--surface-card);
+  color: var(--color-text);
   padding: 3rem;
   border-radius: 16px;
   text-align: center;
   max-width: 500px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--border-color);
   animation: slideUp 0.3s ease;
 }
 
@@ -672,26 +718,26 @@
 
 .ai-analyzing-content h3 {
   margin: 1.5rem 0 1rem 0;
-  color: var(--toss-primary);
+  color: var(--primary-color);
   font-size: 1.5rem;
 }
 
 .ai-analyzing-content p {
   margin: 0.5rem 0;
-  color: var(--toss-gray-600);
+  color: var(--color-text-muted);
   font-size: 1rem;
 }
 
 .please-wait {
   font-weight: 600;
-  color: var(--toss-primary);
+  color: var(--primary-color);
   margin-top: 1rem !important;
   font-size: 1.1rem !important;
 }
 
 .progress-text {
   font-weight: 600;
-  color: var(--toss-success);
+  color: var(--success-color);
   font-size: 1.15rem !important;
   margin: 0.5rem 0 !important;
 }
@@ -700,10 +746,29 @@
   width: 60px;
   height: 60px;
   margin: 0 auto;
-  border: 6px solid var(--toss-gray-200);
-  border-top: 6px solid var(--toss-primary);
+  border: 6px solid var(--border-color);
+  border-top: 6px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+[data-theme='dark'] .ai-analyzing-content {
+  background: linear-gradient(
+    145deg,
+    rgba(30, 41, 59, 0.92) 0%,
+    rgba(15, 23, 42, 0.95) 65%,
+    rgba(59, 130, 246, 0.18) 100%
+  );
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 25px 60px rgba(8, 15, 31, 0.6);
+}
+
+[data-theme='dark'] .ai-analyzing-content p {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+[data-theme='dark'] .progress-text {
+  color: #5eead4;
 }
 
 .spinner {
@@ -1826,16 +1891,17 @@
 }
 
 .ocr-summary {
-  background: var(--toss-info-light);
+  background: rgba(14, 165, 233, 0.15);
   padding: 1rem;
   border-radius: var(--toss-radius);
   margin-bottom: 1.5rem;
+  border: 1px solid rgba(14, 165, 233, 0.25);
 }
 
 .ocr-summary p {
   margin: 0;
   font-weight: 500;
-  color: var(--toss-info-dark);
+  color: var(--color-text);
 }
 
 .ocr-results-table {
@@ -1852,13 +1918,13 @@
 .ocr-results-table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--toss-gray-200);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .ocr-results-table th {
-  background-color: var(--toss-gray-50);
+  background-color: var(--surface-subtle);
   font-weight: 600;
-  color: var(--toss-gray-700);
+  color: var(--color-text);
 }
 
 .ocr-actions {
@@ -1873,18 +1939,18 @@
 }
 
 .section-card {
-  background: var(--toss-white);
+  background: var(--surface-card);
   border-radius: var(--toss-radius-lg);
   padding: 2rem;
-  box-shadow: var(--toss-shadow);
-  border: 1px solid var(--toss-gray-200);
+  box-shadow: var(--shadow-base);
+  border: 1px solid var(--border-color);
   width: 100%;
 }
 
 .section-title {
   font-size: var(--responsive-font-h2, 1.5rem);
   font-weight: 600;
-  color: var(--toss-gray-900);
+  color: var(--color-text);
   margin-bottom: 1.5rem;
 }
 

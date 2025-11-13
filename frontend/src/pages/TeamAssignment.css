@@ -11,7 +11,9 @@
 
 .page-header h1 {
   margin: 0;
-  color: var(--toss-gray-900);
+  color: var(--color-text);
+  font-size: var(--responsive-font-h1, 2rem);
+  font-weight: 700;
 }
 
 /* 선수 입력 섹션 */

@@ -252,6 +252,88 @@
   cursor: not-allowed;
 }
 
+[data-theme='dark'] .verify-code-card {
+  background: var(--surface-card);
+  color: var(--color-text);
+  box-shadow: var(--toss-shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .verify-code-header h1,
+[data-theme='dark'] .user-name,
+[data-theme='dark'] .form-group label,
+[data-theme='dark'] .verify-code-footer p {
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .user-info {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .user-email,
+[data-theme='dark'] .small-text,
+[data-theme='dark'] .input-hint {
+  color: var(--color-text-muted) !important;
+}
+
+[data-theme='dark'] .verify-code-description {
+  background: rgba(59, 130, 246, 0.16);
+  border-left-color: var(--primary-color);
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .verify-code-description p {
+  color: var(--primary-color);
+}
+
+[data-theme='dark'] .error-message {
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border-color: var(--alert-danger-border);
+}
+
+[data-theme='dark'] .success-message {
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border-color: var(--alert-success-border);
+}
+
+[data-theme='dark'] .verify-code-footer {
+  border-top-color: var(--border-color);
+}
+
+[data-theme='dark'] .code-input {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .code-input:disabled {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: var(--color-text-muted);
+}
+
+[data-theme='dark'] .resend-button {
+  background: transparent;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+[data-theme='dark'] .resend-button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+[data-theme='dark'] .back-button {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+[data-theme='dark'] .back-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: #fff;
+}
+
 @media (max-width: 600px) {
   .verify-code-card {
     padding: 30px 20px;

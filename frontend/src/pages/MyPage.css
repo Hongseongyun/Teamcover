@@ -8,8 +8,6 @@
 .mypage-header {
   text-align: center;
   margin-bottom: 40px;
-  :center ;
-  margin-bottom: 40px;
 }
 
 .mypage-header h1 {
@@ -197,6 +195,94 @@
   background: #c82333;
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+[data-theme='dark'] .mypage-header h1,
+[data-theme='dark'] .info-card h2,
+[data-theme='dark'] .user-details h3,
+[data-theme='dark'] .form-group label {
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .mypage-subtitle,
+[data-theme='dark'] .user-email,
+[data-theme='dark'] .form-group small {
+  color: var(--color-text-muted);
+}
+
+[data-theme='dark'] .info-card {
+  background: var(--surface-card);
+  color: var(--color-text);
+  box-shadow: var(--toss-shadow);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .info-card h2 {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme='dark'] .alert-error {
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border-color: var(--alert-danger-border);
+}
+
+[data-theme='dark'] .alert-success {
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border-color: var(--alert-success-border);
+}
+
+[data-theme='dark'] .user-avatar-large {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+[data-theme='dark'] .user-role {
+  color: var(--primary-color);
+}
+
+[data-theme='dark'] .form-group input {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .form-group input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+[data-theme='dark'] .btn-primary {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+}
+
+[data-theme='dark'] .btn-secondary {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .btn-secondary:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme='dark'] .danger-text,
+[data-theme='dark'] .btn-danger {
+  color: var(--alert-danger-text);
+}
+
+[data-theme='dark'] .btn-danger {
+  background: var(--danger-color);
+}
+
+[data-theme='dark'] .btn-danger:hover:not(:disabled) {
+  background: var(--danger-color-hover);
+  box-shadow: 0 4px 15px rgba(248, 113, 113, 0.28);
 }
 
 /* 폼 액션 버튼들 */

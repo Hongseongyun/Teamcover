@@ -176,6 +176,72 @@
   color: white;
 }
 
+[data-theme='dark'] .verification-card {
+  background: var(--surface-card);
+  color: var(--color-text);
+  box-shadow: var(--toss-shadow-lg);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .verification-header h1,
+[data-theme='dark'] .verification-header h2,
+[data-theme='dark'] .resend-section h3 {
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .verification-header h2,
+[data-theme='dark'] .redirect-message,
+[data-theme='dark'] .resend-section p {
+  color: var(--color-text-muted);
+}
+
+[data-theme='dark'] .success-message {
+  color: var(--alert-success-text);
+}
+
+[data-theme='dark'] .resend-section {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .email-input {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme='dark'] .email-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+[data-theme='dark'] .resend-button {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+[data-theme='dark'] .resend-button:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+}
+
+[data-theme='dark'] .resend-button:disabled {
+  background: var(--toss-gray-500);
+}
+
+[data-theme='dark'] .verification-footer {
+  border-top-color: var(--border-color);
+}
+
+[data-theme='dark'] .back-to-login {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+[data-theme='dark'] .back-to-login:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
 @media (max-width: 600px) {
   .verification-card {
     padding: 30px 20px;
