@@ -294,7 +294,7 @@
 
 .member-name {
   font-weight: 600;
-  color: var(--toss-gray-900);
+  /* color: var(--toss-gray-900); */
   font-size: 1rem;
   box-shadow: none;
   text-shadow: none;

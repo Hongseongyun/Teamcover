@@ -211,6 +211,17 @@ const Points = () => {
       monthlyStats[monthKey].count++;
     });
 
+    const sortedMonths = Object.keys(monthlyStats).sort((a, b) =>
+      a.localeCompare(b)
+    );
+    let runningBalance = 0;
+    const enrichedMonthlyStats = sortedMonths.reduce((acc, month) => {
+      const monthData = monthlyStats[month];
+      runningBalance += monthData.earned - monthData.used;
+      acc[month] = { ...monthData, balance: runningBalance };
+      return acc;
+    }, {});
+
     // 정확한 잔여 포인트 계산
     const totalBalance = totalEarned - totalUsed;
     const activeMembers = Object.keys(memberPoints).length;
@@ -220,7 +231,7 @@ const Points = () => {
       totalUsed,
       totalBalance,
       activeMembers,
-      monthlyStats,
+      monthlyStats: enrichedMonthlyStats,
     });
   };
 
@@ -389,9 +400,10 @@ const Points = () => {
 
   // 월별 포인트 현황 그래프 데이터 준비
   const prepareChartData = () => {
-    const monthlyData = Object.entries(stats.monthlyStats)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-6); // 최근 6개월
+    const sortedMonthlyData = Object.entries(stats.monthlyStats).sort(
+      ([a], [b]) => a.localeCompare(b)
+    );
+    const monthlyData = sortedMonthlyData.slice(-8); // 최근 8개월
 
     const labels = monthlyData.map(([month]) => {
       const [year, monthNum] = month.split('-');
@@ -400,7 +412,9 @@ const Points = () => {
 
     const earnedData = monthlyData.map(([, data]) => data.earned);
     const usedData = monthlyData.map(([, data]) => data.used);
-    const results = monthlyData.map(([, data]) => data.earned - data.used);
+    const balanceData = monthlyData.map(([, data]) =>
+      typeof data.balance === 'number' ? data.balance : data.earned - data.used
+    );
 
     return {
       labels,
@@ -434,23 +448,18 @@ const Points = () => {
           tension: 0.4,
         },
         {
-          label: '결과',
-          data: results,
-          borderColor: 'rgba(59, 130, 246, 1)',
+          label: '잔여',
+          data: balanceData,
+          borderColor: 'rgba(99, 102, 241, 1)',
           backgroundColor: 'transparent',
-          pointBackgroundColor: results.map((value) =>
-            value >= 0 ? 'rgba(37, 99, 235, 1)' : 'rgba(30, 64, 175, 1)'
-          ),
-          pointBorderColor: results.map((value) =>
-            value >= 0 ? 'rgba(37, 99, 235, 1)' : 'rgba(30, 64, 175, 1)'
-          ),
+          pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+          pointBorderColor: 'rgba(99, 102, 241, 1)',
           pointRadius: 6,
           pointHoverRadius: 8,
           pointBorderWidth: 2,
           borderWidth: 3,
-          borderDash: [6, 4],
           fill: false,
-          tension: 0.4,
+          tension: 0.3,
         },
       ],
     };
@@ -1007,7 +1016,7 @@ const Points = () => {
               <div className="monthly-stats-grid">
                 {Object.entries(stats.monthlyStats)
                   .sort(([a], [b]) => a.localeCompare(b))
-                  .slice(-6)
+                  .slice(-8)
                   .map(([month, data]) => (
                     <div key={month} className="monthly-stat-card">
                       <h4>{month}</h4>
@@ -1035,6 +1044,17 @@ const Points = () => {
                           >
                             {data.earned - data.used >= 0 ? '+' : ''}
                             {formatNumber(data.earned - data.used)}
+                          </span>
+                        </div>
+                        <div className="stat-item">
+                          <span className="stat-label">잔여:</span>
+                          <span
+                            className={`stat-value ${
+                              (data.balance || 0) >= 0 ? 'positive' : 'negative'
+                            }`}
+                          >
+                            {(data.balance || 0) >= 0 ? '+' : ''}
+                            {formatNumber(data.balance || 0)}
                           </span>
                         </div>
                       </div>
