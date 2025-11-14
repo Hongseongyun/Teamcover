@@ -96,6 +96,7 @@ const Members = () => {
   const [importFormData, setImportFormData] = useState({
     spreadsheetUrl: '',
     worksheetName: '',
+    confirmDelete: false,
   });
 
   // 정렬 상태
@@ -383,12 +384,31 @@ const Members = () => {
     setShowAddForm(false);
   };
 
+  // 구글시트 가져오기 섹션으로 스크롤
+  const scrollToImportSection = () => {
+    setShowImportForm(true);
+    setTimeout(() => {
+      const element = document.getElementById('sheet-import-section');
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 120);
+  };
+
   // 구글시트 가져오기
   const handleImportFromSheets = async (e) => {
     e.preventDefault();
 
     if (!importFormData.spreadsheetUrl.trim()) {
       alert('구글 시트 URL을 입력해주세요.');
+      return;
+    }
+
+    if (!importFormData.confirmDelete) {
+      alert('경고사항을 확인하고 체크박스를 선택해주세요.');
       return;
     }
 
@@ -402,6 +422,7 @@ const Members = () => {
         setImportFormData({
           spreadsheetUrl: '',
           worksheetName: '',
+          confirmDelete: false,
         });
         loadMembers();
       } else {
@@ -531,10 +552,7 @@ const Members = () => {
               🔒 비밀번호 설정
             </button>
           )}
-          <button
-            className="btn btn-info"
-            onClick={() => setShowImportForm(true)}
-          >
+          <button className="btn btn-info" onClick={scrollToImportSection}>
             구글시트 가져오기
           </button>
           <button
@@ -570,13 +588,17 @@ const Members = () => {
 
       {/* 구글시트 가져오기 폼 */}
       {showImportForm && (
-        <div className="form-section">
+        <div id="sheet-import-section" className="import-section">
           <div className="section-card">
             <h3 className="section-title">구글시트에서 회원 가져오기</h3>
-            <form onSubmit={handleImportFromSheets} className="member-form">
+            <div className="alert alert-warning import-alert">
+              <strong>주의:</strong> 기존 회원 모두 삭제 후 가져오기 (기존
+              데이터가 모두 삭제됩니다)
+            </div>
+            <form onSubmit={handleImportFromSheets} className="import-form">
               <div className="form-row">
-                <div className="form-group full-width">
-                  <label>구글 시트 URL *</label>
+                <div className="form-group">
+                  <label>구글시트 URL *</label>
                   <input
                     type="url"
                     value={importFormData.spreadsheetUrl}
@@ -590,10 +612,8 @@ const Members = () => {
                     required
                   />
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group full-width">
-                  <label>워크시트 이름 (선택사항)</label>
+                <div className="form-group">
+                  <label>워크시트 이름 (선택)</label>
                   <input
                     type="text"
                     value={importFormData.worksheetName}
@@ -603,13 +623,29 @@ const Members = () => {
                         worksheetName: e.target.value,
                       })
                     }
-                    placeholder="워크시트 이름을 입력하세요 (비워두면 첫 번째 시트 사용)"
+                    placeholder="Sheet1 (기본값)"
                   />
                 </div>
               </div>
-              <div className="form-actions">
+              <div className="form-group import-confirm">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={importFormData.confirmDelete}
+                    onChange={(e) =>
+                      setImportFormData({
+                        ...importFormData,
+                        confirmDelete: e.target.checked,
+                      })
+                    }
+                    required
+                  />
+                  위 경고사항을 확인했습니다
+                </label>
+              </div>
+              <div className="form-actions import-actions">
                 <button type="submit" className="btn btn-primary">
-                  가져오기
+                  구글시트에서 가져오기
                 </button>
                 <button
                   type="button"
