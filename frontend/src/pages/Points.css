@@ -158,6 +158,46 @@
   margin-bottom: 2rem;
 }
 
+.import-alert {
+  margin-bottom: 1.75rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--toss-radius-lg);
+  border-width: 1.5px;
+}
+
+.import-confirm {
+  margin-top: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--toss-radius-lg);
+  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+}
+
+[data-theme='dark'] .import-confirm {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.import-confirm .checkbox-label {
+  align-items: flex-start;
+  gap: 1rem;
+  line-height: 1.5;
+}
+
+.import-actions {
+  justify-content: center;
+  margin-top: 1.25rem;
+  gap: 1.25rem;
+}
+
+.import-actions .btn {
+  min-width: 148px;
+  font-size: 0.95rem;
+  padding: 0.85rem 2.2rem;
+  border-radius: var(--toss-radius-lg);
+  font-weight: 600;
+}
+
 .import-form {
   display: flex;
   flex-direction: column;
@@ -186,7 +226,7 @@
 
 .checkbox-label input[type='checkbox'] {
   width: auto;
-  margin: 0;
+  margin: 0 0.75rem 0 0;
 }
 
 /* 개인별 검색 섹션 */
@@ -605,14 +645,6 @@
   background-color: var(--toss-gray-50);
 }
 
-.points-table td:nth-child(2) {
-  background-color: var(--toss-white);
-}
-
-.points-table tr:hover td:nth-child(2) {
-  background-color: var(--toss-gray-50);
-}
-
 .points-table tr:hover {
   background-color: var(--toss-gray-50);
 }
@@ -877,38 +909,41 @@
 
 /* 편집 중인 행 스타일 */
 .points-table tr.editing {
-  background-color: #fef3c7;
-  border: 2px solid var(--toss-warning);
+  background-color: var(--surface-card);
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease;
 }
 
 .points-table tr.editing td {
-  border-color: var(--toss-warning);
+  border-color: inherit;
 }
 
 /* 인라인 입력 필드 스타일 */
 .inline-input,
 .inline-select {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius-lg);
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background-color: white;
+  font-size: 0.9rem;
+  background-color: var(--toss-gray-50);
+  color: var(--color-text);
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
   width: 100%;
-  max-width: 100%;
   box-sizing: border-box;
+}
+
+.inline-input:hover,
+.inline-select:hover {
+  border-color: var(--primary-color);
 }
 
 .inline-input:focus,
 .inline-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.inline-input:hover,
-.inline-select:hover {
-  border-color: #9ca3af;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background-color: #fff;
 }
 
 /* 인라인 액션 버튼 */
@@ -1652,6 +1687,7 @@
 
 /* 기타 항목 인라인 입력 필드 */
 .other-amount-input {
+  appearance: textfield;
   -moz-appearance: textfield; /* Firefox에서 스피너 제거 */
 }
 
@@ -1974,6 +2010,16 @@
   cursor: pointer;
 }
 
+[data-theme='dark'] .member-balance-card {
+  background: linear-gradient(
+    145deg,
+    rgba(30, 41, 59, 0.96) 0%,
+    rgba(15, 23, 42, 0.92) 100%
+  );
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 24px 40px -18px rgba(8, 15, 31, 0.75);
+}
+
 .member-balance-card::before {
   content: '';
   position: absolute;
@@ -1991,9 +2037,17 @@
   opacity: 1;
 }
 
+[data-theme='dark'] .member-balance-card.positive::before {
+  background: linear-gradient(90deg, #34d399, #22d3ee, #60a5fa);
+}
+
 .member-balance-card.negative::before {
   background: linear-gradient(90deg, #ef4444, #f87171, #fca5a5);
   opacity: 1;
+}
+
+[data-theme='dark'] .member-balance-card.negative::before {
+  background: linear-gradient(90deg, #f87171, #fb7185, #fbbf24);
 }
 
 .member-balance-card:hover {
@@ -2031,6 +2085,10 @@
   z-index: auto !important;
 }
 
+[data-theme='dark'] .member-balance-card .member-name {
+  color: rgba(226, 232, 240, 0.92);
+}
+
 .member-balance {
   display: flex;
   align-items: baseline;
@@ -2048,6 +2106,13 @@
   background-clip: text;
 }
 
+[data-theme='dark'] .balance-amount {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .member-balance-card.positive .balance-amount {
   background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   -webkit-background-clip: text;
@@ -2055,8 +2120,22 @@
   background-clip: text;
 }
 
+[data-theme='dark'] .member-balance-card.positive .balance-amount {
+  background: linear-gradient(135deg, #22d3ee 0%, #4ade80 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .member-balance-card.negative .balance-amount {
   background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme='dark'] .member-balance-card.negative .balance-amount {
+  background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

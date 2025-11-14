@@ -390,6 +390,19 @@ const Scores = () => {
     setCurrentDateIndex(groupedScores.length - 1);
   };
 
+  const scrollToImportSection = () => {
+    setShowImportForm(true);
+    setTimeout(() => {
+      const element = document.getElementById('sheet-import-section');
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 120);
+  };
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1068,10 +1081,7 @@ const Scores = () => {
         <h1>스코어</h1>
         {isAdmin && (
           <div className="header-actions">
-            <button
-              className="btn btn-info"
-              onClick={() => setShowImportForm(true)}
-            >
+            <button className="btn btn-info" onClick={scrollToImportSection}>
               구글시트 가져오기
             </button>
             <button
@@ -1624,10 +1634,10 @@ const Scores = () => {
 
       {/* 구글시트 가져오기 폼 (관리자만) */}
       {isAdmin && showImportForm && (
-        <div className="import-section">
+        <div id="sheet-import-section" className="import-section">
           <div className="section-card">
             <h3 className="section-title">구글시트에서 스코어 가져오기</h3>
-            <div className="alert alert-warning">
+            <div className="alert alert-warning import-alert">
               <strong>주의:</strong> 기존 스코어 모두 삭제 후 가져오기 (기존
               데이터가 모두 삭제됩니다)
             </div>
@@ -1663,7 +1673,7 @@ const Scores = () => {
                   />
                 </div>
               </div>
-              <div className="form-group">
+              <div className="form-group import-confirm">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
@@ -1679,7 +1689,7 @@ const Scores = () => {
                   위 경고사항을 확인했습니다
                 </label>
               </div>
-              <div className="form-actions">
+              <div className="form-actions import-actions">
                 <button type="submit" className="btn btn-primary">
                   구글시트에서 가져오기
                 </button>

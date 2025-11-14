@@ -140,7 +140,7 @@ const Navbar = () => {
             }
             title={theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환'}
           >
-            <span aria-hidden="true">{theme === 'dark' ? '🌞' : '🌙'}</span>
+            <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
           </button>
           {isAuthenticated ? (
             <div className="user-menu">

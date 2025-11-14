@@ -291,6 +291,16 @@
   );
 }
 
+[data-theme='dark'] .sticky-add-row {
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 23, 42, 0),
+    rgba(15, 23, 42, 0.92) 30%,
+    rgba(15, 23, 42, 0.98)
+  );
+  backdrop-filter: blur(6px);
+}
+
 .add-row-btn {
   width: 44px;
   height: 44px;
@@ -1458,6 +1468,46 @@
   margin-bottom: 2rem;
 }
 
+.import-alert {
+  margin-bottom: 1.75rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--toss-radius-lg);
+  border-width: 1.5px;
+}
+
+.import-confirm {
+  margin-top: 0.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--toss-radius-lg);
+  border: 1px solid var(--border-color);
+  background: var(--surface-subtle);
+}
+
+[data-theme='dark'] .import-confirm {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.import-confirm .checkbox-label {
+  align-items: flex-start;
+  gap: 1rem;
+  line-height: 1.5;
+}
+
+.import-actions {
+  justify-content: center;
+  margin-top: 1.25rem;
+  gap: 1.25rem;
+}
+
+.import-actions .btn {
+  min-width: 148px;
+  font-size: 0.95rem;
+  padding: 0.85rem 2.2rem;
+  border-radius: var(--toss-radius-lg);
+  font-weight: 600;
+}
+
 .import-form {
   display: flex;
   flex-direction: column;
@@ -1486,7 +1536,7 @@
 
 .checkbox-label input[type='checkbox'] {
   width: auto;
-  margin: 0;
+  margin: 0 0.75rem 0 0;
 }
 
 /* 사진 업로드 섹션 */

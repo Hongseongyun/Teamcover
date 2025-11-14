@@ -2487,8 +2487,6 @@ const Payments = () => {
                                       cursor: 'pointer',
                                       padding: '0.75rem',
                                       borderRadius: '8px',
-                                      border: '1px solid #e0e0e0',
-                                      backgroundColor: '#fff',
                                       transition: 'all 0.2s',
                                       display: 'flex',
                                       flexDirection: 'column',
@@ -2517,17 +2515,11 @@ const Payments = () => {
                                       {payment.member_name}
                                     </div>
                                     <div
-                                      className={statusClass}
+                                      className={`game-card-status ${statusClass}`}
                                       style={{
                                         fontSize: '0.75rem',
                                         padding: '0.25rem 0.75rem',
                                         borderRadius: '12px',
-                                        backgroundColor:
-                                          currentState.paid_with_points
-                                            ? 'rgba(59, 130, 246, 0.1)'
-                                            : currentState.is_paid
-                                            ? 'rgba(16, 185, 129, 0.1)'
-                                            : 'rgba(239, 68, 68, 0.1)',
                                       }}
                                     >
                                       {statusText}

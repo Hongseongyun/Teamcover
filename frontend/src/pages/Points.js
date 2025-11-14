@@ -936,6 +936,19 @@ const Points = () => {
     ]);
   };
 
+  const scrollToImportSection = () => {
+    setShowImportForm(true);
+    setTimeout(() => {
+      const element = document.getElementById('sheet-import-section');
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+    }, 120);
+  };
+
   // 포인트 추가 폼으로 스크롤하는 함수
   const scrollToAddForm = () => {
     setShowAddForm(true);
@@ -961,10 +974,7 @@ const Points = () => {
         <h1>포인트</h1>
         {isAdmin && (
           <div className="header-actions">
-            <button
-              className="btn btn-info"
-              onClick={() => setShowImportForm(true)}
-            >
+            <button className="btn btn-info" onClick={scrollToImportSection}>
               구글시트 가져오기
             </button>
             <button className="btn btn-primary" onClick={scrollToAddForm}>
@@ -1099,10 +1109,10 @@ const Points = () => {
 
       {/* 구글시트 가져오기 폼 (관리자만) */}
       {isAdmin && showImportForm && (
-        <div className="import-section">
+        <div id="sheet-import-section" className="import-section">
           <div className="section-card">
             <h3 className="section-title">구글시트에서 포인트 가져오기</h3>
-            <div className="alert alert-warning">
+            <div className="alert alert-warning import-alert">
               <strong>주의:</strong> 기존 포인트 모두 삭제 후 가져오기 (기존
               데이터가 모두 삭제됩니다)
             </div>
@@ -1138,7 +1148,7 @@ const Points = () => {
                   />
                 </div>
               </div>
-              <div className="form-group">
+              <div className="form-group import-confirm">
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
@@ -1154,7 +1164,7 @@ const Points = () => {
                   위 경고사항을 확인했습니다
                 </label>
               </div>
-              <div className="form-actions">
+              <div className="form-actions import-actions">
                 <button type="submit" className="btn btn-primary">
                   구글시트에서 가져오기
                 </button>

@@ -244,6 +244,10 @@
   font-weight: 600;
 }
 
+[data-theme='dark'] .status-point {
+  color: #60a5fa;
+}
+
 /* 인라인 편집 액션(완료/취소) 영역 - 이미지와 동일한 우측 정렬/간격 */
 .inline-actions {
   display: flex;
@@ -260,9 +264,10 @@
 .payments-table textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--toss-gray-300);
-  border-radius: 10px;
-  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--toss-radius-lg);
+  background-color: var(--surface-card);
+  color: var(--color-text);
   font-size: 0.95rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease,
     background-color 0.2s ease;
@@ -274,8 +279,27 @@
 .payments-table select:focus,
 .payments-table textarea:focus {
   outline: none;
-  border-color: var(--toss-primary, #4f46e5);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background-color: var(--surface-subtle);
+}
+
+[data-theme='dark'] .payments-table input[type='text'],
+[data-theme='dark'] .payments-table input[type='number'],
+[data-theme='dark'] .payments-table input[type='date'],
+[data-theme='dark'] .payments-table select,
+[data-theme='dark'] .payments-table textarea {
+  border-color: rgba(148, 163, 184, 0.35);
+  background-color: rgba(30, 41, 59, 0.85);
+}
+
+[data-theme='dark'] .payments-table input[type='text']:focus,
+[data-theme='dark'] .payments-table input[type='number']:focus,
+[data-theme='dark'] .payments-table input[type='date']:focus,
+[data-theme='dark'] .payments-table select:focus,
+[data-theme='dark'] .payments-table textarea:focus {
+  border-color: var(--primary-color);
+  background-color: rgba(30, 41, 59, 0.95);
 }
 
 /* placeholder/비어있을 때 배경 살짝 톤 다운 */
@@ -790,11 +814,18 @@
   border-radius: 50%;
   line-height: 28px;
   font-size: 0.75rem;
-  background-color: var(--toss-gray-200);
-  color: var(--toss-gray-400);
-  border: 1px solid var(--toss-gray-300);
+  background-color: var(--toss-gray-300);
+  color: var(--toss-gray-600);
+  border: 1px solid var(--toss-gray-400);
   cursor: default;
-  opacity: 0.5;
+  opacity: 0.75;
+}
+
+[data-theme='dark'] .payment-status.disabled {
+  background-color: rgba(148, 163, 184, 0.3);
+  color: rgba(203, 213, 225, 0.7);
+  border-color: rgba(148, 163, 184, 0.5);
+  opacity: 0.85;
 }
 
 .btn-xs {
@@ -970,16 +1001,17 @@
 }
 
 .game-payment-card {
-  background: white;
+  background: var(--surface-card);
   border-radius: var(--toss-radius);
-  border: 1px solid var(--toss-gray-200);
+  border: 1px solid var(--border-color);
   padding: 0.75rem;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  color: var(--color-text);
 }
 
 .game-payment-card:hover {
-  border-color: var(--toss-primary);
+  border-color: var(--primary-color);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
@@ -987,7 +1019,30 @@
 /* 클릭 가능한 카드 */
 .game-payment-card[style*='cursor: pointer']:hover {
   cursor: pointer;
-  background-color: var(--toss-gray-50);
+  background-color: var(--surface-subtle);
+}
+
+[data-theme='dark'] .game-payment-card {
+  background: linear-gradient(
+    145deg,
+    rgba(30, 41, 59, 0.96) 0%,
+    rgba(15, 23, 42, 0.92) 100%
+  );
+  border-color: rgba(148, 163, 184, 0.24);
+  box-shadow: 0 4px 12px rgba(8, 15, 31, 0.4);
+}
+
+[data-theme='dark'] .game-payment-card:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow: 0 8px 20px rgba(8, 15, 31, 0.6);
+}
+
+[data-theme='dark'] .game-payment-card[style*='cursor: pointer']:hover {
+  background: linear-gradient(
+    145deg,
+    rgba(37, 99, 235, 0.15) 0%,
+    rgba(30, 41, 59, 0.95) 100%
+  );
 }
 
 .game-payment-card[style*='cursor: pointer']:active {
@@ -1005,7 +1060,11 @@
 .game-member-name {
   font-weight: 600;
   font-size: 0.95rem;
-  color: var(--toss-gray-900);
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .game-member-name {
+  color: rgba(226, 232, 240, 0.92);
 }
 
 .game-card-body {
@@ -1030,6 +1089,29 @@
 .game-card-status.status-unpaid {
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.game-card-status.status-point {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--toss-primary);
+}
+
+[data-theme='dark'] .game-card-status.status-paid {
+  background-color: rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+[data-theme='dark'] .game-card-status.status-unpaid {
+  background-color: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+[data-theme='dark'] .game-card-status.status-point {
+  background-color: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
 }
 
 .game-date-header {
@@ -1871,10 +1953,15 @@
 .game-payment-date-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--toss-gray-900);
+  color: var(--color-text);
   margin: 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--toss-gray-200);
+  border-bottom: 2px solid var(--border-color);
+}
+
+[data-theme='dark'] .game-payment-date-title {
+  color: rgba(226, 232, 240, 0.95);
+  border-bottom-color: rgba(148, 163, 184, 0.3);
 }
 
 .game-payment-cards-grid {
@@ -1897,6 +1984,18 @@
 
 .game-payment-card.unpaid {
   border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme='dark'] .game-payment-card.paid {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+[data-theme='dark'] .game-payment-card.point {
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+[data-theme='dark'] .game-payment-card.unpaid {
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 @media (max-width: 768px) {
