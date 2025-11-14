@@ -788,16 +788,26 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  background-color: #e0e7ff;
-  color: #6366f1;
-  border: 1px solid #c7d2fe;
+  background-color: #c7d2fe;
+  color: #4f46e5;
+  border: 1px solid #a5b4fc;
   cursor: pointer;
 }
 
 .payment-status.exempt:hover:not(:disabled) {
-  background-color: #c7d2fe;
+  background-color: #a5b4fc;
   transform: scale(1.05);
   box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+[data-theme='dark'] .payment-status.exempt {
+  background-color: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+[data-theme='dark'] .payment-status.exempt:hover:not(:disabled) {
+  background-color: rgba(99, 102, 241, 0.4);
 }
 
 .payment-status.exempt:disabled {
