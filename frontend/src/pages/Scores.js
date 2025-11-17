@@ -2467,7 +2467,6 @@ const Scores = () => {
                       </th>
                     )}
                     <th className="member-name-col">회원명</th>
-                    <th>게임 날짜</th>
                     <th>1게임</th>
                     <th>2게임</th>
                     <th>3게임</th>
@@ -2483,7 +2482,7 @@ const Scores = () => {
                       {/* 날짜 헤더 행 */}
                       <tr className="date-header-row">
                         <td
-                          colSpan={isAdmin ? '9' : '8'}
+                          colSpan={isAdmin ? '8' : '7'}
                           className="date-header"
                         >
                           <div className="date-header-content">
@@ -2570,19 +2569,6 @@ const Scores = () => {
                                     </option>
                                   ))}
                                 </select>
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="date"
-                                  value={inlineEditData.game_date}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      game_date: e.target.value,
-                                    }))
-                                  }
-                                />
                               </td>
                               <td>
                                 <input
@@ -2686,7 +2672,6 @@ const Scores = () => {
                               <td className="member-name-col">
                                 {score.member_name}
                               </td>
-                              <td>{score.game_date}</td>
                               <td>{score.score1}</td>
                               <td>{score.score2}</td>
                               <td>{score.score3}</td>

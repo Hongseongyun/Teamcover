@@ -2874,7 +2874,7 @@
   position: sticky !important;
   left: 0 !important;
   z-index: 11 !important;
-  background-color: var(--toss-white) !important;
+  background-color: transparent !important;
 }
 
 .scores-table thead tr th:first-child.member-name-col,
@@ -2891,7 +2891,7 @@
   position: sticky !important;
   left: 58px !important;
   z-index: 11 !important;
-  background-color: var(--toss-white) !important;
+  background-color: transparent !important;
 }
 
 .scores-table thead tr th:nth-child(2).member-name-col {
@@ -2905,7 +2905,7 @@
   position: sticky !important;
   left: 66px !important;
   z-index: 11 !important;
-  background-color: var(--toss-white) !important;
+  background-color: transparent !important;
 }
 
 .single-date-table thead tr th:nth-child(2).member-name-col {
@@ -2917,7 +2917,7 @@
 
 .scores-table tbody tr:hover td.member-name-col,
 .single-date-table tbody tr:hover td.member-name-col {
-  background-color: var(--toss-gray-50) !important;
+  background-color: inherit !important;
 }
 
 .scores-table tr:hover {
