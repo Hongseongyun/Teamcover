@@ -2482,7 +2482,7 @@ const Scores = () => {
                       {/* 날짜 헤더 행 */}
                       <tr className="date-header-row">
                         <td
-                          colSpan={isAdmin ? '8' : '7'}
+                          colSpan={isAdmin ? '9' : '7'}
                           className="date-header"
                         >
                           <div className="date-header-content">
