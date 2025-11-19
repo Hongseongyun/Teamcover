@@ -93,7 +93,7 @@ def add_point():
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름은 필수 입력 항목입니다.'})
         
-        member = Member.query.filter_by(name=member_name).first()
+        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
@@ -251,7 +251,7 @@ def update_point(point_id):
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름을 입력해주세요.'})
         
-        member = Member.query.filter_by(name=member_name).first()
+        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         

@@ -81,6 +81,7 @@ class Member(db.Model):
     note = db.Column(db.Text, nullable=True)
     join_date = db.Column(db.Date, nullable=True)  # 가입일 (수정 가능)
     is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
+    is_deleted = db.Column(db.Boolean, default=False)  # 삭제 여부 (soft delete)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

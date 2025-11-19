@@ -33,7 +33,7 @@ const Points = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // 포인트 등록 중 로딩 상태
-  const [deleting, setDeleting] = useState(false); // 포인트 삭제 중 로딩 상태
+  const [deletingPointId, setDeletingPointId] = useState(null); // 삭제 중인 포인트 ID
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportForm, setShowImportForm] = useState(false);
   const [editingPoint, setEditingPoint] = useState(null);
@@ -898,7 +898,7 @@ const Points = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 포인트를 삭제하시겠습니까?')) {
-      setDeleting(true); // 로딩 시작
+      setDeletingPointId(id); // 삭제 중인 포인트 ID 설정
       try {
         await pointAPI.deletePoint(id);
         loadPoints();
@@ -906,7 +906,7 @@ const Points = () => {
         // 에러 처리
         alert('포인트 삭제에 실패했습니다.');
       } finally {
-        setDeleting(false); // 로딩 종료
+        setDeletingPointId(null); // 로딩 종료
       }
     }
   };
@@ -2258,16 +2258,9 @@ const Points = () => {
                             <button
                               className="btn btn-sm btn-delete"
                               onClick={() => handleDelete(point.id)}
-                              disabled={deleting}
+                              disabled={deletingPointId !== null}
                             >
-                              {deleting ? (
-                                <>
-                                  <div className="loading-spinner"></div>
-                                  삭제 중...
-                                </>
-                              ) : (
-                                '삭제'
-                              )}
+                              삭제
                             </button>
                           </>
                         )}
@@ -2277,6 +2270,23 @@ const Points = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 중 로딩 모달 */}
+      {deletingPointId && (
+        <div className="modal-overlay">
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
+          >
+            <div
+              className="loading-spinner"
+              style={{ margin: '0 auto 20px' }}
+            ></div>
+            <h3 style={{ margin: 0 }}>포인트 삭제 중...</h3>
           </div>
         </div>
       )}

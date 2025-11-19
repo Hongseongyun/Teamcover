@@ -31,7 +31,7 @@ const Payments = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deletingPaymentId, setDeletingPaymentId] = useState(null); // 삭제 중인 납입 내역 ID
 
   // 뷰 모드 (list: 목록, calendar: 월별 표)
   const [viewMode, setViewMode] = useState('calendar');
@@ -546,7 +546,7 @@ const Payments = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 납입 내역을 삭제하시겠습니까?')) {
-      setDeleting(true);
+      setDeletingPaymentId(id); // 삭제 중인 납입 내역 ID 설정
       try {
         await paymentAPI.deletePayment(id);
         await loadPayments();
@@ -554,7 +554,7 @@ const Payments = () => {
       } catch (error) {
         alert('납입 내역 삭제에 실패했습니다.');
       } finally {
-        setDeleting(false);
+        setDeletingPaymentId(null);
       }
     }
   };
@@ -2930,16 +2930,9 @@ const Payments = () => {
                                           onClick={() =>
                                             handleDelete(payment.id)
                                           }
-                                          disabled={deleting}
+                                          disabled={deletingPaymentId !== null}
                                         >
-                                          {deleting ? (
-                                            <>
-                                              <div className="loading-spinner"></div>
-                                              삭제 중...
-                                            </>
-                                          ) : (
-                                            '삭제'
-                                          )}
+                                          삭제
                                         </button>
                                       </>
                                     )}
@@ -3282,6 +3275,23 @@ const Payments = () => {
                 {submitting ? '추가 중...' : '추가'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 중 로딩 모달 */}
+      {deletingPaymentId && (
+        <div className="modal-overlay">
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
+          >
+            <div
+              className="loading-spinner"
+              style={{ margin: '0 auto 20px' }}
+            ></div>
+            <h3 style={{ margin: 0 }}>납입 내역 삭제 중...</h3>
           </div>
         </div>
       )}

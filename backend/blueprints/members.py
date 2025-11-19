@@ -79,7 +79,7 @@ def get_members():
                 else:
                     hide_privacy = True  # 기본적으로 마스킹
         
-        members = Member.query.order_by(Member.name.asc()).all()
+        members = Member.query.filter_by(is_deleted=False).order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
         
         # 안전망: hide_privacy=True일 때 강제 마스킹 적용
@@ -155,7 +155,7 @@ def add_member():
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
-        existing_member = Member.query.filter_by(name=name).first()
+        existing_member = Member.query.filter_by(name=name, is_deleted=False).first()
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
@@ -255,7 +255,7 @@ def update_member(member_id):
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
-        existing_member = Member.query.filter_by(name=name).filter(Member.id != member_id).first()
+        existing_member = Member.query.filter_by(name=name, is_deleted=False).filter(Member.id != member_id).first()
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
@@ -467,12 +467,15 @@ def update_member(member_id):
 @members_bp.route('/<int:member_id>/', methods=['DELETE'])
 @members_bp.route('/<int:member_id>', methods=['DELETE'])
 def delete_member(member_id):
-    """회원 삭제 API"""
+    """회원 삭제 API (Soft Delete)"""
     try:
         member = Member.query.get_or_404(member_id)
         member_name = member.name
         
-        db.session.delete(member)
+        # Soft Delete: 실제로 삭제하지 않고 is_deleted 플래그만 설정
+        # 관련 데이터(Score, Point, Payment)는 유지
+        member.is_deleted = True
+        member.updated_at = datetime.utcnow()
         db.session.commit()
         
         return jsonify({
@@ -531,8 +534,8 @@ def update_all_member_averages():
         if not current_user or current_user.role not in ['admin', 'super_admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
         
-        # 모든 회원 조회
-        members = Member.query.all()
+        # 모든 회원 조회 (삭제되지 않은 회원만)
+        members = Member.query.filter_by(is_deleted=False).all()
         updated_count = 0
         
         for member in members:
@@ -579,7 +582,7 @@ def update_all_member_averages():
 def get_all_members_averages():
     """모든 회원의 에버를 일괄 조회하는 API - 최적화 버전"""
     try:
-        members = Member.query.all()
+        members = Member.query.filter_by(is_deleted=False).all()
         members_with_averages = []
         
         # 한 번에 모든 점수를 조회하여 N+1 쿼리 문제 해결

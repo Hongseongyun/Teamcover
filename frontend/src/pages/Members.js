@@ -69,7 +69,7 @@ const Members = () => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // 회원 등록 중 로딩 상태
-  const [deleting, setDeleting] = useState(false); // 회원 삭제 중 로딩 상태
+  const [deletingMemberId, setDeletingMemberId] = useState(null); // 삭제 중인 회원 ID
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [formData, setFormData] = useState({
@@ -359,15 +359,26 @@ const Members = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
-      setDeleting(true); // 로딩 시작
+      setDeletingMemberId(id); // 삭제 중인 회원 ID 설정
       try {
-        await memberAPI.deleteMember(id);
-        loadMembers();
+        const response = await memberAPI.deleteMember(id);
+        if (response.data && response.data.success) {
+          // 삭제 성공
+          await loadMembers();
+        } else {
+          // 삭제 실패
+          alert(response.data?.message || '회원 삭제에 실패했습니다.');
+        }
       } catch (error) {
         // 에러 처리
-        alert('회원 삭제에 실패했습니다.');
+        console.error('회원 삭제 오류:', error);
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          '회원 삭제에 실패했습니다.';
+        alert(errorMessage);
       } finally {
-        setDeleting(false); // 로딩 종료
+        setDeletingMemberId(null); // 로딩 종료
       }
     }
   };
@@ -988,16 +999,9 @@ const Members = () => {
                           <button
                             className="btn btn-sm btn-delete"
                             onClick={() => handleDelete(member.id)}
-                            disabled={deleting}
+                            disabled={deletingMemberId !== null}
                           >
-                            {deleting ? (
-                              <>
-                                <div className="loading-spinner"></div>
-                                삭제 중...
-                              </>
-                            ) : (
-                              '삭제'
-                            )}
+                            삭제
                           </button>
                         </td>
                       </>
@@ -1098,6 +1102,23 @@ const Members = () => {
                 취소
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 중 로딩 모달 */}
+      {deletingMemberId && (
+        <div className="modal-overlay">
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
+          >
+            <div
+              className="loading-spinner"
+              style={{ margin: '0 auto 20px' }}
+            ></div>
+            <h3 style={{ margin: 0 }}>회원 삭제 중...</h3>
           </div>
         </div>
       )}

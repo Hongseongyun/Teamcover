@@ -64,7 +64,7 @@ def add_score():
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름은 필수 입력 항목입니다.'})
         
-        member = Member.query.filter_by(name=member_name).first()
+        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
@@ -161,7 +161,7 @@ def update_score(score_id):
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름을 입력해주세요.'})
         
-        member = Member.query.filter_by(name=member_name).first()
+        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'회원 "{member_name}"을 찾을 수 없습니다.'})
         
@@ -221,6 +221,7 @@ def get_member_averages():
                 DENSE_RANK() OVER (ORDER BY average_score DESC) AS rank
             FROM members
             WHERE average_score IS NOT NULL
+              AND is_deleted = FALSE
             ORDER BY rank, member_name
             """
         )
@@ -247,8 +248,8 @@ def get_member_averages():
 def refresh_member_averages():
     """회원별 평균(에버) 새로고침 API - 모든 회원의 에버를 다시 계산하여 업데이트"""
     try:
-        # 모든 회원 조회
-        members = Member.query.all()
+        # 모든 회원 조회 (삭제되지 않은 회원만)
+        members = Member.query.filter_by(is_deleted=False).all()
         updated_count = 0
         member_averages = []
         

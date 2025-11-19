@@ -105,8 +105,8 @@ def add_payment():
         if not member_id or not payment_type or not amount or not payment_date:
             return jsonify({'success': False, 'message': '필수 입력 항목을 모두 입력해주세요.'})
         
-        # 회원 확인
-        member = Member.query.get(member_id)
+        # 회원 확인 (삭제되지 않은 회원만)
+        member = Member.query.filter_by(id=member_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': '회원을 찾을 수 없습니다.'})
         

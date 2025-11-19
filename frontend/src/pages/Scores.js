@@ -84,7 +84,8 @@ const Scores = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // 스코어 등록 중 로딩 상태
-  const [deleting, setDeleting] = useState(false); // 스코어 삭제 중 로딩 상태
+  const [deletingScoreId, setDeletingScoreId] = useState(null); // 삭제 중인 스코어 ID
+  const [deletingSelected, setDeletingSelected] = useState(false); // 일괄 삭제 중 로딩 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [editingScore, setEditingScore] = useState(null);
@@ -834,7 +835,7 @@ const Scores = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm('정말로 이 스코어를 삭제하시겠습니까?')) {
-      setDeleting(true); // 로딩 시작
+      setDeletingScoreId(id); // 삭제 중인 스코어 ID 설정
       try {
         await scoreAPI.deleteScore(id);
         loadScores();
@@ -843,7 +844,7 @@ const Scores = () => {
         // 에러 처리
         alert('스코어 삭제에 실패했습니다.');
       } finally {
-        setDeleting(false); // 로딩 종료
+        setDeletingScoreId(null); // 로딩 종료
       }
     }
   };
@@ -895,7 +896,7 @@ const Scores = () => {
         `선택한 ${selectedScores.length}개의 스코어를 삭제하시겠습니까?`
       )
     ) {
-      setDeleting(true); // 로딩 시작
+      setDeletingSelected(true); // 일괄 삭제 중 로딩 시작
       try {
         let successCount = 0;
         let failCount = 0;
@@ -925,7 +926,7 @@ const Scores = () => {
       } catch (error) {
         alert('스코어 삭제에 실패했습니다.');
       } finally {
-        setDeleting(false); // 로딩 종료
+        setDeletingSelected(false); // 로딩 종료
       }
     }
   };
@@ -2414,16 +2415,9 @@ const Scores = () => {
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={handleDeleteSelected}
-                  disabled={deleting}
+                  disabled={deletingSelected || deletingScoreId !== null}
                 >
-                  {deleting ? (
-                    <>
-                      <div className="loading-spinner"></div>
-                      삭제 중... ({selectedScores.length})
-                    </>
-                  ) : (
-                    `선택 삭제 (${selectedScores.length})`
-                  )}
+                  선택 삭제 ({selectedScores.length})
                 </button>
               )}
               <div className="view-toggle">
@@ -2696,16 +2690,12 @@ const Scores = () => {
                                   <button
                                     className="btn btn-sm btn-delete"
                                     onClick={() => handleDelete(score.id)}
-                                    disabled={deleting}
+                                    disabled={
+                                      deletingScoreId !== null ||
+                                      deletingSelected
+                                    }
                                   >
-                                    {deleting ? (
-                                      <>
-                                        <div className="loading-spinner"></div>
-                                        삭제 중...
-                                      </>
-                                    ) : (
-                                      '삭제'
-                                    )}
+                                    삭제
                                   </button>
                                 </td>
                               )}
@@ -3086,16 +3076,12 @@ const Scores = () => {
                                     <button
                                       className="btn btn-sm btn-delete"
                                       onClick={() => handleDelete(score.id)}
-                                      disabled={deleting}
+                                      disabled={
+                                        deletingScoreId !== null ||
+                                        deletingSelected
+                                      }
                                     >
-                                      {deleting ? (
-                                        <>
-                                          <div className="loading-spinner"></div>
-                                          삭제 중...
-                                        </>
-                                      ) : (
-                                        '삭제'
-                                      )}
+                                      삭제
                                     </button>
                                   </td>
                                 )}
@@ -3112,6 +3098,27 @@ const Scores = () => {
           )}
         </div>
       </div>
+
+      {/* 삭제 중 로딩 모달 */}
+      {(deletingScoreId || deletingSelected) && (
+        <div className="modal-overlay">
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
+          >
+            <div
+              className="loading-spinner"
+              style={{ margin: '0 auto 20px' }}
+            ></div>
+            <h3 style={{ margin: 0 }}>
+              {deletingSelected
+                ? '스코어 일괄 삭제 중...'
+                : '스코어 삭제 중...'}
+            </h3>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
