@@ -958,7 +958,17 @@ const TeamAssignment = () => {
         // 6단계: 새로운 규칙에 따른 밸런싱 적용 (1시드는 고정)
         const finalTeams = await balanceTeamsWithNewRules(newTeams);
 
-        // 7단계: 팀 번호 순으로 정렬하여 UI에 설정
+        // 7단계: 여성 회원 분포 검증
+        const validation = validateFemaleDistribution(finalTeams, players);
+        if (!validation.isValid) {
+          setBalancingResult(`❌ ${validation.message} 다시 시도해주세요.`);
+          setTimeout(() => setBalancingResult(''), 5000);
+          setLoading(false);
+          setIsBalancing(false);
+          return;
+        }
+
+        // 8단계: 팀 번호 순으로 정렬하여 UI에 설정
         const sortedTeams = finalTeams.sort(
           (a, b) => a.team_number - b.team_number
         );
@@ -1031,7 +1041,17 @@ const TeamAssignment = () => {
       // 3단계: 새로운 규칙에 따른 밸런싱 적용
       const finalTeams = await balanceTeamsWithNewRules(balancedTeams);
 
-      // 4단계: 팀 번호 순으로 정렬하여 UI에 설정
+      // 4단계: 여성 회원 분포 검증
+      const validation = validateFemaleDistribution(finalTeams, validPlayers);
+      if (!validation.isValid) {
+        setBalancingResult(`❌ ${validation.message} 다시 시도해주세요.`);
+        setTimeout(() => setBalancingResult(''), 5000);
+        setLoading(false);
+        setIsBalancing(false);
+        return;
+      }
+
+      // 5단계: 팀 번호 순으로 정렬하여 UI에 설정
       const sortedTeams = finalTeams.sort(
         (a, b) => a.team_number - b.team_number
       );
@@ -1040,7 +1060,7 @@ const TeamAssignment = () => {
 
       // 팀 구성 및 밸런싱 완료
 
-      // 5단계: 결과 메시지 설정
+      // 6단계: 결과 메시지 설정
       const maxDiff =
         Math.max(...sortedTeams.map((t) => t.total_average)) -
         Math.min(...sortedTeams.map((t) => t.total_average));
@@ -1068,6 +1088,45 @@ const TeamAssignment = () => {
       setLoading(false);
       setIsBalancing(false);
     }
+  };
+
+  // 여성 회원 분포 검증 함수
+  const validateFemaleDistribution = (teams, allPlayers) => {
+    // 전체 여성 회원 수 계산
+    const totalFemaleCount = allPlayers.filter(
+      (p) => p.gender === '여'
+    ).length;
+
+    // 여성 회원이 없으면 검증 통과
+    if (totalFemaleCount === 0) {
+      return { isValid: true, message: '' };
+    }
+
+    // 팀 수 계산
+    const teamCount = teams.length;
+
+    // 각 팀에 최소 여성 회원 수 계산 (전체 여성 수 / 팀 수의 몫)
+    const minFemalePerTeam = Math.floor(totalFemaleCount / teamCount);
+
+    // 각 팀의 여성 회원 수 확인
+    const teamFemaleCounts = teams.map((team) =>
+      team.players.filter((p) => p.gender === '여').length
+    );
+
+    // 모든 팀이 최소 여성 회원 수를 만족하는지 확인
+    const allTeamsHaveMinFemale = teamFemaleCounts.every(
+      (count) => count >= minFemalePerTeam
+    );
+
+    if (!allTeamsHaveMinFemale) {
+      const teamCountsStr = teamFemaleCounts.join(', ');
+      return {
+        isValid: false,
+        message: `여성 회원 분포 불균형: 각 팀에 최소 ${minFemalePerTeam}명의 여성 회원이 필요하지만, 현재 팀별 여성 수는 [${teamCountsStr}]명입니다.`,
+      };
+    }
+
+    return { isValid: true, message: '' };
   };
 
   // 개선된 팀 구성 함수
@@ -1978,6 +2037,17 @@ const TeamAssignment = () => {
 
       // 더 이상 개선할 수 없으면 종료
       break;
+    }
+
+    // 최종 결과 반환 전 여성 회원 분포 검증
+    // 전체 선수 정보 추출
+    const allPlayers = bestTeams.flatMap((team) => team.players);
+    const validation = validateFemaleDistribution(bestTeams, allPlayers);
+    
+    if (!validation.isValid) {
+      // 검증 실패 시 원본 팀 구성 반환 (밸런싱 전 상태)
+      console.warn('⚠️ 밸런싱 후 여성 회원 분포가 깨졌습니다. 원본 팀 구성 유지.');
+      return teamsToBalance;
     }
 
     return bestTeams;

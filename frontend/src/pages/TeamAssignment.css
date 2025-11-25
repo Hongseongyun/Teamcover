@@ -1078,9 +1078,24 @@
   transition: all 0.3s ease;
 }
 
+[data-theme='dark'] .player-card {
+  background: linear-gradient(
+    145deg,
+    rgba(30, 41, 59, 0.96) 0%,
+    rgba(15, 23, 42, 0.92) 100%
+  );
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 2px 8px rgba(8, 15, 31, 0.3);
+}
+
 .player-card:hover {
   box-shadow: var(--toss-shadow);
   transform: translateY(-1px);
+}
+
+[data-theme='dark'] .player-card:hover {
+  border-color: rgba(148, 163, 184, 0.6);
+  box-shadow: 0 4px 12px rgba(8, 15, 31, 0.5);
 }
 
 .player-info {
@@ -1094,10 +1109,18 @@
   color: var(--toss-gray-900);
 }
 
+[data-theme='dark'] .player-name {
+  color: rgba(226, 232, 240, 0.95);
+}
+
 .player-average {
   font-size: 0.875rem;
   color: var(--toss-primary);
   font-weight: 500;
+}
+
+[data-theme='dark'] .player-average {
+  color: rgba(96, 165, 250, 0.9);
 }
 
 .player-gender {
