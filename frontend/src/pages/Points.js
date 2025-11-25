@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import LoadingModal from '../components/LoadingModal';
 import './Points.css';
 
 // Chart.js 컴포넌트 등록
@@ -2274,22 +2275,11 @@ const Points = () => {
         </div>
       )}
 
-      {/* 삭제 중 로딩 모달 */}
-      {deletingPointId && (
-        <div className="modal-overlay">
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
-          >
-            <div
-              className="loading-spinner"
-              style={{ margin: '0 auto 20px' }}
-            ></div>
-            <h3 style={{ margin: 0 }}>포인트 삭제 중...</h3>
-          </div>
-        </div>
-      )}
+      <LoadingModal isOpen={submitting} message="포인트 저장 중..." />
+      <LoadingModal
+        isOpen={Boolean(deletingPointId)}
+        message="포인트 삭제 중..."
+      />
     </div>
   );
 };

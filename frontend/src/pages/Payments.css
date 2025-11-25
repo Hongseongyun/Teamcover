@@ -1468,6 +1468,12 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
+[data-theme='dark'] .game-payment-modal {
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
 .modal-content.prepay-modal,
 .prepay-modal {
   background: white !important;
@@ -1493,6 +1499,11 @@
 .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .modal-header h3 {
+  color: rgba(226, 232, 240, 0.95);
 }
 
 .modal-body {
@@ -1529,6 +1540,12 @@
   margin-top: 2px;
 }
 
+[data-theme='dark'] .payments-page .search-results {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
 .member-list {
   list-style: none;
   padding: 0;
@@ -1542,6 +1559,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: var(--color-text);
 }
 
 .member-item:hover:not(.added) {
@@ -1552,6 +1570,20 @@
   background-color: #d1fae5;
   color: #065f46;
   cursor: not-allowed;
+}
+
+[data-theme='dark'] .member-item {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+[data-theme='dark'] .member-item:hover:not(.added) {
+  background-color: rgba(51, 65, 85, 0.8);
+}
+
+[data-theme='dark'] .member-item.added {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .badge {
@@ -1572,10 +1604,18 @@
   border-top: 2px solid #e5e7eb;
 }
 
+[data-theme='dark'] .added-members-list {
+  border-top-color: rgba(148, 163, 184, 0.3);
+}
+
 .added-members-list h4 {
   margin: 0 0 1rem 0;
   font-size: 1.25rem;
   color: #1f2937;
+}
+
+[data-theme='dark'] .added-members-list h4 {
+  color: rgba(226, 232, 240, 0.95);
 }
 
 .game-payment-table {
@@ -1590,10 +1630,22 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+[data-theme='dark'] .game-payment-table th,
+[data-theme='dark'] .game-payment-table td {
+  border-bottom-color: rgba(148, 163, 184, 0.3);
+  color: rgba(226, 232, 240, 0.9);
+}
+
 .game-payment-table th {
   background-color: #f9fafb;
   font-weight: 600;
   color: #374151;
+}
+
+[data-theme='dark'] .game-payment-table th {
+  background-color: rgba(30, 41, 59, 0.8);
+  color: rgba(226, 232, 240, 0.9);
+  border-bottom-color: rgba(148, 163, 184, 0.3);
 }
 
 .game-payment-table td {
@@ -1606,12 +1658,30 @@
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 1rem;
+  background-color: white;
+  color: var(--color-text);
 }
 
 .form-control:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+[data-theme='dark'] .form-control {
+  background-color: rgba(30, 41, 59, 0.85);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+[data-theme='dark'] .form-control:focus {
+  border-color: var(--toss-primary);
+  background-color: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme='dark'] .form-control::placeholder {
+  color: rgba(148, 163, 184, 0.6);
 }
 
 .form-group {
@@ -1623,6 +1693,10 @@
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: #374151;
+}
+
+[data-theme='dark'] .form-group label {
+  color: rgba(226, 232, 240, 0.9);
 }
 
 /* ===== Balance Dashboard ===== */

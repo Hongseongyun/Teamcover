@@ -3,6 +3,7 @@ import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
+import LoadingModal from '../components/LoadingModal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -3099,26 +3100,13 @@ const Scores = () => {
         </div>
       </div>
 
-      {/* 삭제 중 로딩 모달 */}
-      {(deletingScoreId || deletingSelected) && (
-        <div className="modal-overlay">
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
-          >
-            <div
-              className="loading-spinner"
-              style={{ margin: '0 auto 20px' }}
-            ></div>
-            <h3 style={{ margin: 0 }}>
-              {deletingSelected
-                ? '스코어 일괄 삭제 중...'
-                : '스코어 삭제 중...'}
-            </h3>
-          </div>
-        </div>
-      )}
+      <LoadingModal isOpen={submitting} message="스코어 저장 중..." />
+      <LoadingModal
+        isOpen={Boolean(deletingScoreId || deletingSelected)}
+        message={
+          deletingSelected ? '스코어 일괄 삭제 중...' : '스코어 삭제 중...'
+        }
+      />
     </div>
   );
 };

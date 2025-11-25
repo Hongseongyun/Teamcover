@@ -11,6 +11,7 @@ import {
 } from 'chart.js';
 import { paymentAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import LoadingModal from '../components/LoadingModal';
 import './Payments.css';
 
 ChartJS.register(
@@ -105,6 +106,7 @@ const Payments = () => {
   });
   const [ledgerSubmitting, setLedgerSubmitting] = useState(false);
   const [ledgerDeletingId, setLedgerDeletingId] = useState(null);
+  const [ledgerSaving, setLedgerSaving] = useState(false);
   // 금액 스피너를 위한 이전 값 추적
   const prevAmountRef = useRef(null);
   // 납입 내역 페이지네이션 및 월 필터
@@ -252,7 +254,7 @@ const Payments = () => {
       return;
     }
     try {
-      setLedgerLoading(true);
+      setLedgerSaving(true);
       const response = await paymentAPI.addFundLedger({
         event_date: ledgerForm.event_date,
         entry_type: ledgerForm.entry_type,
@@ -281,7 +283,7 @@ const Payments = () => {
         e.response?.data?.message || e.message || '장부 저장 실패';
       alert(errorMessage);
     } finally {
-      setLedgerLoading(false);
+      setLedgerSaving(false);
     }
   };
 
@@ -1435,7 +1437,7 @@ const Payments = () => {
                         event_date: e.target.value,
                       })
                     }
-                    disabled={ledgerLoading}
+                    disabled={ledgerLoading || ledgerSaving}
                   />
                 </div>
                 <div className="form-group" style={{ flex: '0 0 130px' }}>
@@ -1448,7 +1450,7 @@ const Payments = () => {
                         entry_type: e.target.value,
                       })
                     }
-                    disabled={ledgerLoading}
+                    disabled={ledgerLoading || ledgerSaving}
                   >
                     <option value="credit">입금(credit)</option>
                     <option value="debit">출금(debit)</option>
@@ -1535,7 +1537,7 @@ const Payments = () => {
                       // 포커스를 잃을 때 이전 값 추적 리셋 (다음 스피너 조작 시 첫 번째로 인식)
                       prevAmountRef.current = null;
                     }}
-                    disabled={ledgerLoading}
+                    disabled={ledgerLoading || ledgerSaving}
                   />
                 </div>
                 <div className="form-group" style={{ flex: '1 1 150px' }}>
@@ -1546,7 +1548,7 @@ const Payments = () => {
                     onChange={(e) =>
                       setLedgerForm({ ...ledgerForm, note: e.target.value })
                     }
-                    disabled={ledgerLoading}
+                    disabled={ledgerLoading || ledgerSaving}
                     placeholder="메모"
                   />
                 </div>
@@ -1558,9 +1560,9 @@ const Payments = () => {
                   <button
                     className="btn btn-primary"
                     type="submit"
-                    disabled={ledgerLoading}
+                    disabled={ledgerLoading || ledgerSaving}
                   >
-                    {ledgerLoading ? '저장 중...' : '추가'}
+                    {ledgerSaving ? '저장 중...' : '추가'}
                   </button>
                 </div>
               </div>
@@ -1819,16 +1821,9 @@ const Payments = () => {
                                         onClick={() =>
                                           handleLedgerDelete(item.id)
                                         }
-                                        disabled={ledgerDeletingId === item.id}
+                                        disabled={ledgerDeletingId !== null}
                                       >
-                                        {ledgerDeletingId === item.id ? (
-                                          <>
-                                            <div className="loading-spinner"></div>
-                                            삭제 중...
-                                          </>
-                                        ) : (
-                                          '삭제'
-                                        )}
+                                        삭제
                                       </button>
                                     </>
                                   )}
@@ -3279,22 +3274,16 @@ const Payments = () => {
         </div>
       )}
 
-      {/* 삭제 중 로딩 모달 */}
-      {deletingPaymentId && (
-        <div className="modal-overlay">
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
-          >
-            <div
-              className="loading-spinner"
-              style={{ margin: '0 auto 20px' }}
-            ></div>
-            <h3 style={{ margin: 0 }}>납입 내역 삭제 중...</h3>
-          </div>
-        </div>
-      )}
+      <LoadingModal isOpen={ledgerSaving} message="장부 항목 저장 중..." />
+      <LoadingModal isOpen={submitting} message="저장 중..." />
+      <LoadingModal
+        isOpen={Boolean(ledgerDeletingId)}
+        message="장부 항목 삭제 중..."
+      />
+      <LoadingModal
+        isOpen={Boolean(deletingPaymentId)}
+        message="납입 내역 삭제 중..."
+      />
     </div>
   );
 };

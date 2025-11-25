@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import LoadingModal from '../components/LoadingModal';
 import './Members.css';
 
 // 티어 표시 컴포넌트
@@ -1106,22 +1107,11 @@ const Members = () => {
         </div>
       )}
 
-      {/* 삭제 중 로딩 모달 */}
-      {deletingMemberId && (
-        <div className="modal-overlay">
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ textAlign: 'center', padding: '30px', minWidth: '200px' }}
-          >
-            <div
-              className="loading-spinner"
-              style={{ margin: '0 auto 20px' }}
-            ></div>
-            <h3 style={{ margin: 0 }}>회원 삭제 중...</h3>
-          </div>
-        </div>
-      )}
+      <LoadingModal isOpen={submitting} message="회원 저장 중..." />
+      <LoadingModal
+        isOpen={Boolean(deletingMemberId)}
+        message="회원 삭제 중..."
+      />
     </div>
   );
 };
