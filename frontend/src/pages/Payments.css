@@ -746,15 +746,19 @@
 }
 
 .payment-status {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  line-height: 28px;
+  line-height: 1;
   font-weight: bold;
   cursor: pointer;
   border: none;
   transition: all 0.2s ease;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .payment-status:hover:not(:disabled) {
@@ -823,13 +827,15 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  line-height: 28px;
+  line-height: 1;
   font-size: 0.75rem;
   background-color: var(--toss-gray-300);
   color: var(--toss-gray-600);
   border: 1px solid var(--toss-gray-400);
   cursor: default;
   opacity: 0.75;
+  text-align: center;
+  vertical-align: middle;
 }
 
 [data-theme='dark'] .payment-status.disabled {
@@ -1373,12 +1379,10 @@
 
   .status-cell {
     padding: 0.25rem;
+    text-align: center; /* 셀 내부 요소 중앙 정렬 */
   }
 
-  .payment-status {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
+  /* 480px 이하에서 padding 제거 (원형 버튼은 padding 불필요) */
 
   .btn {
     padding: 0.5rem 1rem;
@@ -1404,13 +1408,19 @@
   .status-cell {
     min-width: 40px;
     height: 35px;
+    text-align: center; /* 셀 내부 요소 중앙 정렬 */
   }
 
   .payment-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     width: 24px;
     height: 24px;
-    line-height: 24px;
+    line-height: 1 !important;
     font-size: 0.875rem;
+    text-align: center;
+    vertical-align: middle;
   }
 
   .btn-xs {
