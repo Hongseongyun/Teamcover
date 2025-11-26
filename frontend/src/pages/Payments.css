@@ -677,15 +677,16 @@
 
 /* 월별 표 형식 */
 .monthly-calendar-table {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   max-height: calc(100vh - 300px);
   -webkit-overflow-scrolling: touch;
 }
 
 .monthly-calendar-table table {
   width: 100%;
-  min-width: 0; /* 12개월이 한 화면에 보이도록 최소 너비 제한 해제 */
-  table-layout: fixed; /* 남은 너비를 12개월 열에 균등 분배 */
+  min-width: 1080px; /* 회원 열(120px) + 12개월(80px * 12 = 960px) = 1080px 최소 너비 보장 */
+  table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
   border-collapse: collapse;
 }
 
@@ -1251,8 +1252,8 @@
   }
 
   .monthly-calendar-table table {
-    min-width: 0;
-    table-layout: fixed;
+    min-width: 1080px; /* 칸 크기 유지를 위해 최소 너비 보장 */
+    table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
   }
 
   .section-card {
@@ -1299,7 +1300,8 @@
   }
 
   .monthly-calendar-table table {
-    min-width: 600px;
+    min-width: 1080px; /* 칸 크기 유지를 위해 최소 너비 보장 */
+    table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
     font-size: 0.875rem;
   }
 
@@ -1351,8 +1353,8 @@
   }
 
   .monthly-calendar-table table {
-    min-width: 0;
-    table-layout: fixed;
+    min-width: 1080px; /* 칸 크기 유지를 위해 최소 너비 보장 */
+    table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
     font-size: 0.75rem;
   }
 
@@ -1362,11 +1364,11 @@
   }
 
   .member-col {
-    min-width: 70px;
+    min-width: 120px; /* 원래 크기 유지 */
   }
 
   .month-col {
-    min-width: 50px;
+    min-width: 80px; /* 원래 크기 유지 */
   }
 
   .status-cell {
