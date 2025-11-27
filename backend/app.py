@@ -54,54 +54,47 @@ def check_if_token_revoked(jwt_header, jwt_payload):
     try:
         user_id = jwt_payload.get('sub')
         if not user_id:
+            print(f"[TOKEN_CHECK] No user_id in token")
             return True  # 사용자 ID가 없으면 무효화된 것으로 간주
         
         user = User.query.get(int(user_id))
         if not user:
+            print(f"[TOKEN_CHECK] User not found: {user_id}")
             return True  # 사용자가 없으면 무효화된 것으로 간주
         
         # active_token이 없으면 (첫 로그인 또는 로그아웃) 허용
         if not user.active_token:
+            print(f"[TOKEN_CHECK] No active_token for user {user_id}, allowing")
             return False  # 블랙리스트에 없음 (유효)
         
         # 현재 토큰의 jti 가져오기
         current_jti = jwt_payload.get('jti')
         
+        if not current_jti:
+            print(f"[TOKEN_CHECK] No jti in token for user {user_id}, revoking (all tokens must have jti)")
+            # jti가 없으면 이전 방식 토큰이므로 무효화 (모든 토큰은 jti를 포함해야 함)
+            return True
+        
         # active_token이 jti 형식인지 확인 (UUID 형식: 36자, 하이픈 포함)
-        # 또는 전체 토큰 문자열인지 확인
         active_token_is_jti = len(user.active_token) == 36 and user.active_token.count('-') == 4
         
-        if current_jti:
-            # 새 방식: jti 사용
-            if active_token_is_jti:
-                # active_token도 jti 형식이면 jti로 비교
-                if user.active_token != current_jti:
-                    return True  # 블랙리스트에 있음 (무효화됨)
-            else:
-                # active_token이 전체 토큰 문자열이면, jti 토큰은 무효화된 것으로 간주
-                # (새 로그인이 발생했으므로)
+        if active_token_is_jti:
+            # active_token도 jti 형식이면 jti로 비교
+            if user.active_token != current_jti:
+                print(f"[TOKEN_CHECK] Token revoked: active_token={user.active_token[:8]}..., current_jti={current_jti[:8]}...")
                 return True  # 블랙리스트에 있음 (무효화됨)
+            else:
+                print(f"[TOKEN_CHECK] Token valid: jti matches")
+                return False  # 블랙리스트에 없음 (유효)
         else:
-            # 이전 방식: 전체 토큰 문자열 사용
-            if active_token_is_jti:
-                # active_token이 jti인데 현재 토큰에 jti가 없으면
-                # 이전 방식 토큰이므로 무효화된 것으로 간주
-                return True  # 블랙리스트에 있음 (무효화됨)
-            else:
-                # 둘 다 전체 토큰 문자열이면, request에서 토큰을 가져와 비교
-                from flask import request
-                auth_header = request.headers.get('Authorization', '')
-                if auth_header.startswith('Bearer '):
-                    current_token = auth_header.replace('Bearer ', '')
-                    if user.active_token != current_token:
-                        return True  # 블랙리스트에 있음 (무효화됨)
-                else:
-                    return True  # 토큰이 없으면 무효화된 것으로 간주
+            # active_token이 전체 토큰 문자열이면, jti 토큰은 무효화된 것으로 간주
+            # (새 로그인이 발생했으므로)
+            print(f"[TOKEN_CHECK] Token revoked: active_token is old format, current token has jti")
+            return True  # 블랙리스트에 있음 (무효화됨)
         
-        return False  # 블랙리스트에 없음 (유효)
     except Exception as e:
         # 에러 발생 시 로그 출력하고 안전하게 처리
-        print(f"Error in check_if_token_revoked: {e}")
+        print(f"[TOKEN_CHECK] Error in check_if_token_revoked: {e}")
         import traceback
         traceback.print_exc()
         return False  # 에러 발생 시 일단 허용 (서버가 멈추지 않도록)

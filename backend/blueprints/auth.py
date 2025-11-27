@@ -215,8 +215,11 @@ def login():
         )
         
         # 새 토큰의 jti를 활성 토큰으로 저장
+        old_active_token = user.active_token
         user.active_token = jti
         db.session.commit()
+        
+        print(f"[LOGIN] User {user.id} ({email}): Updated active_token from {old_active_token[:8] if old_active_token else 'None'}... to {jti[:8]}...")
         
         return jsonify({
             'success': True,
@@ -356,8 +359,11 @@ def google_confirm_login():
         )
         
         # 새 토큰의 jti를 활성 토큰으로 저장 (다른 기기 로그아웃)
+        old_active_token = user.active_token
         user.active_token = jti
         db.session.commit()
+        
+        print(f"[GOOGLE_CONFIRM_LOGIN] User {user.id} ({email}): Updated active_token from {old_active_token[:8] if old_active_token else 'None'}... to {jti[:8]}...")
         
         return jsonify({
             'success': True,
