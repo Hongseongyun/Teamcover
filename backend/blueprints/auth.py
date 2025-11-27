@@ -167,10 +167,12 @@ def login():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
+        # 기존 활성 토큰 확인
+        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
-        db.session.commit()
         
         # JWT 토큰 생성
         access_token = create_access_token(
@@ -178,11 +180,16 @@ def login():
             expires_delta=timedelta(days=7)
         )
         
+        # 새 토큰을 활성 토큰으로 저장
+        user.active_token = access_token
+        db.session.commit()
+        
         return jsonify({
             'success': True,
             'message': '로그인되었습니다.',
             'user': user.to_dict(),
-            'access_token': access_token
+            'access_token': access_token,
+            'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
         })
         
     except Exception as e:
@@ -242,10 +249,12 @@ def google_login():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
+        # 기존 활성 토큰 확인
+        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
-        db.session.commit()
         
         # JWT 토큰 생성
         access_token = create_access_token(
@@ -253,11 +262,16 @@ def google_login():
             expires_delta=timedelta(days=7)
         )
         
+        # 새 토큰을 활성 토큰으로 저장
+        user.active_token = access_token
+        db.session.commit()
+        
         return jsonify({
             'success': True,
             'message': '구글 로그인이 완료되었습니다.',
             'user': user.to_dict(),
-            'access_token': access_token
+            'access_token': access_token,
+            'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
         })
         
     except Exception as e:
@@ -371,10 +385,12 @@ def google_callback():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
+        # 기존 활성 토큰 확인
+        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
-        db.session.commit()
         
         # JWT 토큰 생성
         access_token = create_access_token(
@@ -382,11 +398,16 @@ def google_callback():
             expires_delta=timedelta(days=7)
         )
         
+        # 새 토큰을 활성 토큰으로 저장
+        user.active_token = access_token
+        db.session.commit()
+        
         return jsonify({
             'success': True,
             'message': '구글 로그인이 완료되었습니다.',
             'user': user.to_dict(),
-            'access_token': access_token
+            'access_token': access_token,
+            'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
         })
         
     except Exception as e:
@@ -398,7 +419,17 @@ def google_callback():
 def logout():
     """로그아웃"""
     try:
-        # JWT 방식에서는 클라이언트에서 토큰을 삭제하면 되므로 서버에서 특별한 처리 불필요
+        # 현재 사용자의 active_token 제거
+        try:
+            user_id = get_jwt_identity()
+            if user_id:
+                user = User.query.get(int(user_id))
+                if user:
+                    user.active_token = None
+                    db.session.commit()
+        except:
+            pass
+        
         # Flask-Login 세션도 정리
         try:
             if current_user and current_user.is_authenticated:
@@ -411,7 +442,37 @@ def logout():
             'message': '로그아웃되었습니다.'
         })
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'message': f'로그아웃 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/logout-other-devices', methods=['POST'])
+@jwt_required()
+def logout_other_devices():
+    """다른 기기에서 로그아웃 (현재 기기는 유지)"""
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        # 현재 요청의 토큰을 가져와서 active_token으로 설정
+        # 이렇게 하면 이전 토큰은 무효화되고 현재 토큰만 유효하게 됨
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            current_token = auth_header.replace('Bearer ', '')
+            user.active_token = current_token
+            db.session.commit()
+        else:
+            return jsonify({'success': False, 'message': '인증 토큰을 찾을 수 없습니다.'})
+        
+        return jsonify({
+            'success': True,
+            'message': '다른 기기에서 로그아웃되었습니다.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'다른 기기 로그아웃 중 오류가 발생했습니다: {str(e)}'})
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()

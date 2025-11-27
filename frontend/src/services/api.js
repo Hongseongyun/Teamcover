@@ -134,6 +134,7 @@ export const authAPI = {
   login: (data) => api.post('/api/auth/login', data),
   googleLogin: (data) => api.post('/api/auth/google', data),
   logout: () => api.post('/api/auth/logout'),
+  logoutOtherDevices: () => api.post('/api/auth/logout-other-devices'),
   getCurrentUser: () => api.get('/api/auth/me'),
   getUsers: () => api.get('/api/auth/users'),
   updateUserRole: (userId, data) =>

@@ -19,8 +19,10 @@ const Login = () => {
   const [passwordErrors, setPasswordErrors] = useState([]);
   const [isFormValid, setIsFormValid] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showActiveSessionModal, setShowActiveSessionModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
 
-  const { login, register, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated, logoutOtherDevices } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -98,6 +100,17 @@ const Login = () => {
       } catch (error) {
         setError('Authentication failed');
       }
+    }
+
+    // URL 파라미터에서 활성 세션 확인 (구글 로그인 콜백에서 리디렉션된 경우)
+    const hasActiveSession = urlParams.get('has_active_session');
+    const fromParam = urlParams.get('from');
+    if (hasActiveSession === 'true' && isAuthenticated) {
+      const redirectTo = fromParam ? decodeURIComponent(fromParam) : from;
+      setPendingNavigation(redirectTo);
+      setShowActiveSessionModal(true);
+      // URL 파라미터 정리
+      window.history.replaceState({}, '', '/login');
     }
 
     // 교차-탭: 이메일 인증 완료 신호를 수신하면 로그인 탭으로 전환
@@ -200,7 +213,13 @@ const Login = () => {
             // 이메일 인증이 비활성화된 경우에만 자동 로그인
             result = await login(formData.email, formData.password);
             if (result.success) {
-              navigate(from, { replace: true });
+              // 다른 기기에서 로그인되어 있는지 확인
+              if (result.has_active_session) {
+                setPendingNavigation(from);
+                setShowActiveSessionModal(true);
+              } else {
+                navigate(from, { replace: true });
+              }
             } else {
               setError(result.message);
             }
@@ -215,7 +234,13 @@ const Login = () => {
 
       // 로그인 성공 시에만 여기 도달
       if (result.success) {
-        navigate(from, { replace: true });
+        // 다른 기기에서 로그인되어 있는지 확인
+        if (result.has_active_session) {
+          setPendingNavigation(from);
+          setShowActiveSessionModal(true);
+        } else {
+          navigate(from, { replace: true });
+        }
       } else {
         setError(result.message);
       }
@@ -452,6 +477,58 @@ const Login = () => {
           onClose={() => setShowForgotPassword(false)}
           onLogin={() => setShowForgotPassword(false)}
         />
+      )}
+
+      {/* 다른 기기 로그인 알림 모달 */}
+      {showActiveSessionModal && (
+        <div className="modal-overlay" onClick={() => setShowActiveSessionModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2>다른 기기에서 로그인됨</h2>
+            <p>
+              해당 계정이 다른 기기에서 이미 로그인되어 있습니다.
+              <br />
+              다른 기기에서 로그아웃하시겠습니까?
+            </p>
+            <div className="modal-buttons">
+              <button
+                className="btn-primary"
+                onClick={async () => {
+                  setLoading(true);
+                  try {
+                    const result = await logoutOtherDevices();
+                    if (result.success) {
+                      setShowActiveSessionModal(false);
+                      if (pendingNavigation) {
+                        navigate(pendingNavigation, { replace: true });
+                      }
+                    } else {
+                      setError(result.message || '다른 기기 로그아웃에 실패했습니다.');
+                    }
+                  } catch (error) {
+                    setError('오류가 발생했습니다. 다시 시도해주세요.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading ? '처리 중...' : '다른 기기에서 로그아웃'}
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setShowActiveSessionModal(false);
+                  if (pendingNavigation) {
+                    navigate(pendingNavigation, { replace: true });
+                  }
+                }}
+                disabled={loading}
+              >
+                계속하기
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

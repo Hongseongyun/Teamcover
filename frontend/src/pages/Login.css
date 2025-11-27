@@ -326,3 +326,114 @@
     font-size: 2rem;
   }
 }
+
+/* 다른 기기 로그인 알림 모달 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 30px;
+  width: 90%;
+  max-width: 450px;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  color: var(--color-text);
+}
+
+.modal-content h2 {
+  color: var(--color-text);
+  margin-bottom: 15px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.modal-content p {
+  color: var(--color-text-muted);
+  margin-bottom: 25px;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.modal-buttons .btn-primary {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-buttons .btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.modal-buttons .btn-primary:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.modal-buttons .btn-secondary {
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-buttons .btn-secondary:hover:not(:disabled) {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.modal-buttons .btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+    margin: 10px;
+  }
+
+  .modal-content h2 {
+    font-size: 20px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+  }
+
+  .modal-buttons .btn-primary,
+  .modal-buttons .btn-secondary {
+    flex: none;
+  }
+}

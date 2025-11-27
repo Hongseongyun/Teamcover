@@ -68,7 +68,7 @@ const GoogleAuthCallback = () => {
           setStatus('로그인 처리 중...');
           // JWT 토큰을 직접 사용하여 로그인 처리
           console.log('Setting JWT token and user data directly');
-          const { user: userData, access_token } = data;
+          const { user: userData, access_token, has_active_session } = data;
 
           // 사용자 정보와 토큰을 직접 설정
           setUser(userData);
@@ -78,18 +78,34 @@ const GoogleAuthCallback = () => {
           console.log('User logged in successfully:', userData);
           setStatus('리디렉션 중...');
 
-          // state에 저장된 원래 페이지로 리디렉션 (안전한 디코딩)
-          let redirectTo = '/';
-          if (state) {
-            try {
-              redirectTo = decodeURIComponent(state);
-            } catch (error) {
-              console.warn('Failed to decode state, using default:', error);
-              redirectTo = '/';
+          // 다른 기기에서 로그인되어 있으면 로그인 페이지로 리디렉션하여 모달 표시
+          if (has_active_session) {
+            // state에 저장된 원래 페이지 정보를 함께 전달
+            let redirectTo = '/';
+            if (state) {
+              try {
+                redirectTo = decodeURIComponent(state);
+              } catch (error) {
+                console.warn('Failed to decode state, using default:', error);
+                redirectTo = '/';
+              }
             }
+            // 로그인 페이지로 이동하되, 원래 가려던 페이지 정보를 전달
+            navigate(`/login?from=${encodeURIComponent(redirectTo)}&has_active_session=true`, { replace: true });
+          } else {
+            // state에 저장된 원래 페이지로 리디렉션 (안전한 디코딩)
+            let redirectTo = '/';
+            if (state) {
+              try {
+                redirectTo = decodeURIComponent(state);
+              } catch (error) {
+                console.warn('Failed to decode state, using default:', error);
+                redirectTo = '/';
+              }
+            }
+            console.log('Redirecting to:', redirectTo);
+            navigate(redirectTo, { replace: true });
           }
-          console.log('Redirecting to:', redirectTo);
-          navigate(redirectTo, { replace: true });
         } else {
           throw new Error(data.message || 'Google authentication failed');
         }

@@ -48,6 +48,40 @@ login_manager.login_message = '로그인이 필요합니다.'
 # JWT 설정
 jwt = JWTManager(app)
 
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    """JWT 토큰이 무효화되었는지 확인 (active_token과 비교)"""
+    try:
+        user_id = jwt_payload.get('sub')
+        if not user_id:
+            return True  # 사용자 ID가 없으면 무효화된 것으로 간주
+        
+        user = User.query.get(int(user_id))
+        if not user:
+            return True  # 사용자가 없으면 무효화된 것으로 간주
+        
+        # active_token이 없으면 (첫 로그인 또는 로그아웃) 허용
+        if not user.active_token:
+            return False  # 블랙리스트에 없음 (유효)
+        
+        # 현재 요청의 토큰 가져오기
+        from flask import request
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return True  # 토큰이 없으면 무효화된 것으로 간주
+        
+        current_token = auth_header.replace('Bearer ', '')
+        
+        # active_token과 일치하지 않으면 무효화된 토큰
+        if user.active_token != current_token:
+            return True  # 블랙리스트에 있음 (무효화됨)
+        
+        return False  # 블랙리스트에 없음 (유효)
+    except Exception as e:
+        # 에러 발생 시 로그 출력하고 안전하게 처리
+        print(f"Error in check_if_token_revoked: {e}")
+        return False  # 에러 발생 시 일단 허용 (서버가 멈추지 않도록)
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

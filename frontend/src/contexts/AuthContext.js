@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.login({ email, password });
       if (response.data.success) {
-        const { user: userData, access_token } = response.data;
+        const { user: userData, access_token, has_active_session } = response.data;
         setUser(userData);
         setToken(access_token);
         localStorage.setItem('token', access_token);
@@ -54,7 +54,11 @@ export const AuthProvider = ({ children }) => {
         // 개인정보 접근 토큰 삭제 (새로운 로그인 시 이전 토큰 무효화)
         localStorage.removeItem('privacy_token');
 
-        return { success: true, message: response.data.message };
+        return { 
+          success: true, 
+          message: response.data.message,
+          has_active_session: has_active_session || false
+        };
       } else {
         return { success: false, message: response.data.message };
       }
@@ -139,6 +143,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 다른 기기에서 로그아웃
+  const logoutOtherDevices = async () => {
+    try {
+      const response = await authAPI.logoutOtherDevices();
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      } else {
+        return { success: false, message: response.data.message };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || '다른 기기 로그아웃에 실패했습니다.',
+      };
+    }
+  };
+
   // 권한 확인
   const hasRole = (requiredRole) => {
     if (!user) return false;
@@ -184,6 +205,7 @@ export const AuthProvider = ({ children }) => {
     googleLogin,
     register,
     logout,
+    logoutOtherDevices,
     hasRole,
     canAccessPage,
     updateUser,

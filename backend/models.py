@@ -29,6 +29,9 @@ class User(UserMixin, db.Model):
     # 개인정보 보호 비밀번호
     privacy_password_hash = db.Column(db.String(128), nullable=True)  # 개인정보 열람 비밀번호
     
+    # 활성 세션 관리
+    active_token = db.Column(db.Text, nullable=True)  # 현재 활성화된 JWT 토큰
+    
     def __repr__(self):
         return f'<User {self.email}>'
     
