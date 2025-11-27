@@ -175,14 +175,16 @@ def login():
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
         
-        # JWT 토큰 생성
+        # JWT 토큰 생성 (jti 포함)
+        jti = str(uuid.uuid4())
         access_token = create_access_token(
             identity=str(user.id),
-            expires_delta=timedelta(days=7)
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
         )
         
-        # 새 토큰을 활성 토큰으로 저장
-        user.active_token = access_token
+        # 새 토큰의 jti를 활성 토큰으로 저장
+        user.active_token = jti
         db.session.commit()
         
         return jsonify({
