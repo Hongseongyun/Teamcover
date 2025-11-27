@@ -481,14 +481,40 @@ const Login = () => {
 
       {/* 다른 기기 로그인 알림 모달 */}
       {showActiveSessionModal && (
-        <div className="modal-overlay" onClick={() => setShowActiveSessionModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowActiveSessionModal(false)}
+        >
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>다른 기기에서 로그인됨</h2>
-            <p>
-              해당 계정이 다른 기기에서 이미 로그인되어 있습니다.
-              <br />
-              다른 기기에서 로그아웃하시겠습니까?
-            </p>
+            <div className="modal-icon">
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" fill="#fff3cd" />
+                <path
+                  d="M12 8v4M12 16h.01"
+                  stroke="#ff9800"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <h2>다른 기기에서 접속 중</h2>
+            <div className="modal-message">
+              <p className="modal-message-main">
+                해당 계정이{' '}
+                <strong>다른 기기에서 이미 로그인되어 있습니다.</strong>
+              </p>
+              <p className="modal-message-sub">
+                보안을 위해 다른 기기에서 로그아웃하는 것을 권장합니다.
+                <br />
+                다른 기기에서 로그아웃하면 해당 기기의 접속이 즉시 종료됩니다.
+              </p>
+            </div>
             <div className="modal-buttons">
               <button
                 className="btn-primary"
@@ -498,11 +524,14 @@ const Login = () => {
                     const result = await logoutOtherDevices();
                     if (result.success) {
                       setShowActiveSessionModal(false);
+                      setSuccessMessage('다른 기기에서 로그아웃되었습니다.');
                       if (pendingNavigation) {
                         navigate(pendingNavigation, { replace: true });
                       }
                     } else {
-                      setError(result.message || '다른 기기 로그아웃에 실패했습니다.');
+                      setError(
+                        result.message || '다른 기기 로그아웃에 실패했습니다.'
+                      );
                     }
                   } catch (error) {
                     setError('오류가 발생했습니다. 다시 시도해주세요.');
@@ -524,7 +553,7 @@ const Login = () => {
                 }}
                 disabled={loading}
               >
-                계속하기
+                이 기기에서만 계속하기
               </button>
             </div>
           </div>
