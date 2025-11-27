@@ -283,9 +283,20 @@ def google_login():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
-        # 기존 활성 토큰 확인
+        # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
         has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
+        # 활성 세션이 있으면 로그인 처리를 하지 않고 알림만 반환
+        if has_active_session:
+            return jsonify({
+                'success': True,
+                'message': '다른 기기에서 로그인되어 있습니다.',
+                'has_active_session': True,
+                'requires_confirmation': True,  # 확인 필요 플래그
+                'email': email  # 이메일 정보 반환 (확인 후 로그인에 필요)
+            })
+        
+        # 활성 세션이 없으면 로그인 처리 진행
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
@@ -307,12 +318,57 @@ def google_login():
             'message': '구글 로그인이 완료되었습니다.',
             'user': user.to_dict(),
             'access_token': access_token,
-            'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
+            'has_active_session': False  # 활성 세션이 없었으므로 False
         })
         
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'구글 로그인 중 오류가 발생했습니다: {str(e)}'})
+
+@auth_bp.route('/google/confirm-login', methods=['POST'])
+def google_confirm_login():
+    """구글 로그인 확인 후 실제 로그인 처리"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        # 사용자 찾기 (이메일 또는 구글 ID로)
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
+        
+        if not user.is_active:
+            return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
+        
+        # 로그인 처리
+        login_user(user, remember=True)
+        user.last_login = datetime.utcnow()
+        
+        # JWT 토큰 생성 (jti 포함)
+        jti = str(uuid.uuid4())
+        access_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
+        )
+        
+        # 새 토큰의 jti를 활성 토큰으로 저장 (다른 기기 로그아웃)
+        user.active_token = jti
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '구글 로그인이 완료되었습니다.',
+            'user': user.to_dict(),
+            'access_token': access_token
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'로그인 중 오류가 발생했습니다: {str(e)}'})
 
 # 사용된 authorization code를 저장하는 임시 저장소 (실제 운영에서는 Redis 등 사용)
 # 메모리에서만 관리하므로 서버 재시작 시 초기화됨
@@ -421,9 +477,21 @@ def google_callback():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
-        # 기존 활성 토큰 확인
+        # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
         has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
+        # 활성 세션이 있으면 로그인 처리를 하지 않고 알림만 반환
+        # 프론트엔드에서 확인 모달을 표시한 후 로그인을 진행하도록 함
+        if has_active_session:
+            return jsonify({
+                'success': True,
+                'message': '다른 기기에서 로그인되어 있습니다.',
+                'has_active_session': True,
+                'requires_confirmation': True,  # 확인 필요 플래그
+                'email': email  # 이메일 정보 반환 (확인 후 로그인에 필요)
+            })
+        
+        # 활성 세션이 없으면 로그인 처리 진행
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
@@ -445,7 +513,7 @@ def google_callback():
             'message': '구글 로그인이 완료되었습니다.',
             'user': user.to_dict(),
             'access_token': access_token,
-            'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
+            'has_active_session': False  # 활성 세션이 없었으므로 False
         })
         
     except Exception as e:

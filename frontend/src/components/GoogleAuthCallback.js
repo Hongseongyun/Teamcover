@@ -70,49 +70,37 @@ const GoogleAuthCallback = () => {
 
         if (data.success) {
           setStatus('로그인 처리 중...');
-          // JWT 토큰을 직접 사용하여 로그인 처리
-          console.log('Setting JWT token and user data directly');
-          const { user: userData, access_token, has_active_session } = data;
 
-          // 사용자 정보와 토큰을 직접 설정
-          setUser(userData);
-          setToken(access_token);
-          localStorage.setItem('token', access_token);
-
-          console.log('User logged in successfully:', userData);
-          setStatus('리디렉션 중...');
-
-          // 다른 기기에서 로그인되어 있으면 로그인 페이지로 리디렉션하여 모달 표시
-          if (has_active_session) {
-            // state에 저장된 원래 페이지 정보를 함께 전달
-            let redirectTo = '/';
-            if (state) {
-              try {
-                redirectTo = decodeURIComponent(state);
-              } catch (error) {
-                console.warn('Failed to decode state, using default:', error);
-                redirectTo = '/';
-              }
+          // state에 저장된 원래 페이지 정보
+          let redirectTo = '/';
+          if (state) {
+            try {
+              redirectTo = decodeURIComponent(state);
+            } catch (error) {
+              console.warn('Failed to decode state, using default:', error);
+              redirectTo = '/';
             }
-            // 로그인 페이지로 이동하되, 원래 가려던 페이지 정보를 전달
-            navigate(
-              `/login?from=${encodeURIComponent(
-                redirectTo
-              )}&has_active_session=true`,
-              { replace: true }
-            );
+          }
+
+          // 다른 기기에서 로그인되어 있으면 확인 모달 표시
+          if (data.requires_confirmation) {
+            // 이메일 정보를 저장하고 확인 모달 표시
+            // requires_confirmation인 경우 userData가 없을 수 있음
+            const userEmail = data.email || '';
+            setPendingData({ email: userEmail, redirectTo });
+            setShowConfirmModal(true);
+            setStatus('확인 대기 중...');
           } else {
-            // state에 저장된 원래 페이지로 리디렉션 (안전한 디코딩)
-            let redirectTo = '/';
-            if (state) {
-              try {
-                redirectTo = decodeURIComponent(state);
-              } catch (error) {
-                console.warn('Failed to decode state, using default:', error);
-                redirectTo = '/';
-              }
-            }
-            console.log('Redirecting to:', redirectTo);
+            // 활성 세션이 없으면 바로 로그인 처리
+            const { user: userData, access_token } = data;
+
+            // 사용자 정보와 토큰을 직접 설정
+            setUser(userData);
+            setToken(access_token);
+            localStorage.setItem('token', access_token);
+
+            console.log('User logged in successfully:', userData);
+            setStatus('리디렉션 중...');
             navigate(redirectTo, { replace: true });
           }
         } else {
@@ -191,12 +179,42 @@ const GoogleAuthCallback = () => {
             <div className="modal-buttons">
               <button
                 className="btn-primary"
-                onClick={() => {
-                  setUser(pendingData.userData);
-                  setToken(pendingData.access_token);
-                  localStorage.setItem('token', pendingData.access_token);
-                  setShowConfirmModal(false);
-                  navigate(pendingData.redirectTo, { replace: true });
+                onClick={async () => {
+                  setStatus('로그인 처리 중...');
+                  try {
+                    // 확인 후 실제 로그인 처리
+                    if (pendingData.userData && pendingData.access_token) {
+                      // 이전 방식 (이미 토큰이 있는 경우)
+                      setUser(pendingData.userData);
+                      setToken(pendingData.access_token);
+                      localStorage.setItem('token', pendingData.access_token);
+                      setShowConfirmModal(false);
+                      navigate(pendingData.redirectTo, { replace: true });
+                    } else if (pendingData.email) {
+                      // 새 방식 (확인 후 로그인)
+                      const response = await authAPI.googleConfirmLogin({
+                        email: pendingData.email,
+                      });
+                      if (response.data.success) {
+                        const { user: userData, access_token } = response.data;
+                        setUser(userData);
+                        setToken(access_token);
+                        localStorage.setItem('token', access_token);
+                        setShowConfirmModal(false);
+                        navigate(pendingData.redirectTo, { replace: true });
+                      } else {
+                        setStatus('로그인 실패: ' + response.data.message);
+                        setTimeout(() => {
+                          navigate('/login', { replace: true });
+                        }, 2000);
+                      }
+                    }
+                  } catch (error) {
+                    setStatus('로그인 중 오류 발생');
+                    setTimeout(() => {
+                      navigate('/login', { replace: true });
+                    }, 2000);
+                  }
                 }}
               >
                 로그인하기
