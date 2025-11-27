@@ -211,4 +211,31 @@ export const paymentAPI = {
   deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
 };
 
+// 게시판 API
+export const postAPI = {
+  getPosts: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/posts?${queryString}`);
+  },
+  getPost: (id) => api.get(`/api/posts/${id}`),
+  createPost: (data) => api.post('/api/posts', data),
+  updatePost: (id, data) => api.put(`/api/posts/${id}`, data),
+  deletePost: (id) => api.delete(`/api/posts/${id}`),
+  getComments: (postId) => api.get(`/api/posts/${postId}/comments`),
+  createComment: (postId, data) =>
+    api.post(`/api/posts/${postId}/comments`, data),
+  updateComment: (commentId, data) =>
+    api.put(`/api/posts/comments/${commentId}`, data),
+  deleteComment: (commentId) => api.delete(`/api/posts/comments/${commentId}`),
+  toggleCommentLike: (commentId) =>
+    api.post(`/api/posts/comments/${commentId}/like`),
+  toggleLike: (postId) => api.post(`/api/posts/${postId}/like`),
+  uploadImage: (formData) =>
+    api.post('/api/posts/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+};
+
 export default api;

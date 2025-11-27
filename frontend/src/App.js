@@ -17,6 +17,7 @@ import Payments from './pages/Payments';
 import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
+import Board from './pages/Board';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
@@ -85,6 +86,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="user">
                     <MyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/board"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <Board />
                   </ProtectedRoute>
                 }
               />

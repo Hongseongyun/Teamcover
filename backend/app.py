@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, redirect, url_for, make_response
+from flask import Flask, request, jsonify, session, redirect, url_for, make_response, send_from_directory
 from flask_cors import CORS
 from flask_login import LoginManager, current_user
 from flask_jwt_extended import JWTManager
@@ -16,6 +16,7 @@ from blueprints.points import points_bp
 from blueprints.teams import teams_bp
 from blueprints.ocr import ocr_bp
 from blueprints.payments import payments_bp
+from blueprints.posts import posts_bp
 
 # Google Sheets 기능을 선택적으로 로드
 try:
@@ -145,10 +146,19 @@ app.register_blueprint(points_bp)
 app.register_blueprint(teams_bp)
 app.register_blueprint(ocr_bp)
 app.register_blueprint(payments_bp)
+app.register_blueprint(posts_bp)
 
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:
     app.register_blueprint(sheets_bp)
+
+# 정적 파일 서빙 (업로드된 이미지)
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    """업로드된 파일 서빙"""
+    from flask import send_from_directory
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+    return send_from_directory(uploads_dir, filename)
 
 # 헬스체크 엔드포인트
 @app.route('/health')

@@ -32,6 +32,7 @@ const Navbar = () => {
       '/payments': hasRole('admin'),
       '/team-assignment': hasRole('admin'),
       '/user-management': hasRole('super_admin'),
+      '/board': hasRole('user'),
     };
 
     return pagePermissions[page] || false;
@@ -91,6 +92,17 @@ const Navbar = () => {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   포인트
+                </Link>
+              </li>
+            )}
+            {canAccessPage('/board') && (
+              <li className="nav-item">
+                <Link
+                  to="/board"
+                  className={`nav-link ${isActive('/board')}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  게시판
                 </Link>
               </li>
             )}

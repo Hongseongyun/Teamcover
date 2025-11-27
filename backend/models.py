@@ -445,4 +445,130 @@ class Payment(db.Model):
             'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+        }
+
+
+class Post(db.Model):
+    """게시글 모델"""
+    __tablename__ = 'posts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    post_type = db.Column(db.String(20), nullable=False, default='free')  # 'free', 'notice'
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    author = db.relationship('User', backref=db.backref('posts', lazy=True))
+    comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan')
+    likes = db.relationship('Like', backref='post', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content,
+            'post_type': self.post_type,
+            'author_id': self.author_id,
+            'author_name': self.author.name if self.author else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+            'comment_count': len(self.comments),
+            'like_count': len(self.likes),
+            'images': [img.url for img in self.images]
+        }
+
+
+class PostImage(db.Model):
+    """게시글 이미지 모델"""
+    __tablename__ = 'post_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    post = db.relationship('Post', backref=db.backref('images', lazy=True, cascade='all, delete-orphan'))
+
+
+class Comment(db.Model):
+    """댓글 모델"""
+    __tablename__ = 'comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=True)  # 대댓글용
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    author = db.relationship('User', backref=db.backref('comments', lazy=True))
+    parent = db.relationship('Comment', remote_side=[id], backref=db.backref('replies', lazy=True))
+    likes = db.relationship('CommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'post_id': self.post_id,
+            'author_id': self.author_id,
+            'parent_id': self.parent_id,
+            'author_name': self.author.name if self.author else None,
+            'content': self.content,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+            'like_count': len(self.likes),
+            'replies': [reply.to_dict() for reply in self.replies] if self.replies else []
+        }
+
+
+class CommentLike(db.Model):
+    """댓글 좋아요 모델"""
+    __tablename__ = 'comment_likes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('comment_likes', lazy=True))
+    
+    # 중복 좋아요 방지
+    __table_args__ = (db.UniqueConstraint('comment_id', 'user_id', name='unique_comment_user_like'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'comment_id': self.comment_id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
+        }
+
+
+class Like(db.Model):
+    """좋아요 모델"""
+    __tablename__ = 'likes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('likes', lazy=True))
+    
+    # 중복 좋아요 방지
+    __table_args__ = (db.UniqueConstraint('post_id', 'user_id', name='unique_post_user_like'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'post_id': self.post_id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
         } 
