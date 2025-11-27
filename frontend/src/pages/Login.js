@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../services/api';
 import ForgotPassword from '../components/ForgotPassword';
 import './Login.css';
 
@@ -20,7 +21,9 @@ const Login = () => {
   const [isFormValid, setIsFormValid] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showActiveSessionModal, setShowActiveSessionModal] = useState(false);
+  const [showLoginConfirmModal, setShowLoginConfirmModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [pendingLoginData, setPendingLoginData] = useState(null);
 
   const { login, register, isAuthenticated, logoutOtherDevices } = useAuth();
   const navigate = useNavigate();
@@ -186,6 +189,31 @@ const Login = () => {
     try {
       let result;
       if (isLogin) {
+        // 로그인 전 활성 세션 확인
+        try {
+          const sessionCheck = await authAPI.checkActiveSession({
+            email: formData.email,
+          });
+          if (
+            sessionCheck.data.success &&
+            sessionCheck.data.has_active_session
+          ) {
+            // 활성 세션이 있으면 확인 모달 표시
+            setPendingLoginData({
+              email: formData.email,
+              password: formData.password,
+            });
+            setPendingNavigation(from);
+            setShowLoginConfirmModal(true);
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          // 활성 세션 확인 실패해도 로그인은 진행
+          console.error('활성 세션 확인 실패:', error);
+        }
+
+        // 활성 세션이 없거나 확인 실패 시 바로 로그인
         result = await login(formData.email, formData.password);
       } else {
         result = await register(
@@ -211,15 +239,10 @@ const Login = () => {
             return;
           } else {
             // 이메일 인증이 비활성화된 경우에만 자동 로그인
+            // 회원가입 직후이므로 활성 세션은 없을 것이지만, 확인 모달은 표시하지 않음
             result = await login(formData.email, formData.password);
             if (result.success) {
-              // 다른 기기에서 로그인되어 있는지 확인
-              if (result.has_active_session) {
-                setPendingNavigation(from);
-                setShowActiveSessionModal(true);
-              } else {
-                navigate(from, { replace: true });
-              }
+              navigate(from, { replace: true });
             } else {
               setError(result.message);
             }
@@ -479,7 +502,93 @@ const Login = () => {
         />
       )}
 
-      {/* 다른 기기 로그인 알림 모달 */}
+      {/* 로그인 전 확인 모달 */}
+      {showLoginConfirmModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setShowLoginConfirmModal(false);
+            setPendingLoginData(null);
+          }}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" fill="#fff3cd" />
+                <path
+                  d="M12 8v4M12 16h.01"
+                  stroke="#ff9800"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <h2>다른 기기에서 접속 중</h2>
+            <div className="modal-message">
+              <p className="modal-message-main">
+                해당 계정이{' '}
+                <strong>다른 기기에서 이미 로그인되어 있습니다.</strong>
+              </p>
+              <p className="modal-message-sub">
+                이 기기에서 로그인하면{' '}
+                <strong>다른 기기에서 자동으로 로그아웃</strong>됩니다.
+                <br />
+                계속하시겠습니까?
+              </p>
+            </div>
+            <div className="modal-buttons">
+              <button
+                className="btn-primary"
+                onClick={async () => {
+                  setShowLoginConfirmModal(false);
+                  setLoading(true);
+                  try {
+                    const result = await login(
+                      pendingLoginData.email,
+                      pendingLoginData.password
+                    );
+                    if (result.success) {
+                      if (pendingNavigation) {
+                        navigate(pendingNavigation, { replace: true });
+                      } else {
+                        navigate(from, { replace: true });
+                      }
+                    } else {
+                      setError(result.message);
+                    }
+                  } catch (error) {
+                    setError('로그인 중 오류가 발생했습니다.');
+                  } finally {
+                    setLoading(false);
+                    setPendingLoginData(null);
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading ? '로그인 중...' : '로그인하기'}
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setShowLoginConfirmModal(false);
+                  setPendingLoginData(null);
+                }}
+                disabled={loading}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 다른 기기 로그인 알림 모달 (로그인 후) */}
       {showActiveSessionModal && (
         <div
           className="modal-overlay"

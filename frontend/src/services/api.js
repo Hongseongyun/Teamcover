@@ -131,6 +131,8 @@ export const ocrAPI = {
 // 인증 API
 export const authAPI = {
   register: (data) => api.post('/api/auth/register', data),
+  checkActiveSession: (data) =>
+    api.post('/api/auth/check-active-session', data),
   login: (data) => api.post('/api/auth/login', data),
   googleLogin: (data) => api.post('/api/auth/google', data),
   logout: () => api.post('/api/auth/logout'),

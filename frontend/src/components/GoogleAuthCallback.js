@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { authAPI } from '../services/api';
+import '../pages/Login.css';
 
 // 전역 변수로 처리 상태 관리 (컴포넌트 재렌더링과 무관)
 let isProcessing = false;
@@ -9,6 +11,8 @@ const GoogleAuthCallback = () => {
   const navigate = useNavigate();
   const { setUser, setToken } = useAuth();
   const [status, setStatus] = useState('처리 중...');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
 
   useEffect(() => {
     const handleGoogleCallback = async () => {
@@ -91,7 +95,12 @@ const GoogleAuthCallback = () => {
               }
             }
             // 로그인 페이지로 이동하되, 원래 가려던 페이지 정보를 전달
-            navigate(`/login?from=${encodeURIComponent(redirectTo)}&has_active_session=true`, { replace: true });
+            navigate(
+              `/login?from=${encodeURIComponent(
+                redirectTo
+              )}&has_active_session=true`,
+              { replace: true }
+            );
           } else {
             // state에 저장된 원래 페이지로 리디렉션 (안전한 디코딩)
             let redirectTo = '/';
@@ -133,10 +142,79 @@ const GoogleAuthCallback = () => {
   }, [navigate, setUser, setToken]); // 의존성 배열에 필요한 값들 추가
 
   return (
-    <div className="loading-container">
-      <div className="loading-spinner"></div>
-      <p>{status}</p>
-    </div>
+    <>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>{status}</p>
+      </div>
+
+      {/* 구글 로그인 확인 모달 */}
+      {showConfirmModal && pendingData && (
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setShowConfirmModal(false);
+            navigate('/login', { replace: true });
+          }}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" fill="#fff3cd" />
+                <path
+                  d="M12 8v4M12 16h.01"
+                  stroke="#ff9800"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <h2>다른 기기에서 접속 중</h2>
+            <div className="modal-message">
+              <p className="modal-message-main">
+                해당 계정이{' '}
+                <strong>다른 기기에서 이미 로그인되어 있습니다.</strong>
+              </p>
+              <p className="modal-message-sub">
+                이 기기에서 로그인하면{' '}
+                <strong>다른 기기에서 자동으로 로그아웃</strong>됩니다.
+                <br />
+                계속하시겠습니까?
+              </p>
+            </div>
+            <div className="modal-buttons">
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  setUser(pendingData.userData);
+                  setToken(pendingData.access_token);
+                  localStorage.setItem('token', pendingData.access_token);
+                  setShowConfirmModal(false);
+                  navigate(pendingData.redirectTo, { replace: true });
+                }}
+              >
+                로그인하기
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  navigate('/login', { replace: true });
+                }}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

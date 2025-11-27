@@ -147,6 +147,37 @@ def register():
         db.session.rollback()
         return jsonify({'success': False, 'message': f'회원가입 중 오류가 발생했습니다: {str(e)}'})
 
+@auth_bp.route('/check-active-session', methods=['POST'])
+def check_active_session():
+    """로그인 전 활성 세션 확인 (이메일만으로 확인)"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        if not email:
+            return jsonify({'success': False, 'message': '이메일을 입력해주세요.'})
+        
+        # 사용자 찾기
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # 사용자가 없어도 활성 세션은 없음
+            return jsonify({
+                'success': True,
+                'has_active_session': False
+            })
+        
+        # 활성 토큰 확인
+        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        
+        return jsonify({
+            'success': True,
+            'has_active_session': has_active_session
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'활성 세션 확인 중 오류가 발생했습니다: {str(e)}'})
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """일반 로그인"""
