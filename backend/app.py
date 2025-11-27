@@ -50,7 +50,7 @@ jwt = JWTManager(app)
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload):
-    """JWT 토큰이 무효화되었는지 확인 (active_token과 비교)"""
+    """JWT 토큰이 무효화되었는지 확인 (active_token의 jti와 비교)"""
     try:
         user_id = jwt_payload.get('sub')
         if not user_id:
@@ -64,22 +64,22 @@ def check_if_token_revoked(jwt_header, jwt_payload):
         if not user.active_token:
             return False  # 블랙리스트에 없음 (유효)
         
-        # 현재 요청의 토큰 가져오기
-        from flask import request
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
-            return True  # 토큰이 없으면 무효화된 것으로 간주
+        # 현재 토큰의 jti 가져오기
+        current_jti = jwt_payload.get('jti')
+        if not current_jti:
+            # jti가 없으면 이전 방식 토큰일 수 있으므로 허용 (마이그레이션 고려)
+            return False
         
-        current_token = auth_header.replace('Bearer ', '')
-        
-        # active_token과 일치하지 않으면 무효화된 토큰
-        if user.active_token != current_token:
+        # active_token(jti)과 일치하지 않으면 무효화된 토큰
+        if user.active_token != current_jti:
             return True  # 블랙리스트에 있음 (무효화됨)
         
         return False  # 블랙리스트에 없음 (유효)
     except Exception as e:
         # 에러 발생 시 로그 출력하고 안전하게 처리
         print(f"Error in check_if_token_revoked: {e}")
+        import traceback
+        traceback.print_exc()
         return False  # 에러 발생 시 일단 허용 (서버가 멈추지 않도록)
 
 @login_manager.user_loader

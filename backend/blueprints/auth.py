@@ -12,6 +12,7 @@ from email_service import send_verification_email, send_verification_email_with_
 import re
 import random
 import string
+import uuid
 
 # 인증 관리 Blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -256,14 +257,16 @@ def google_login():
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
         
-        # JWT 토큰 생성
+        # JWT 토큰 생성 (jti 포함)
+        jti = str(uuid.uuid4())
         access_token = create_access_token(
             identity=str(user.id),
-            expires_delta=timedelta(days=7)
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
         )
         
-        # 새 토큰을 활성 토큰으로 저장
-        user.active_token = access_token
+        # 새 토큰의 jti를 활성 토큰으로 저장
+        user.active_token = jti
         db.session.commit()
         
         return jsonify({
@@ -392,14 +395,16 @@ def google_callback():
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
         
-        # JWT 토큰 생성
+        # JWT 토큰 생성 (jti 포함)
+        jti = str(uuid.uuid4())
         access_token = create_access_token(
             identity=str(user.id),
-            expires_delta=timedelta(days=7)
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
         )
         
-        # 새 토큰을 활성 토큰으로 저장
-        user.active_token = access_token
+        # 새 토큰의 jti를 활성 토큰으로 저장
+        user.active_token = jti
         db.session.commit()
         
         return jsonify({
@@ -456,15 +461,19 @@ def logout_other_devices():
         if not user:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
         
-        # 현재 요청의 토큰을 가져와서 active_token으로 설정
+        # 현재 토큰의 jti를 가져와서 active_token으로 설정
         # 이렇게 하면 이전 토큰은 무효화되고 현재 토큰만 유효하게 됨
-        auth_header = request.headers.get('Authorization', '')
-        if auth_header.startswith('Bearer '):
-            current_token = auth_header.replace('Bearer ', '')
-            user.active_token = current_token
-            db.session.commit()
-        else:
-            return jsonify({'success': False, 'message': '인증 토큰을 찾을 수 없습니다.'})
+        from flask_jwt_extended import get_jwt
+        try:
+            jwt_data = get_jwt()
+            current_jti = jwt_data.get('jti')
+            if current_jti:
+                user.active_token = current_jti
+                db.session.commit()
+            else:
+                return jsonify({'success': False, 'message': '토큰에서 jti를 찾을 수 없습니다.'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'토큰 정보를 가져올 수 없습니다: {str(e)}'})
         
         return jsonify({
             'success': True,
@@ -865,13 +874,18 @@ def verify_code():
         # 로그인 처리
         login_user(user, remember=True)
         user.last_login = datetime.utcnow()
-        db.session.commit()
         
-        # JWT 토큰 생성
+        # JWT 토큰 생성 (jti 포함)
+        jti = str(uuid.uuid4())
         access_token = create_access_token(
             identity=str(user.id),
-            expires_delta=timedelta(days=7)
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
         )
+        
+        # 새 토큰의 jti를 활성 토큰으로 저장
+        user.active_token = jti
+        db.session.commit()
         
         print(f"User verified and logged in: {user.email}")
         
