@@ -127,23 +127,39 @@ const Board = () => {
     <div className="board-container">
       <div className="board-header">
         <h1>게시판</h1>
-        <div className="board-actions">
-          <select
-            value={postType}
-            onChange={(e) => {
-              setPostType(e.target.value);
-              setPagination({ ...pagination, page: 1 });
-            }}
-            className="post-type-select"
-          >
-            <option value="all">전체</option>
-            <option value="free">자유게시판</option>
-            <option value="notice">공지사항</option>
-          </select>
-          <button onClick={handleCreatePost} className="btn-primary">
-            글쓰기
-          </button>
-        </div>
+        <button onClick={handleCreatePost} className="btn-primary">
+          글쓰기
+        </button>
+      </div>
+
+      <div className="board-tabs">
+        <button
+          className={`tab-button ${postType === 'all' ? 'active' : ''}`}
+          onClick={() => {
+            setPostType('all');
+            setPagination({ ...pagination, page: 1 });
+          }}
+        >
+          전체
+        </button>
+        <button
+          className={`tab-button ${postType === 'notice' ? 'active' : ''}`}
+          onClick={() => {
+            setPostType('notice');
+            setPagination({ ...pagination, page: 1 });
+          }}
+        >
+          공지사항
+        </button>
+        <button
+          className={`tab-button ${postType === 'free' ? 'active' : ''}`}
+          onClick={() => {
+            setPostType('free');
+            setPagination({ ...pagination, page: 1 });
+          }}
+        >
+          자유게시판
+        </button>
       </div>
 
       {error && <div className="error-message">{error}</div>}
