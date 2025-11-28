@@ -39,7 +39,15 @@ const Board = () => {
       });
 
       if (response.data.success) {
-        setPosts(response.data.posts);
+        // 공지사항을 상단에 고정 (프론트엔드에서도 정렬)
+        const sortedPosts = [...response.data.posts].sort((a, b) => {
+          // 공지사항을 먼저
+          if (a.post_type === 'notice' && b.post_type !== 'notice') return -1;
+          if (a.post_type !== 'notice' && b.post_type === 'notice') return 1;
+          // 같은 타입이면 최신순
+          return new Date(b.created_at) - new Date(a.created_at);
+        });
+        setPosts(sortedPosts);
         setPagination(response.data.pagination);
       } else {
         setError('게시글을 불러오는데 실패했습니다.');

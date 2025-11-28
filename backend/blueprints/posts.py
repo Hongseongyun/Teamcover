@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 from models import db, User, Post, PostImage, Comment, CommentLike, Like
+from sqlalchemy import case
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -34,7 +35,7 @@ def handle_preflight():
 @posts_bp.route('', methods=['GET'])
 @jwt_required()
 def get_posts():
-    """게시글 목록 조회"""
+    """게시글 목록 조회 (공지사항 상단 고정)"""
     try:
         post_type = request.args.get('type', 'all')  # 'all', 'free', 'notice'
         page = int(request.args.get('page', 1))
@@ -44,9 +45,18 @@ def get_posts():
         
         if post_type != 'all':
             query = query.filter_by(post_type=post_type)
-        
-        # 최신순 정렬
-        query = query.order_by(Post.created_at.desc())
+            # 특정 타입만 조회하는 경우는 최신순 정렬
+            query = query.order_by(Post.created_at.desc())
+        else:
+            # 전체 조회 시: 공지사항을 먼저, 그 다음 일반 게시글
+            # 각 그룹 내에서는 최신순 정렬
+            query = query.order_by(
+                case(
+                    (Post.post_type == 'notice', 0),
+                    else_=1
+                ),
+                Post.created_at.desc()
+            )
         
         # 페이지네이션
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
