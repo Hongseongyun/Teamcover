@@ -22,6 +22,20 @@
   gap: 1rem;
 }
 
+/* 큰 화면 (1000px 이상)에서 버튼 크기 조정 */
+@media (min-width: 1000px) {
+  .header-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* 수정/삭제 버튼을 취소 버튼 크기로 통일 */
+  .btn-sm {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+  }
+}
+
 /* 통계 섹션 */
 .stats-section {
   margin-bottom: 2rem;
