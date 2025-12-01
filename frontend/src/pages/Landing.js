@@ -66,38 +66,28 @@ const Landing = () => {
   return (
     <div className="landing-container">
       <div className="landing-hero">
-        <div className="hero-content">
-          <h1 className="hero-title">Teamcover</h1>
-          <p className="hero-subtitle">볼링 팀 관리의 새로운 경험</p>
-          <p className="hero-description">
-            회원 관리, 스코어 기록, 포인트 시스템까지
-            <br />
-            모든 것을 한 곳에서 관리하세요
-          </p>
+        <div className="landing-hero-inner">
+          <div className="hero-content">
+            <p className="hero-kicker">우리 팀의 모든 볼링 활동을, 한눈에</p>
+            <h1 className="hero-title">
+              볼링 팀 운영,
+              <br />
+              Teamcover로 쉽고 간편하게
+            </h1>
+            <p className="hero-subtitle">
+              회원·스코어·포인트·팀 배정까지 한 곳에서 관리하고,
+              <br />
+              매주 반복되는 팀 운영을 자동화하세요.
+            </p>
 
-          {!isAuthenticated && (
             <div className="hero-actions">
               <button className="cta-button primary" onClick={handleGetStarted}>
-                로그인하기
+                지금 시작하기
               </button>
-              <button
-                className="cta-button secondary"
-                onClick={() => navigate('/login')}
-              >
-                회원가입
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="hero-image">
-          <div className="bowling-illustration">
-            <div className="bowling-pin"></div>
-            <div className="bowling-ball"></div>
-            <div className="score-board">
-              <div className="score">300</div>
             </div>
           </div>
+
+          {/* 오른쪽 볼링 일러스트 및 아이콘 행은 요청에 따라 임시 제거 */}
         </div>
       </div>
 

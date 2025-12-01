@@ -143,7 +143,7 @@
 
 .like-btn {
   padding: 8px 16px;
-  background-color: var(--surface-hover);
+  background-color: var(--surface-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
@@ -152,15 +152,18 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  color: var(--color-text);
 }
 
 .like-btn:hover {
-  background-color: var(--border-color);
+  background-color: var(--surface-hover);
 }
 
 .like-btn.liked {
-  background-color: #fee;
-  border-color: #fcc;
+  /* 댓글 업 버튼과 동일한 스타일 (바탕/테두리) */
+  background-color: rgba(0, 123, 255, 0.15);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .comments-section {
@@ -307,9 +310,9 @@
 }
 
 .comment-like-btn.liked {
-  background-color: #e3f2fd;
-  border-color: #2196f3;
-  color: #1976d2;
+  background-color: rgba(0, 123, 255, 0.15);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .reply-form {
