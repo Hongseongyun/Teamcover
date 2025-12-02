@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* 공통 액션 버튼 스타일 */
 .btn-edit {
   background-color: rgba(59, 130, 246, 0.08);

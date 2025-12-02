@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import BowlingHero from '../components/BowlingHero';
 import './Landing.css';
 
 const Landing = () => {
@@ -40,18 +41,19 @@ const Landing = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleGetStarted = () => {
-    if (isAuthenticated) {
-      // 로그인된 사용자는 역할에 따라 다른 페이지로 이동
-      if (user.role === 'admin' || user.role === 'super_admin') {
-        navigate('/members');
-      } else {
-        navigate('/scores');
-      }
-    } else {
-      navigate('/login');
-    }
-  };
+  // handleGetStarted 함수는 주석 처리된 hero 섹션에서 사용됨
+  // const handleGetStarted = () => {
+  //   if (isAuthenticated) {
+  //     // 로그인된 사용자는 역할에 따라 다른 페이지로 이동
+  //     if (user.role === 'admin' || user.role === 'super_admin') {
+  //       navigate('/members');
+  //     } else {
+  //       navigate('/scores');
+  //     }
+  //   } else {
+  //     navigate('/login');
+  //   }
+  // };
 
   const handleCardClick = (page) => {
     if (isAuthenticated) {
@@ -65,7 +67,11 @@ const Landing = () => {
 
   return (
     <div className="landing-container">
-      <div className="landing-hero">
+      {/* 토스 스타일 히어로 섹션 */}
+      <BowlingHero />
+      
+      {/* 기존 hero 섹션 (주석 처리 또는 제거 가능) */}
+      {/* <div className="landing-hero">
         <div className="landing-hero-inner">
           <div className="hero-content">
             <p className="hero-kicker">우리 팀의 모든 볼링 활동을, 한눈에</p>
@@ -86,10 +92,8 @@ const Landing = () => {
               </button>
             </div>
           </div>
-
-          {/* 오른쪽 볼링 일러스트 및 아이콘 행은 요청에 따라 임시 제거 */}
         </div>
-      </div>
+      </div> */}
 
       <div className="features-section">
         <div className="container">
