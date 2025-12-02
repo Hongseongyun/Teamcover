@@ -282,8 +282,11 @@ const BowlingHero = () => {
   const { isAuthenticated } = useAuth();
   const { theme } = useTheme();
 
-  // 마우스 위치 추적
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // 마우스 위치 추적 (사용하지 않지만 useEffect에서 업데이트됨)
+  const [, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Floating 애니메이션을 위한 시간 상태
+  const [animationTime, setAnimationTime] = useState(0);
 
   // 각 이미지의 밀린 위치 저장 (누적)
   const [itemOffsets, setItemOffsets] = useState({});
@@ -325,80 +328,151 @@ const BowlingHero = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 빈 배열로 마운트 시에만 실행 (bowlingItemsData는 상수이므로 의존성 불필요)
 
-  // 마우스 위치 추적 및 오프셋 업데이트
+  // 마우스 위치 추적 및 오프셋 업데이트 (throttle 적용)
   useEffect(() => {
+    let throttleTimeout;
+    const throttleDelay = 16; // ~60fps
+
     const handleMouseMove = (e) => {
-      const newMousePos = { x: e.clientX, y: e.clientY };
-      setMousePosition(newMousePos);
+      if (throttleTimeout) return;
 
-      // 모든 아이템의 오프셋 업데이트
-      setItemOffsets((prev) => {
-        const newOffsets = { ...prev };
+      throttleTimeout = setTimeout(() => {
+        const newMousePos = { x: e.clientX, y: e.clientY };
+        setMousePosition(newMousePos);
 
-        bowlingItems.forEach((item) => {
+        // 모든 아이템의 오프셋 업데이트
+        setItemOffsets((prev) => {
+          const newOffsets = { ...prev };
           const screenWidth = window.innerWidth || 1920;
           const screenHeight = window.innerHeight || 1080;
 
-          // 이미지 중심점 계산
-          let x, y;
-          if (item.position.left !== undefined) {
-            x = (parseFloat(item.position.left) / 100) * screenWidth;
-          } else if (item.position.right !== undefined) {
-            x =
-              screenWidth -
-              (parseFloat(item.position.right) / 100) * screenWidth;
-          } else {
-            x = screenWidth / 2;
-          }
+          bowlingItems.forEach((item) => {
+            // 이미지 중심점 계산
+            let baseX, baseY;
+            if (item.position.left !== undefined) {
+              baseX = (parseFloat(item.position.left) / 100) * screenWidth;
+            } else if (item.position.right !== undefined) {
+              baseX =
+                screenWidth -
+                (parseFloat(item.position.right) / 100) * screenWidth;
+            } else {
+              baseX = screenWidth / 2;
+            }
 
-          if (item.position.top !== undefined) {
-            y = (parseFloat(item.position.top) / 100) * screenHeight;
-          } else if (item.position.bottom !== undefined) {
-            y =
-              screenHeight -
-              (parseFloat(item.position.bottom) / 100) * screenHeight;
-          } else {
-            y = screenHeight / 2;
-          }
+            if (item.position.top !== undefined) {
+              baseY = (parseFloat(item.position.top) / 100) * screenHeight;
+            } else if (item.position.bottom !== undefined) {
+              baseY =
+                screenHeight -
+                (parseFloat(item.position.bottom) / 100) * screenHeight;
+            } else {
+              baseY = screenHeight / 2;
+            }
 
-          const imgWidth = parseFloat(item.size.width);
-          const imgHeight = parseFloat(item.size.height) || imgWidth * 1.5;
-          x += imgWidth / 2;
-          y += imgHeight / 2;
+            const imgWidth = parseFloat(item.size.width);
+            const imgHeight = parseFloat(item.size.height) || imgWidth * 1.5;
 
-          // 마우스와의 거리 계산
-          const dx = newMousePos.x - x;
-          const dy = newMousePos.y - y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
+            // 현재 누적 오프셋 고려한 실제 위치
+            const currentOffset = prev[item.id] || { x: 0, y: 0 };
+            const x = baseX + currentOffset.x + imgWidth / 2;
+            const y = baseY + currentOffset.y + imgHeight / 2;
 
-          // 밀림 계산
-          const maxDistance = 200;
-          const maxPush = 80;
-          const pushFactor =
-            distance < maxDistance
-              ? Math.max(0, 1 - distance / maxDistance)
-              : 0;
-          const currentPushX =
-            distance > 0 ? (dx / distance) * maxPush * pushFactor : 0;
-          const currentPushY =
-            distance > 0 ? (dy / distance) * maxPush * pushFactor : 0;
+            // 마우스와의 거리 계산
+            const dx = newMousePos.x - x;
+            const dy = newMousePos.y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
-          // 오프셋 누적
-          if (Math.abs(currentPushX) > 0.5 || Math.abs(currentPushY) > 0.5) {
+            // 같은 극끼리 밀어내는 효과 (N-N, S-S 반발력)
+            const maxDistance = 350; // 영향 범위
+            const minDistance = 50; // 최소 거리 (이 거리 이하에서는 최대 힘)
+            const maxPush = 200; // 최대 밀림 거리 (더 강하게)
+
+            let pushFactor = 0;
+            if (distance < maxDistance && distance > 0) {
+              if (distance < minDistance) {
+                // 매우 가까우면 최대 힘으로 밀어냄 (같은 극처럼 강한 반발)
+                pushFactor = 1.0;
+              } else {
+                // 거리에 따라 반발력 감소 (역제곱 법칙)
+                const normalizedDistance =
+                  (distance - minDistance) / (maxDistance - minDistance);
+                // 거리가 멀어질수록 빠르게 약해짐 (같은 극 효과)
+                pushFactor = Math.pow(1 - normalizedDistance, 3.0);
+              }
+            }
+
+            // 밀어내는 방향: 마우스에서 이미지 중심으로의 벡터의 반대 방향
+            // 같은 극끼리 밀어내는 것처럼 마우스에서 멀어지는 방향
+            const currentPushX =
+              distance > 0 ? (dx / distance) * maxPush * pushFactor : 0;
+            const currentPushY =
+              distance > 0 ? (dy / distance) * maxPush * pushFactor : 0;
+
+            // 오프셋 누적 (같은 극 효과처럼 즉각적이고 강하게 반응)
+            const accumulationRate = 0.25; // 누적 비율 증가 (더 빠르고 강한 반응)
+            const newX =
+              (prev[item.id]?.x || 0) + currentPushX * accumulationRate;
+            const newY =
+              (prev[item.id]?.y || 0) + currentPushY * accumulationRate;
+
+            // 화면 경계 감지 및 튕김 효과
+            const margin = 50; // 경계 여유 공간
+            const bounceStrength = 0.3; // 튕김 강도
+
+            let finalX = newX;
+            let finalY = newY;
+
+            // 왼쪽 경계
+            if (baseX + newX < margin) {
+              finalX = newX + (margin - (baseX + newX)) * bounceStrength;
+            }
+            // 오른쪽 경계
+            if (baseX + newX + imgWidth > screenWidth - margin) {
+              finalX =
+                newX -
+                (baseX + newX + imgWidth - (screenWidth - margin)) *
+                  bounceStrength;
+            }
+            // 위쪽 경계
+            if (baseY + newY < margin) {
+              finalY = newY + (margin - (baseY + newY)) * bounceStrength;
+            }
+            // 아래쪽 경계
+            if (baseY + newY + imgHeight > screenHeight - margin) {
+              finalY =
+                newY -
+                (baseY + newY + imgHeight - (screenHeight - margin)) *
+                  bounceStrength;
+            }
+
             newOffsets[item.id] = {
-              x: (prev[item.id]?.x || 0) + currentPushX * 0.05,
-              y: (prev[item.id]?.y || 0) + currentPushY * 0.05,
+              x: finalX,
+              y: finalY,
             };
-          }
+          });
+
+          return newOffsets;
         });
 
-        return newOffsets;
-      });
+        throttleTimeout = null;
+      }, throttleDelay);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
   }, [bowlingItems]);
+
+  // Floating 애니메이션을 위한 시간 업데이트
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimationTime(Date.now());
+    }, 50); // 20fps로 업데이트 (부드러운 애니메이션)
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div
@@ -419,56 +493,16 @@ const BowlingHero = () => {
 
       {/* 볼링 아이템들 - 자연스러운 산개 배치 (이미지 사용) */}
       {bowlingItems.map((item, index) => {
-        // 이미지의 중심점 계산
-        const getImageCenter = () => {
-          const screenWidth = window.innerWidth || 1920;
-          const screenHeight = window.innerHeight || 1080;
-
-          let x, y;
-          if (item.position.left !== undefined) {
-            x = (parseFloat(item.position.left) / 100) * screenWidth;
-          } else if (item.position.right !== undefined) {
-            x =
-              screenWidth -
-              (parseFloat(item.position.right) / 100) * screenWidth;
-          } else {
-            x = screenWidth / 2;
-          }
-
-          if (item.position.top !== undefined) {
-            y = (parseFloat(item.position.top) / 100) * screenHeight;
-          } else if (item.position.bottom !== undefined) {
-            y =
-              screenHeight -
-              (parseFloat(item.position.bottom) / 100) * screenHeight;
-          } else {
-            y = screenHeight / 2;
-          }
-
-          return { x, y };
-        };
-
-        const imageCenter = getImageCenter();
-        const dx = mousePosition.x - imageCenter.x;
-        const dy = mousePosition.y - imageCenter.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // 마우스와의 거리에 반비례하여 밀려나는 정도 계산
-        const maxDistance = 200; // 마우스 영향 범위 (더 넓게)
-        const maxPush = 80; // 최대 밀려나는 거리 (더 크게)
-        const pushFactor =
-          distance < maxDistance ? Math.max(0, 1 - distance / maxDistance) : 0;
-        const currentPushX =
-          distance > 0 ? (dx / distance) * maxPush * pushFactor : 0;
-        const currentPushY =
-          distance > 0 ? (dy / distance) * maxPush * pushFactor : 0;
-
-        // 기존 누적된 오프셋 가져오기
+        // 누적된 오프셋 가져오기
         const savedOffset = itemOffsets[item.id] || { x: 0, y: 0 };
 
-        // 최종 위치 = 저장된 누적 위치 + 현재 밀림
-        const finalPushX = savedOffset.x + currentPushX;
-        const finalPushY = savedOffset.y + currentPushY;
+        // Floating 애니메이션을 위한 오프셋 (시간 기반, 부드러운 움직임)
+        const floatingOffset =
+          Math.sin((animationTime / 1000) * 0.5 + item.delay * 2) * 15;
+
+        // 최종 위치 = 저장된 누적 위치 + floating 효과
+        const finalPushX = savedOffset.x;
+        const finalPushY = savedOffset.y + floatingOffset;
 
         return (
           <motion.div
@@ -480,31 +514,26 @@ const BowlingHero = () => {
               filter:
                 'drop-shadow(0 8px 32px rgba(0, 0, 0, 0.1)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06))',
               zIndex: 1,
-              transform: `translate(${finalPushX}px, ${finalPushY}px)`,
             }}
             animate={{
-              y: [0, -20, 0],
               x: finalPushX,
+              y: finalPushY,
               transition: {
-                y: {
-                  duration: 3 + item.delay,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: item.delay,
-                },
                 x: {
                   type: 'spring',
-                  stiffness: 150,
-                  damping: 15,
+                  stiffness: 50,
+                  damping: 25,
+                  mass: 1.2,
+                },
+                y: {
+                  type: 'spring',
+                  stiffness: 50,
+                  damping: 25,
+                  mass: 1.2,
                 },
               },
             }}
-            // 마우스에 따라 y축으로도 밀려나는 효과 적용
-            layout
-            layoutId={`item-${item.id}`}
-            whileHover={{
-              scale: 1.05,
-            }}
+            // Floating 애니메이션을 별도로 적용 (마우스 밀림과 독립적)
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{
