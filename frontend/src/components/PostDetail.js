@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { postAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import './PostDetail.css';
 
 const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
@@ -16,7 +17,9 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const { isAdmin: clubIsAdmin } = useClub();
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isAdmin = isSuperAdmin || clubIsAdmin;
 
   useEffect(() => {
     fetchPost();

@@ -377,3 +377,57 @@ def select_club(club_id):
     except Exception as e:
         return jsonify({'success': False, 'message': f'클럽 선택 실패: {str(e)}'}), 500
 
+
+# 특정 사용자의 클럽 내 역할 변경 (슈퍼관리자 전용)
+@clubs_bp.route('/<int:club_id>/members/<int:user_id>/role', methods=['PUT'])
+@jwt_required()
+def update_club_member_role(club_id, user_id):
+    """
+    클럽 멤버 역할 변경
+    - 슈퍼관리자만 가능 (여러 클럽에 속한 사용자의 클럽별 직책을 개별적으로 관리하기 위해)
+    """
+    try:
+        current_user_id = int(get_jwt_identity())
+        current_user = User.query.get(current_user_id)
+
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+
+        data = request.get_json() or {}
+        new_role = (data.get('role') or '').strip()
+
+        if new_role not in ['member', 'admin', 'owner']:
+            return jsonify({'success': False, 'message': '유효하지 않은 역할입니다.'}), 400
+
+        membership = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
+        if not membership:
+            return jsonify({'success': False, 'message': '해당 클럽에 가입된 사용자가 아닙니다.'}), 404
+
+        # owner를 해제할 때 마지막 owner인지 확인 (선택 사항이지만 안전장치로 유지)
+        if membership.role == 'owner' and new_role != 'owner':
+            other_owners = ClubMember.query.filter_by(club_id=club_id, role='owner').filter(
+                ClubMember.user_id != user_id
+            ).count()
+            if other_owners == 0:
+                return jsonify({
+                    'success': False,
+                    'message': '마지막 소유자의 역할은 변경할 수 없습니다. 다른 소유자를 먼저 지정해주세요.'
+                }), 400
+
+        membership.role = new_role
+        membership.joined_at = membership.joined_at or datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '클럽 내 역할이 변경되었습니다.',
+            'membership': {
+                'user_id': membership.user_id,
+                'club_id': membership.club_id,
+                'role': membership.role,
+            },
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 역할 변경 실패: {str(e)}'}), 500

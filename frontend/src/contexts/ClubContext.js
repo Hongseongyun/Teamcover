@@ -33,23 +33,26 @@ export const ClubProvider = ({ children }) => {
       setLoading(true);
       const response = await clubAPI.getUserClubs();
       if (response.data.success) {
-        setClubs(response.data.clubs);
+        const clubsData = response.data.clubs || [];
+        setClubs(clubsData);
 
-        // 저장된 클럽이 있으면 선택
+        // 저장된 클럽이 있으면 그 클럽을 우선 선택
         const savedClubId = localStorage.getItem('currentClubId');
         if (savedClubId) {
-          const savedClub = response.data.clubs.find(
-            (c) => c.id === parseInt(savedClubId)
+          const savedClub = clubsData.find(
+            (c) => c.id === parseInt(savedClubId, 10)
           );
           if (savedClub) {
             setCurrentClub(savedClub);
-          } else {
-            // 저장된 클럽이 없거나 유효하지 않으면 Teamcover 우선 선택
-            selectDefaultClub(response.data.clubs);
+            return;
           }
+        }
+
+        // 저장된 클럽이 없거나 유효하지 않으면 기본 클럽(Teamcover 우선) 자동 선택
+        if (clubsData.length > 0) {
+          selectDefaultClub(clubsData);
         } else {
-          // 저장된 클럽이 없으면 Teamcover 우선 선택
-          selectDefaultClub(response.data.clubs);
+          setCurrentClub(null);
         }
       }
     } catch (error) {

@@ -27,6 +27,9 @@ const Login = () => {
   const [pendingLoginData, setPendingLoginData] = useState(null);
   const [availableClubs, setAvailableClubs] = useState([]);
   const [loadingClubs, setLoadingClubs] = useState(false);
+  // 로그인 후 첫 진입 클럽 선택용
+  const [showClubSelectModal, setShowClubSelectModal] = useState(false);
+  const [loginClubs, setLoginClubs] = useState([]);
 
   const { login, register, isAuthenticated, logoutOtherDevices } = useAuth();
   const navigate = useNavigate();
@@ -93,9 +96,9 @@ const Login = () => {
   }, [formData, isLogin, validateForm]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
-    }
+    // (중요) 기존에는 isAuthenticated이면 무조건 from으로 리다이렉트했지만,
+    // 여러 클럽 가입 시 로그인 직후 클럽 선택 모달을 띄워야 하므로
+    // 여기서는 자동 리다이렉트를 하지 않는다.
 
     // URL 파라미터에서 에러 메시지 확인 (안전한 디코딩)
     const urlParams = new URLSearchParams(window.location.search);
@@ -226,6 +229,38 @@ const Login = () => {
     });
   };
 
+  // 로그인 성공 후, 여러 클럽에 가입되어 있으면 첫 진입 클럽을 선택시키는 처리
+  const handlePostLoginNavigation = async () => {
+    try {
+      const res = await clubAPI.getUserClubs();
+      if (res.data?.success) {
+        const clubs = res.data.clubs || [];
+
+        // 가입 클럽이 2개 이상이면 모달에서 선택
+        if (clubs.length > 1) {
+          setLoginClubs(clubs);
+          setShowClubSelectModal(true);
+          return;
+        }
+
+        // 하나만 있으면 바로 그 클럽 선택
+        if (clubs.length === 1) {
+          try {
+            await clubAPI.selectClub(clubs[0].id);
+            localStorage.setItem('currentClubId', clubs[0].id.toString());
+          } catch (e) {
+            console.error('기본 클럽 선택 실패(로그인 후 처리):', e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('로그인 후 클럽 목록 조회 실패:', e);
+    }
+
+    // 클럽 선택이 끝났으면 원래 가려던 곳으로 이동
+    navigate(from, { replace: true });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -321,7 +356,7 @@ const Login = () => {
           setPendingNavigation(from);
           setShowActiveSessionModal(true);
         } else {
-          navigate(from, { replace: true });
+          await handlePostLoginNavigation();
         }
       } else {
         setError(result.message);
@@ -329,7 +364,10 @@ const Login = () => {
     } catch (error) {
       setError('오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
-      setLoading(false);
+      // 클럽 선택 모달이 떠 있는 경우에는 loading을 false로 두어 선택 가능하게 함
+      if (!showClubSelectModal) {
+        setLoading(false);
+      }
     }
   };
 
@@ -379,6 +417,22 @@ const Login = () => {
       window.location.href = googleAuthUrl;
     } catch (error) {
       setError('구글 로그인에 실패했습니다.');
+      setLoading(false);
+    }
+  };
+
+  // 로그인 직후, 첫 진입 클럽 선택 모달에서 클럽을 선택했을 때
+  const handleSelectLoginClub = async (clubId) => {
+    try {
+      setLoading(true);
+      await clubAPI.selectClub(clubId);
+      localStorage.setItem('currentClubId', clubId.toString());
+      setShowClubSelectModal(false);
+      navigate(from, { replace: true });
+    } catch (error) {
+      console.error('첫 진입 클럽 선택 실패:', error);
+      setError('클럽 선택에 실패했습니다. 다시 시도해주세요.');
+    } finally {
       setLoading(false);
     }
   };
@@ -616,6 +670,43 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* 로그인 후 첫 진입 클럽 선택 모달 */}
+      {showClubSelectModal && (
+        <div className="login-club-modal-overlay">
+          <div className="login-club-modal">
+            <h2 className="login-club-modal-title">
+              처음 들어갈 클럽을 선택하세요
+            </h2>
+            <p className="login-club-modal-subtitle">
+              여러 클럽에 가입되어 있습니다. 이번 로그인에서 먼저 사용할 클럽을
+              선택해주세요.
+            </p>
+            <div className="login-club-list">
+              {loginClubs.map((club) => (
+                <button
+                  key={club.id}
+                  type="button"
+                  className="login-club-item"
+                  onClick={() => handleSelectLoginClub(club.id)}
+                  disabled={loading}
+                >
+                  <span className="login-club-item-name">{club.name}</span>
+                  {club.role && (
+                    <span className="login-club-item-role">
+                      {club.role === 'admin'
+                        ? '운영진'
+                        : club.role === 'owner'
+                        ? '소유자'
+                        : '일반 회원'}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showForgotPassword && (
         <ForgotPassword

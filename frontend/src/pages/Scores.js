@@ -79,10 +79,9 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 
 const Scores = () => {
   const { user } = useAuth(); // 현재 사용자 정보
-  const { currentClub, loading: clubLoading } = useClub();
-  const isAdmin =
-    user && (user.role === 'admin' || user.role === 'super_admin');
+  const { currentClub, loading: clubLoading, isAdmin: clubIsAdmin } = useClub();
   const isSuperAdmin = user && user.role === 'super_admin';
+  const isAdmin = isSuperAdmin || clubIsAdmin;
   const [scores, setScores] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);

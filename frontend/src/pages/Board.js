@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import { postAPI } from '../services/api';
 import PostForm from '../components/PostForm';
 import PostDetail from '../components/PostDetail';
@@ -9,6 +10,7 @@ import './Board.css';
 const Board = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isAdmin: clubIsAdmin } = useClub();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,7 +25,8 @@ const Board = () => {
     pages: 0,
   });
 
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isAdmin = isSuperAdmin || clubIsAdmin;
 
   useEffect(() => {
     fetchPosts();

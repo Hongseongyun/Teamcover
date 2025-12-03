@@ -26,9 +26,9 @@ ChartJS.register(
 
 const Payments = () => {
   const { user } = useAuth();
-  const { currentClub } = useClub();
-  const isAdmin =
-    user && (user.role === 'admin' || user.role === 'super_admin');
+  const { currentClub, isAdmin: clubIsAdmin } = useClub();
+  const isSuperAdmin = user && user.role === 'super_admin';
+  const isAdmin = isSuperAdmin || clubIsAdmin;
 
   const [payments, setPayments] = useState([]);
   const [members, setMembers] = useState([]);

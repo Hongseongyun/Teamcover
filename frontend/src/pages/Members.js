@@ -55,10 +55,10 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 
 const Members = () => {
   const { user } = useAuth();
-  const { currentClub, loading: clubLoading } = useClub();
+  const { currentClub, loading: clubLoading, isAdmin: clubIsAdmin } = useClub();
   const isSuperAdmin = user && user.role === 'super_admin';
-  const isAdmin =
-    user && (user.role === 'super_admin' || user.role === 'admin');
+  // 클럽별 운영 권한: 현재 클럽의 운영진이거나 슈퍼관리자일 때만 true
+  const isAdmin = isSuperAdmin || clubIsAdmin;
 
   // 개인정보 보호 상태
   const [privacyUnlocked, setPrivacyUnlocked] = useState(false);

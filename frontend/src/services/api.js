@@ -229,6 +229,9 @@ export const clubAPI = {
   updateClubDescription: (clubId, data) =>
     api.put(`/api/clubs/${clubId}/description`, data),
   deleteClub: (clubId) => api.delete(`/api/clubs/${clubId}`),
+  // 클럽 멤버 역할 변경 (슈퍼관리자 전용)
+  updateMemberRole: (clubId, userId, data) =>
+    api.put(`/api/clubs/${clubId}/members/${userId}/role`, data),
 };
 
 // 게시판 API

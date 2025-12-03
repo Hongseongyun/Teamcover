@@ -31,6 +31,7 @@ const UserManagement = () => {
     }
   };
 
+  // 시스템 전체 역할 (User.role) 변경
   const handleRoleChange = async (userId, newRole) => {
     try {
       const response = await authAPI.updateUserRole(userId, { role: newRole });
@@ -46,6 +47,33 @@ const UserManagement = () => {
       }
     } catch (error) {
       setError('역할 변경에 실패했습니다.');
+    }
+  };
+
+  // 클럽별 직책(ClubMember.role) 변경
+  const handleClubRoleChange = async (userId, clubId, newRole) => {
+    try {
+      const response = await clubAPI.updateMemberRole(clubId, userId, {
+        role: newRole,
+      });
+
+      if (response.data.success) {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) => {
+            if (user.id !== userId) return user;
+            const updatedClubs = (user.clubs || []).map((club) =>
+              club.id === clubId ? { ...club, role: newRole } : club
+            );
+            return { ...user, clubs: updatedClubs };
+          })
+        );
+        setError('');
+      } else {
+        setError(response.data.message || '클럽 직책 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('클럽 직책 변경 오류:', error);
+      setError('클럽 직책 변경에 실패했습니다.');
     }
   };
 
@@ -216,7 +244,7 @@ const UserManagement = () => {
                   <tr>
                     <th>이름</th>
                     <th>이메일</th>
-                    <th>역할</th>
+                    <th>클럽 직책</th>
                     <th>상태</th>
                     <th>가입일</th>
                     <th>마지막 로그인</th>
@@ -224,8 +252,13 @@ const UserManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {clubUsers.map((user) => (
-                    <tr key={user.id}>
+                  {clubUsers.map((user) => {
+                    const membership =
+                      user.clubs?.find((c) => c.id === club.id) || {};
+                    const clubRole = membership.role || 'member';
+
+                    return (
+                      <tr key={`${club.id}-${user.id}`}>
                       <td className="user-name-cell">
                         <div className="user-name-content">
                           <div className="user-avatar">
@@ -238,25 +271,33 @@ const UserManagement = () => {
                         <span className="user-email-text">{user.email}</span>
                       </td>
                       <td className="role-cell">
-                        <select
-                          value={user.role}
-                          onChange={(e) =>
-                            handleRoleChange(user.id, e.target.value)
-                          }
-                          className={`role-select ${getRoleBadgeClass(
-                            user.role
-                          )}`}
-                          disabled={
-                            user.id === currentUser?.id ||
-                            user.email === 'syun4224@naver.com'
-                          }
-                        >
-                          <option value="user">일반 사용자</option>
-                          <option value="admin">운영진</option>
-                          {user.email === 'syun4224@naver.com' && (
-                            <option value="super_admin">슈퍼 관리자</option>
-                          )}
-                        </select>
+                        {clubRole === 'owner' ? (
+                          // 소유자는 선택 불가, 읽기 전용으로만 표시
+                          <span className={`role-badge ${getRoleBadgeClass('admin')}`}>
+                            클럽 소유자
+                          </span>
+                        ) : (
+                          <select
+                            value={clubRole}
+                            onChange={(e) =>
+                              handleClubRoleChange(
+                                user.id,
+                                club.id,
+                                e.target.value
+                              )
+                            }
+                            className={`role-select ${getRoleBadgeClass(
+                              clubRole === 'member' ? 'user' : 'admin'
+                            )}`}
+                            disabled={
+                              user.id === currentUser?.id ||
+                              user.email === 'syun4224@naver.com'
+                            }
+                          >
+                            <option value="member">일반 회원</option>
+                            <option value="admin">클럽 운영진</option>
+                          </select>
+                        )}
                       </td>
                       <td className="status-cell">
                         <label className="status-toggle">
@@ -315,7 +356,8 @@ const UserManagement = () => {
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>

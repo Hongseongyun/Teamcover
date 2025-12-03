@@ -10,7 +10,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasRole, isAuthenticated } = useAuth();
-  const { currentClub } = useClub();
+  const { currentClub, isAdmin: isClubAdmin } = useClub();
   const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -28,12 +28,16 @@ const Navbar = () => {
   const canAccessPage = (page) => {
     if (!isAuthenticated) return false;
 
+    const isSuperAdmin = user?.role === 'super_admin';
+    const isAdminForCurrentClub = isSuperAdmin || isClubAdmin;
+
     const pagePermissions = {
-      '/members': hasRole('admin'),
+      // 클럽별 운영/관리 페이지는 "해당 클럽의 운영진 or 슈퍼관리자"만
+      '/members': isAdminForCurrentClub,
       '/scores': hasRole('user'),
       '/points': hasRole('user'),
-      '/payments': hasRole('admin'),
-      '/team-assignment': hasRole('admin'),
+      '/payments': isAdminForCurrentClub,
+      '/team-assignment': isAdminForCurrentClub,
       '/user-management': hasRole('super_admin'),
       '/board': hasRole('user'),
     };

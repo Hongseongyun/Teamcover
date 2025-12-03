@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, clubAPI } from '../services/api';
 import '../pages/Login.css';
 
 // 전역 변수로 처리 상태 관리 (컴포넌트 재렌더링과 무관)
@@ -13,6 +13,32 @@ const GoogleAuthCallback = () => {
   const [status, setStatus] = useState('처리 중...');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingData, setPendingData] = useState(null);
+
+  // 로그인 후 여러 클럽에 가입되어 있으면 첫 진입 클럽 선택
+  const handlePostLoginNavigation = async (redirectTo) => {
+    try {
+      const res = await clubAPI.getUserClubs();
+      if (res.data?.success) {
+        const clubs = res.data.clubs || [];
+
+        // 클럽이 하나뿐이면 바로 선택
+        if (clubs.length === 1) {
+          try {
+            await clubAPI.selectClub(clubs[0].id);
+            localStorage.setItem('currentClubId', clubs[0].id.toString());
+          } catch (e) {
+            console.error('기본 클럽 선택 실패(구글 로그인 후 처리):', e);
+          }
+        }
+        // 2개 이상인 경우에는 로그인 후 /login 화면에서 선택 모달을 띄우는 흐름으로 통일해도 되지만,
+        // 여기서는 우선 기본 동작(redirectTo로 이동)만 수행
+      }
+    } catch (e) {
+      console.error('구글 로그인 후 클럽 목록 조회 실패:', e);
+    }
+
+    navigate(redirectTo, { replace: true });
+  };
 
   useEffect(() => {
     const handleGoogleCallback = async () => {
@@ -135,7 +161,7 @@ const GoogleAuthCallback = () => {
 
             console.log('User logged in successfully:', userData);
             setStatus('리디렉션 중...');
-            navigate(redirectTo, { replace: true });
+            await handlePostLoginNavigation(redirectTo);
           }
         } else {
           throw new Error(data.message || 'Google authentication failed');
@@ -235,7 +261,7 @@ const GoogleAuthCallback = () => {
                         setToken(access_token);
                         localStorage.setItem('token', access_token);
                         setShowConfirmModal(false);
-                        navigate(pendingData.redirectTo, { replace: true });
+                        await handlePostLoginNavigation(pendingData.redirectTo);
                       } else {
                         setStatus('로그인 실패: ' + response.data.message);
                         setTimeout(() => {
