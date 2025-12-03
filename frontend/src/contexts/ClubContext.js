@@ -7,6 +7,7 @@ import React, {
   useRef,
 } from 'react';
 import { clubAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const ClubContext = createContext();
 
@@ -19,10 +20,12 @@ export const useClub = () => {
 };
 
 export const ClubProvider = ({ children }) => {
+  const { user } = useAuth();
   const [clubs, setClubs] = useState([]);
   const [currentClub, setCurrentClub] = useState(null);
   const [loading, setLoading] = useState(true);
   const lastTokenRef = useRef(null);
+  const isSuperAdmin = user && user.role === 'super_admin';
 
   // 클럽 목록 로드
   const loadClubs = useCallback(async () => {

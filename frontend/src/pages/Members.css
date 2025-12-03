@@ -3,6 +3,18 @@
   font-size: var(--responsive-font-base, 1rem);
 }
 
+/* 클럽 배지 스타일 (슈퍼관리자용) */
+.club-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* 개인정보 보호 */
 .privacy-text {
   color: #666;

@@ -14,17 +14,6 @@ const ClubSelector = () => {
     return null;
   }
 
-  const getRoleText = (role) => {
-    switch (role) {
-      case 'owner':
-        return '소유자';
-      case 'admin':
-        return '운영진';
-      default:
-        return '회원';
-    }
-  };
-
   return (
     <div className="club-selector">
       <button
@@ -33,7 +22,6 @@ const ClubSelector = () => {
         aria-label="클럽 선택"
       >
         <span className="club-name">{currentClub.name}</span>
-        <span className="club-role">{getRoleText(currentClub.role)}</span>
         <span className={`dropdown-arrow ${isOpen ? 'rotated' : ''}`}>▼</span>
       </button>
 
@@ -58,7 +46,6 @@ const ClubSelector = () => {
                 }}
               >
                 <div className="club-item-name">{club.name}</div>
-                <div className="club-item-role">{getRoleText(club.role)}</div>
               </div>
             ))}
             <div className="club-item-divider"></div>

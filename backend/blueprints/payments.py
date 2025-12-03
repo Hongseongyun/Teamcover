@@ -37,8 +37,11 @@ def get_payments():
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
         
-        # 클럽 내 권한 확인 (admin 이상)
-        if user_id:
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        if not is_super_admin and user_id:
+            # 클럽 내 권한 확인 (admin 이상)
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
             if not has_permission:
                 return jsonify({'success': False, 'message': result}), 403
@@ -100,10 +103,14 @@ def add_payment():
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
         
-        # 클럽 내 권한 확인 (admin 이상)
-        has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-        if not has_permission:
-            return jsonify({'success': False, 'message': result}), 403
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        if not is_super_admin:
+            # 클럽 내 권한 확인 (admin 이상)
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
         
         data = request.get_json()
         
@@ -200,6 +207,11 @@ def add_payment():
 def update_payment(payment_id):
     """납입 내역 수정 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
@@ -208,12 +220,23 @@ def update_payment(payment_id):
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
         
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user.role == 'super_admin'
+        if not is_super_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
+        
         data = request.get_json()
         
         if not data:
             return jsonify({'success': False, 'message': '요청 데이터가 없습니다.'})
         
         payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
+        
+        # 수정하려는 납입 내역이 현재 클럽에 속하는지 확인
+        if payment.club_id != club_id:
+            return jsonify({'success': False, 'message': '다른 클럽의 납입 내역은 수정할 수 없습니다.'}), 403
 
         # 기존 상태 보존 (포인트 동기화 비교용)
         prev_paid_with_points = payment.paid_with_points
@@ -318,6 +341,11 @@ def update_payment(payment_id):
 def delete_payment(payment_id):
     """납입 내역 삭제 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
@@ -326,7 +354,18 @@ def delete_payment(payment_id):
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
         
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user.role == 'super_admin'
+        if not is_super_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
+        
         payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
+        
+        # 삭제하려는 납입 내역이 현재 클럽에 속하는지 확인
+        if payment.club_id != club_id:
+            return jsonify({'success': False, 'message': '다른 클럽의 납입 내역은 삭제할 수 없습니다.'}), 403
         payment_info = f'{payment.member.name if payment.member else ""} ({payment.amount}원)'
         
         # 연결된 포인트 있으면 먼저 삭제
@@ -361,6 +400,11 @@ def delete_payment(payment_id):
 def get_payment_stats():
     """납입 통계 조회 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
@@ -368,6 +412,13 @@ def get_payment_stats():
         # 관리자만 접근 가능
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user.role == 'super_admin'
+        if not is_super_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
         
         # 월별 통계
         monthly_stats = {}
@@ -382,12 +433,13 @@ def get_payment_stats():
         default_from_month = setting_start.setting_value if setting_start and setting_start.setting_value else None
         from_month = request.args.get('from_month') or default_from_month
 
-        # member 관계를 eager load하고 월별 통계를 DB 레벨에서 계산
+        # member 관계를 eager load하고 월별 통계를 DB 레벨에서 계산 (클럽별)
         monthly_payments = db.session.query(
             Payment.month,
             db.func.sum(Payment.amount).label('total')
         ).filter(
-            Payment.payment_type == 'monthly'
+            Payment.payment_type == 'monthly',
+            Payment.club_id == club_id
         )
         if from_month:
             monthly_payments = monthly_payments.filter(Payment.month >= from_month)
@@ -397,7 +449,8 @@ def get_payment_stats():
             Payment.month,
             db.func.sum(Payment.amount).label('total')
         ).filter(
-            Payment.payment_type == 'game'
+            Payment.payment_type == 'game',
+            Payment.club_id == club_id
         )
         if from_month:
             game_payments = game_payments.filter(Payment.month >= from_month)
@@ -454,9 +507,10 @@ def _sync_payment_to_ledger(payment: Payment):
             for row in existing[1:]:
                 db.session.delete(row)
     else:
-        entry = FundLedger(payment_id=payment.id)
+        entry = FundLedger(payment_id=payment.id, club_id=payment.club_id)
         db.session.add(entry)
 
+    entry.club_id = payment.club_id
     entry.event_date = payment.payment_date
     entry.month = payment.month or payment.payment_date.strftime('%Y-%m')
     entry.amount = abs(int(payment.amount))
@@ -472,13 +526,25 @@ def _sync_payment_to_ledger(payment: Payment):
 def fund_ledger_endpoint():
     try:
         if request.method == 'GET':
+            # 클럽 필터링
+            club_id = get_current_club_id()
+            if not club_id:
+                return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+            
             user_id = get_jwt_identity()
             current_user = User.query.get(int(user_id)) if user_id else None
             if not current_user or current_user.role not in ['super_admin', 'admin']:
                 return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+            
+            # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+            is_super_admin = current_user.role == 'super_admin'
+            if not is_super_admin:
+                has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+                if not has_permission:
+                    return jsonify({'success': False, 'message': result}), 403
 
             from_month = request.args.get('from_month')
-            q = FundLedger.query
+            q = FundLedger.query.filter_by(club_id=club_id)
             if from_month:
                 q = q.filter(FundLedger.month >= from_month)
             q = q.order_by(FundLedger.event_date.desc())
@@ -526,10 +592,22 @@ def fund_ledger_endpoint():
             ]})
 
         # POST (수기 추가)
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user.role == 'super_admin'
+        if not is_super_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
 
         data = request.get_json() or {}
         entry_type = data.get('entry_type')  # 'credit' or 'debit'
@@ -547,6 +625,7 @@ def fund_ledger_endpoint():
             return jsonify({'success': False, 'message': 'event_date는 YYYY-MM-DD 형식이어야 합니다.'})
         month = event_date.strftime('%Y-%m')
         entry = FundLedger(
+            club_id=club_id,
             event_date=event_date,
             month=month,
             entry_type=entry_type,
@@ -575,12 +654,28 @@ def fund_ledger_endpoint():
 @jwt_required()
 def manage_fund_ledger_item(ledger_id):
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
         if not current_user or current_user.role not in ['super_admin', 'admin']:
             return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user.role == 'super_admin'
+        if not is_super_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
 
         entry = FundLedger.query.get_or_404(ledger_id)
+        
+        # 수정/삭제하려는 장부 항목이 현재 클럽에 속하는지 확인
+        if entry.club_id != club_id:
+            return jsonify({'success': False, 'message': '다른 클럽의 장부 항목은 수정/삭제할 수 없습니다.'}), 403
 
         if request.method == 'DELETE':
             db.session.delete(entry)

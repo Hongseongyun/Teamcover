@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -290,6 +290,8 @@ const BowlingHero = () => {
 
   // 각 이미지의 밀린 위치 저장 (누적)
   const [itemOffsets, setItemOffsets] = useState({});
+  // 각 이미지의 속도 저장 (관성 효과를 위해) - useRef로 관리
+  const itemVelocitiesRef = useRef({});
 
   // 랜덤 위치를 가진 아이템 배열 생성 (겹치지 않도록)
   const [bowlingItems, setBowlingItems] = useState(() => {
@@ -331,7 +333,7 @@ const BowlingHero = () => {
   // 마우스 위치 추적 및 오프셋 업데이트 (throttle 적용)
   useEffect(() => {
     let throttleTimeout;
-    const throttleDelay = 16; // ~60fps
+    const throttleDelay = 8; // ~120fps로 더 빠른 반응
 
     const handleMouseMove = (e) => {
       if (throttleTimeout) return;
@@ -340,9 +342,10 @@ const BowlingHero = () => {
         const newMousePos = { x: e.clientX, y: e.clientY };
         setMousePosition(newMousePos);
 
-        // 모든 아이템의 오프셋 업데이트
+        // 모든 아이템의 오프셋과 속도 업데이트
         setItemOffsets((prev) => {
           const newOffsets = { ...prev };
+          const newVelocities = { ...itemVelocitiesRef.current };
           const screenWidth = window.innerWidth || 1920;
           const screenHeight = window.innerHeight || 1080;
 
@@ -383,9 +386,9 @@ const BowlingHero = () => {
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             // 같은 극끼리 밀어내는 효과 (N-N, S-S 반발력)
-            const maxDistance = 350; // 영향 범위
-            const minDistance = 50; // 최소 거리 (이 거리 이하에서는 최대 힘)
-            const maxPush = 200; // 최대 밀림 거리 (더 강하게)
+            const maxDistance = 400; // 영향 범위 (더 넓게)
+            const minDistance = 80; // 최소 거리 (이 거리 이하에서는 최대 힘)
+            const maxPush = 250; // 최대 밀림 거리 (더 강하게)
 
             let pushFactor = 0;
             if (distance < maxDistance && distance > 0) {
@@ -397,23 +400,201 @@ const BowlingHero = () => {
                 const normalizedDistance =
                   (distance - minDistance) / (maxDistance - minDistance);
                 // 거리가 멀어질수록 빠르게 약해짐 (같은 극 효과)
-                pushFactor = Math.pow(1 - normalizedDistance, 3.0);
+                pushFactor = Math.pow(1 - normalizedDistance, 2.5);
               }
             }
 
-            // 밀어내는 방향: 마우스에서 이미지 중심으로의 벡터의 반대 방향
+            // 밀어내는 방향: 이미지 중심에서 마우스로의 벡터의 반대 방향
             // 같은 극끼리 밀어내는 것처럼 마우스에서 멀어지는 방향
-            const currentPushX =
-              distance > 0 ? (dx / distance) * maxPush * pushFactor : 0;
-            const currentPushY =
-              distance > 0 ? (dy / distance) * maxPush * pushFactor : 0;
+            // dx, dy는 마우스에서 이미지로의 방향이므로, 반대로 해야 이미지가 마우스에서 멀어짐
+            const pushForceX =
+              distance > 0 ? (-dx / distance) * maxPush * pushFactor : 0;
+            const pushForceY =
+              distance > 0 ? (-dy / distance) * maxPush * pushFactor : 0;
 
-            // 오프셋 누적 (같은 극 효과처럼 즉각적이고 강하게 반응)
-            const accumulationRate = 0.25; // 누적 비율 증가 (더 빠르고 강한 반응)
-            const newX =
-              (prev[item.id]?.x || 0) + currentPushX * accumulationRate;
-            const newY =
-              (prev[item.id]?.y || 0) + currentPushY * accumulationRate;
+            // 얼음 위에서 미끄러지는 효과 (관성 + 마찰)
+            const friction = 0.92; // 마찰력 (0.92 = 8%씩 감속, 얼음처럼 낮은 마찰)
+            const forceMultiplier = 0.4; // 힘 적용 비율 (더 빠른 반응)
+
+            // 현재 속도 가져오기
+            const currentVelX = itemVelocitiesRef.current[item.id]?.x || 0;
+            const currentVelY = itemVelocitiesRef.current[item.id]?.y || 0;
+
+            // 이미지 간 상호 밀어내기 효과 계산
+            let imagePushX = 0;
+            let imagePushY = 0;
+
+            bowlingItems.forEach((otherItem) => {
+              if (otherItem.id === item.id) return; // 자기 자신은 제외
+
+              // 다른 이미지의 중심점 계산
+              let otherBaseX, otherBaseY;
+              if (otherItem.position.left !== undefined) {
+                otherBaseX =
+                  (parseFloat(otherItem.position.left) / 100) * screenWidth;
+              } else if (otherItem.position.right !== undefined) {
+                otherBaseX =
+                  screenWidth -
+                  (parseFloat(otherItem.position.right) / 100) * screenWidth;
+              } else {
+                otherBaseX = screenWidth / 2;
+              }
+
+              if (otherItem.position.top !== undefined) {
+                otherBaseY =
+                  (parseFloat(otherItem.position.top) / 100) * screenHeight;
+              } else if (otherItem.position.bottom !== undefined) {
+                otherBaseY =
+                  screenHeight -
+                  (parseFloat(otherItem.position.bottom) / 100) * screenHeight;
+              } else {
+                otherBaseY = screenHeight / 2;
+              }
+
+              const otherImgWidth = parseFloat(otherItem.size.width);
+              const otherImgHeight =
+                parseFloat(otherItem.size.height) || otherImgWidth * 1.5;
+
+              // 다른 이미지의 현재 오프셋 고려
+              const otherOffset = prev[otherItem.id] || { x: 0, y: 0 };
+              const otherX = otherBaseX + otherOffset.x + otherImgWidth / 2;
+              const otherY = otherBaseY + otherOffset.y + otherImgHeight / 2;
+
+              // 두 이미지 간 거리 계산
+              const imageDx = otherX - x;
+              const imageDy = otherY - y;
+              const imageDistance = Math.sqrt(
+                imageDx * imageDx + imageDy * imageDy
+              );
+
+              // 이미지 간 밀어내기 효과
+              const imageMaxDistance = 300; // 이미지 간 영향 범위
+              const imageMinDistance = 100; // 최소 거리
+              const imageMaxPush = 120; // 최대 밀림 거리
+
+              if (imageDistance < imageMaxDistance && imageDistance > 0) {
+                let imagePushFactor = 0;
+                if (imageDistance < imageMinDistance) {
+                  imagePushFactor = 1.0; // 매우 가까우면 최대 힘
+                } else {
+                  const normalizedImageDistance =
+                    (imageDistance - imageMinDistance) /
+                    (imageMaxDistance - imageMinDistance);
+                  imagePushFactor = Math.pow(1 - normalizedImageDistance, 2.0);
+                }
+
+                // 다른 이미지에서 멀어지는 방향으로 밀어냄
+                const imagePushForceX =
+                  (-imageDx / imageDistance) * imageMaxPush * imagePushFactor;
+                const imagePushForceY =
+                  (-imageDy / imageDistance) * imageMaxPush * imagePushFactor;
+
+                imagePushX += imagePushForceX * 0.25; // 이미지 간 밀림 힘 적용 비율
+                imagePushY += imagePushForceY * 0.25;
+              }
+            });
+
+            // 새로운 속도 = (현재 속도 * 마찰) + (밀림 힘 * 힘 적용 비율) + (이미지 간 밀림)
+            // 마찰로 감속하면서 동시에 새로운 힘을 받음
+            const newVelX =
+              currentVelX * friction +
+              pushForceX * forceMultiplier +
+              imagePushX * 0.2;
+            const newVelY =
+              currentVelY * friction +
+              pushForceY * forceMultiplier +
+              imagePushY * 0.2;
+
+            // 이미지 간 상호 밀어내기 효과 계산 (관성 효과용)
+            let inertiaImagePushX = 0;
+            let inertiaImagePushY = 0;
+
+            bowlingItems.forEach((otherItem) => {
+              if (otherItem.id === item.id) return; // 자기 자신은 제외
+
+              // 다른 이미지의 중심점 계산
+              let otherBaseX, otherBaseY;
+              if (otherItem.position.left !== undefined) {
+                otherBaseX =
+                  (parseFloat(otherItem.position.left) / 100) * screenWidth;
+              } else if (otherItem.position.right !== undefined) {
+                otherBaseX =
+                  screenWidth -
+                  (parseFloat(otherItem.position.right) / 100) * screenWidth;
+              } else {
+                otherBaseX = screenWidth / 2;
+              }
+
+              if (otherItem.position.top !== undefined) {
+                otherBaseY =
+                  (parseFloat(otherItem.position.top) / 100) * screenHeight;
+              } else if (otherItem.position.bottom !== undefined) {
+                otherBaseY =
+                  screenHeight -
+                  (parseFloat(otherItem.position.bottom) / 100) * screenHeight;
+              } else {
+                otherBaseY = screenHeight / 2;
+              }
+
+              const otherImgWidth = parseFloat(otherItem.size.width);
+              const otherImgHeight =
+                parseFloat(otherItem.size.height) || otherImgWidth * 1.5;
+
+              // 다른 이미지의 현재 오프셋 고려
+              const otherOffset = prev[otherItem.id] || { x: 0, y: 0 };
+              const otherX = otherBaseX + otherOffset.x + otherImgWidth / 2;
+              const otherY = otherBaseY + otherOffset.y + otherImgHeight / 2;
+
+              // 현재 이미지의 중심점 계산
+              const currentX = baseX + (prev[item.id]?.x || 0) + imgWidth / 2;
+              const currentY = baseY + (prev[item.id]?.y || 0) + imgHeight / 2;
+
+              // 두 이미지 간 거리 계산
+              const imageDx = otherX - currentX;
+              const imageDy = otherY - currentY;
+              const imageDistance = Math.sqrt(
+                imageDx * imageDx + imageDy * imageDy
+              );
+
+              // 이미지 간 밀어내기 효과
+              const imageMaxDistance = 300; // 이미지 간 영향 범위
+              const imageMinDistance = 100; // 최소 거리
+              const imageMaxPush = 120; // 최대 밀림 거리
+
+              if (imageDistance < imageMaxDistance && imageDistance > 0) {
+                let imagePushFactor = 0;
+                if (imageDistance < imageMinDistance) {
+                  imagePushFactor = 1.0; // 매우 가까우면 최대 힘
+                } else {
+                  const normalizedImageDistance =
+                    (imageDistance - imageMinDistance) /
+                    (imageMaxDistance - imageMinDistance);
+                  imagePushFactor = Math.pow(1 - normalizedImageDistance, 2.0);
+                }
+
+                // 다른 이미지에서 멀어지는 방향으로 밀어냄
+                const imagePushForceX =
+                  (-imageDx / imageDistance) * imageMaxPush * imagePushFactor;
+                const imagePushForceY =
+                  (-imageDy / imageDistance) * imageMaxPush * imagePushFactor;
+
+                inertiaImagePushX += imagePushForceX * 0.25; // 이미지 간 밀림 힘 적용 비율
+                inertiaImagePushY += imagePushForceY * 0.25;
+              }
+            });
+
+            // 속도에 이미지 간 밀림 힘 추가
+            const finalVelX = newVelX + inertiaImagePushX * 0.2;
+            const finalVelY = newVelY + inertiaImagePushY * 0.2;
+
+            // 속도 업데이트
+            newVelocities[item.id] = {
+              x: finalVelX,
+              y: finalVelY,
+            };
+
+            const newX = (prev[item.id]?.x || 0) + finalVelX;
+            const newY = (prev[item.id]?.y || 0) + finalVelY;
 
             // 화면 경계 감지 및 튕김 효과
             const margin = 50; // 경계 여유 공간
@@ -449,7 +630,43 @@ const BowlingHero = () => {
               x: finalX,
               y: finalY,
             };
+
+            // 속도도 저장 (경계에서 튕길 때 속도도 반전)
+            if (finalX !== newX || finalY !== newY) {
+              // 경계에서 튕겼을 때 속도도 반전
+              if (finalX !== newX) {
+                newVelocities[item.id] = {
+                  ...newVelocities[item.id],
+                  x: -newVelX * bounceStrength,
+                };
+              } else {
+                newVelocities[item.id] = {
+                  ...newVelocities[item.id],
+                  x: newVelX,
+                };
+              }
+
+              if (finalY !== newY) {
+                newVelocities[item.id] = {
+                  ...newVelocities[item.id],
+                  y: -newVelY * bounceStrength,
+                };
+              } else {
+                newVelocities[item.id] = {
+                  ...newVelocities[item.id],
+                  y: newVelY,
+                };
+              }
+            } else {
+              newVelocities[item.id] = {
+                x: newVelX,
+                y: newVelY,
+              };
+            }
           });
+
+          // 속도 ref 업데이트
+          itemVelocitiesRef.current = newVelocities;
 
           return newOffsets;
         });
@@ -459,9 +676,133 @@ const BowlingHero = () => {
     };
 
     window.addEventListener('mousemove', handleMouseMove);
+
+    // 관성 효과를 위한 지속적인 업데이트 (얼음 위에서 미끄러지는 효과)
+    const inertiaInterval = setInterval(() => {
+      setItemOffsets((prev) => {
+        const newOffsets = { ...prev };
+        const newVelocities = { ...itemVelocitiesRef.current };
+        const friction = 0.92; // 마찰력 (얼음처럼 낮은 마찰)
+        const screenWidth = window.innerWidth || 1920;
+        const screenHeight = window.innerHeight || 1080;
+
+        bowlingItems.forEach((item) => {
+          const currentVelX = itemVelocitiesRef.current[item.id]?.x || 0;
+          const currentVelY = itemVelocitiesRef.current[item.id]?.y || 0;
+
+          // 마찰로 감속
+          const newVelX = currentVelX * friction;
+          const newVelY = currentVelY * friction;
+
+          // 속도가 매우 작으면 0으로 설정 (완전히 멈춤)
+          if (Math.abs(newVelX) < 0.1) {
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              x: 0,
+            };
+          } else {
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              x: newVelX,
+            };
+          }
+
+          if (Math.abs(newVelY) < 0.1) {
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              y: 0,
+            };
+          } else {
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              y: newVelY,
+            };
+          }
+
+          // 위치 업데이트
+          let baseX, baseY;
+          if (item.position.left !== undefined) {
+            baseX = (parseFloat(item.position.left) / 100) * screenWidth;
+          } else if (item.position.right !== undefined) {
+            baseX =
+              screenWidth -
+              (parseFloat(item.position.right) / 100) * screenWidth;
+          } else {
+            baseX = screenWidth / 2;
+          }
+
+          if (item.position.top !== undefined) {
+            baseY = (parseFloat(item.position.top) / 100) * screenHeight;
+          } else if (item.position.bottom !== undefined) {
+            baseY =
+              screenHeight -
+              (parseFloat(item.position.bottom) / 100) * screenHeight;
+          } else {
+            baseY = screenHeight / 2;
+          }
+
+          const imgWidth = parseFloat(item.size.width);
+          const imgHeight = parseFloat(item.size.height) || imgWidth * 1.5;
+
+          const newX = (prev[item.id]?.x || 0) + newVelX;
+          const newY = (prev[item.id]?.y || 0) + newVelY;
+
+          // 화면 경계 감지
+          const margin = 50;
+          const bounceStrength = 0.3;
+
+          let finalX = newX;
+          let finalY = newY;
+
+          if (baseX + newX < margin) {
+            finalX = newX + (margin - (baseX + newX)) * bounceStrength;
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              x: -newVelX * bounceStrength,
+            };
+          }
+          if (baseX + newX + imgWidth > screenWidth - margin) {
+            finalX =
+              newX -
+              (baseX + newX + imgWidth - (screenWidth - margin)) *
+                bounceStrength;
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              x: -newVelX * bounceStrength,
+            };
+          }
+          if (baseY + newY < margin) {
+            finalY = newY + (margin - (baseY + newY)) * bounceStrength;
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              y: -newVelY * bounceStrength,
+            };
+          }
+          if (baseY + newY + imgHeight > screenHeight - margin) {
+            finalY =
+              newY -
+              (baseY + newY + imgHeight - (screenHeight - margin)) *
+                bounceStrength;
+            newVelocities[item.id] = {
+              ...newVelocities[item.id],
+              y: -newVelY * bounceStrength,
+            };
+          }
+
+          newOffsets[item.id] = { x: finalX, y: finalY };
+        });
+
+        // 속도 ref 업데이트
+        itemVelocitiesRef.current = newVelocities;
+
+        return newOffsets;
+      });
+    }, 16); // ~60fps
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (throttleTimeout) clearTimeout(throttleTimeout);
+      clearInterval(inertiaInterval);
     };
   }, [bowlingItems]);
 

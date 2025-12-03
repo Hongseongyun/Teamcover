@@ -99,6 +99,40 @@ const UserManagement = () => {
     return roleClasses[role] || 'role-default';
   };
 
+  // 클럽별로 사용자 그룹화
+  const groupUsersByClub = () => {
+    const clubGroups = {};
+    const noClubUsers = [];
+
+    users.forEach((user) => {
+      if (!user.clubs || user.clubs.length === 0) {
+        noClubUsers.push(user);
+      } else {
+        user.clubs.forEach((club) => {
+          if (!clubGroups[club.id]) {
+            clubGroups[club.id] = {
+              club: club,
+              users: [],
+            };
+          }
+          // 중복 방지: 이미 추가된 사용자인지 확인
+          if (!clubGroups[club.id].users.find((u) => u.id === user.id)) {
+            clubGroups[club.id].users.push(user);
+          }
+        });
+      }
+    });
+
+    return { clubGroups, noClubUsers };
+  };
+
+  const { clubGroups, noClubUsers } = groupUsersByClub();
+  const clubIds = Object.keys(clubGroups).sort((a, b) => {
+    const clubA = clubGroups[a].club;
+    const clubB = clubGroups[b].club;
+    return clubA.name.localeCompare(clubB.name);
+  });
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -117,103 +151,249 @@ const UserManagement = () => {
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="users-table-container">
-        <table className="users-table">
-          <thead>
-            <tr>
-              <th>이름</th>
-              <th>이메일</th>
-              <th>역할</th>
-              <th>상태</th>
-              <th>가입일</th>
-              <th>마지막 로그인</th>
-              <th>작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td className="user-name-cell">
-                  <div className="user-name-content">
-                    <div className="user-avatar">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="user-name-text">{user.name}</span>
-                  </div>
-                </td>
-                <td className="user-email-cell">
-                  <span className="user-email-text">{user.email}</span>
-                </td>
-                <td className="role-cell">
-                  <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                    className={`role-select ${getRoleBadgeClass(user.role)}`}
-                    disabled={
-                      user.id === currentUser?.id ||
-                      user.email === 'syun4224@naver.com'
-                    }
-                  >
-                    <option value="user">일반 사용자</option>
-                    <option value="admin">운영진</option>
-                    {user.email === 'syun4224@naver.com' && (
-                      <option value="super_admin">슈퍼 관리자</option>
-                    )}
-                  </select>
-                </td>
-                <td className="status-cell">
-                  <label className="status-toggle">
-                    <input
-                      type="checkbox"
-                      checked={user.is_active}
-                      onChange={(e) =>
-                        handleStatusChange(user.id, e.target.checked)
-                      }
-                      disabled={user.id === currentUser?.id}
-                    />
-                    <span
-                      className={`status-indicator ${
-                        user.is_active ? 'active' : 'inactive'
-                      }`}
-                    >
-                      {user.is_active ? '활성' : '비활성'}
-                    </span>
-                  </label>
-                </td>
-                <td className="date-cell">
-                  <span className="date-text">
-                    {user.created_at
-                      ? new Date(user.created_at).toLocaleDateString('ko-KR')
-                      : '-'}
-                  </span>
-                </td>
-                <td className="date-cell">
-                  <span className="date-text">
-                    {user.last_login
-                      ? new Date(user.last_login).toLocaleDateString('ko-KR')
-                      : '-'}
-                  </span>
-                </td>
-                <td className="actions-cell">
-                  {user.id === currentUser?.id ? (
-                    <span className="current-user-badge">현재 사용자</span>
-                  ) : user.email === 'syun4224@naver.com' ? (
-                    <span className="protected-user-badge">보호된 계정</span>
-                  ) : (
-                    <button
-                      className="delete-user-btn"
-                      onClick={() => handleDeleteClick(user)}
-                      title="사용자 삭제"
-                    >
-                      삭제
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* 클럽별로 사용자 목록 표시 */}
+      {clubIds.map((clubId) => {
+        const { club, users: clubUsers } = clubGroups[clubId];
+        const colorIndex = club.name.charCodeAt(0) % 8;
+
+        return (
+          <div key={club.id} className="club-section">
+            <div className="club-section-header">
+              <span className={`club-section-badge club-color-${colorIndex}`}>
+                {club.name}
+              </span>
+              <span className="club-section-count">({clubUsers.length}명)</span>
+            </div>
+            <div className="users-table-container">
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>이름</th>
+                    <th>이메일</th>
+                    <th>역할</th>
+                    <th>상태</th>
+                    <th>가입일</th>
+                    <th>마지막 로그인</th>
+                    <th>작업</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clubUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td className="user-name-cell">
+                        <div className="user-name-content">
+                          <div className="user-avatar">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="user-name-text">{user.name}</span>
+                        </div>
+                      </td>
+                      <td className="user-email-cell">
+                        <span className="user-email-text">{user.email}</span>
+                      </td>
+                      <td className="role-cell">
+                        <select
+                          value={user.role}
+                          onChange={(e) =>
+                            handleRoleChange(user.id, e.target.value)
+                          }
+                          className={`role-select ${getRoleBadgeClass(
+                            user.role
+                          )}`}
+                          disabled={
+                            user.id === currentUser?.id ||
+                            user.email === 'syun4224@naver.com'
+                          }
+                        >
+                          <option value="user">일반 사용자</option>
+                          <option value="admin">운영진</option>
+                          {user.email === 'syun4224@naver.com' && (
+                            <option value="super_admin">슈퍼 관리자</option>
+                          )}
+                        </select>
+                      </td>
+                      <td className="status-cell">
+                        <label className="status-toggle">
+                          <input
+                            type="checkbox"
+                            checked={user.is_active}
+                            onChange={(e) =>
+                              handleStatusChange(user.id, e.target.checked)
+                            }
+                            disabled={user.id === currentUser?.id}
+                          />
+                          <span
+                            className={`status-indicator ${
+                              user.is_active ? 'active' : 'inactive'
+                            }`}
+                          >
+                            {user.is_active ? '활성' : '비활성'}
+                          </span>
+                        </label>
+                      </td>
+                      <td className="date-cell">
+                        <span className="date-text">
+                          {user.created_at
+                            ? new Date(user.created_at).toLocaleDateString(
+                                'ko-KR'
+                              )
+                            : '-'}
+                        </span>
+                      </td>
+                      <td className="date-cell">
+                        <span className="date-text">
+                          {user.last_login
+                            ? new Date(user.last_login).toLocaleDateString(
+                                'ko-KR'
+                              )
+                            : '-'}
+                        </span>
+                      </td>
+                      <td className="actions-cell">
+                        {user.id === currentUser?.id ? (
+                          <span className="current-user-badge">
+                            현재 사용자
+                          </span>
+                        ) : user.email === 'syun4224@naver.com' ? (
+                          <span className="protected-user-badge">
+                            보호된 계정
+                          </span>
+                        ) : (
+                          <button
+                            className="delete-user-btn"
+                            onClick={() => handleDeleteClick(user)}
+                            title="사용자 삭제"
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* 클럽이 없는 사용자 섹션 */}
+      {noClubUsers.length > 0 && (
+        <div className="club-section">
+          <div className="club-section-header">
+            <span className="club-section-badge no-club-badge">클럽 없음</span>
+            <span className="club-section-count">({noClubUsers.length}명)</span>
+          </div>
+          <div className="users-table-container">
+            <table className="users-table">
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>이메일</th>
+                  <th>클럽</th>
+                  <th>역할</th>
+                  <th>상태</th>
+                  <th>가입일</th>
+                  <th>마지막 로그인</th>
+                  <th>작업</th>
+                </tr>
+              </thead>
+              <tbody>
+                {noClubUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td className="user-name-cell">
+                      <div className="user-name-content">
+                        <div className="user-avatar">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="user-name-text">{user.name}</span>
+                      </div>
+                    </td>
+                    <td className="user-email-cell">
+                      <span className="user-email-text">{user.email}</span>
+                    </td>
+                    <td className="role-cell">
+                      <select
+                        value={user.role}
+                        onChange={(e) =>
+                          handleRoleChange(user.id, e.target.value)
+                        }
+                        className={`role-select ${getRoleBadgeClass(
+                          user.role
+                        )}`}
+                        disabled={
+                          user.id === currentUser?.id ||
+                          user.email === 'syun4224@naver.com'
+                        }
+                      >
+                        <option value="user">일반 사용자</option>
+                        <option value="admin">운영진</option>
+                        {user.email === 'syun4224@naver.com' && (
+                          <option value="super_admin">슈퍼 관리자</option>
+                        )}
+                      </select>
+                    </td>
+                    <td className="status-cell">
+                      <label className="status-toggle">
+                        <input
+                          type="checkbox"
+                          checked={user.is_active}
+                          onChange={(e) =>
+                            handleStatusChange(user.id, e.target.checked)
+                          }
+                          disabled={user.id === currentUser?.id}
+                        />
+                        <span
+                          className={`status-indicator ${
+                            user.is_active ? 'active' : 'inactive'
+                          }`}
+                        >
+                          {user.is_active ? '활성' : '비활성'}
+                        </span>
+                      </label>
+                    </td>
+                    <td className="date-cell">
+                      <span className="date-text">
+                        {user.created_at
+                          ? new Date(user.created_at).toLocaleDateString(
+                              'ko-KR'
+                            )
+                          : '-'}
+                      </span>
+                    </td>
+                    <td className="date-cell">
+                      <span className="date-text">
+                        {user.last_login
+                          ? new Date(user.last_login).toLocaleDateString(
+                              'ko-KR'
+                            )
+                          : '-'}
+                      </span>
+                    </td>
+                    <td className="actions-cell">
+                      {user.id === currentUser?.id ? (
+                        <span className="current-user-badge">현재 사용자</span>
+                      ) : user.email === 'syun4224@naver.com' ? (
+                        <span className="protected-user-badge">
+                          보호된 계정
+                        </span>
+                      ) : (
+                        <button
+                          className="delete-user-btn"
+                          onClick={() => handleDeleteClick(user)}
+                          title="사용자 삭제"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="user-stats">
         <div className="stat-card">

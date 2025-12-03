@@ -12,7 +12,7 @@ const Login = () => {
     passwordConfirm: '',
     name: '',
     role: 'user',
-    club_id: '',  // 선택한 클럽 ID
+    club_id: '', // 선택한 클럽 ID
   });
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -176,30 +176,31 @@ const Login = () => {
         try {
           const response = await clubAPI.getAllClubs();
           console.log('클럽 목록 API 응답:', response);
-          
+
           if (response.data.success) {
             const clubs = response.data.clubs || [];
             console.log('로드된 클럽 목록:', clubs);
             setAvailableClubs(clubs);
-            
-            // 기본값으로 첫 번째 클럽 선택
-            if (clubs.length > 0) {
-              setFormData((prev) => ({
-                ...prev,
-                club_id: clubs[0].id.toString(),
-              }));
-            } else {
+
+            // 기본 선택 없음 (사용자가 직접 선택하도록)
+            if (clubs.length === 0) {
               console.warn('클럽 목록이 비어있습니다.');
-              setError('가입할 수 있는 클럽이 없습니다. 관리자에게 문의해주세요.');
+              setError(
+                '가입할 수 있는 클럽이 없습니다. 관리자에게 문의해주세요.'
+              );
             }
           } else {
             console.error('클럽 목록 조회 실패:', response.data.message);
-            setError(response.data.message || '클럽 목록을 불러올 수 없습니다.');
+            setError(
+              response.data.message || '클럽 목록을 불러올 수 없습니다.'
+            );
           }
         } catch (error) {
           console.error('클럽 목록 로드 실패:', error);
           console.error('에러 상세:', error.response?.data || error.message);
-          setError('클럽 목록을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+          setError(
+            '클럽 목록을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.'
+          );
         } finally {
           setLoadingClubs(false);
         }
@@ -221,12 +222,24 @@ const Login = () => {
       passwordConfirm: '',
       name: '',
       role: 'user',
-      club_id: availableClubs.length > 0 ? availableClubs[0].id.toString() : '',
+      club_id: '', // 기본 선택 없음
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 회원가입 모드에서 클럽이 선택되지 않았으면 클럽 선택 필드로 스크롤
+    if (!isLogin && !formData.club_id) {
+      const clubSelect = document.getElementById('club_id');
+      if (clubSelect) {
+        clubSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clubSelect.focus();
+        setError('가입할 클럽을 선택해주세요.');
+      }
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSuccessMessage('');
@@ -321,17 +334,21 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
+    // 회원가입 모드이고 클럽이 선택되지 않은 경우
+    if (!isLogin && !formData.club_id) {
+      const clubSelect = document.getElementById('club_id');
+      if (clubSelect) {
+        clubSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clubSelect.focus();
+        setError('가입할 클럽을 선택해주세요.');
+      }
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      // 회원가입 모드이고 클럽이 선택되지 않은 경우
-      if (!isLogin && !formData.club_id) {
-        setError('가입할 클럽을 선택해주세요.');
-        setLoading(false);
-        return;
-      }
-
       // Google OAuth URL 생성 (안전한 인코딩)
       let redirectUri, stateParam;
       try {
@@ -341,7 +358,7 @@ const Login = () => {
         // state에 클럽 ID 포함 (회원가입 모드인 경우)
         const stateData = {
           from: from || '/',
-          club_id: !isLogin ? formData.club_id : null
+          club_id: !isLogin ? formData.club_id : null,
         };
         stateParam = encodeURIComponent(JSON.stringify(stateData));
       } catch (error) {
@@ -404,21 +421,6 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="login-form">
             {!isLogin && (
               <div className="form-group">
-                <label htmlFor="name">이름</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required={!isLogin}
-                  placeholder="이름을 입력하세요"
-                />
-              </div>
-            )}
-
-            {!isLogin && (
-              <div className="form-group">
                 <label htmlFor="club_id">가입할 클럽</label>
                 {loadingClubs ? (
                   <div className="loading-text">클럽 목록을 불러오는 중...</div>
@@ -435,10 +437,13 @@ const Login = () => {
                     required={!isLogin}
                     className="club-select"
                   >
+                    <option value="">클럽을 선택해주세요</option>
                     {availableClubs.map((club) => (
                       <option key={club.id} value={club.id}>
                         {club.name}
-                        {club.is_points_enabled ? ' (포인트 시스템 활성화)' : ''}
+                        {club.is_points_enabled
+                          ? ' (포인트 시스템 활성화)'
+                          : ''}
                       </option>
                     ))}
                   </select>
@@ -446,6 +451,21 @@ const Login = () => {
                 <small className="form-hint">
                   가입할 볼링 클럽을 선택해주세요
                 </small>
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="form-group">
+                <label htmlFor="name">이름</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required={!isLogin}
+                  placeholder="이름을 입력하세요"
+                />
               </div>
             )}
 
@@ -530,7 +550,11 @@ const Login = () => {
               }`}
               disabled={loading || (!isFormValid && !isLogin)}
               title={
-                !isLogin ? `폼 유효성: ${isFormValid ? '유효' : '무효'}` : ''
+                !isLogin && !isFormValid
+                  ? !formData.club_id
+                    ? '가입할 클럽을 선택하세요'
+                    : '모든 필수 항목을 입력해주세요'
+                  : ''
               }
             >
               {loading ? '처리 중...' : isLogin ? '로그인' : '회원가입'}
@@ -544,7 +568,10 @@ const Login = () => {
           <button
             className="google-login-button"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || (!isLogin && !formData.club_id)}
+            title={
+              !isLogin && !formData.club_id ? '가입할 클럽을 선택하세요' : ''
+            }
           >
             <svg className="google-icon" viewBox="0 0 24 24">
               <path
@@ -564,7 +591,7 @@ const Login = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            구글로 로그인
+            {isLogin ? '구글로 로그인' : '구글로 회원가입'}
           </button>
 
           <div className="login-footer">

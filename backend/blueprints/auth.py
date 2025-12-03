@@ -56,7 +56,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -692,8 +692,25 @@ def get_users():
         if not current_user_obj or current_user_obj.role not in ['admin', 'super_admin']:
             return jsonify({'success': False, 'message': '권한이 없습니다.'})
         
+        from models import ClubMember, Club
+        
         users = User.query.all()
-        users_data = [user.to_dict() for user in users]
+        users_data = []
+        for user in users:
+            user_dict = user.to_dict()
+            # 사용자가 속한 클럽 정보 가져오기
+            club_memberships = ClubMember.query.filter_by(user_id=user.id).all()
+            clubs_info = []
+            for membership in club_memberships:
+                club = Club.query.get(membership.club_id)
+                if club:
+                    clubs_info.append({
+                        'id': club.id,
+                        'name': club.name,
+                        'role': membership.role
+                    })
+            user_dict['clubs'] = clubs_info
+            users_data.append(user_dict)
         
         return jsonify({
             'success': True,
@@ -801,6 +818,12 @@ def delete_user(user_id):
         
         user_name = user.name
         user_email = user.email
+        
+        # 관련 데이터 먼저 삭제
+        from models import ClubMember
+        
+        # 클럽 멤버십 삭제
+        ClubMember.query.filter_by(user_id=user.id).delete()
         
         # 사용자 삭제
         db.session.delete(user)
@@ -1632,6 +1655,12 @@ def delete_account():
         # 관리자 계정은 탈퇴 불가
         if current_user.role in ['admin', 'super_admin']:
             return jsonify({'success': False, 'message': '관리자 계정은 탈퇴할 수 없습니다.'})
+        
+        # 관련 데이터 먼저 삭제
+        from models import ClubMember
+        
+        # 클럽 멤버십 삭제
+        ClubMember.query.filter_by(user_id=current_user.id).delete()
         
         # 계정 삭제
         user_email = current_user.email

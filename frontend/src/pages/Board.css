@@ -147,6 +147,16 @@
   color: white;
 }
 
+.global-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+  background-color: #9b59b6;
+  color: white;
+}
+
 .post-title {
   margin: 0;
   font-size: 18px;
@@ -289,4 +299,3 @@
     justify-content: flex-end;
   }
 }
-

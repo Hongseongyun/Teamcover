@@ -42,24 +42,32 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* 햄버거 메뉴 버튼 (모바일) */}
-        {isAuthenticated && (
-          <button
-            className="mobile-menu-button"
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            aria-label="메뉴"
-          >
-            <span className={`hamburger ${showMobileMenu ? 'active' : ''}`}>
-              <span></span>
-              <span></span>
-              <span></span>
-            </span>
-          </button>
-        )}
+        <div className="navbar-left">
+          {/* 햄버거 메뉴 버튼 (모바일) */}
+          {isAuthenticated && (
+            <button
+              className="mobile-menu-button"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              aria-label="메뉴"
+            >
+              <span className={`hamburger ${showMobileMenu ? 'active' : ''}`}>
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+            </button>
+          )}
 
-        <Link to="/" className="navbar-brand">
-          Teamcover
-        </Link>
+          <Link to="/" className="navbar-brand">
+            Teamcover
+          </Link>
+
+          {isAuthenticated && (
+            <div className="navbar-club-selector">
+              <ClubSelector />
+            </div>
+          )}
+        </div>
 
         {isAuthenticated && (
           <ul className={`navbar-nav ${showMobileMenu ? 'mobile-active' : ''}`}>
@@ -144,7 +152,6 @@ const Navbar = () => {
         )}
 
         <div className="navbar-actions">
-          {isAuthenticated && <ClubSelector />}
           <button
             type="button"
             className="theme-toggle-button"

@@ -65,17 +65,36 @@ def get_all_clubs():
 @clubs_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_user_clubs():
-    """사용자가 가입한 클럽 목록 조회"""
+    """사용자가 가입한 클럽 목록 조회 (슈퍼관리자는 모든 클럽 조회)"""
     try:
         user_id = int(get_jwt_identity())
-        memberships = ClubMember.query.filter_by(user_id=user_id).all()
+        current_user = User.query.get(user_id)
+        is_super_admin = current_user and current_user.role == 'super_admin'
         
-        clubs_data = []
-        for membership in memberships:
-            club_data = membership.club.to_dict()
-            club_data['role'] = membership.role
-            club_data['joined_at'] = membership.joined_at.strftime('%Y-%m-%d %H:%M:%S') if membership.joined_at else None
-            clubs_data.append(club_data)
+        if is_super_admin:
+            # 슈퍼관리자는 모든 클럽 조회
+            all_clubs = Club.query.order_by(Club.name.asc()).all()
+            clubs_data = []
+            for club in all_clubs:
+                club_data = club.to_dict()
+                # 가입 여부 확인
+                membership = ClubMember.query.filter_by(user_id=user_id, club_id=club.id).first()
+                if membership:
+                    club_data['role'] = membership.role
+                    club_data['joined_at'] = membership.joined_at.strftime('%Y-%m-%d %H:%M:%S') if membership.joined_at else None
+                else:
+                    club_data['role'] = None  # 가입하지 않은 클럽
+                    club_data['joined_at'] = None
+                clubs_data.append(club_data)
+        else:
+            # 일반 사용자는 가입한 클럽만 조회
+            memberships = ClubMember.query.filter_by(user_id=user_id).all()
+            clubs_data = []
+            for membership in memberships:
+                club_data = membership.club.to_dict()
+                club_data['role'] = membership.role
+                club_data['joined_at'] = membership.joined_at.strftime('%Y-%m-%d %H:%M:%S') if membership.joined_at else None
+                clubs_data.append(club_data)
         
         return jsonify({
             'success': True,
@@ -140,13 +159,21 @@ def get_club(club_id):
         # 클럽 존재 확인
         club = Club.query.get_or_404(club_id)
         
-        # 가입 여부 확인
+        # 사용자 정보 확인
+        current_user = User.query.get(user_id)
+        is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        # 가입 여부 확인 (슈퍼관리자는 가입하지 않아도 선택 가능)
         membership = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
-        if not membership:
+        if not membership and not is_super_admin:
             return jsonify({'success': False, 'message': '가입하지 않은 클럽입니다.'}), 403
         
         club_data = club.to_dict()
-        club_data['role'] = membership.role
+        if membership:
+            club_data['role'] = membership.role
+        else:
+            # 슈퍼관리자가 가입하지 않은 클럽을 선택한 경우
+            club_data['role'] = 'super_admin'  # 슈퍼관리자 권한으로 표시
         
         return jsonify({
             'success': True,
@@ -220,19 +247,27 @@ def leave_club(club_id):
 @clubs_bp.route('/<int:club_id>/select', methods=['POST'])
 @jwt_required()
 def select_club(club_id):
-    """현재 사용할 클럽 선택"""
+    """현재 사용할 클럽 선택 (슈퍼관리자는 가입하지 않은 클럽도 선택 가능)"""
     try:
         user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        is_super_admin = current_user and current_user.role == 'super_admin'
         
-        # 가입 여부 확인
+        # 클럽 존재 확인
+        club = Club.query.get_or_404(club_id)
+        
+        # 가입 여부 확인 (슈퍼관리자는 가입하지 않아도 선택 가능)
         membership = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
-        if not membership:
+        if not membership and not is_super_admin:
             return jsonify({'success': False, 'message': '가입하지 않은 클럽입니다.'}), 403
         
         # 클럽 정보 반환 (프론트엔드에서 localStorage에 저장)
-        club = Club.query.get_or_404(club_id)
         club_data = club.to_dict()
-        club_data['role'] = membership.role
+        if membership:
+            club_data['role'] = membership.role
+        else:
+            # 슈퍼관리자가 가입하지 않은 클럽을 선택한 경우
+            club_data['role'] = None  # 슈퍼관리자 권한으로 표시
         
         return jsonify({
             'success': True,

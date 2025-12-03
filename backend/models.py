@@ -556,6 +556,8 @@ class Post(db.Model):
             'post_type': self.post_type,
             'author_id': self.author_id,
             'author_name': self.author.name if self.author else None,
+            'club_id': self.club_id,
+            'is_global': self.club_id is None,  # 전체 게시글 여부
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
             'comment_count': len(self.comments),

@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { postAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import './PostForm.css';
 
 const PostForm = ({ post, onClose, isAdmin }) => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('free');
+  const [isGlobal, setIsGlobal] = useState(false); // 전체 게시글 여부
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,6 +21,7 @@ const PostForm = ({ post, onClose, isAdmin }) => {
       setTitle(post.title);
       setContent(post.content);
       setPostType(post.post_type);
+      setIsGlobal(post.is_global || false);
       setImages(post.images || []);
     }
   }, [post]);
@@ -77,11 +83,16 @@ const PostForm = ({ post, onClose, isAdmin }) => {
         title: title.trim(),
         content: content.trim(),
         post_type: postType,
+        is_global: isGlobal,
         image_urls: images,
       };
 
       let response;
       if (post) {
+        // 수정 시에도 is_global 포함 (슈퍼관리자만 변경 가능)
+        if (isSuperAdmin) {
+          data.is_global = isGlobal;
+        }
         response = await postAPI.updatePost(post.id, data);
       } else {
         response = await postAPI.createPost(data);
@@ -111,6 +122,21 @@ const PostForm = ({ post, onClose, isAdmin }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="post-form">
+          {isSuperAdmin && !post && (
+            <div className="form-group">
+              <label>게시글 범위</label>
+              <select
+                value={isGlobal ? 'global' : 'club'}
+                onChange={(e) => setIsGlobal(e.target.value === 'global')}
+                className="form-select"
+              >
+                <option value="club">클럽 게시글</option>
+                <option value="global">
+                  전체 게시글 (모든 클럽이 볼 수 있음)
+                </option>
+              </select>
+            </div>
+          )}
           {isAdmin && (
             <div className="form-group">
               <label>게시글 유형</label>
@@ -202,4 +228,3 @@ const PostForm = ({ post, onClose, isAdmin }) => {
 };
 
 export default PostForm;
-

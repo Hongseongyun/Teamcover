@@ -182,6 +182,9 @@ const Board = () => {
                     <span className={`post-type ${post.post_type}`}>
                       {post.post_type === 'notice' ? '공지' : '자유'}
                     </span>
+                    {post.is_global && (
+                      <span className="global-badge">전체</span>
+                    )}
                     <h3 className="post-title">{post.title}</h3>
                     {isAdmin && post.post_type === 'notice' && (
                       <span className="admin-badge">운영진</span>

@@ -80,22 +80,26 @@ def get_members():
                 else:
                     hide_privacy = True  # 기본적으로 마스킹
         
-        # 클럽 필터링 추가
+        # 클럽 필터링 (슈퍼관리자도 선택한 클럽의 데이터만 조회)
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        # 클럽 가입 확인 (로그인한 사용자인 경우)
-        if user_id:
+        # 슈퍼관리자인 경우 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = current_user_obj and current_user_obj.role == 'super_admin'
+        
+        if not is_super_admin and user_id:
+            # 일반 사용자는 클럽 가입 확인
             is_member, result = require_club_membership(int(user_id), club_id)
             if not is_member:
                 return jsonify({'success': False, 'message': result}), 403
         
-        # 클럽별 회원 조회
+        # 선택한 클럽의 회원만 조회
         members = Member.query.filter_by(
             club_id=club_id,
             is_deleted=False
         ).order_by(Member.name.asc()).all()
+        
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
         
         # 안전망: hide_privacy=True일 때 강제 마스킹 적용
@@ -183,6 +187,27 @@ def add_member():
             if current_user and current_user.role in ['admin', 'super_admin']:
                 is_staff = data.get('is_staff', False)
         
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = False
+        if user_id:
+            current_user = User.query.get(int(user_id))
+            is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        if not is_super_admin and user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 중복 확인
+        existing_member = Member.query.filter_by(name=name, club_id=club_id, is_deleted=False).first()
+        if existing_member:
+            return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
+        
         new_member = Member(
             name=name,
             phone=data.get('phone', '').strip(),
@@ -191,7 +216,8 @@ def add_member():
             tier=data.get('tier', '').strip(),
             email=data.get('email', '').strip(),
             note=data.get('note', '').strip(),
-            is_staff=is_staff
+            is_staff=is_staff,
+            club_id=club_id
         )
         
         db.session.add(new_member)
@@ -271,12 +297,33 @@ def update_member(member_id):
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
-        existing_member = Member.query.filter_by(name=name, is_deleted=False).filter(Member.id != member_id).first()
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        user_id = get_jwt_identity()
+        is_super_admin = False
+        if user_id:
+            current_user = User.query.get(int(user_id))
+            is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        if not is_super_admin and user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 중복 확인
+        existing_member = Member.query.filter_by(name=name, club_id=club_id, is_deleted=False).filter(Member.id != member_id).first()
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
         
+        # 수정하려는 회원이 현재 클럽에 속하는지 확인
+        if member.club_id != club_id:
+            return jsonify({'success': False, 'message': '다른 클럽의 회원은 수정할 수 없습니다.'}), 403
+        
         # 현재 사용자 확인
-        user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
         
         print(f"[DEBUG] Received data: {data}")

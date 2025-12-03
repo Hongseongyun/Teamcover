@@ -44,17 +44,33 @@ def get_posts():
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
         user_id = get_jwt_identity()
-        if user_id:
-            is_member, result = require_club_membership(int(user_id), club_id)
-            if not is_member:
-                return jsonify({'success': False, 'message': result}), 403
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        try:
+            current_user = User.query.get(int(user_id))
+            if not current_user:
+                return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
+            
+            is_super_admin = current_user.role == 'super_admin'
+            
+            # 슈퍼관리자가 아닌 경우에만 클럽 가입 확인
+            if not is_super_admin:
+                is_member, result = require_club_membership(int(user_id), club_id)
+                if not is_member:
+                    return jsonify({'success': False, 'message': result}), 403
+        except (ValueError, TypeError) as e:
+            return jsonify({'success': False, 'message': f'유효하지 않은 사용자 ID입니다: {str(e)}'}), 400
         
         post_type = request.args.get('type', 'all')  # 'all', 'free', 'notice'
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 20))
         
-        # 클럽별 게시글 조회
-        query = Post.query.filter_by(club_id=club_id)
+        # 클럽별 게시글 + 전체 게시글 조회 (club_id가 null인 게시글은 모든 클럽이 볼 수 있음)
+        query = Post.query.filter(
+            (Post.club_id == club_id) | (Post.club_id.is_(None))
+        )
         
         if post_type != 'all':
             query = query.filter_by(post_type=post_type)
@@ -99,11 +115,21 @@ def get_post(post_id):
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        # 클럽별 게시글 조회
-        post = Post.query.filter_by(id=post_id, club_id=club_id).first_or_404()
+        # 클럽별 게시글 또는 전체 게시글 조회
+        post = Post.query.filter(
+            Post.id == post_id,
+            ((Post.club_id == club_id) | (Post.club_id.is_(None)))
+        ).first_or_404()
         
         user_id = get_jwt_identity()
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = False
         if user_id:
+            current_user = User.query.get(int(user_id))
+            is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        # 전체 게시글이 아닌 경우에만 클럽 가입 확인 (슈퍼관리자 제외)
+        if post.club_id is not None and user_id and not is_super_admin:
             is_member, result = require_club_membership(int(user_id), club_id)
             if not is_member:
                 return jsonify({'success': False, 'message': result}), 403
@@ -138,19 +164,29 @@ def create_post():
         if not user:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
         
-        # 클럽 가입 확인
-        is_member, result = require_club_membership(user_id, club_id)
-        if not is_member:
-            return jsonify({'success': False, 'message': result}), 403
+        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        is_super_admin = user.role == 'super_admin'
+        
+        if not is_super_admin:
+            # 클럽 가입 확인
+            is_member, result = require_club_membership(user_id, club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
         
         data = request.get_json()
         title = data.get('title', '').strip()
         content = data.get('content', '').strip()
         post_type = data.get('post_type', 'free')  # 'free' or 'notice'
+        is_global = data.get('is_global', False)  # 전체 게시글 여부
         image_urls = data.get('image_urls', [])  # 이미지 URL 리스트
         
-        # 권한 확인: 공지사항은 클럽 내 운영진만 작성 가능
-        if post_type == 'notice':
+        # 전체 게시글 작성 권한 확인 (슈퍼관리자만 가능)
+        if is_global:
+            if user.role != 'super_admin':
+                return jsonify({'success': False, 'message': '전체 게시글은 슈퍼관리자만 작성할 수 있습니다.'}), 403
+        
+        # 권한 확인: 공지사항은 클럽 내 운영진만 작성 가능 (슈퍼관리자 제외)
+        if post_type == 'notice' and not is_super_admin:
             has_permission, result = check_club_permission(user_id, club_id, 'admin')
             if not has_permission:
                 return jsonify({'success': False, 'message': '공지사항은 운영진만 작성할 수 있습니다.'}), 403
@@ -158,13 +194,13 @@ def create_post():
         if not title or not content:
             return jsonify({'success': False, 'message': '제목과 내용을 입력해주세요.'}), 400
         
-        # 게시글 생성
+        # 게시글 생성 (전체 게시글인 경우 club_id를 null로 설정)
         post = Post(
             title=title,
             content=content,
             post_type=post_type,
             author_id=user_id,
-            club_id=club_id
+            club_id=None if is_global else club_id
         )
         db.session.add(post)
         db.session.flush()  # ID를 얻기 위해 flush
@@ -195,9 +231,19 @@ def create_post():
 def update_post(post_id):
     """게시글 수정"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        post = Post.query.get_or_404(post_id)
+        
+        # 클럽별 게시글 또는 전체 게시글 조회
+        post = Post.query.filter(
+            Post.id == post_id,
+            ((Post.club_id == club_id) | (Post.club_id.is_(None)))
+        ).first_or_404()
         
         # 권한 확인: 작성자이거나 운영진만 수정 가능
         if post.author_id != user_id and user.role not in ['admin', 'super_admin']:
@@ -206,7 +252,13 @@ def update_post(post_id):
         data = request.get_json()
         title = data.get('title', '').strip()
         content = data.get('content', '').strip()
+        is_global = data.get('is_global', False)  # 전체 게시글 여부
         image_urls = data.get('image_urls', [])
+        
+        # 전체 게시글 변경 권한 확인 (슈퍼관리자만 가능)
+        if is_global != (post.club_id is None):
+            if user.role != 'super_admin':
+                return jsonify({'success': False, 'message': '전체 게시글 설정은 슈퍼관리자만 변경할 수 있습니다.'}), 403
         
         if not title or not content:
             return jsonify({'success': False, 'message': '제목과 내용을 입력해주세요.'}), 400
@@ -214,6 +266,7 @@ def update_post(post_id):
         # 게시글 수정
         post.title = title
         post.content = content
+        post.club_id = None if is_global else club_id
         post.updated_at = datetime.utcnow()
         
         # 기존 이미지 삭제
@@ -245,9 +298,19 @@ def update_post(post_id):
 def delete_post(post_id):
     """게시글 삭제"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
-        post = Post.query.get_or_404(post_id)
+        
+        # 클럽별 게시글 또는 전체 게시글 조회
+        post = Post.query.filter(
+            Post.id == post_id,
+            ((Post.club_id == club_id) | (Post.club_id.is_(None)))
+        ).first_or_404()
         
         # 권한 확인: 작성자이거나 운영진만 삭제 가능
         if post.author_id != user_id and user.role not in ['admin', 'super_admin']:
