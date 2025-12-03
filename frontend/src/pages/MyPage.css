@@ -139,6 +139,33 @@
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
+/* 다크 모드: 클럽 설명 관리 */
+[data-theme='dark'] .club-description-item {
+  background-color: var(--surface-card);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .club-description-name {
+  color: var(--color-text);
+}
+
+[data-theme='dark'] .club-description-role {
+  background-color: rgba(148, 163, 184, 0.2);
+  color: var(--color-text);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+[data-theme='dark'] .club-description-textarea {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--border-color);
+}
+
+[data-theme='dark'] .club-description-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
 /* 사용자 정보 */
 .user-info {
   display: flex;

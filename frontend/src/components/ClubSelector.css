@@ -133,6 +133,14 @@
   color: var(--text-primary, #fff);
 }
 
+[data-theme='dark'] .club-name {
+  color: var(--text-primary, #f9fafb);
+}
+
+[data-theme='dark'] .dropdown-arrow {
+  color: var(--text-secondary, #9ca3af);
+}
+
 [data-theme='dark'] .club-selector-button:hover {
   background: var(--bg-hover, #333);
   border-color: var(--border-hover, #555);
