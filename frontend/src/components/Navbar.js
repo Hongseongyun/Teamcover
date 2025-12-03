@@ -61,7 +61,7 @@ const Navbar = () => {
           )}
 
           <Link to="/" className="navbar-brand">
-            Teamcover
+            Bowlib
           </Link>
 
           {isAuthenticated && (

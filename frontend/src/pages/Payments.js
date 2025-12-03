@@ -11,6 +11,7 @@ import {
 } from 'chart.js';
 import { paymentAPI, memberAPI, pointAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import LoadingModal from '../components/LoadingModal';
 import './Payments.css';
 
@@ -25,6 +26,7 @@ ChartJS.register(
 
 const Payments = () => {
   const { user } = useAuth();
+  const { currentClub } = useClub();
   const isAdmin =
     user && (user.role === 'admin' || user.role === 'super_admin');
 
@@ -83,7 +85,7 @@ const Payments = () => {
   const [showPrepayModal, setShowPrepayModal] = useState(false);
 
   // 상단 대시보드: 잔액 및 그래프
-  const [currentBalance, setCurrentBalance] = useState(1540000);
+  const [currentBalance, setCurrentBalance] = useState(0);
   const [totalPointBalance, setTotalPointBalance] = useState(0);
   const [startMonth] = useState(null);
   const [balanceSeries, setBalanceSeries] = useState({ labels: [], data: [] });
@@ -137,8 +139,16 @@ const Payments = () => {
 
   // 장부 데이터를 기반으로 잔액 및 그래프 계산
   const calculateBalanceAndChart = useCallback(() => {
+    // Teamcover가 아닌 클럽은 잔액을 0으로 설정하고 그래프도 비움
+    if (!currentClub || currentClub.name !== 'Teamcover') {
+      setBalanceSeries({ labels: [], data: [] });
+      setCurrentBalance(0);
+      return;
+    }
+
     if (!ledgerItems || ledgerItems.length === 0) {
       setBalanceSeries({ labels: [], data: [] });
+      setCurrentBalance(0);
       return;
     }
 
@@ -220,8 +230,12 @@ const Payments = () => {
     setBalanceSeries({ labels, data });
 
     // 현재 잔액 계산 (최종 runningBalance 사용)
-    setCurrentBalance(runningBalance);
-  }, [ledgerItems]);
+    // Teamcover를 제외한 클럽은 잔액을 0으로 설정
+    const finalBalance = currentClub && currentClub.name === 'Teamcover' 
+      ? runningBalance 
+      : 0;
+    setCurrentBalance(finalBalance);
+  }, [ledgerItems, currentClub]);
 
   // 장부 로드
   const loadFundLedger = useCallback(async () => {
