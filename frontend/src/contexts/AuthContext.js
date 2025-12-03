@@ -78,7 +78,8 @@ export const AuthProvider = ({ children }) => {
     name,
     password,
     passwordConfirm,
-    role = 'user'
+    role = 'user',
+    club_id = null
   ) => {
     try {
       const response = await authAPI.register({
@@ -87,6 +88,7 @@ export const AuthProvider = ({ children }) => {
         password,
         password_confirm: passwordConfirm,
         role,
+        club_id,  // 선택한 클럽 ID
       });
       if (response.data.success) {
         return {

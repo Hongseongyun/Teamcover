@@ -80,6 +80,7 @@ def register():
         name = data.get('name', '').strip()
         password = data.get('password', '')
         password_confirm = data.get('password_confirm', '')
+        club_id = data.get('club_id')  # 선택한 클럽 ID (선택사항)
         role = 'user'  # 회원가입 시 항상 일반 회원으로만 가입 가능
         
         if not email or not name or not password or not password_confirm:
@@ -99,11 +100,18 @@ def register():
         if existing_user:
             return jsonify({'success': False, 'message': '이미 등록된 이메일입니다.'})
         
+        # 클럽 ID 유효성 검증 (제공된 경우)
+        if club_id:
+            from models import Club
+            club = Club.query.get(club_id)
+            if not club:
+                return jsonify({'success': False, 'message': '유효하지 않은 클럽입니다.'})
+        
         # 먼저 이메일 발송 시도 (사용자 정보 포함)
         try:
             
             # 이메일 발송 결과와 상세 정보를 받아옴
-            email_result = send_verification_email_with_debug(email, name, password, role)
+            email_result = send_verification_email_with_debug(email, name, password, role, club_id)
             email_sent = email_result['success']
             debug_info = email_result['debug_info']
             
@@ -263,8 +271,12 @@ def google_login():
         if not google_id or not email or not name:
             return jsonify({'success': False, 'message': '구글 계정 정보를 가져올 수 없습니다.'})
         
+        # 클럽 ID 가져오기 (선택사항)
+        club_id = data.get('club_id')
+        
         # 기존 사용자 확인 또는 새 사용자 생성
         user = User.query.filter_by(google_id=google_id).first()
+        is_new_user = False
         
         if not user:
             # 이메일로 기존 사용자 확인
@@ -275,13 +287,42 @@ def google_login():
                 user = existing_user
             else:
                 # 새 사용자 생성 (기본 역할: user)
+                is_new_user = True
                 user = User(
                     google_id=google_id,
                     email=email,
                     name=name,
-                    role='user'
+                    role='user',
+                    is_active=True,
+                    is_verified=True,
+                    verification_method='google',
+                    verified_at=datetime.utcnow()
                 )
                 db.session.add(user)
+                db.session.flush()  # ID 생성
+                
+                # 선택한 클럽에 가입
+                if club_id:
+                    from models import Club, ClubMember
+                    club = Club.query.get(club_id)
+                    if club:
+                        membership = ClubMember(
+                            user_id=user.id,
+                            club_id=club_id,
+                            role='member'
+                        )
+                        db.session.add(membership)
+                else:
+                    # 클럽을 선택하지 않은 경우, 기본 클럽(Teamcover)에 가입
+                    from models import Club, ClubMember
+                    default_club = Club.query.filter_by(name='Teamcover').first()
+                    if default_club:
+                        membership = ClubMember(
+                            user_id=user.id,
+                            club_id=default_club.id,
+                            role='member'
+                        )
+                        db.session.add(membership)
         
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
@@ -447,10 +488,14 @@ def google_callback():
         if not google_id or not email or not name:
             return jsonify({'success': False, 'message': '구글 계정 정보를 가져올 수 없습니다.'})
         
+        # 클럽 ID 가져오기 (선택사항)
+        club_id = data.get('club_id')
+        
         # Google 사용자 처리
         
         # 기존 사용자 확인 또는 새 사용자 생성
         user = User.query.filter_by(google_id=google_id).first()
+        is_new_user = False
         
         if not user:
             # 이메일로 기존 사용자 확인
@@ -461,6 +506,7 @@ def google_callback():
                 user = existing_user
             else:
                 # 새 사용자 생성 - 구글 로그인은 바로 활성화
+                is_new_user = True
                 user = User(
                     google_id=google_id,
                     email=email,
@@ -472,6 +518,31 @@ def google_callback():
                     verified_at=datetime.utcnow()  # 인증 완료 시간
                 )
                 db.session.add(user)
+                db.session.flush()  # ID 생성
+                
+                # 선택한 클럽에 가입
+                if club_id:
+                    from models import Club, ClubMember
+                    club = Club.query.get(club_id)
+                    if club:
+                        membership = ClubMember(
+                            user_id=user.id,
+                            club_id=club_id,
+                            role='member'
+                        )
+                        db.session.add(membership)
+                else:
+                    # 클럽을 선택하지 않은 경우, 기본 클럽(Teamcover)에 가입
+                    from models import Club, ClubMember
+                    default_club = Club.query.filter_by(name='Teamcover').first()
+                    if default_club:
+                        membership = ClubMember(
+                            user_id=user.id,
+                            club_id=default_club.id,
+                            role='member'
+                        )
+                        db.session.add(membership)
+                
                 try:
                     db.session.commit()
                 except Exception as e:

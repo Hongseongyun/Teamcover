@@ -4,6 +4,7 @@ from models import db, Member, Score, User, AppSetting
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
 from sqlalchemy import text
+from utils.club_helpers import get_current_club_id, require_club_membership
 
 # 회원 관리 Blueprint
 members_bp = Blueprint('members', __name__, url_prefix='/api/members')
@@ -17,7 +18,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -79,7 +80,22 @@ def get_members():
                 else:
                     hide_privacy = True  # 기본적으로 마스킹
         
-        members = Member.query.filter_by(is_deleted=False).order_by(Member.name.asc()).all()
+        # 클럽 필터링 추가
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽 가입 확인 (로그인한 사용자인 경우)
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 회원 조회
+        members = Member.query.filter_by(
+            club_id=club_id,
+            is_deleted=False
+        ).order_by(Member.name.asc()).all()
         members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
         
         # 안전망: hide_privacy=True일 때 강제 마스킹 적용

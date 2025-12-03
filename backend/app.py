@@ -17,6 +17,7 @@ from blueprints.teams import teams_bp
 from blueprints.ocr import ocr_bp
 from blueprints.payments import payments_bp
 from blueprints.posts import posts_bp
+from blueprints.clubs import clubs_bp
 
 # Google Sheets 기능을 선택적으로 로드
 try:
@@ -147,6 +148,7 @@ app.register_blueprint(teams_bp)
 app.register_blueprint(ocr_bp)
 app.register_blueprint(payments_bp)
 app.register_blueprint(posts_bp)
+app.register_blueprint(clubs_bp)
 
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:
@@ -206,6 +208,9 @@ def index():
             'points': '/api/points/*',
             'teams': '/api/teams/*',
             'ocr': '/api/ocr/*',
+            'payments': '/api/payments/*',
+            'posts': '/api/posts/*',
+            'clubs': '/api/clubs/*',
             'sheets': '/api/sheets/*' if SHEETS_AVAILABLE else 'disabled'
         },
         'timestamp': str(datetime.utcnow())

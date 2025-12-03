@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, clubAPI } from '../services/api';
 import ForgotPassword from '../components/ForgotPassword';
 import './Login.css';
 
@@ -12,6 +12,7 @@ const Login = () => {
     passwordConfirm: '',
     name: '',
     role: 'user',
+    club_id: '',  // 선택한 클럽 ID
   });
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,8 @@ const Login = () => {
   const [showLoginConfirmModal, setShowLoginConfirmModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [pendingLoginData, setPendingLoginData] = useState(null);
+  const [availableClubs, setAvailableClubs] = useState([]);
+  const [loadingClubs, setLoadingClubs] = useState(false);
 
   const { login, register, isAuthenticated, logoutOtherDevices } = useAuth();
   const navigate = useNavigate();
@@ -165,6 +168,47 @@ const Login = () => {
     // 폼 유효성 검사는 useEffect에서 디바운스로 처리
   };
 
+  // 클럽 목록 로드 (회원가입 모드일 때만)
+  useEffect(() => {
+    const loadClubs = async () => {
+      if (!isLogin) {
+        setLoadingClubs(true);
+        try {
+          const response = await clubAPI.getAllClubs();
+          console.log('클럽 목록 API 응답:', response);
+          
+          if (response.data.success) {
+            const clubs = response.data.clubs || [];
+            console.log('로드된 클럽 목록:', clubs);
+            setAvailableClubs(clubs);
+            
+            // 기본값으로 첫 번째 클럽 선택
+            if (clubs.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                club_id: clubs[0].id.toString(),
+              }));
+            } else {
+              console.warn('클럽 목록이 비어있습니다.');
+              setError('가입할 수 있는 클럽이 없습니다. 관리자에게 문의해주세요.');
+            }
+          } else {
+            console.error('클럽 목록 조회 실패:', response.data.message);
+            setError(response.data.message || '클럽 목록을 불러올 수 없습니다.');
+          }
+        } catch (error) {
+          console.error('클럽 목록 로드 실패:', error);
+          console.error('에러 상세:', error.response?.data || error.message);
+          setError('클럽 목록을 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+        } finally {
+          setLoadingClubs(false);
+        }
+      }
+    };
+
+    loadClubs();
+  }, [isLogin]);
+
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError('');
@@ -177,6 +221,7 @@ const Login = () => {
       passwordConfirm: '',
       name: '',
       role: 'user',
+      club_id: availableClubs.length > 0 ? availableClubs[0].id.toString() : '',
     });
   };
 
@@ -221,7 +266,8 @@ const Login = () => {
           formData.name,
           formData.password,
           formData.passwordConfirm,
-          formData.role
+          formData.role,
+          formData.club_id ? parseInt(formData.club_id) : null
         );
         if (result.success) {
           // 이메일 인증이 필요한 경우 자동 로그인하지 않음
@@ -279,13 +325,25 @@ const Login = () => {
     setError('');
 
     try {
+      // 회원가입 모드이고 클럽이 선택되지 않은 경우
+      if (!isLogin && !formData.club_id) {
+        setError('가입할 클럽을 선택해주세요.');
+        setLoading(false);
+        return;
+      }
+
       // Google OAuth URL 생성 (안전한 인코딩)
       let redirectUri, stateParam;
       try {
         redirectUri = encodeURIComponent(
           `${window.location.origin}/google-callback`
         );
-        stateParam = encodeURIComponent(from || '/');
+        // state에 클럽 ID 포함 (회원가입 모드인 경우)
+        const stateData = {
+          from: from || '/',
+          club_id: !isLogin ? formData.club_id : null
+        };
+        stateParam = encodeURIComponent(JSON.stringify(stateData));
       } catch (error) {
         redirectUri = encodeURIComponent('/google-callback');
         stateParam = encodeURIComponent('/');
@@ -294,6 +352,11 @@ const Login = () => {
       const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${
         process.env.REACT_APP_GOOGLE_CLIENT_ID || 'your-google-client-id'
       }&redirect_uri=${redirectUri}&response_type=code&scope=openid%20email%20profile&state=${stateParam}`;
+
+      // 선택한 클럽 ID를 sessionStorage에 저장 (구글 콜백에서 사용)
+      if (!isLogin && formData.club_id) {
+        sessionStorage.setItem('pending_club_id', formData.club_id);
+      }
 
       // 현재 창에서 Google OAuth 페이지로 리디렉션
       window.location.href = googleAuthUrl;
@@ -351,6 +414,38 @@ const Login = () => {
                   required={!isLogin}
                   placeholder="이름을 입력하세요"
                 />
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="form-group">
+                <label htmlFor="club_id">가입할 클럽</label>
+                {loadingClubs ? (
+                  <div className="loading-text">클럽 목록을 불러오는 중...</div>
+                ) : availableClubs.length === 0 ? (
+                  <div className="error-text">
+                    클럽 목록을 불러올 수 없습니다. 페이지를 새로고침해주세요.
+                  </div>
+                ) : (
+                  <select
+                    id="club_id"
+                    name="club_id"
+                    value={formData.club_id || ''}
+                    onChange={handleInputChange}
+                    required={!isLogin}
+                    className="club-select"
+                  >
+                    {availableClubs.map((club) => (
+                      <option key={club.id} value={club.id}>
+                        {club.name}
+                        {club.is_points_enabled ? ' (포인트 시스템 활성화)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <small className="form-hint">
+                  가입할 볼링 클럽을 선택해주세요
+                </small>
               </div>
             )}
 

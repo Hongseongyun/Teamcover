@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ClubSelector from './ClubSelector';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -143,6 +144,7 @@ const Navbar = () => {
         )}
 
         <div className="navbar-actions">
+          {isAuthenticated && <ClubSelector />}
           <button
             type="button"
             className="theme-toggle-button"

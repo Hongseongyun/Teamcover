@@ -6,6 +6,7 @@ from sqlalchemy import case
 import os
 import uuid
 from werkzeug.utils import secure_filename
+from utils.club_helpers import get_current_club_id, require_club_membership, check_club_permission
 
 # 게시판 Blueprint
 posts_bp = Blueprint('posts', __name__, url_prefix='/api/posts')
@@ -26,7 +27,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -37,11 +38,23 @@ def handle_preflight():
 def get_posts():
     """게시글 목록 조회 (공지사항 상단 고정)"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
         post_type = request.args.get('type', 'all')  # 'all', 'free', 'notice'
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 20))
         
-        query = Post.query
+        # 클럽별 게시글 조회
+        query = Post.query.filter_by(club_id=club_id)
         
         if post_type != 'all':
             query = query.filter_by(post_type=post_type)
@@ -81,11 +94,22 @@ def get_posts():
 def get_post(post_id):
     """게시글 상세 조회"""
     try:
-        post = Post.query.get_or_404(post_id)
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽별 게시글 조회
+        post = Post.query.filter_by(id=post_id, club_id=club_id).first_or_404()
+        
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
         
         # 현재 사용자가 좋아요를 눌렀는지 확인
-        user_id = int(get_jwt_identity())
-        is_liked = Like.query.filter_by(post_id=post_id, user_id=user_id).first() is not None
+        is_liked = Like.query.filter_by(post_id=post_id, user_id=int(user_id)).first() is not None if user_id else False
         
         post_dict = post.to_dict()
         post_dict['is_liked'] = is_liked
@@ -103,11 +127,21 @@ def get_post(post_id):
 def create_post():
     """게시글 작성"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         user_id = int(get_jwt_identity())
         user = User.query.get(user_id)
         
         if not user:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
+        
+        # 클럽 가입 확인
+        is_member, result = require_club_membership(user_id, club_id)
+        if not is_member:
+            return jsonify({'success': False, 'message': result}), 403
         
         data = request.get_json()
         title = data.get('title', '').strip()
@@ -115,9 +149,11 @@ def create_post():
         post_type = data.get('post_type', 'free')  # 'free' or 'notice'
         image_urls = data.get('image_urls', [])  # 이미지 URL 리스트
         
-        # 권한 확인: 공지사항은 운영진만 작성 가능
-        if post_type == 'notice' and user.role not in ['admin', 'super_admin']:
-            return jsonify({'success': False, 'message': '공지사항은 운영진만 작성할 수 있습니다.'}), 403
+        # 권한 확인: 공지사항은 클럽 내 운영진만 작성 가능
+        if post_type == 'notice':
+            has_permission, result = check_club_permission(user_id, club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': '공지사항은 운영진만 작성할 수 있습니다.'}), 403
         
         if not title or not content:
             return jsonify({'success': False, 'message': '제목과 내용을 입력해주세요.'}), 400
@@ -127,7 +163,8 @@ def create_post():
             title=title,
             content=content,
             post_type=post_type,
-            author_id=user_id
+            author_id=user_id,
+            club_id=club_id
         )
         db.session.add(post)
         db.session.flush()  # ID를 얻기 위해 flush

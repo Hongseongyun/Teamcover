@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime
-from models import db, Member, Score
+from models import db, Member, Score, Club
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from utils.club_helpers import get_current_club_id, require_club_membership
 
 # 스코어 관리 Blueprint
 scores_bp = Blueprint('scores', __name__, url_prefix='/api/scores')
@@ -15,7 +16,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -25,10 +26,22 @@ def handle_preflight():
 def get_scores():
     """스코어 목록 조회 API"""
     try:
-        # 모든 회원을 한 번에 조회하여 N+1 쿼리 문제 해결
-        all_members = {member.id: member for member in Member.query.all()}
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        scores = Score.query.order_by(Score.game_date.desc(), Score.average_score.desc()).all()
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 회원 조회
+        all_members = {member.id: member for member in Member.query.filter_by(club_id=club_id, is_deleted=False).all()}
+        
+        # 클럽별 스코어 조회
+        scores = Score.query.filter_by(club_id=club_id).order_by(Score.game_date.desc(), Score.average_score.desc()).all()
         scores_data = []
         
         for score in scores:
@@ -58,13 +71,19 @@ def get_scores():
 def add_score():
     """스코어 등록 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         data = request.get_json()
         
         member_name = data.get('member_name', '').strip() if data.get('member_name') else ''
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름은 필수 입력 항목입니다.'})
         
-        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
+        # 클럽별 회원 조회
+        member = Member.query.filter_by(name=member_name, club_id=club_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
@@ -85,6 +104,7 @@ def add_score():
         
         new_score = Score(
             member_id=member.id,
+            club_id=club_id,
             game_date=game_date,
             score1=score1,
             score2=score2,
@@ -150,6 +170,11 @@ def delete_score(score_id):
 def update_score(score_id):
     """스코어 수정 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         data = request.get_json()
         member_name = data.get('member_name', '').strip() if data.get('member_name') else ''
         game_date_str = data.get('game_date', '').strip() if data.get('game_date') else ''
@@ -161,7 +186,8 @@ def update_score(score_id):
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름을 입력해주세요.'})
         
-        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
+        # 클럽별 회원 조회
+        member = Member.query.filter_by(name=member_name, club_id=club_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'회원 "{member_name}"을 찾을 수 없습니다.'})
         
@@ -170,7 +196,8 @@ def update_score(score_id):
         except ValueError:
             return jsonify({'success': False, 'message': '올바른 날짜 형식을 입력해주세요.'})
         
-        score = Score.query.get_or_404(score_id)
+        # 클럽별 스코어 조회
+        score = Score.query.filter_by(id=score_id, club_id=club_id).first_or_404()
         
         score.member_id = member.id
         score.game_date = game_date
@@ -209,6 +236,17 @@ def get_member_averages():
     - 순위는 DB 윈도우 함수(DENSE_RANK)로 계산
     """
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
         from sqlalchemy import text
 
         sql = text(
@@ -222,11 +260,12 @@ def get_member_averages():
             FROM members
             WHERE average_score IS NOT NULL
               AND is_deleted = FALSE
+              AND club_id = :club_id
             ORDER BY rank, member_name
             """
         )
 
-        rows = db.session.execute(sql).mappings().all()
+        rows = db.session.execute(sql, {'club_id': club_id}).mappings().all()
         averages = [
             {
                 'member_id': row['member_id'],
@@ -248,8 +287,19 @@ def get_member_averages():
 def refresh_member_averages():
     """회원별 평균(에버) 새로고침 API - 모든 회원의 에버를 다시 계산하여 업데이트"""
     try:
-        # 모든 회원 조회 (삭제되지 않은 회원만)
-        members = Member.query.filter_by(is_deleted=False).all()
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 회원 조회 (삭제되지 않은 회원만)
+        members = Member.query.filter_by(club_id=club_id, is_deleted=False).all()
         updated_count = 0
         member_averages = []
         

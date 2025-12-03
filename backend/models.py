@@ -69,6 +69,65 @@ class User(UserMixin, db.Model):
             'verified_at': self.verified_at.strftime('%Y-%m-%d %H:%M:%S') if self.verified_at else None
         }
 
+class Club(db.Model):
+    """볼링 클럽 모델"""
+    __tablename__ = 'clubs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # 클럽 이름
+    description = db.Column(db.Text, nullable=True)  # 클럽 설명
+    is_points_enabled = db.Column(db.Boolean, default=False)  # 포인트 시스템 활성화 여부
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    
+    # 관계
+    creator = db.relationship('User', foreign_keys=[created_by])
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'is_points_enabled': self.is_points_enabled,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Club {self.name}>'
+
+class ClubMember(db.Model):
+    """사용자-클럽 관계 모델 (다대다)"""
+    __tablename__ = 'club_members'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='member')  # 'member', 'admin', 'owner'
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('club_memberships', lazy=True))
+    club = db.relationship('Club', backref=db.backref('memberships', lazy=True))
+    
+    # 중복 가입 방지
+    __table_args__ = (db.UniqueConstraint('user_id', 'club_id', name='unique_user_club'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'club_id': self.club_id,
+            'role': self.role,
+            'joined_at': self.joined_at.strftime('%Y-%m-%d %H:%M:%S') if self.joined_at else None,
+            'user_name': self.user.name if self.user else None,
+            'club_name': self.club.name if self.club else None
+        }
+    
+    def __repr__(self):
+        return f'<ClubMember {self.user_id} - {self.club_id} ({self.role})>'
+
 class Member(db.Model):
     """회원 모델"""
     __tablename__ = 'members'
@@ -85,8 +144,12 @@ class Member(db.Model):
     join_date = db.Column(db.Date, nullable=True)  # 가입일 (수정 가능)
     is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
     is_deleted = db.Column(db.Boolean, default=False)  # 삭제 여부 (soft delete)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    club = db.relationship('Club', backref=db.backref('members', lazy=True))
     
     def __repr__(self):
         return f'<Member {self.name}>'
@@ -95,14 +158,23 @@ class Member(db.Model):
         """저장된 평균 점수의 백분위(상위 비율) 기준으로 티어 계산.
         기준(누적 상위 비율): 챌린저 1%, 마스터 3%, 다이아 7%, 플레티넘 12%,
         골드 18%, 실버 22%, 브론즈 20%, 아이언 17% (총 100%).
+        클럽별로 계산됩니다.
         """
         if self.average_score is None:
             return '배치'
 
-        # 평균 점수가 있는 모든 회원 집합
-        members_with_avg = (
-            Member.query.filter(Member.average_score.isnot(None)).with_entities(Member.average_score).all()
+        # 클럽별 평균 점수가 있는 회원 집합
+        query = Member.query.filter(
+            Member.average_score.isnot(None),
+            Member.is_deleted == False
         )
+        
+        # 클럽별로 필터링
+        if self.club_id:
+            query = query.filter(Member.club_id == self.club_id)
+        
+        members_with_avg = query.with_entities(Member.average_score).all()
+        
         if not members_with_avg:
             return '배치'
 
@@ -137,6 +209,7 @@ class Member(db.Model):
     
     def calculate_regular_season_average(self):
         """정기전 에버 계산 (반기별 초기화, 폴백 로직 적용) - 평균 점수 업데이트용
+        클럽별로 계산됩니다.
         
         계산 우선순위:
         1. 현재 반기 기록 (1-6월 또는 7-12월)
@@ -147,18 +220,26 @@ class Member(db.Model):
         current_year = current_date.year
         current_month = current_date.month
         
+        # 클럽 필터링을 위한 기본 쿼리 조건
+        base_filter = [
+            Score.member_id == self.id,
+            Score.is_regular_season == True
+        ]
+        
+        # 클럽별 필터링 추가
+        if self.club_id:
+            base_filter.append(Score.club_id == self.club_id)
+        
         # 1. 현재 반기 기록 확인
         if current_month >= 7:  # 7-12월 (하반기)
             current_half_scores = Score.query.filter(
-                Score.member_id == self.id,
-                Score.is_regular_season == True,
+                *base_filter,
                 Score.game_date >= f'{current_year}-07-01',
                 Score.game_date < f'{current_year + 1}-01-01'
             ).all()
         else:  # 1-6월 (상반기)
             current_half_scores = Score.query.filter(
-                Score.member_id == self.id,
-                Score.is_regular_season == True,
+                *base_filter,
                 Score.game_date >= f'{current_year}-01-01',
                 Score.game_date < f'{current_year}-07-01'
             ).all()
@@ -169,16 +250,14 @@ class Member(db.Model):
         # 2. 이전 반기 기록 확인 (같은 연도)
         if current_month >= 7:  # 현재가 하반기면 상반기 확인
             prev_half_scores = Score.query.filter(
-                Score.member_id == self.id,
-                Score.is_regular_season == True,
+                *base_filter,
                 Score.game_date >= f'{current_year}-01-01',
                 Score.game_date < f'{current_year}-07-01'
             ).all()
         else:  # 현재가 상반기면 이전 연도 하반기 확인
             prev_year = current_year - 1
             prev_half_scores = Score.query.filter(
-                Score.member_id == self.id,
-                Score.is_regular_season == True,
+                *base_filter,
                 Score.game_date >= f'{prev_year}-07-01',
                 Score.game_date < f'{current_year}-01-01'
             ).all()
@@ -191,8 +270,7 @@ class Member(db.Model):
         
         # 이전 연도 하반기 (7-12월)
         prev_year_second_half = Score.query.filter(
-            Score.member_id == self.id,
-            Score.is_regular_season == True,
+            *base_filter,
             Score.game_date >= f'{prev_year}-07-01',
             Score.game_date < f'{current_year}-01-01'
         ).all()
@@ -202,8 +280,7 @@ class Member(db.Model):
         
         # 이전 연도 상반기 (1-6월)
         prev_year_first_half = Score.query.filter(
-            Score.member_id == self.id,
-            Score.is_regular_season == True,
+            *base_filter,
             Score.game_date >= f'{prev_year}-01-01',
             Score.game_date < f'{prev_year}-07-01'
         ).all()
@@ -298,6 +375,7 @@ class Score(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     game_date = db.Column(db.Date, nullable=False)
     score1 = db.Column(db.Integer, nullable=True)
     score2 = db.Column(db.Integer, nullable=True)
@@ -345,6 +423,7 @@ class Point(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     point_date = db.Column(db.Date, nullable=True)  # 구글 시트에서 가져온 날짜
     point_type = db.Column(db.String(20), nullable=False)  # '적립', '사용'
     amount = db.Column(db.Integer, nullable=False)
@@ -377,6 +456,7 @@ class FundState(db.Model):
     __tablename__ = 'fund_state'
 
     id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     start_month = db.Column(db.String(7), nullable=False)  # 'YYYY-MM'
     opening_balance = db.Column(db.BigInteger, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -391,6 +471,7 @@ class FundLedger(db.Model):
     __tablename__ = 'fund_ledger'
 
     id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     event_date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
     month = db.Column(db.String(7), nullable=False)  # 'YYYY-MM'
     entry_type = db.Column(db.String(10), nullable=False)  # 'credit' or 'debit'
@@ -412,6 +493,7 @@ class Payment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     payment_type = db.Column(db.String(20), nullable=False)  # 'monthly', 'game' (월회비, 정기전 게임비)
     amount = db.Column(db.Integer, nullable=False)  # 금액
     payment_date = db.Column(db.Date, nullable=False)  # 납입일
@@ -457,6 +539,7 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     post_type = db.Column(db.String(20), nullable=False, default='free')  # 'free', 'notice'
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

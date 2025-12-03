@@ -50,7 +50,13 @@ const GoogleAuthCallback = () => {
         const currentOrigin = window.location.origin;
         console.log('Current origin:', currentOrigin);
 
-        // 백엔드로 코드를 전송하여 토큰 교환 (origin도 함께 전송)
+        // sessionStorage에서 클럽 ID 가져오기 (회원가입 시 선택한 클럽)
+        const pendingClubId = sessionStorage.getItem('pending_club_id');
+        if (pendingClubId) {
+          sessionStorage.removeItem('pending_club_id');
+        }
+
+        // 백엔드로 코드를 전송하여 토큰 교환 (origin과 club_id도 함께 전송)
         const response = await fetch(
           `${process.env.REACT_APP_API_URL}/api/auth/google/callback`,
           {
@@ -61,6 +67,7 @@ const GoogleAuthCallback = () => {
             body: JSON.stringify({
               code,
               origin: currentOrigin, // origin 정보 추가
+              club_id: pendingClubId ? parseInt(pendingClubId) : null, // 선택한 클럽 ID
             }),
           }
         );

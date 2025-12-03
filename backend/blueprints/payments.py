@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from models import db, Member, Payment, User, Point, AppSetting, FundLedger, FundState
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
+from utils.club_helpers import get_current_club_id, require_club_membership, check_club_permission
 
 # 납입 관리 Blueprint
 payments_bp = Blueprint('payments', __name__, url_prefix='/api/payments')
@@ -17,7 +18,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -27,21 +28,28 @@ def handle_preflight():
 def get_payments():
     """납입 내역 조회 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
         
-        # 관리자만 접근 가능
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        # 클럽 내 권한 확인 (admin 이상)
+        if user_id:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if not has_permission:
+                return jsonify({'success': False, 'message': result}), 403
         
         # 쿼리 파라미터 가져오기
         member_id = request.args.get('member_id', type=int)
         payment_type = request.args.get('payment_type')  # 'monthly' 또는 'game'
         month = request.args.get('month')  # 'YYYY-MM'
         
-        # 기본 쿼리
-        query = Payment.query
+        # 기본 쿼리 (클럽별)
+        query = Payment.query.filter_by(club_id=club_id)
         
         # 필터 적용
         if member_id:
@@ -83,13 +91,19 @@ def get_payments():
 def add_payment():
     """납입 내역 추가 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
         
-        # 관리자만 접근 가능
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        # 클럽 내 권한 확인 (admin 이상)
+        has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+        if not has_permission:
+            return jsonify({'success': False, 'message': result}), 403
         
         data = request.get_json()
         
@@ -105,8 +119,8 @@ def add_payment():
         if not member_id or not payment_type or not amount or not payment_date:
             return jsonify({'success': False, 'message': '필수 입력 항목을 모두 입력해주세요.'})
         
-        # 회원 확인 (삭제되지 않은 회원만)
-        member = Member.query.filter_by(id=member_id, is_deleted=False).first()
+        # 클럽별 회원 확인 (삭제되지 않은 회원만)
+        member = Member.query.filter_by(id=member_id, club_id=club_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': '회원을 찾을 수 없습니다.'})
         
@@ -128,6 +142,7 @@ def add_payment():
         # 납입 내역 생성
         new_payment = Payment(
             member_id=member_id,
+            club_id=club_id,
             payment_type=payment_type,
             amount=amount,
             payment_date=payment_date,

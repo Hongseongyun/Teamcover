@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime
-from models import db, Member, Point
+from models import db, Member, Point, Club
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from utils.club_helpers import get_current_club_id, require_club_membership
 
 # 포인트 관리 Blueprint
 points_bp = Blueprint('points', __name__, url_prefix='/api/points')
@@ -15,7 +16,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -25,11 +26,31 @@ def handle_preflight():
 def get_points():
     """포인트 목록 조회 API"""
     try:
-        # 모든 회원을 한 번에 조회하여 N+1 쿼리 문제 해결
-        all_members = {member.id: member for member in Member.query.all()}
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        # 시간순으로 정렬하여 잔여 포인트를 정확하게 계산
-        points = Point.query.order_by(Point.point_date.asc(), Point.created_at.asc()).all()
+        # 클럽의 포인트 시스템 활성화 여부 확인
+        club = Club.query.get_or_404(club_id)
+        if not club.is_points_enabled:
+            return jsonify({
+                'success': False,
+                'message': '이 클럽은 포인트 시스템을 사용하지 않습니다.',
+                'is_points_enabled': False
+            }), 400
+        
+        user_id = get_jwt_identity()
+        if user_id:
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
+        
+        # 클럽별 회원 조회
+        all_members = {member.id: member for member in Member.query.filter_by(club_id=club_id, is_deleted=False).all()}
+        
+        # 클럽별 포인트 조회 - 시간순으로 정렬하여 잔여 포인트를 정확하게 계산
+        points = Point.query.filter_by(club_id=club_id).order_by(Point.point_date.asc(), Point.created_at.asc()).all()
         points_data = []
         
         # 회원별 잔여 포인트 계산 (시간순으로 누적)
@@ -87,13 +108,28 @@ def get_points():
 def add_point():
     """포인트 등록 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽의 포인트 시스템 활성화 여부 확인
+        club = Club.query.get_or_404(club_id)
+        if not club.is_points_enabled:
+            return jsonify({
+                'success': False,
+                'message': '이 클럽은 포인트 시스템을 사용하지 않습니다.',
+                'is_points_enabled': False
+            }), 400
+        
         data = request.get_json()
         
         member_name = data.get('member_name', '').strip() if data.get('member_name') else ''
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름은 필수 입력 항목입니다.'})
         
-        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
+        # 클럽별 회원 조회
+        member = Member.query.filter_by(name=member_name, club_id=club_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
@@ -115,6 +151,7 @@ def add_point():
         
         new_point = Point(
             member_id=member.id,
+            club_id=club_id,
             point_date=point_date,
             point_type=point_type,
             amount=amount,
@@ -145,7 +182,13 @@ def add_point():
 def delete_point(point_id):
     """포인트 삭제 API"""
     try:
-        point = Point.query.get_or_404(point_id)
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽별 포인트 조회
+        point = Point.query.filter_by(id=point_id, club_id=club_id).first_or_404()
         member = Member.query.get(point.member_id)
         member_name = member.name if member else 'Unknown'
         
@@ -165,6 +208,20 @@ def delete_point(point_id):
 def add_points_batch():
     """여러 명의 포인트 일괄 등록 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽의 포인트 시스템 활성화 여부 확인
+        club = Club.query.get_or_404(club_id)
+        if not club.is_points_enabled:
+            return jsonify({
+                'success': False,
+                'message': '이 클럽은 포인트 시스템을 사용하지 않습니다.',
+                'is_points_enabled': False
+            }), 400
+        
         data = request.get_json()
         
         # 필수 필드 검증
@@ -198,7 +255,8 @@ def add_points_batch():
             if not member_name:
                 continue
                 
-            member = Member.query.filter_by(name=member_name).first()
+            # 클럽별 회원 조회
+            member = Member.query.filter_by(name=member_name, club_id=club_id, is_deleted=False).first()
             if not member:
                 failed_members.append(member_name)
                 continue
@@ -207,6 +265,7 @@ def add_points_batch():
             computed_type = '적립' if amount > 0 else '사용'
             new_point = Point(
                 member_id=member.id,
+                club_id=club_id,
                 point_date=point_date,
                 point_type=computed_type,
                 amount=amount,
@@ -245,13 +304,28 @@ def add_points_batch():
 def update_point(point_id):
     """포인트 수정 API"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 클럽의 포인트 시스템 활성화 여부 확인
+        club = Club.query.get_or_404(club_id)
+        if not club.is_points_enabled:
+            return jsonify({
+                'success': False,
+                'message': '이 클럽은 포인트 시스템을 사용하지 않습니다.',
+                'is_points_enabled': False
+            }), 400
+        
         data = request.get_json()
         
         member_name = data.get('member_name', '').strip() if data.get('member_name') else ''
         if not member_name:
             return jsonify({'success': False, 'message': '회원 이름을 입력해주세요.'})
         
-        member = Member.query.filter_by(name=member_name, is_deleted=False).first()
+        # 클럽별 회원 조회
+        member = Member.query.filter_by(name=member_name, club_id=club_id, is_deleted=False).first()
         if not member:
             return jsonify({'success': False, 'message': f'등록되지 않은 회원입니다: {member_name}'})
         
@@ -272,7 +346,8 @@ def update_point(point_id):
         else:
             point_date = datetime.now().date()
         
-        point = Point.query.get_or_404(point_id)
+        # 클럽별 포인트 조회
+        point = Point.query.filter_by(id=point_id, club_id=club_id).first_or_404()
         
         point.member_id = member.id
         point.point_date = point_date

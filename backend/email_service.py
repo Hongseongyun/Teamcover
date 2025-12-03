@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
-from models import db, User
+from models import db, User, ClubMember
 
 # Flask-Mail 인스턴스
 mail = Mail()
@@ -44,14 +44,15 @@ def init_mail(app):
     else:
         print("✅ 이메일 설정이 완료되었습니다.")
 
-def generate_verification_token(email, name, password, role='user'):
+def generate_verification_token(email, name, password, role='user', club_id=None):
     """이메일 인증 토큰 생성 (사용자 정보 포함)"""
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     user_data = {
         'email': email,
         'name': name,
         'password': password,
-        'role': role
+        'role': role,
+        'club_id': club_id  # 선택한 클럽 ID 포함
     }
     return serializer.dumps(user_data, salt='email-verification')
 
@@ -64,12 +65,13 @@ def verify_token(token, expiration=3600):
     except Exception:
         return None
 
-def send_verification_email_with_debug(email, name, password, role='user'):
+def send_verification_email_with_debug(email, name, password, role='user', club_id=None):
     """인증 이메일 발송 (디버그 정보 포함)"""
     debug_info = {
         'email': email,
         'name': name,
         'role': role,
+        'club_id': club_id,
         'steps': [],
         'config': {},
         'error': None
@@ -80,6 +82,7 @@ def send_verification_email_with_debug(email, name, password, role='user'):
         print(f"이메일: {email}")
         print(f"이름: {name}")
         print(f"역할: {role}")
+        print(f"클럽 ID: {club_id}")
         
         debug_info['steps'].append("이메일 발송 시작")
         
@@ -95,7 +98,7 @@ def send_verification_email_with_debug(email, name, password, role='user'):
         
         # SendGrid API 방식 시도
         debug_info['steps'].append("SendGrid API 방식 시도")
-        return send_via_sendgrid_api(email, name, password, role, debug_info)
+        return send_via_sendgrid_api(email, name, password, role, debug_info, club_id)
         
     except Exception as e:
         print(f"❌ 이메일 발송 실패: {e}")
@@ -115,7 +118,7 @@ def send_verification_email_with_debug(email, name, password, role='user'):
             'debug_info': debug_info
         }
 
-def send_via_sendgrid_api(email, name, password, role, debug_info):
+def send_via_sendgrid_api(email, name, password, role, debug_info, club_id=None):
     """SendGrid API를 사용한 이메일 발송"""
     try:
         import requests
@@ -123,7 +126,7 @@ def send_via_sendgrid_api(email, name, password, role, debug_info):
         debug_info['steps'].append("SendGrid API 요청 준비")
         
         # 인증 토큰 생성
-        token = generate_verification_token(email, name, password, role)
+        token = generate_verification_token(email, name, password, role, club_id)
         verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
         debug_info['verification_url'] = verification_url
         
@@ -374,6 +377,7 @@ def verify_email_token(token):
         name = user_data.get('name')
         password = user_data.get('password')
         role = user_data.get('role', 'user')
+        club_id = user_data.get('club_id')  # 선택한 클럽 ID
         
         # 이미 존재하는 사용자인지 확인
         existing_user = User.query.filter_by(email=email).first()
@@ -384,6 +388,21 @@ def verify_email_token(token):
                 existing_user.verified_at = datetime.utcnow()
                 if not existing_user.verification_method:
                     existing_user.verification_method = 'email'
+                
+                # 클럽 가입 처리 (이미 가입되어 있지 않은 경우)
+                if club_id:
+                    existing_membership = ClubMember.query.filter_by(
+                        user_id=existing_user.id,
+                        club_id=club_id
+                    ).first()
+                    if not existing_membership:
+                        membership = ClubMember(
+                            user_id=existing_user.id,
+                            club_id=club_id,
+                            role='member'
+                        )
+                        db.session.add(membership)
+                
                 db.session.commit()
                 return {'success': True, 'message': '이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.'}
             else:
@@ -402,6 +421,28 @@ def verify_email_token(token):
         new_user.set_password(password)
         
         db.session.add(new_user)
+        db.session.flush()  # ID 생성
+        
+        # 선택한 클럽에 가입 (club_id가 있는 경우)
+        if club_id:
+            membership = ClubMember(
+                user_id=new_user.id,
+                club_id=club_id,
+                role='member'
+            )
+            db.session.add(membership)
+        else:
+            # 클럽을 선택하지 않은 경우, 기본 클럽(Teamcover)에 가입
+            from models import Club
+            default_club = Club.query.filter_by(name='Teamcover').first()
+            if default_club:
+                membership = ClubMember(
+                    user_id=new_user.id,
+                    club_id=default_club.id,
+                    role='member'
+                )
+                db.session.add(membership)
+        
         db.session.commit()
         
         return {'success': True, 'message': '이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.'}

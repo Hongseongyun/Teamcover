@@ -49,6 +49,12 @@ api.interceptors.request.use(
       config.headers['X-Privacy-Token'] = privacyToken;
     }
 
+    // 현재 선택된 클럽 ID 추가
+    const currentClubId = localStorage.getItem('currentClubId');
+    if (currentClubId) {
+      config.headers['X-Club-Id'] = currentClubId;
+    }
+
     return config;
   },
   (error) => {
@@ -209,6 +215,17 @@ export const paymentAPI = {
   updateFundLedger: (id, data) =>
     api.put(`/api/payments/fund/ledger/${id}`, data),
   deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
+};
+
+// 클럽 관리 API
+export const clubAPI = {
+  getAllClubs: () => api.get('/api/clubs/public'), // 회원가입용 (인증 불필요)
+  getUserClubs: () => api.get('/api/clubs'),
+  createClub: (data) => api.post('/api/clubs', data),
+  getClub: (clubId) => api.get(`/api/clubs/${clubId}`),
+  joinClub: (clubId) => api.post(`/api/clubs/${clubId}/join`),
+  leaveClub: (clubId) => api.post(`/api/clubs/${clubId}/leave`),
+  selectClub: (clubId) => api.post(`/api/clubs/${clubId}/select`),
 };
 
 // 게시판 API
