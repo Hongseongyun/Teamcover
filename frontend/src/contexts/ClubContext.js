@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import { clubAPI } from '../services/api';
 
 const ClubContext = createContext();
@@ -15,10 +22,12 @@ export const ClubProvider = ({ children }) => {
   const [clubs, setClubs] = useState([]);
   const [currentClub, setCurrentClub] = useState(null);
   const [loading, setLoading] = useState(true);
+  const lastTokenRef = useRef(null);
 
   // 클럽 목록 로드
-  const loadClubs = async () => {
+  const loadClubs = useCallback(async () => {
     try {
+      setLoading(true);
       const response = await clubAPI.getUserClubs();
       if (response.data.success) {
         setClubs(response.data.clubs);
@@ -31,13 +40,13 @@ export const ClubProvider = ({ children }) => {
           );
           if (savedClub) {
             setCurrentClub(savedClub);
-          } else if (response.data.clubs.length > 0) {
-            // 저장된 클럽이 없으면 첫 번째 클럽 선택
-            selectClub(response.data.clubs[0].id);
+          } else {
+            // 저장된 클럽이 없거나 유효하지 않으면 Teamcover 우선 선택
+            selectDefaultClub(response.data.clubs);
           }
-        } else if (response.data.clubs.length > 0) {
-          // 첫 번째 클럽을 기본으로 선택
-          selectClub(response.data.clubs[0].id);
+        } else {
+          // 저장된 클럽이 없으면 Teamcover 우선 선택
+          selectDefaultClub(response.data.clubs);
         }
       }
     } catch (error) {
@@ -45,7 +54,30 @@ export const ClubProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // 기본 클럽 선택 (Teamcover 우선)
+  const selectDefaultClub = useCallback(async (clubs) => {
+    if (clubs.length === 0) return;
+
+    // Teamcover 클럽을 우선적으로 찾기
+    const teamcoverClub = clubs.find((c) => c.name === 'Teamcover');
+    const clubToSelect = teamcoverClub || clubs[0];
+
+    if (clubToSelect) {
+      // 클럽 선택 API 호출하여 서버에 알림
+      try {
+        await clubAPI.selectClub(clubToSelect.id);
+        setCurrentClub(clubToSelect);
+        localStorage.setItem('currentClubId', clubToSelect.id.toString());
+      } catch (error) {
+        console.error('기본 클럽 선택 실패:', error);
+        // API 호출 실패해도 로컬에 저장하여 헤더에 포함되도록 함
+        setCurrentClub(clubToSelect);
+        localStorage.setItem('currentClubId', clubToSelect.id.toString());
+      }
+    }
+  }, []);
 
   // 클럽 선택
   const selectClub = async (clubId) => {
@@ -127,14 +159,65 @@ export const ClubProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // 로그인 상태일 때만 클럽 목록 로드
+    // 토큰 확인 및 클럽 목록 로드
     const token = localStorage.getItem('token');
+    lastTokenRef.current = token;
+
     if (token) {
       loadClubs();
     } else {
       setLoading(false);
+      setCurrentClub(null);
+      setClubs([]);
+      localStorage.removeItem('currentClubId');
     }
-  }, []);
+
+    // 토큰 변경 감지 (다른 탭에서 로그인/로그아웃 시)
+    const handleStorageChange = (e) => {
+      if (e.key === 'token') {
+        const newToken = e.newValue;
+        if (newToken && newToken !== lastTokenRef.current) {
+          // 로그인: 클럽 목록 다시 로드
+          lastTokenRef.current = newToken;
+          loadClubs();
+        } else if (!newToken && lastTokenRef.current) {
+          // 로그아웃: 클럽 정보 초기화
+          lastTokenRef.current = null;
+          setCurrentClub(null);
+          setClubs([]);
+          localStorage.removeItem('currentClubId');
+          setLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // 같은 탭에서도 감지하기 위해 polling
+    const checkToken = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+
+      if (currentToken !== lastTokenRef.current) {
+        if (currentToken && !lastTokenRef.current) {
+          // 로그인
+          lastTokenRef.current = currentToken;
+          loadClubs();
+        } else if (!currentToken && lastTokenRef.current) {
+          // 로그아웃
+          lastTokenRef.current = null;
+          setCurrentClub(null);
+          setClubs([]);
+          localStorage.removeItem('currentClubId');
+          setLoading(false);
+        }
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(checkToken);
+    };
+  }, [loadClubs]);
 
   const value = {
     clubs,

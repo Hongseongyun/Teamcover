@@ -28,6 +28,7 @@ except ImportError as e:
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.url_map.strict_slashes = False  # URL 끝 슬래시 리다이렉트 비활성화
 
 # Flask 세션 설정 (메모리 기반으로 단순화)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this-in-production-12345'
@@ -44,8 +45,19 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=7)  # 토큰 만료 시�
 # Flask-Login 설정
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+login_manager.login_view = None  # API는 리다이렉트 대신 JSON 응답 사용
 login_manager.login_message = '로그인이 필요합니다.'
+
+# OPTIONS 요청에 대한 리다이렉트 방지
+@login_manager.unauthorized_handler
+def unauthorized():
+    # OPTIONS 요청은 리다이렉트하지 않음
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.status_code = 200
+        return response
+    # 기존 동작 유지
+    return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
 
 # JWT 설정
 jwt = JWTManager(app)
@@ -125,9 +137,10 @@ print(f"CORS Origins Config: {app.config.get('CORS_ORIGINS')}")
 CORS(app,
      origins=allowed_origins,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Privacy-Token"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Privacy-Token", "X-Club-Id"],
      supports_credentials=True,
-     expose_headers=["Content-Type", "Authorization"])
+     expose_headers=["Content-Type", "Authorization"],
+     automatic_options=True)  # OPTIONS 요청 자동 처리
 
 # CORS는 flask-cors 라이브러리로만 처리 (중복 방지)
 

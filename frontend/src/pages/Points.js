@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -29,6 +30,7 @@ ChartJS.register(
 
 const Points = () => {
   const { user } = useAuth(); // 현재 사용자 정보
+  const { currentClub, loading: clubLoading } = useClub();
   const isAdmin =
     user && (user.role === 'admin' || user.role === 'super_admin');
   const [points, setPoints] = useState([]);
@@ -256,9 +258,12 @@ const Points = () => {
   }, [points, members, calculateStats]);
 
   useEffect(() => {
-    loadPoints();
-    loadMembers();
-  }, [loadPoints]);
+    // 클럽이 선택될 때까지 대기
+    if (!clubLoading && currentClub) {
+      loadPoints();
+      loadMembers();
+    }
+  }, [clubLoading, currentClub, loadPoints]);
 
   // 회원별 잔여 포인트의 합으로 잔여 포인트 재계산 (더 정확함)
   const memberBalances = calculateMemberBalances();
@@ -1006,6 +1011,11 @@ const Points = () => {
       }
     }, 100);
   };
+
+  // 클럽이 로드 중이거나 선택되지 않았으면 대기
+  if (clubLoading || !currentClub) {
+    return <div className="loading">클럽 정보를 불러오는 중...</div>;
+  }
 
   if (loading) {
     return <div className="loading">로딩 중...</div>;

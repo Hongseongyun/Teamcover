@@ -220,7 +220,7 @@ export const paymentAPI = {
 // 클럽 관리 API
 export const clubAPI = {
   getAllClubs: () => api.get('/api/clubs/public'), // 회원가입용 (인증 불필요)
-  getUserClubs: () => api.get('/api/clubs'),
+  getUserClubs: () => api.get('/api/clubs/'), // 슬래시 추가하여 308 리다이렉트 방지
   createClub: (data) => api.post('/api/clubs', data),
   getClub: (clubId) => api.get(`/api/clubs/${clubId}`),
   joinClub: (clubId) => api.post(`/api/clubs/${clubId}/join`),

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import api from '../services/api';
 import LoadingModal from '../components/LoadingModal';
 import './Members.css';
@@ -54,6 +55,7 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 
 const Members = () => {
   const { user } = useAuth();
+  const { currentClub, loading: clubLoading } = useClub();
   const isSuperAdmin = user && user.role === 'super_admin';
   const isAdmin =
     user && (user.role === 'super_admin' || user.role === 'admin');
@@ -180,10 +182,13 @@ const Members = () => {
   });
 
   useEffect(() => {
-    loadMembers();
-    checkPasswordStatus();
-    checkPrivacyStatus();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // 클럽이 선택될 때까지 대기
+    if (!clubLoading && currentClub) {
+      loadMembers();
+      checkPasswordStatus();
+      checkPrivacyStatus();
+    }
+  }, [clubLoading, currentClub]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 개인정보 보호 상태가 변경될 때마다 회원 목록 다시 로드
   useEffect(() => {
@@ -545,6 +550,11 @@ const Members = () => {
       }
     }
   };
+
+  // 클럽이 로드 중이거나 선택되지 않았으면 대기
+  if (clubLoading || !currentClub) {
+    return <div className="loading">클럽 정보를 불러오는 중...</div>;
+  }
 
   if (loading) {
     return <div className="loading">로딩 중...</div>;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
 import LoadingModal from '../components/LoadingModal';
@@ -78,6 +79,7 @@ const TierBadge = ({ tier, size = 'normal' }) => {
 
 const Scores = () => {
   const { user } = useAuth(); // 현재 사용자 정보
+  const { currentClub, loading: clubLoading } = useClub();
   const isAdmin =
     user && (user.role === 'admin' || user.role === 'super_admin');
   const isSuperAdmin = user && user.role === 'super_admin';
@@ -280,11 +282,14 @@ const Scores = () => {
   // (가상 스크롤 컴포넌트는 현재 미사용 - 필요 시 복구)
 
   useEffect(() => {
-    loadScores();
-    loadMembers();
-    // 초기 로드: 빠른 표시를 위해 재계산 없이 저장값만 로드
-    loadMemberAverages();
-  }, [loadScores, loadMembers, loadMemberAverages]);
+    // 클럽이 선택될 때까지 대기
+    if (!clubLoading && currentClub) {
+      loadScores();
+      loadMembers();
+      // 초기 로드: 빠른 표시를 위해 재계산 없이 저장값만 로드
+      loadMemberAverages();
+    }
+  }, [clubLoading, currentClub, loadScores, loadMembers, loadMemberAverages]);
 
   // 페이지 포커스 시 평균 순위 재요청(빠른 조회 버전)
   useEffect(() => {
@@ -1072,6 +1077,11 @@ const Scores = () => {
         return <span className="rank-number">{rank}</span>;
     }
   };
+
+  // 클럽이 로드 중이거나 선택되지 않았으면 대기
+  if (clubLoading || !currentClub) {
+    return <div className="loading">클럽 정보를 불러오는 중...</div>;
+  }
 
   if (loading) {
     return <div className="loading">로딩 중...</div>;

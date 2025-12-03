@@ -78,11 +78,19 @@ const GoogleAuthCallback = () => {
         if (data.success) {
           setStatus('로그인 처리 중...');
 
-          // state에 저장된 원래 페이지 정보
+          // state에 저장된 원래 페이지 정보 (JSON 형식일 수 있음)
           let redirectTo = '/';
           if (state) {
             try {
-              redirectTo = decodeURIComponent(state);
+              const decodedState = decodeURIComponent(state);
+              // JSON 형식인지 확인
+              if (decodedState.startsWith('{') && decodedState.endsWith('}')) {
+                const stateObj = JSON.parse(decodedState);
+                redirectTo = stateObj.from || '/';
+              } else {
+                // 일반 문자열인 경우
+                redirectTo = decodedState;
+              }
             } catch (error) {
               console.warn('Failed to decode state, using default:', error);
               redirectTo = '/';

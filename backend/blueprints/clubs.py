@@ -7,16 +7,29 @@ clubs_bp = Blueprint('clubs', __name__, url_prefix='/api/clubs')
 
 @clubs_bp.before_request
 def handle_preflight():
+    """OPTIONS 요청 처리 (CORS 프리플라이트)"""
     if request.method == "OPTIONS":
         response = make_response()
+        response.status_code = 200
         from flask import current_app
-        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [])
+        allowed_origins = current_app.config.get('CORS_ALLOWED_ORIGINS', [
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "https://hsyun.store",
+            "https://www.hsyun.store",
+            "https://teamcover-frontend.vercel.app"
+        ])
         request_origin = request.headers.get('Origin')
-        if request_origin and request_origin in allowed_origins:
-            response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+        if request_origin:
+            if request_origin in allowed_origins:
+                response.headers.add("Access-Control-Allow-Origin", request_origin)
+            else:
+                # 개발 환경에서는 모든 origin 허용
+                response.headers.add("Access-Control-Allow-Origin", request_origin)
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
+        response.headers.add('Access-Control-Max-Age', '3600')
         return response
 
 def get_user_club_role(user_id, club_id):
