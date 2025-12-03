@@ -177,6 +177,7 @@ const MyPage = () => {
 
       const response = await authAPI.deleteAccount({
         password: deleteForm.password,
+        confirm_text: deleteForm.confirmText,
       });
 
       if (response.data.success) {
@@ -363,18 +364,21 @@ const MyPage = () => {
             </button>
           ) : (
             <form onSubmit={handleAccountDeletion}>
-              <div className="form-group">
-                <label>현재 비밀번호</label>
-                <input
-                  type="password"
-                  value={deleteForm.password}
-                  onChange={(e) =>
-                    setDeleteForm({ ...deleteForm, password: e.target.value })
-                  }
-                  placeholder="현재 비밀번호를 입력하세요"
-                  required
-                />
-              </div>
+              {/* 구글 로그인 사용자가 아닌 경우에만 비밀번호 입력 */}
+              {user && !user.google_id && (
+                <div className="form-group">
+                  <label>현재 비밀번호</label>
+                  <input
+                    type="password"
+                    value={deleteForm.password}
+                    onChange={(e) =>
+                      setDeleteForm({ ...deleteForm, password: e.target.value })
+                    }
+                    placeholder="현재 비밀번호를 입력하세요"
+                    required={!user.google_id}
+                  />
+                </div>
+              )}
               <div className="form-group">
                 <label>확인</label>
                 <input
@@ -390,7 +394,9 @@ const MyPage = () => {
                   required
                 />
                 <small>
-                  정말 탈퇴하시려면 "탈퇴하겠습니다"를 정확히 입력해주세요.
+                  {user && user.google_id
+                    ? '정말 탈퇴하시려면 "탈퇴하겠습니다"를 정확히 입력해주세요.'
+                    : '정말 탈퇴하시려면 "탈퇴하겠습니다"를 정확히 입력해주세요.'}
                 </small>
               </div>
               <div className="form-actions">

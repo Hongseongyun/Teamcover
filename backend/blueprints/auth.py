@@ -1603,18 +1603,31 @@ def delete_account():
     try:
         data = request.get_json()
         password = data.get('password', '')
-        
-        if not password:
-            return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+        confirm_text = data.get('confirm_text', '')  # 확인 문구
         
         # 현재 사용자 가져오기
         current_user = get_current_user_from_jwt()
         if not current_user:
             return jsonify({'success': False, 'message': '인증된 사용자를 찾을 수 없습니다.'})
         
-        # 비밀번호 확인
-        if not current_user.check_password(password):
-            return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
+        # 구글 로그인 사용자인지 확인 (google_id가 있고 password_hash가 없는 경우)
+        is_google_user = current_user.google_id is not None and (not current_user.password_hash or current_user.password_hash.strip() == '')
+        
+        if is_google_user:
+            # 구글 로그인 사용자는 확인 문구만 필요
+            if confirm_text != '탈퇴하겠습니다':
+                return jsonify({'success': False, 'message': '확인 문구를 정확히 입력해주세요.'})
+        else:
+            # 일반 사용자는 비밀번호 확인 필요
+            if not password:
+                return jsonify({'success': False, 'message': '비밀번호를 입력해주세요.'})
+            
+            if confirm_text != '탈퇴하겠습니다':
+                return jsonify({'success': False, 'message': '확인 문구를 정확히 입력해주세요.'})
+            
+            # 비밀번호 확인
+            if not current_user.check_password(password):
+                return jsonify({'success': False, 'message': '비밀번호가 올바르지 않습니다.'})
         
         # 관리자 계정은 탈퇴 불가
         if current_user.role in ['admin', 'super_admin']:
@@ -1625,7 +1638,7 @@ def delete_account():
         db.session.delete(current_user)
         db.session.commit()
         
-        print(f"Account deleted for user: {user_email}")
+        print(f"Account deleted for user: {user_email} (Google user: {is_google_user})")
         
         return jsonify({
             'success': True,
