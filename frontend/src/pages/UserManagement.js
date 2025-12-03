@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, clubAPI } from '../services/api';
 import './UserManagement.css';
 
 const UserManagement = () => {
@@ -9,6 +9,7 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
+  const [clubDeletingId, setClubDeletingId] = useState(null);
 
   useEffect(() => {
     loadUsers();
@@ -88,6 +89,34 @@ const UserManagement = () => {
 
   const handleDeleteCancel = () => {
     setDeleteModal({ isOpen: false, user: null });
+  };
+
+  // 클럽 삭제 (슈퍼관리자 전용)
+  const handleDeleteClub = async (club) => {
+    if (
+      !window.confirm(
+        `클럽 "${club.name}"을(를) 삭제하면 이 클럽의 회원, 점수, 포인트, 회비, 게시글, 기금 데이터가 모두 삭제됩니다.\n정말 삭제하시겠습니까?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setClubDeletingId(club.id);
+      const response = await clubAPI.deleteClub(club.id);
+      if (response.data.success) {
+        // 클럽 삭제 후 사용자 목록 다시 로드
+        await loadUsers();
+        setError('');
+      } else {
+        setError(response.data.message || '클럽 삭제에 실패했습니다.');
+      }
+    } catch (e) {
+      console.error('클럽 삭제 오류:', e);
+      setError('클럽 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setClubDeletingId(null);
+    }
   };
 
   const getRoleBadgeClass = (role) => {
@@ -170,6 +199,16 @@ const UserManagement = () => {
                 {club.name}
               </span>
               <span className="club-section-count">({clubUsers.length}명)</span>
+              {currentUser?.role === 'super_admin' && club.id !== 1 && (
+                <button
+                  type="button"
+                  className="club-delete-btn"
+                  onClick={() => handleDeleteClub(club)}
+                  disabled={clubDeletingId === club.id}
+                >
+                  {clubDeletingId === club.id ? '삭제 중...' : '클럽 삭제'}
+                </button>
+              )}
             </div>
             <div className="users-table-container">
               <table className="users-table">
@@ -288,8 +327,12 @@ const UserManagement = () => {
       {superAdminsNoClub.length > 0 && (
         <div className="club-section">
           <div className="club-section-header">
-            <span className="club-section-badge super-admin-badge">슈퍼관리자</span>
-            <span className="club-section-count">({superAdminsNoClub.length}명)</span>
+            <span className="club-section-badge super-admin-badge">
+              슈퍼관리자
+            </span>
+            <span className="club-section-count">
+              ({superAdminsNoClub.length}명)
+            </span>
           </div>
           <div className="users-table-container">
             <table className="users-table">
@@ -378,9 +421,7 @@ const UserManagement = () => {
                     </td>
                     <td className="actions-cell">
                       {user.id === currentUser?.id ? (
-                        <span className="current-user-badge">
-                          현재 사용자
-                        </span>
+                        <span className="current-user-badge">현재 사용자</span>
                       ) : user.email === 'syun4224@naver.com' ? (
                         <span className="protected-user-badge">
                           보호된 계정

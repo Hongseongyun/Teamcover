@@ -1,6 +1,18 @@
 from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Club, ClubMember, User
+from models import (
+    db,
+    Club,
+    ClubMember,
+    User,
+    Member,
+    Score,
+    Point,
+    Payment,
+    Post,
+    FundState,
+    FundLedger,
+)
 from datetime import datetime
 
 clubs_bp = Blueprint('clubs', __name__, url_prefix='/api/clubs')
@@ -242,6 +254,94 @@ def leave_club(club_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'클럽 탈퇴 실패: {str(e)}'}), 500
+
+# 클럽 설명 수정
+@clubs_bp.route('/<int:club_id>/description', methods=['PUT'])
+@jwt_required()
+def update_club_description(club_id):
+    """
+    클럽 설명 수정
+    - 운영진(admin/owner): 자신이 속한 클럽만 설명 수정 가능
+    - 슈퍼관리자: 모든 클럽의 설명 수정 가능
+    """
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+
+        is_super_admin = current_user.role == 'super_admin'
+
+        # 클럽 존재 확인
+        club = Club.query.get_or_404(club_id)
+
+        # 권한 확인: 슈퍼관리자가 아니면 해당 클럽의 admin 이상만 수정 가능
+        if not is_super_admin:
+            role = get_user_club_role(user_id, club_id)
+            if role not in ['admin', 'owner']:
+                return jsonify({
+                    'success': False,
+                    'message': '클럽 설명을 수정할 권한이 없습니다.'
+                }), 403
+
+        data = request.get_json() or {}
+        description = (data.get('description') or '').strip()
+
+        # 설명 길이 제한 (너무 긴 입력 방지)
+        if len(description) > 2000:
+            return jsonify({
+                'success': False,
+                'message': '클럽 설명은 2000자 이내로 입력해주세요.'
+            }), 400
+
+        club.description = description or None
+        club.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': '클럽 설명이 업데이트되었습니다.',
+            'club': club.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 설명 수정 실패: {str(e)}'}), 500
+
+# 클럽 삭제 (슈퍼관리자 전용)
+@clubs_bp.route('/<int:club_id>', methods=['DELETE'])
+@jwt_required()
+def delete_club(club_id):
+    """클럽 전체 삭제 (슈퍼관리자만 가능)"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '클럽을 삭제할 권한이 없습니다.'}), 403
+
+        # 기본 클럽(예: Teamcover, id=1)은 보호 (원하지 않으면 이 조건 제거 가능)
+        if club_id == 1:
+            return jsonify({'success': False, 'message': '기본 클럽은 삭제할 수 없습니다.'}), 400
+
+        club = Club.query.get_or_404(club_id)
+
+        # 연관된 데이터 삭제 (클럽 단위로 정리)
+        # 회원, 점수, 포인트, 납입, 게시글, 기금 상태/장부, 클럽 멤버십
+        Member.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        Score.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        Point.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        Payment.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        Post.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        FundState.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        FundLedger.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+        ClubMember.query.filter_by(club_id=club_id).delete(synchronize_session=False)
+
+        db.session.delete(club)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': '클럽이 삭제되었습니다.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 삭제 실패: {str(e)}'}), 500
 
 # 현재 선택된 클럽 설정
 @clubs_bp.route('/<int:club_id>/select', methods=['POST'])

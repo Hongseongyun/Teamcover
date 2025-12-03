@@ -105,6 +105,27 @@
   font-weight: 500;
 }
 
+.club-delete-btn {
+  margin-left: auto;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.club-delete-btn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.club-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 [data-theme='dark'] .club-section-count {
   color: rgba(203, 213, 225, 0.7);
 }

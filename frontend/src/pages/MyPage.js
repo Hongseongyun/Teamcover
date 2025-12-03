@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../services/api';
+import { authAPI, clubAPI } from '../services/api';
 import './MyPage.css';
 
 const MyPage = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  // 클럽 설명 관리용 상태
+  const [editableClubs, setEditableClubs] = useState([]);
+  const [clubDescriptions, setClubDescriptions] = useState({});
+  const [clubMessage, setClubMessage] = useState({ type: '', text: '' });
+  const [savingClubId, setSavingClubId] = useState(null);
 
   // 각 섹션별 메시지 상태
   const [nameMessage, setNameMessage] = useState({ type: '', text: '' });
@@ -41,6 +47,38 @@ const MyPage = () => {
         currentName: user.name || '',
         newName: user.name || '',
       });
+
+      // 클럽 설명을 수정할 수 있는 클럽 목록 로드
+      const loadEditableClubs = async () => {
+        try {
+          const response = await clubAPI.getUserClubs();
+          if (response.data.success) {
+            const clubs = response.data.clubs || [];
+            let targetClubs = [];
+
+            if (user.role === 'super_admin') {
+              // 슈퍼관리자는 모든 클럽의 설명 수정 가능
+              targetClubs = clubs;
+            } else {
+              // 운영진(owner/admin)인 클럽만 설명 수정 가능
+              targetClubs = clubs.filter(
+                (club) => club.role === 'admin' || club.role === 'owner'
+              );
+            }
+
+            setEditableClubs(targetClubs);
+            const initialDescriptions = {};
+            targetClubs.forEach((club) => {
+              initialDescriptions[club.id] = club.description || '';
+            });
+            setClubDescriptions(initialDescriptions);
+          }
+        } catch (error) {
+          console.error('클럽 목록 로드 실패:', error);
+        }
+      };
+
+      loadEditableClubs();
     }
   }, [user]);
 
@@ -207,6 +245,41 @@ const MyPage = () => {
     }
   };
 
+  // 클럽 설명 저장
+  const handleSaveClubDescription = async (clubId) => {
+    try {
+      setSavingClubId(clubId);
+      setClubMessage({ type: '', text: '' });
+
+      const description = clubDescriptions[clubId] || '';
+      const response = await clubAPI.updateClubDescription(clubId, {
+        description,
+      });
+
+      if (response.data.success) {
+        setClubMessage({
+          type: 'success',
+          text: '클럽 설명이 저장되었습니다.',
+        });
+      } else {
+        setClubMessage({
+          type: 'error',
+          text: response.data.message || '클럽 설명 저장에 실패했습니다.',
+        });
+      }
+    } catch (error) {
+      console.error('클럽 설명 저장 오류:', error);
+      setClubMessage({
+        type: 'error',
+        text:
+          error.response?.data?.message ||
+          '클럽 설명 저장 중 오류가 발생했습니다.',
+      });
+    } finally {
+      setSavingClubId(null);
+    }
+  };
+
   if (!user) {
     return (
       <div className="mypage-container">
@@ -258,6 +331,7 @@ const MyPage = () => {
               <input
                 type="text"
                 value={nameForm.newName}
+                maxLength={20}
                 onChange={(e) =>
                   setNameForm({ ...nameForm, newName: e.target.value })
                 }
@@ -265,13 +339,15 @@ const MyPage = () => {
                 required
               />
             </div>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading || nameForm.newName === nameForm.currentName}
-            >
-              {loading ? '변경 중...' : '이름 변경'}
-            </button>
+            <div className="form-actions">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading || nameForm.newName === nameForm.currentName}
+              >
+                {loading ? '변경 중...' : '이름 변경'}
+              </button>
+            </div>
           </form>
           {/* 이름 변경 알림 메시지 */}
           {nameMessage.text && (
@@ -331,18 +407,87 @@ const MyPage = () => {
                   required
                 />
               </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-              >
-                {loading ? '변경 중...' : '비밀번호 변경'}
-              </button>
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading}
+                >
+                  {loading ? '변경 중...' : '비밀번호 변경'}
+                </button>
+              </div>
             </form>
             {/* 비밀번호 변경 알림 메시지 */}
             {passwordMessage.text && (
               <div className={`alert alert-${passwordMessage.type}`}>
                 {passwordMessage.text}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 클럽 설명 관리 (운영진 / 슈퍼관리자) */}
+        {(user.role === 'admin' ||
+          user.role === 'super_admin' ||
+          user.role === 'owner') && (
+          <div className="info-card">
+            <h2>클럽 설명 관리</h2>
+            <p className="mypage-section-description">
+              클럽 선택기 및 가입 화면에 표시되는 클럽 설명을 수정할 수
+              있습니다.
+            </p>
+
+            {editableClubs.length === 0 ? (
+              <p className="mypage-muted-text">
+                설명을 수정할 수 있는 클럽이 없습니다.
+              </p>
+            ) : (
+              <div className="club-description-list">
+                {editableClubs.map((club) => (
+                  <div key={club.id} className="club-description-item">
+                    <div className="club-description-header">
+                      <span className="club-description-name">{club.name}</span>
+                      {club.role && (
+                        <span className="club-description-role">
+                          {club.role === 'owner'
+                            ? '소유자'
+                            : club.role === 'admin'
+                            ? '운영진'
+                            : ''}
+                        </span>
+                      )}
+                    </div>
+                    <textarea
+                      className="club-description-textarea"
+                      value={clubDescriptions[club.id] || ''}
+                      maxLength={50}
+                      onChange={(e) =>
+                        setClubDescriptions({
+                          ...clubDescriptions,
+                          [club.id]: e.target.value,
+                        })
+                      }
+                      placeholder="클럽에 대한 설명을 입력하세요"
+                      rows={3}
+                    />
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => handleSaveClubDescription(club.id)}
+                        disabled={savingClubId === club.id}
+                      >
+                        {savingClubId === club.id ? '저장 중...' : '설명 저장'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {clubMessage.text && (
+              <div className={`alert alert-${clubMessage.type}`}>
+                {clubMessage.text}
               </div>
             )}
           </div>
@@ -356,12 +501,14 @@ const MyPage = () => {
           </p>
 
           {!showDeleteConfirm ? (
-            <button
-              className="btn btn-danger"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              회원탈퇴
-            </button>
+            <div className="form-actions">
+              <button
+                className="btn btn-danger"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                회원탈퇴
+              </button>
+            </div>
           ) : (
             <form onSubmit={handleAccountDeletion}>
               {/* 구글 로그인 사용자가 아닌 경우에만 비밀번호 입력 */}

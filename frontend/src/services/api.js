@@ -226,6 +226,9 @@ export const clubAPI = {
   joinClub: (clubId) => api.post(`/api/clubs/${clubId}/join`),
   leaveClub: (clubId) => api.post(`/api/clubs/${clubId}/leave`),
   selectClub: (clubId) => api.post(`/api/clubs/${clubId}/select`),
+  updateClubDescription: (clubId, data) =>
+    api.put(`/api/clubs/${clubId}/description`, data),
+  deleteClub: (clubId) => api.delete(`/api/clubs/${clubId}`),
 };
 
 // 게시판 API
