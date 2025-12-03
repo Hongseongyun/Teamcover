@@ -48,9 +48,17 @@ export const ClubProvider = ({ children }) => {
           }
         }
 
-        // 저장된 클럽이 없거나 유효하지 않으면 기본 클럽(Teamcover 우선) 자동 선택
-        if (clubsData.length > 0) {
-          selectDefaultClub(clubsData);
+        // 저장된 클럽이 없을 때:
+        // - 클럽이 1개면 자동 선택
+        // - 클럽이 2개 이상이면 아무것도 자동 선택하지 않음 (사용자가 직접 선택하도록)
+        if (clubsData.length === 1) {
+          // 클럽이 1개일 때만 자동 선택 (새로고침 없이)
+          const clubToSelect = clubsData[0];
+          setCurrentClub(clubToSelect);
+          localStorage.setItem('currentClubId', clubToSelect.id.toString());
+        } else if (clubsData.length > 1) {
+          // 여러 클럽이면 자동 선택하지 않음
+          setCurrentClub(null);
         } else {
           setCurrentClub(null);
         }

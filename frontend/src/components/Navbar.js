@@ -75,7 +75,8 @@ const Navbar = () => {
           )}
         </div>
 
-        {isAuthenticated && (
+        {/* 상단 메뉴는 로그인 + 클럽 선택 후에만 표시 */}
+        {isAuthenticated && currentClub && (
           <ul className={`navbar-nav ${showMobileMenu ? 'mobile-active' : ''}`}>
             {canAccessPage('/members') && (
               <li className="nav-item">

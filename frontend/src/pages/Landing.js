@@ -1,17 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useClub } from '../contexts/ClubContext';
 import BowlingHero from '../components/BowlingHero';
 import './Landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { currentClub } = useClub();
   const featureRefs = useRef([]);
 
   // 표시될 카드 개수 계산
   const getVisibleCardCount = () => {
-    if (!isAuthenticated) return 2; // 로그인하지 않은 사용자: 스코어, 포인트
+    if (!isAuthenticated || !currentClub) return 2; // 비로그인 / 클럽 미선택: 기본 값 (사용 안 됨)
     if (user?.role === 'admin' || user?.role === 'super_admin') return 5; // 관리자: 모든 카드
     return 2; // 일반 사용자: 스코어, 포인트
   };
@@ -95,8 +97,10 @@ const Landing = () => {
         </div>
       </div> */}
 
-      <div className="features-section">
-        <div className="container">
+      {/* 하단 기능 카드: 로그인 + 클럽 선택 후에만 표시 */}
+      {isAuthenticated && currentClub && (
+        <div className="features-section">
+          <div className="container">
           <div
             className={`features-grid ${
               visibleCardCount === 2 ? 'two-cards' : ''
@@ -183,8 +187,9 @@ const Landing = () => {
                 </div>
               )}
           </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <footer className="landing-footer">
         <div className="container">

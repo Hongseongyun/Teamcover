@@ -49,7 +49,8 @@ const ClubSelector = () => {
     return <div className="club-selector-loading">로딩 중...</div>;
   }
 
-  if (!currentClub) {
+  // 클럽이 없어도 선택기를 보여줌 (여러 클럽 가입 시 처음 선택하도록)
+  if (clubs.length === 0) {
     return null;
   }
 
@@ -60,7 +61,9 @@ const ClubSelector = () => {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="클럽 선택"
       >
-        <span className="club-name">{currentClub.name}</span>
+        <span className="club-name">
+          {currentClub ? currentClub.name : '클럽 선택'}
+        </span>
         <span className={`dropdown-arrow ${isOpen ? 'rotated' : ''}`}>▼</span>
       </button>
 
@@ -75,16 +78,25 @@ const ClubSelector = () => {
               <div
                 key={club.id}
                 className={`club-item ${
-                  club.id === currentClub.id ? 'active' : ''
+                  currentClub && club.id === currentClub.id ? 'active' : ''
                 }`}
                 onClick={() => {
-                  if (club.id !== currentClub.id) {
+                  if (!currentClub || club.id !== currentClub.id) {
                     selectClub(club.id);
                   }
                   setIsOpen(false);
                 }}
               >
                 <div className="club-item-name">{club.name}</div>
+                {club.role && (
+                  <div className="club-item-role">
+                    {club.role === 'owner'
+                      ? '소유자'
+                      : club.role === 'admin'
+                      ? '운영진'
+                      : '일반 회원'}
+                  </div>
+                )}
               </div>
             ))}
             <div className="club-item-divider"></div>
