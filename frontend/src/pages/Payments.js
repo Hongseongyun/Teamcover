@@ -9,7 +9,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { paymentAPI, memberAPI } from '../services/api';
+import { paymentAPI, memberAPI, pointAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingModal from '../components/LoadingModal';
 import './Payments.css';
@@ -84,6 +84,7 @@ const Payments = () => {
 
   // 상단 대시보드: 잔액 및 그래프
   const [currentBalance, setCurrentBalance] = useState(1540000);
+  const [totalPointBalance, setTotalPointBalance] = useState(0);
   const [startMonth] = useState(null);
   const [balanceSeries, setBalanceSeries] = useState({ labels: [], data: [] });
   // 장부 관리 상태
@@ -287,10 +288,44 @@ const Payments = () => {
     }
   };
 
+  // 포인트 잔액 계산 함수 (포인트 페이지와 동일한 로직: 탈퇴된 회원 제외)
+  const loadTotalPointBalance = useCallback(async () => {
+    try {
+      const [pointsResponse, membersResponse] = await Promise.all([
+        pointAPI.getPoints(),
+        memberAPI.getMembers(),
+      ]);
+      
+      if (pointsResponse.data.success && membersResponse.data.success) {
+        const points = pointsResponse.data.points;
+        const members = membersResponse.data.members;
+        
+        // 탈퇴되지 않은 회원 목록 생성 (is_deleted가 false인 회원만)
+        const activeMemberNames = new Set(
+          members
+            .filter((member) => !member.is_deleted)
+            .map((member) => member.name)
+        );
+        
+        // 탈퇴된 회원의 포인트를 제외하고 잔액 계산
+        const totalBalance = points
+          .filter((point) => activeMemberNames.has(point.member_name))
+          .reduce((sum, point) => {
+            return sum + (parseInt(point.amount) || 0);
+          }, 0);
+        
+        setTotalPointBalance(totalBalance);
+      }
+    } catch (error) {
+      console.error('포인트 잔액 로드 실패:', error);
+    }
+  }, []);
+
   // 장부 데이터 초기 로드 (잔액/그래프는 장부 데이터 기반으로 계산)
   useEffect(() => {
     loadFundLedger();
-  }, [loadFundLedger]);
+    loadTotalPointBalance();
+  }, [loadFundLedger, loadTotalPointBalance]);
 
   const loadMembers = async () => {
     try {
@@ -1267,6 +1302,14 @@ const Payments = () => {
               <div className="balance-row">
                 <span className="label">현재 잔액</span>
                 <span className="value">{formatNumber(currentBalance)}원</span>
+              </div>
+              <div className="balance-row">
+                <span className="label">포인트 잔액</span>
+                <span className="value">{formatNumber(totalPointBalance)}원</span>
+              </div>
+              <div className="balance-row">
+                <span className="label">사용가능한 금액</span>
+                <span className="value">{formatNumber(currentBalance - totalPointBalance)}원</span>
               </div>
               {(() => {
                 const today = new Date();

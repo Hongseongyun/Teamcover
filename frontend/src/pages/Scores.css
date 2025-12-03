@@ -592,10 +592,42 @@
 [data-theme='dark'] .editable-input {
   background: rgba(15, 23, 42, 0.95);
   border-color: rgba(148, 163, 184, 0.25);
+  color: rgba(226, 232, 240, 0.95);
 }
 
 [data-theme='dark'] .editable-input:hover {
   background: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme='dark'] .name-select {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+[data-theme='dark'] .name-select:hover {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+[data-theme='dark'] .name-select:focus {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+/* select option 요소 다크모드 스타일 */
+[data-theme='dark'] .name-select option {
+  background: rgba(15, 23, 42, 0.98);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+[data-theme='dark'] .name-select option:hover {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+[data-theme='dark'] .name-select option:checked {
+  background: rgba(59, 130, 246, 0.3);
+  color: rgba(226, 232, 240, 1);
 }
 
 [data-theme='dark'] .ocr-summary {
@@ -605,6 +637,12 @@
 
 [data-theme='dark'] .ocr-results-table th {
   background-color: rgba(37, 99, 235, 0.12);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+[data-theme='dark'] .ocr-results-table td {
+  color: rgba(226, 232, 240, 0.9);
+  border-bottom-color: rgba(148, 163, 184, 0.2);
 }
 
 .editable-input {

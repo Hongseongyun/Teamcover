@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { Plus } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import './Points.css';
 
@@ -110,7 +111,10 @@ const Points = () => {
   const calculateMemberBalances = useCallback(() => {
     if (!members.length || !points.length) return [];
 
-    const memberBalances = members.map((member) => {
+    // 탈퇴되지 않은 회원만 필터링
+    const activeMembers = members.filter((member) => !member.is_deleted);
+
+    const memberBalances = activeMembers.map((member) => {
       const memberPoints = points.filter(
         (point) => point.member_name === member.name
       );
@@ -136,27 +140,88 @@ const Points = () => {
     return memberBalances.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [members, points]);
 
-  const memberBalances = calculateMemberBalances();
+  // 통계 계산 함수 (calculateStats를 먼저 정의)
+  const calculateStats = useCallback(
+    (pointList) => {
+      if (!pointList || pointList.length === 0) return;
 
-  const loadPoints = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await pointAPI.getPoints();
-      if (response.data.success) {
-        setPoints(response.data.points);
-        calculateStats(response.data.points);
-      }
-    } catch (error) {
-      // 에러 처리
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      // 탈퇴되지 않은 회원 목록 생성 (is_deleted가 false인 회원만)
+      const activeMemberNames = new Set(
+        members
+          .filter((member) => !member.is_deleted)
+          .map((member) => member.name)
+      );
 
-  useEffect(() => {
-    loadPoints();
-    loadMembers();
-  }, [loadPoints]);
+      let totalEarned = 0;
+      let totalUsed = 0;
+      const memberPoints = {};
+      const monthlyStats = {};
+
+      pointList.forEach((point) => {
+        // 탈퇴된 회원의 포인트는 제외
+        if (!activeMemberNames.has(point.member_name)) {
+          return;
+        }
+
+        // amount가 이미 올바른 부호를 가지고 있음
+        const amount = parseInt(point.amount) || 0;
+
+        // 올바른 계산: 양수는 적립, 음수는 사용
+        if (amount > 0) {
+          totalEarned += amount; // 양수 포인트만 적립으로 계산
+        } else if (amount < 0) {
+          totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
+        }
+
+        // 회원별 포인트 계산
+        if (!memberPoints[point.member_name]) {
+          memberPoints[point.member_name] = 0;
+        }
+        memberPoints[point.member_name] += amount; // 부호를 그대로 유지하여 누적
+
+        // 월별 통계
+        const date = new Date(point.point_date || point.created_at);
+        const monthKey = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, '0')}`;
+        if (!monthlyStats[monthKey]) {
+          monthlyStats[monthKey] = { earned: 0, used: 0, count: 0 };
+        }
+
+        // 월별 통계도 올바르게 계산
+        if (amount > 0) {
+          monthlyStats[monthKey].earned += amount; // 양수 포인트만 적립으로 계산
+        } else if (amount < 0) {
+          monthlyStats[monthKey].used += Math.abs(amount); // 음수 포인트만 사용으로 계산
+        }
+        monthlyStats[monthKey].count++;
+      });
+
+      const sortedMonths = Object.keys(monthlyStats).sort((a, b) =>
+        a.localeCompare(b)
+      );
+      let runningBalance = 0;
+      const enrichedMonthlyStats = sortedMonths.reduce((acc, month) => {
+        const monthData = monthlyStats[month];
+        runningBalance += monthData.earned - monthData.used;
+        acc[month] = { ...monthData, balance: runningBalance };
+        return acc;
+      }, {});
+
+      // 정확한 잔여 포인트 계산
+      const totalBalance = totalEarned - totalUsed;
+      const activeMembers = Object.keys(memberPoints).length;
+
+      setStats({
+        totalEarned,
+        totalUsed,
+        totalBalance,
+        activeMembers,
+        monthlyStats: enrichedMonthlyStats,
+      });
+    },
+    [members]
+  );
 
   const loadMembers = async () => {
     try {
@@ -169,72 +234,49 @@ const Points = () => {
     }
   };
 
-  const calculateStats = (pointList) => {
-    if (!pointList || pointList.length === 0) return;
-
-    let totalEarned = 0;
-    let totalUsed = 0;
-    const memberPoints = {};
-    const monthlyStats = {};
-
-    pointList.forEach((point) => {
-      // amount가 이미 올바른 부호를 가지고 있음
-      const amount = parseInt(point.amount) || 0;
-
-      // 올바른 계산: 양수는 적립, 음수는 사용
-      if (amount > 0) {
-        totalEarned += amount; // 양수 포인트만 적립으로 계산
-      } else if (amount < 0) {
-        totalUsed += Math.abs(amount); // 음수 포인트만 사용으로 계산
+  const loadPoints = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await pointAPI.getPoints();
+      if (response.data.success) {
+        setPoints(response.data.points);
       }
+    } catch (error) {
+      // 에러 처리
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // 회원별 포인트 계산
-      if (!memberPoints[point.member_name]) {
-        memberPoints[point.member_name] = 0;
-      }
-      memberPoints[point.member_name] += amount; // 부호를 그대로 유지하여 누적
+  // points와 members가 모두 로드된 후 calculateStats 호출
+  useEffect(() => {
+    if (points.length > 0 && members.length > 0) {
+      calculateStats(points);
+    }
+  }, [points, members, calculateStats]);
 
-      // 월별 통계
-      const date = new Date(point.point_date || point.created_at);
-      const monthKey = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
-      ).padStart(2, '0')}`;
-      if (!monthlyStats[monthKey]) {
-        monthlyStats[monthKey] = { earned: 0, used: 0, count: 0 };
-      }
+  useEffect(() => {
+    loadPoints();
+    loadMembers();
+  }, [loadPoints]);
 
-      // 월별 통계도 올바르게 계산
-      if (amount > 0) {
-        monthlyStats[monthKey].earned += amount; // 양수 포인트만 적립으로 계산
-      } else if (amount < 0) {
-        monthlyStats[monthKey].used += Math.abs(amount); // 음수 포인트만 사용으로 계산
-      }
-      monthlyStats[monthKey].count++;
-    });
+  // 회원별 잔여 포인트의 합으로 잔여 포인트 재계산 (더 정확함)
+  const memberBalances = calculateMemberBalances();
+  const actualTotalBalance = memberBalances.reduce(
+    (sum, member) => sum + member.balance,
+    0
+  );
 
-    const sortedMonths = Object.keys(monthlyStats).sort((a, b) =>
-      a.localeCompare(b)
-    );
-    let runningBalance = 0;
-    const enrichedMonthlyStats = sortedMonths.reduce((acc, month) => {
-      const monthData = monthlyStats[month];
-      runningBalance += monthData.earned - monthData.used;
-      acc[month] = { ...monthData, balance: runningBalance };
-      return acc;
-    }, {});
-
-    // 정확한 잔여 포인트 계산
-    const totalBalance = totalEarned - totalUsed;
-    const activeMembers = Object.keys(memberPoints).length;
-
-    setStats({
-      totalEarned,
-      totalUsed,
-      totalBalance,
-      activeMembers,
-      monthlyStats: enrichedMonthlyStats,
-    });
-  };
+  // stats의 totalBalance를 실제 회원별 잔여 포인트 합으로 업데이트
+  useEffect(() => {
+    if (stats && actualTotalBalance !== stats.totalBalance) {
+      setStats((prevStats) => ({
+        ...prevStats,
+        totalBalance: actualTotalBalance,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualTotalBalance]);
 
   // 월 네비게이션 함수
   const goToPreviousMonth = () => {
@@ -615,19 +657,13 @@ const Points = () => {
             // 사유 해제
             newReasons = row.reasons.filter((r) => r !== reasonName);
 
-            // 해제된 사유의 금액만큼 차감
+            // 해제된 사유의 금액만큼 차감 (설정된 금액을 정확히 반영)
             const reasonData = reasonOptions.find((r) => r.name === reasonName);
             const currentAmount = parseInt(row.amount) || 0;
             const amountToSubtract = reasonData?.amount || 0;
 
-            if (reasonName === '기타') {
-              // 기타 해제 시 반올림 없이 차감
-              newAmount = currentAmount - amountToSubtract;
-            } else {
-              // 다른 사유 해제 시 500단위로 반올림
-              newAmount =
-                Math.round((currentAmount - amountToSubtract) / 500) * 500;
-            }
+            // 설정된 금액을 정확히 차감 (반올림 없이)
+            newAmount = currentAmount - amountToSubtract;
           } else {
             // 사유 추가
             newReasons = [...row.reasons, reasonName];
@@ -643,8 +679,8 @@ const Points = () => {
               const currentAmount = parseInt(row.amount) || 0;
               const amountToAdd = reasonData?.amount || 0;
 
-              // 500단위로 반올림 (음수 허용)
-              newAmount = Math.round((currentAmount + amountToAdd) / 500) * 500;
+              // 설정된 금액을 정확히 반영 (반올림 없이)
+              newAmount = currentAmount + amountToAdd;
             }
           }
 
@@ -777,9 +813,15 @@ const Points = () => {
         await pointAPI.updatePoint(editingPoint.id, formData);
       } else {
         // 표 형식에서 각 행을 개별적으로 등록
-        const validRows = pointRows.filter(
-          (row) => row.member_name && row.amount
-        );
+        const validRows = pointRows.filter((row) => {
+          const hasMember = row.member_name && row.member_name.trim() !== '';
+          const hasAmount =
+            row.amount !== '' &&
+            row.amount !== undefined &&
+            row.amount !== null &&
+            !isNaN(parseInt(row.amount));
+          return hasMember && hasAmount;
+        });
 
         if (validRows.length === 0) {
           alert('최소 하나의 유효한 포인트 정보를 입력해주세요.');
@@ -1402,14 +1444,6 @@ const Points = () => {
                                 {row.reasons.length > 0 && (
                                   <div className="selected-reasons-mini">
                                     <span>{row.reasons.join(', ')}</span>
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-secondary"
-                                      onClick={() => clearReasonsForRow(row.id)}
-                                      disabled={submitting}
-                                    >
-                                      해제
-                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -1450,13 +1484,13 @@ const Points = () => {
                       disabled={submitting}
                       title="행 추가"
                     >
-                      +
+                      <Plus size={24} strokeWidth={3} />
                     </button>
                   </div>
                   <div className="form-actions">
                     <button
                       type="submit"
-                      className="btn btn-primary"
+                      className="btn btn-primary btn-sm"
                       disabled={submitting}
                     >
                       {submitting ? (
@@ -1470,7 +1504,7 @@ const Points = () => {
                     </button>
                     <button
                       type="button"
-                      className="btn btn-secondary"
+                      className="btn btn-secondary btn-sm"
                       onClick={resetForm}
                       disabled={submitting}
                     >
