@@ -616,7 +616,3 @@ const BowlingHero = () => {
 };
 
 export default BowlingHero;
-export default BowlingHero;
-export default BowlingHero;
-
-
