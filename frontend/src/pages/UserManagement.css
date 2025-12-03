@@ -87,6 +87,18 @@
   border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
+.club-section-badge.super-admin-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+}
+
+[data-theme='dark'] .club-section-badge.super-admin-badge {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
 .club-section-count {
   color: #6b7280;
   font-size: 0.875rem;

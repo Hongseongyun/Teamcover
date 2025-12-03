@@ -158,3 +158,361 @@
 [data-theme='dark'] .club-item-divider {
   background: var(--border-color, #444);
 }
+
+/* 클럽 생성 모달 */
+.club-create-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  overflow-y: auto;
+  box-sizing: border-box;
+  min-height: 100vh;
+}
+
+.club-create-modal {
+  background: var(--bg-primary, #fff);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  margin: auto;
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.club-create-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.club-create-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.club-create-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.club-create-modal-close:hover {
+  background: var(--bg-hover, #f5f5f5);
+}
+
+.club-create-form {
+  padding: 1.5rem;
+}
+
+.club-create-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.club-create-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+  font-size: 0.875rem;
+}
+
+.club-create-form-group input[type='text'],
+.club-create-form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #333);
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.club-create-form-group input[type='text']:focus,
+.club-create-form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #007bff);
+}
+
+.club-create-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.club-create-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.club-create-checkbox-label input[type='checkbox'] {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+}
+
+.club-create-checkbox-description {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #666);
+  line-height: 1.4;
+}
+
+[data-theme='dark'] .club-create-checkbox-description {
+  color: var(--text-secondary, #aaa);
+}
+
+.club-create-error {
+  padding: 0.75rem;
+  background: #fee;
+  color: #c33;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.club-create-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.club-create-cancel,
+.club-create-submit {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.club-create-cancel {
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-primary, #333);
+}
+
+.club-create-cancel:hover:not(:disabled) {
+  background: var(--bg-hover, #e9e9e9);
+}
+
+.club-create-submit {
+  background: var(--primary-color, #007bff);
+  color: white;
+}
+
+.club-create-submit:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.club-create-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 다크 모드 지원 */
+[data-theme='dark'] .club-create-modal {
+  background: var(--bg-primary, #1a1a1a);
+  border-color: var(--border-color, #444);
+}
+
+[data-theme='dark'] .club-create-modal-header {
+  border-bottom-color: var(--border-color, #444);
+}
+
+[data-theme='dark'] .club-create-modal-header h2 {
+  color: var(--text-primary, #fff);
+}
+
+[data-theme='dark'] .club-create-modal-close {
+  color: var(--text-secondary, #aaa);
+}
+
+[data-theme='dark'] .club-create-modal-close:hover {
+  background: var(--bg-hover, #2a2a2a);
+}
+
+[data-theme='dark'] .club-create-form-group label {
+  color: var(--text-primary, #fff);
+}
+
+[data-theme='dark'] .club-create-form-group input[type='text'],
+[data-theme='dark'] .club-create-form-group textarea {
+  background: var(--bg-secondary, #2a2a2a);
+  border-color: var(--border-color, #444);
+  color: var(--text-primary, #fff);
+}
+
+[data-theme='dark'] .club-create-cancel {
+  background: var(--bg-secondary, #2a2a2a);
+  color: var(--text-primary, #fff);
+}
+
+[data-theme='dark'] .club-create-cancel:hover:not(:disabled) {
+  background: var(--bg-hover, #333);
+}
+
+/* 클럽 가입 모달 */
+.club-join-content {
+  padding: 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.club-join-loading,
+.club-join-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary, #666);
+}
+
+.club-join-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.club-join-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  background: var(--bg-primary, #fff);
+  transition: all 0.2s;
+}
+
+.club-join-item:hover:not(.joined) {
+  border-color: var(--primary-color, #007bff);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.club-join-item.joined {
+  background: var(--bg-secondary, #f5f5f5);
+  opacity: 0.7;
+}
+
+.club-join-item-info {
+  flex: 1;
+}
+
+.club-join-item-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary, #333);
+  margin-bottom: 0.25rem;
+}
+
+.club-join-item-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  margin-bottom: 0.5rem;
+}
+
+.club-join-item-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.club-join-item-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: var(--primary-light, #e7f3ff);
+  color: var(--primary-color, #007bff);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.club-join-item-status {
+  padding: 0.5rem 1rem;
+  color: var(--text-secondary, #666);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.club-join-item-button {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.club-join-item-button:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.club-join-item-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 다크 모드 지원 */
+[data-theme='dark'] .club-join-item {
+  background: var(--bg-secondary, #2a2a2a);
+  border-color: var(--border-color, #444);
+}
+
+[data-theme='dark'] .club-join-item:hover:not(.joined) {
+  border-color: var(--primary-color, #007bff);
+}
+
+[data-theme='dark'] .club-join-item.joined {
+  background: var(--bg-hover, #333);
+}
+
+[data-theme='dark'] .club-join-item-name {
+  color: var(--text-primary, #fff);
+}
+
+[data-theme='dark'] .club-join-item-description {
+  color: var(--text-secondary, #aaa);
+}
+
+[data-theme='dark'] .club-join-item-badge {
+  background: var(--primary-dark, #004085);
+  color: #fff;
+}
+
+[data-theme='dark'] .club-join-item-status {
+  color: var(--text-secondary, #aaa);
+}

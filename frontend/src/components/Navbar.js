@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useClub } from '../contexts/ClubContext';
 import ClubSelector from './ClubSelector';
 import './Navbar.css';
 
@@ -9,6 +10,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasRole, isAuthenticated } = useAuth();
+  const { currentClub } = useClub();
   const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -93,7 +95,7 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
-            {canAccessPage('/points') && (
+            {canAccessPage('/points') && currentClub?.is_points_enabled && (
               <li className="nav-item">
                 <Link
                   to="/points"
