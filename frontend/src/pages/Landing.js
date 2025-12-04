@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
@@ -7,20 +7,111 @@ import './Landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-  const { currentClub } = useClub();
+  const { isAuthenticated, user, hasRole } = useAuth();
+  const { currentClub, isAdmin: isClubAdmin } = useClub();
   const featureRefs = useRef([]);
 
-  // 표시될 카드 개수 계산
-  const getVisibleCardCount = () => {
-    if (!isAuthenticated || !currentClub) return 2; // 비로그인 / 클럽 미선택: 기본 값 (사용 안 됨)
-    if (user?.role === 'admin' || user?.role === 'super_admin') return 5; // 관리자: 모든 카드
-    return 2; // 일반 사용자: 스코어, 포인트
-  };
+  // 활성화된 메뉴 목록 계산
+  const availableMenus = useMemo(() => {
+    if (!isAuthenticated) {
+      console.log('Landing: Not authenticated');
+      return [];
+    }
 
-  const visibleCardCount = getVisibleCardCount();
+    const isSuperAdmin = user?.role === 'super_admin';
+    const isAdminForCurrentClub = isSuperAdmin || isClubAdmin;
+    const isUser =
+      user?.role === 'user' || user?.role === 'admin' || isSuperAdmin;
+
+    console.log('Landing: Calculating menus', {
+      isAuthenticated,
+      userRole: user?.role,
+      isSuperAdmin,
+      isClubAdmin,
+      isAdminForCurrentClub,
+      currentClub: currentClub?.name,
+      isPointsEnabled: currentClub?.is_points_enabled,
+    });
+
+    const menus = [];
+
+    // 회원 (관리자만)
+    if (isAdminForCurrentClub) {
+      menus.push({
+        path: '/members',
+        icon: '👥',
+        title: '회원',
+        description:
+          '팀원들의 정보를 체계적으로 관리하고 볼링 실력을 추적하세요',
+      });
+    }
+
+    // 스코어 (모든 사용자)
+    if (isUser) {
+      menus.push({
+        path: '/scores',
+        icon: '🎯',
+        title: '스코어',
+        description: '매 경기의 점수를 기록하고 개인별 통계를 확인하세요',
+      });
+    }
+
+    // 포인트 (포인트 시스템이 활성화된 경우만)
+    if (isUser && currentClub?.is_points_enabled) {
+      menus.push({
+        path: '/points',
+        icon: '🏆',
+        title: '포인트',
+        description: '경기 참여와 성과에 따른 포인트를 자동으로 관리하세요',
+      });
+    }
+
+    // 게시판 (모든 사용자)
+    if (isUser) {
+      menus.push({
+        path: '/board',
+        icon: '📋',
+        title: '게시판',
+        description: '팀 소식과 공지사항을 공유하고 소통하세요',
+      });
+    }
+
+    // 회비관리 (관리자만)
+    if (isAdminForCurrentClub) {
+      menus.push({
+        path: '/payments',
+        icon: '💰',
+        title: '회비관리',
+        description: '월회비와 정기전 게임비를 효율적으로 관리하세요',
+      });
+    }
+
+    // 팀 배정 (관리자만)
+    if (isAdminForCurrentClub) {
+      menus.push({
+        path: '/team-assignment',
+        icon: '⚡',
+        title: '팀 배정',
+        description: '공정한 팀 구성과 균형잡힌 매치를 만들어보세요',
+      });
+    }
+
+    // 사용자 관리 (슈퍼관리자만)
+    if (isSuperAdmin) {
+      menus.push({
+        path: '/user-management',
+        icon: '👤',
+        title: '사용자 관리',
+        description: '시스템 사용자들의 역할과 상태를 관리할 수 있습니다',
+      });
+    }
+
+    console.log('Landing: Available menus', menus);
+    return menus;
+  }, [isAuthenticated, user, currentClub, isClubAdmin]);
 
   useEffect(() => {
+    // availableMenus가 변경될 때마다 observer 재설정
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -36,12 +127,15 @@ const Landing = () => {
       }
     );
 
+    // featureRefs 초기화
+    featureRefs.current = featureRefs.current.slice(0, availableMenus.length);
+
     featureRefs.current.forEach((ref) => {
       if (ref) observer.observe(ref);
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [availableMenus]);
 
   // handleGetStarted 함수는 주석 처리된 hero 섹션에서 사용됨
   // const handleGetStarted = () => {
@@ -71,7 +165,7 @@ const Landing = () => {
     <div className="landing-container">
       {/* 토스 스타일 히어로 섹션 */}
       <BowlingHero />
-      
+
       {/* 기존 hero 섹션 (주석 처리 또는 제거 가능) */}
       {/* <div className="landing-hero">
         <div className="landing-hero-inner">
@@ -97,96 +191,50 @@ const Landing = () => {
         </div>
       </div> */}
 
-      {/* 하단 기능 카드: 로그인 + 클럽 선택 후에만 표시 */}
-      {isAuthenticated && currentClub && (
+      {/* 하단 기능 카드: 로그인 + 클럽 선택 후에만 표시 (슈퍼관리자는 클럽 선택 없이도 사용자 관리 표시) */}
+      {(() => {
+        const shouldShow =
+          isAuthenticated &&
+          (currentClub || user?.role === 'super_admin') &&
+          availableMenus.length > 0;
+        console.log('Landing: Should show cards?', {
+          isAuthenticated,
+          hasCurrentClub: !!currentClub,
+          isSuperAdmin: user?.role === 'super_admin',
+          availableMenusCount: availableMenus.length,
+          shouldShow,
+        });
+        return shouldShow;
+      })() && (
         <div className="features-section">
           <div className="container">
-          <div
-            className={`features-grid ${
-              visibleCardCount === 2 ? 'two-cards' : ''
-            }`}
-          >
-            {/* 관리자만 볼 수 있는 회원 카드 */}
-            {isAuthenticated &&
-              (user?.role === 'admin' || user?.role === 'super_admin') && (
-                <div
-                  className="feature-card left-aligned"
-                  ref={(el) => (featureRefs.current[0] = el)}
-                  onClick={() => handleCardClick('/members')}
-                >
-                  <div className="feature-icon">👥</div>
-                  <div className="feature-content">
-                    <h3>회원</h3>
-                    <p>
-                      팀원들의 정보를 체계적으로 관리하고 볼링 실력을 추적하세요
-                    </p>
-                    <div className="feature-link">회원 페이지 →</div>
-                  </div>
-                </div>
-              )}
-
-            {/* 모든 사용자가 볼 수 있는 스코어 카드 */}
             <div
-              className="feature-card right-aligned"
-              ref={(el) => (featureRefs.current[1] = el)}
-              onClick={() => handleCardClick('/scores')}
+              className={`features-grid ${
+                availableMenus.length <= 2 ? 'two-cards' : ''
+              }`}
             >
-              <div className="feature-icon">🎯</div>
-              <div className="feature-content">
-                <h3>스코어</h3>
-                <p>매 경기의 점수를 기록하고 개인별 통계를 확인하세요</p>
-                <div className="feature-link">스코어 페이지 →</div>
-              </div>
-            </div>
-
-            {/* 모든 사용자가 볼 수 있는 포인트 카드 */}
-            <div
-              className="feature-card left-aligned"
-              ref={(el) => (featureRefs.current[2] = el)}
-              onClick={() => handleCardClick('/points')}
-            >
-              <div className="feature-icon">🏆</div>
-              <div className="feature-content">
-                <h3>포인트</h3>
-                <p>경기 참여와 성과에 따른 포인트를 자동으로 관리하세요</p>
-                <div className="feature-link">포인트 페이지 →</div>
-              </div>
-            </div>
-
-            {/* 관리자만 볼 수 있는 팀 배정 카드 */}
-            {isAuthenticated &&
-              (user?.role === 'admin' || user?.role === 'super_admin') && (
+              {availableMenus.map((menu, index) => (
                 <div
-                  className="feature-card right-aligned"
-                  ref={(el) => (featureRefs.current[3] = el)}
-                  onClick={() => handleCardClick('/team-assignment')}
+                  key={menu.path}
+                  className={`feature-card ${
+                    index % 2 === 0 ? 'left-aligned' : 'right-aligned'
+                  }`}
+                  ref={(el) => {
+                    if (el) {
+                      featureRefs.current[index] = el;
+                    }
+                  }}
+                  onClick={() => handleCardClick(menu.path)}
                 >
-                  <div className="feature-icon">⚡</div>
+                  <div className="feature-icon">{menu.icon}</div>
                   <div className="feature-content">
-                    <h3>팀 배정</h3>
-                    <p>공정한 팀 구성과 균형잡힌 매치를 만들어보세요</p>
-                    <div className="feature-link">팀 배정 페이지 →</div>
+                    <h3>{menu.title}</h3>
+                    <p>{menu.description}</p>
+                    <div className="feature-link">{menu.title} 페이지 →</div>
                   </div>
                 </div>
-              )}
-
-            {/* 관리자만 볼 수 있는 회비관리 카드 */}
-            {isAuthenticated &&
-              (user?.role === 'admin' || user?.role === 'super_admin') && (
-                <div
-                  className="feature-card left-aligned"
-                  ref={(el) => (featureRefs.current[4] = el)}
-                  onClick={() => handleCardClick('/payments')}
-                >
-                  <div className="feature-icon">💰</div>
-                  <div className="feature-content">
-                    <h3>회비관리</h3>
-                    <p>월회비와 정기전 게임비를 효율적으로 관리하세요</p>
-                    <div className="feature-link">회비관리 페이지 →</div>
-                  </div>
-                </div>
-              )}
-          </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
