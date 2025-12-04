@@ -184,6 +184,7 @@ def get_members():
         return jsonify({'success': False, 'message': f'회원 목록 조회 중 오류가 발생했습니다: {str(e)}'})
 
 @members_bp.route('/', methods=['POST'])
+@jwt_required()
 def add_member():
     """회원 등록 API"""
     try:
@@ -196,38 +197,39 @@ def add_member():
         if not name:
             return jsonify({'success': False, 'message': '이름은 필수 입력 항목입니다.'})
         
-        existing_member = Member.query.filter_by(name=name, is_deleted=False).first()
-        if existing_member:
-            return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
-        
-        # 운영진 여부 확인 (admin/super_admin만 설정 가능)
-        user_id = get_jwt_identity()
-        is_staff = False
-        if user_id:
-            current_user = User.query.get(int(user_id))
-            if current_user and current_user.role in ['admin', 'super_admin']:
-                is_staff = data.get('is_staff', False)
-        
         # 클럽 필터링
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = False
-        if user_id:
-            current_user = User.query.get(int(user_id))
-            is_super_admin = current_user and current_user.role == 'super_admin'
-        
-        if not is_super_admin and user_id:
-            is_member, result = require_club_membership(int(user_id), club_id)
-            if not is_member:
-                return jsonify({'success': False, 'message': result}), 403
-        
         # 클럽별 중복 확인
         existing_member = Member.query.filter_by(name=name, club_id=club_id, is_deleted=False).first()
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
+        
+        # 운영진 여부 확인 (admin/super_admin만 설정 가능)
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 회원 추가 가능
+        is_staff = False
+        if (is_system_admin or is_club_admin):
+            is_staff = data.get('is_staff', False)
         
         new_member = Member(
             name=name,
