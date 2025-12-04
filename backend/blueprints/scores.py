@@ -68,6 +68,7 @@ def get_scores():
         return jsonify({'success': False, 'message': f'스코어 목록 조회 중 오류가 발생했습니다: {str(e)}'})
 
 @scores_bp.route('/', methods=['POST'])
+@jwt_required()
 def add_score():
     """스코어 등록 API"""
     try:
@@ -75,6 +76,30 @@ def add_score():
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'member')
+            if has_permission:
+                is_club_admin = False  # member 권한만 있으면 클럽 운영진 아님
+            else:
+                # member 권한도 없으면 접근 불가
+                return jsonify({'success': False, 'message': '클럽 멤버만 접근 가능합니다.'}), 403
         
         data = request.get_json()
         
@@ -141,10 +166,35 @@ def add_score():
 
 @scores_bp.route('/<int:score_id>/', methods=['DELETE'])
 @scores_bp.route('/<int:score_id>', methods=['DELETE'])
+@jwt_required()
 def delete_score(score_id):
     """스코어 삭제 API"""
     try:
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
         score = Score.query.get_or_404(score_id)
+        club_id = score.club_id
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         member = Member.query.get(score.member_id)
         member_name = member.name if member else 'Unknown'
         
@@ -167,6 +217,7 @@ def delete_score(score_id):
 
 @scores_bp.route('/<int:score_id>/', methods=['PUT'])
 @scores_bp.route('/<int:score_id>', methods=['PUT'])
+@jwt_required()
 def update_score(score_id):
     """스코어 수정 API"""
     try:
@@ -174,6 +225,29 @@ def update_score(score_id):
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         data = request.get_json()
         member_name = data.get('member_name', '').strip() if data.get('member_name') else ''

@@ -180,6 +180,7 @@ def add_payment():
             if should_create_point:
                 point = Point(
                     member_id=new_payment.member_id,
+                    club_id=club_id,  # 클럽 ID 추가
                     point_type='사용',
                     amount=abs(new_payment.amount),  # 사용은 양수 저장, 계산 시 차감
                     reason='정기전 게임비',
@@ -307,6 +308,7 @@ def update_payment(payment_id):
                 # 새로 생성
                 new_point = Point(
                     member_id=payment.member_id,
+                    club_id=club_id,  # 클럽 ID 추가
                     point_type='사용',
                     amount=abs(payment.amount),
                     reason='정기전 게임비',

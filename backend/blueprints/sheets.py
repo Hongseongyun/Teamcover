@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify, make_response
-from models import db, Member, Score, Point
+from models import db, Member, Score, Point, User
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from google_sheets import GoogleSheetsManager
 from datetime import datetime
+from utils.club_helpers import get_current_club_id, check_club_permission
 
 # 구글 시트 연동 Blueprint
 sheets_bp = Blueprint('sheets', __name__, url_prefix='/api')
@@ -15,7 +17,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Privacy-Token,X-Club-Id")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
@@ -69,9 +71,36 @@ def debug_auth():
         })
 
 @sheets_bp.route('/scores/import-from-sheets', methods=['POST'])
+@jwt_required()
 def import_scores_from_sheets():
     """구글 시트에서 스코어 데이터 가져오기 API"""
     try:
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
         data = request.get_json()
         spreadsheet_url = data.get('spreadsheet_url', '').strip()
         worksheet_name = data.get('worksheet_name', '').strip() or None
@@ -80,9 +109,9 @@ def import_scores_from_sheets():
         if not spreadsheet_url:
             return jsonify({'success': False, 'message': '구글 시트 URL을 입력해주세요.'})
         
-        # 기존 스코어 삭제 (옵션)
+        # 기존 스코어 삭제 (옵션) - 클럽별로만 삭제
         if clear_existing:
-            deleted_count = Score.query.delete()
+            deleted_count = Score.query.filter_by(club_id=club_id).delete()
             db.session.commit()
         
         # 구글 시트 인증
@@ -118,8 +147,8 @@ def import_scores_from_sheets():
         errors = []
         unregistered_members = []
         
-        # 등록된 회원 목록 미리 조회
-        registered_members = {member.name: member for member in Member.query.all()}
+        # 등록된 회원 목록 미리 조회 (클럽별)
+        registered_members = {member.name: member for member in Member.query.filter_by(club_id=club_id, is_deleted=False).all()}
         # 등록된 회원 정보
         
         for score_data in parsed_scores:
@@ -142,6 +171,7 @@ def import_scores_from_sheets():
                 # 새 스코어 생성
                 new_score = Score(
                     member_id=member.id,
+                    club_id=club_id,
                     game_date=score_data['game_date'],
                     score1=score_data['score1'],
                     score2=score_data['score2'],
@@ -186,9 +216,36 @@ def import_scores_from_sheets():
         return jsonify({'success': False, 'message': f'구글 시트 가져오기 중 오류가 발생했습니다: {str(e)}'})
 
 @sheets_bp.route('/members/import-from-sheets', methods=['POST'])
+@jwt_required()
 def import_members_from_sheets():
     """구글 시트에서 회원 데이터 가져오기 API"""
     try:
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
         data = request.get_json()
         spreadsheet_url = data.get('spreadsheet_url', '').strip()
         worksheet_name = data.get('worksheet_name', '').strip() or None
@@ -235,8 +292,8 @@ def import_members_from_sheets():
                     skipped_count += 1
                     continue
                 
-                # 중복 회원 체크
-                existing_member = Member.query.filter_by(name=name).first()
+                # 중복 회원 체크 (클럽별)
+                existing_member = Member.query.filter_by(name=name, club_id=club_id, is_deleted=False).first()
                 if existing_member:
                     # 기존 회원 정보 업데이트
                     existing_member.phone = member_data['phone']
@@ -258,7 +315,8 @@ def import_members_from_sheets():
                     level=member_data['level'],  # 레거시 호환성
                     tier=member_data.get('tier', ''),
                     email=member_data['email'],
-                    note=member_data['note']
+                    note=member_data['note'],
+                    club_id=club_id
                 )
                 
                 db.session.add(new_member)
@@ -289,9 +347,36 @@ def import_members_from_sheets():
         return jsonify({'success': False, 'message': f'구글 시트 가져오기 중 오류가 발생했습니다: {str(e)}'})
 
 @sheets_bp.route('/points/import-from-sheets', methods=['POST'])
+@jwt_required()
 def import_points_from_sheets():
     """구글 시트에서 포인트 데이터 가져오기 API"""
     try:
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
         data = request.get_json()
         spreadsheet_url = data.get('spreadsheet_url', '').strip()
         worksheet_name = data.get('worksheet_name', '').strip() or None
@@ -300,9 +385,9 @@ def import_points_from_sheets():
         if not spreadsheet_url:
             return jsonify({'success': False, 'message': '구글 시트 URL을 입력해주세요.'})
         
-        # 기존 포인트 삭제 (옵션)
+        # 기존 포인트 삭제 (옵션) - 클럽별로만 삭제
         if clear_existing:
-            deleted_count = Point.query.delete()
+            deleted_count = Point.query.filter_by(club_id=club_id).delete()
             db.session.commit()
         
         # 구글 시트 인증
@@ -340,8 +425,8 @@ def import_points_from_sheets():
         errors = []
         unregistered_members = []
         
-        # 등록된 회원 목록 미리 조회
-        registered_members = {member.name: member for member in Member.query.all()}
+        # 등록된 회원 목록 미리 조회 (클럽별)
+        registered_members = {member.name: member for member in Member.query.filter_by(club_id=club_id, is_deleted=False).all()}
         # 등록된 회원 정보
         
         for point_data in parsed_points:
@@ -364,6 +449,7 @@ def import_points_from_sheets():
                 # 새 포인트 생성
                 new_point = Point(
                     member_id=member.id,
+                    club_id=club_id,
                     point_date=point_data['point_date'],
                     point_type=point_data['point_type'],
                     amount=point_data['amount'],

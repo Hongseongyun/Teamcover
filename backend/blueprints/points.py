@@ -105,6 +105,7 @@ def get_points():
         return jsonify({'success': False, 'message': f'포인트 목록 조회 중 오류가 발생했습니다: {str(e)}'})
 
 @points_bp.route('/', methods=['POST'])
+@jwt_required()
 def add_point():
     """포인트 등록 API"""
     try:
@@ -112,6 +113,29 @@ def add_point():
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         # 클럽의 포인트 시스템 활성화 여부 확인
         club = Club.query.get_or_404(club_id)
@@ -179,6 +203,7 @@ def add_point():
 
 @points_bp.route('/<int:point_id>/', methods=['DELETE'])
 @points_bp.route('/<int:point_id>', methods=['DELETE'])
+@jwt_required()
 def delete_point(point_id):
     """포인트 삭제 API"""
     try:
@@ -186,6 +211,29 @@ def delete_point(point_id):
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         # 클럽별 포인트 조회
         point = Point.query.filter_by(id=point_id, club_id=club_id).first_or_404()
@@ -205,6 +253,7 @@ def delete_point(point_id):
         return jsonify({'success': False, 'message': f'포인트 삭제 중 오류가 발생했습니다: {str(e)}'})
 
 @points_bp.route('/batch', methods=['POST'])
+@jwt_required()
 def add_points_batch():
     """여러 명의 포인트 일괄 등록 API"""
     try:
@@ -212,6 +261,29 @@ def add_points_batch():
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         # 클럽의 포인트 시스템 활성화 여부 확인
         club = Club.query.get_or_404(club_id)
@@ -301,6 +373,7 @@ def add_points_batch():
 
 @points_bp.route('/<int:point_id>/', methods=['PUT'])
 @points_bp.route('/<int:point_id>', methods=['PUT'])
+@jwt_required()
 def update_point(point_id):
     """포인트 수정 API"""
     try:
@@ -308,6 +381,29 @@ def update_point(point_id):
         club_id = get_current_club_id()
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 권한 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        from models import User
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         # 클럽의 포인트 시스템 활성화 여부 확인
         club = Club.query.get_or_404(club_id)
