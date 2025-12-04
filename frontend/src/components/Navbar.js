@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useClub } from '../contexts/ClubContext';
+import { clubAPI } from '../services/api';
 import ClubSelector from './ClubSelector';
 import './Navbar.css';
 
@@ -14,6 +15,43 @@ const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [joinRequestsCount, setJoinRequestsCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role === 'super_admin' && isAuthenticated) {
+      loadJoinRequestsCount();
+      // 30초마다 승인 요청 개수 갱신
+      const interval = setInterval(() => {
+        loadJoinRequestsCount();
+      }, 30000);
+
+      // 승인/거부 이벤트 리스너 추가
+      const handleJoinRequestUpdate = () => {
+        loadJoinRequestsCount();
+      };
+
+      window.addEventListener('joinRequestUpdated', handleJoinRequestUpdate);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener(
+          'joinRequestUpdated',
+          handleJoinRequestUpdate
+        );
+      };
+    }
+  }, [user, isAuthenticated]);
+
+  const loadJoinRequestsCount = async () => {
+    try {
+      const response = await clubAPI.getJoinRequestsCount();
+      if (response.data.success) {
+        setJoinRequestsCount(response.data.count || 0);
+      }
+    } catch (error) {
+      console.error('승인 요청 개수 로드 실패:', error);
+    }
+  };
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -75,10 +113,10 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* 상단 메뉴는 로그인 + 클럽 선택 후에만 표시 */}
-        {isAuthenticated && currentClub && (
+        {/* 상단 메뉴는 로그인 + 클럽 선택 후에만 표시 (슈퍼관리자는 클럽 선택 없이도 사용자 관리 접근 가능) */}
+        {isAuthenticated && (currentClub || hasRole('super_admin')) && (
           <ul className={`navbar-nav ${showMobileMenu ? 'mobile-active' : ''}`}>
-            {canAccessPage('/members') && (
+            {canAccessPage('/members') && currentClub && (
               <li className="nav-item">
                 <Link
                   to="/members"
@@ -89,7 +127,7 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
-            {canAccessPage('/scores') && (
+            {canAccessPage('/scores') && currentClub && (
               <li className="nav-item">
                 <Link
                   to="/scores"
@@ -100,18 +138,20 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
-            {canAccessPage('/points') && currentClub?.is_points_enabled && (
-              <li className="nav-item">
-                <Link
-                  to="/points"
-                  className={`nav-link ${isActive('/points')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  포인트
-                </Link>
-              </li>
-            )}
-            {canAccessPage('/board') && (
+            {canAccessPage('/points') &&
+              currentClub &&
+              currentClub?.is_points_enabled && (
+                <li className="nav-item">
+                  <Link
+                    to="/points"
+                    className={`nav-link ${isActive('/points')}`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    포인트
+                  </Link>
+                </li>
+              )}
+            {canAccessPage('/board') && currentClub && (
               <li className="nav-item">
                 <Link
                   to="/board"
@@ -122,7 +162,7 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
-            {canAccessPage('/payments') && (
+            {canAccessPage('/payments') && currentClub && (
               <li className="nav-item">
                 <Link
                   to="/payments"
@@ -133,7 +173,7 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
-            {canAccessPage('/team-assignment') && (
+            {canAccessPage('/team-assignment') && currentClub && (
               <li className="nav-item">
                 <Link
                   to="/team-assignment"
@@ -144,14 +184,22 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
+            {/* 슈퍼관리자는 클럽 선택 없이도 사용자 관리 접근 가능 */}
             {hasRole('super_admin') && (
               <li className="nav-item">
                 <Link
                   to="/user-management"
-                  className={`nav-link ${isActive('/user-management')}`}
+                  className={`nav-link ${isActive('/user-management')} ${
+                    joinRequestsCount > 0 ? 'has-notification' : ''
+                  }`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   사용자 관리
+                  {joinRequestsCount > 0 && (
+                    <span className="notification-badge">
+                      {joinRequestsCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             )}

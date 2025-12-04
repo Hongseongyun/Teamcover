@@ -10,10 +10,17 @@ const UserManagement = () => {
   const [error, setError] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, user: null });
   const [clubDeletingId, setClubDeletingId] = useState(null);
+  const [joinRequests, setJoinRequests] = useState({});
+  const [loadingRequests, setLoadingRequests] = useState(false);
+  const [allClubs, setAllClubs] = useState([]);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+    if (currentUser?.role === 'super_admin') {
+      loadJoinRequests();
+      loadAllClubs();
+    }
+  }, [currentUser]);
 
   const loadUsers = async () => {
     try {
@@ -28,6 +35,71 @@ const UserManagement = () => {
       setError('사용자 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadJoinRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const response = await clubAPI.getJoinRequests();
+      if (response.data.success) {
+        setJoinRequests(response.data.requests_by_club || {});
+      } else {
+        console.error('가입 요청 목록 로드 실패:', response.data.message);
+      }
+    } catch (error) {
+      console.error('가입 요청 목록 로드 실패:', error);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const loadAllClubs = async () => {
+    try {
+      const response = await clubAPI.getAllClubs();
+      if (response.data.success) {
+        setAllClubs(response.data.clubs || []);
+      } else {
+        console.error('클럽 목록 로드 실패:', response.data.message);
+      }
+    } catch (error) {
+      console.error('클럽 목록 로드 실패:', error);
+    }
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      const response = await clubAPI.approveJoinRequest(requestId);
+      if (response.data.success) {
+        await loadJoinRequests();
+        await loadUsers();
+        setError('');
+        // Navbar의 알림 배지 업데이트를 위한 이벤트 발생
+        window.dispatchEvent(new Event('joinRequestUpdated'));
+      } else {
+        setError(response.data.message || '가입 요청 승인에 실패했습니다.');
+      }
+    } catch (error) {
+      setError('가입 요청 승인에 실패했습니다.');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    if (!window.confirm('정말 이 가입 요청을 거부하시겠습니까?')) {
+      return;
+    }
+    try {
+      const response = await clubAPI.rejectJoinRequest(requestId);
+      if (response.data.success) {
+        await loadJoinRequests();
+        setError('');
+        // Navbar의 알림 배지 업데이트를 위한 이벤트 발생
+        window.dispatchEvent(new Event('joinRequestUpdated'));
+      } else {
+        setError(response.data.message || '가입 요청 거부에 실패했습니다.');
+      }
+    } catch (error) {
+      setError('가입 요청 거부에 실패했습니다.');
     }
   };
 
@@ -96,22 +168,43 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeleteClick = (user) => {
-    setDeleteModal({ isOpen: true, user });
+  const handleDeleteClick = (user, clubId = null) => {
+    setDeleteModal({ isOpen: true, user, clubId });
   };
 
   const handleDeleteConfirm = async () => {
     try {
-      const response = await authAPI.deleteUser(deleteModal.user.id);
-      if (response.data.success) {
-        setUsers(users.filter((user) => user.id !== deleteModal.user.id));
-        setDeleteModal({ isOpen: false, user: null });
-        setError(''); // 성공 시 에러 메시지 초기화
+      const { user, clubId } = deleteModal;
+
+      if (clubId) {
+        // 클럽별 섹션에서 삭제: 해당 클럽에서만 탈퇴
+        const response = await clubAPI.removeMemberFromClub(clubId, user.id);
+        if (response.data.success) {
+          await loadUsers(); // 사용자 목록 새로고침
+          setDeleteModal({ isOpen: false, user: null, clubId: null });
+          setError(''); // 성공 시 에러 메시지 초기화
+        } else {
+          setError(
+            response.data.message || '클럽에서 탈퇴시키는데 실패했습니다.'
+          );
+        }
       } else {
-        setError(response.data.message);
+        // 전체 사용자 삭제 (슈퍼관리자만 가능)
+        const response = await authAPI.deleteUser(user.id);
+        if (response.data.success) {
+          setUsers(users.filter((u) => u.id !== user.id));
+          setDeleteModal({ isOpen: false, user: null, clubId: null });
+          setError(''); // 성공 시 에러 메시지 초기화
+        } else {
+          setError(response.data.message);
+        }
       }
     } catch (error) {
-      setError('사용자 삭제에 실패했습니다.');
+      setError(
+        deleteModal.clubId
+          ? '클럽에서 탈퇴시키는데 실패했습니다.'
+          : '사용자 삭제에 실패했습니다.'
+      );
     }
   };
 
@@ -161,6 +254,16 @@ const UserManagement = () => {
     const clubGroups = {};
     const noClubUsers = [];
     const superAdmins = []; // 모든 슈퍼관리자 (클럽 소속 여부와 관계없이)
+
+    // 슈퍼관리자인 경우 모든 클럽을 먼저 초기화
+    if (currentUser?.role === 'super_admin' && allClubs.length > 0) {
+      allClubs.forEach((club) => {
+        clubGroups[club.id] = {
+          club: club,
+          users: [],
+        };
+      });
+    }
 
     users.forEach((user) => {
       // 슈퍼관리자는 항상 별도 섹션에 표시
@@ -215,6 +318,100 @@ const UserManagement = () => {
 
       {error && <div className="error-message">{error}</div>}
 
+      {/* 승인 대기 중인 가입 요청 섹션 (슈퍼관리자 전용) */}
+      {currentUser?.role === 'super_admin' && (
+        <div className="join-requests-section">
+          <div className="page-header">
+            <h2>클럽 가입 승인 요청</h2>
+            <p>승인 대기 중인 클럽 가입 요청을 관리할 수 있습니다.</p>
+          </div>
+          {loadingRequests ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>로딩 중...</p>
+            </div>
+          ) : Object.keys(joinRequests).length === 0 ? (
+            <div className="no-requests-message">
+              승인 대기 중인 가입 요청이 없습니다.
+            </div>
+          ) : (
+            Object.keys(joinRequests).map((clubId) => {
+              const { club, requests } = joinRequests[clubId];
+              return (
+                <div key={clubId} className="club-section">
+                  <div className="club-section-header">
+                    <span className="club-section-badge">{club.name}</span>
+                    <span className="club-section-count">
+                      ({requests.length}건)
+                    </span>
+                  </div>
+                  <div className="users-table-container">
+                    <table className="users-table">
+                      <thead>
+                        <tr>
+                          <th>이름</th>
+                          <th>이메일</th>
+                          <th>요청일시</th>
+                          <th>작업</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {requests.map((request) => (
+                          <tr key={request.id}>
+                            <td className="user-name-cell">
+                              <div className="user-name-content">
+                                <div className="user-avatar">
+                                  {request.user_name
+                                    ?.charAt(0)
+                                    ?.toUpperCase() || 'U'}
+                                </div>
+                                <span className="user-name-text">
+                                  {request.user_name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="user-email-cell">
+                              <span className="user-email-text">
+                                {request.user_email}
+                              </span>
+                            </td>
+                            <td className="date-cell">
+                              <span className="date-text">
+                                {request.requested_at
+                                  ? new Date(
+                                      request.requested_at
+                                    ).toLocaleString('ko-KR')
+                                  : '-'}
+                              </span>
+                            </td>
+                            <td className="actions-cell">
+                              <button
+                                className="approve-btn"
+                                onClick={() => handleApproveRequest(request.id)}
+                                title="승인"
+                              >
+                                승인
+                              </button>
+                              <button
+                                className="reject-btn"
+                                onClick={() => handleRejectRequest(request.id)}
+                                title="거부"
+                              >
+                                거부
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
       {/* 클럽별로 사용자 목록 표시 */}
       {clubIds.map((clubId) => {
         const { club, users: clubUsers } = clubGroups[clubId];
@@ -252,112 +449,135 @@ const UserManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {clubUsers.map((user) => {
-                    const membership =
-                      user.clubs?.find((c) => c.id === club.id) || {};
-                    const clubRole = membership.role || 'member';
-
-                    return (
-                      <tr key={`${club.id}-${user.id}`}>
-                      <td className="user-name-cell">
-                        <div className="user-name-content">
-                          <div className="user-avatar">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="user-name-text">{user.name}</span>
-                        </div>
-                      </td>
-                      <td className="user-email-cell">
-                        <span className="user-email-text">{user.email}</span>
-                      </td>
-                      <td className="role-cell">
-                        {clubRole === 'owner' ? (
-                          // 소유자는 선택 불가, 읽기 전용으로만 표시
-                          <span className={`role-badge ${getRoleBadgeClass('admin')}`}>
-                            클럽 소유자
-                          </span>
-                        ) : (
-                          <select
-                            value={clubRole}
-                            onChange={(e) =>
-                              handleClubRoleChange(
-                                user.id,
-                                club.id,
-                                e.target.value
-                              )
-                            }
-                            className={`role-select ${getRoleBadgeClass(
-                              clubRole === 'member' ? 'user' : 'admin'
-                            )}`}
-                            disabled={
-                              user.id === currentUser?.id ||
-                              user.email === 'syun4224@naver.com'
-                            }
-                          >
-                            <option value="member">일반 회원</option>
-                            <option value="admin">클럽 운영진</option>
-                          </select>
-                        )}
-                      </td>
-                      <td className="status-cell">
-                        <label className="status-toggle">
-                          <input
-                            type="checkbox"
-                            checked={user.is_active}
-                            onChange={(e) =>
-                              handleStatusChange(user.id, e.target.checked)
-                            }
-                            disabled={user.id === currentUser?.id}
-                          />
-                          <span
-                            className={`status-indicator ${
-                              user.is_active ? 'active' : 'inactive'
-                            }`}
-                          >
-                            {user.is_active ? '활성' : '비활성'}
-                          </span>
-                        </label>
-                      </td>
-                      <td className="date-cell">
-                        <span className="date-text">
-                          {user.created_at
-                            ? new Date(user.created_at).toLocaleDateString(
-                                'ko-KR'
-                              )
-                            : '-'}
-                        </span>
-                      </td>
-                      <td className="date-cell">
-                        <span className="date-text">
-                          {user.last_login
-                            ? new Date(user.last_login).toLocaleDateString(
-                                'ko-KR'
-                              )
-                            : '-'}
-                        </span>
-                      </td>
-                      <td className="actions-cell">
-                        {user.id === currentUser?.id ? (
-                          <span className="current-user-badge">
-                            현재 사용자
-                          </span>
-                        ) : user.email === 'syun4224@naver.com' ? (
-                          <span className="protected-user-badge">
-                            보호된 계정
-                          </span>
-                        ) : (
-                          <button
-                            className="delete-user-btn"
-                            onClick={() => handleDeleteClick(user)}
-                            title="사용자 삭제"
-                          >
-                            삭제
-                          </button>
-                        )}
+                  {clubUsers.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="7"
+                        style={{
+                          textAlign: 'center',
+                          padding: '2rem',
+                          color: '#6b7280',
+                        }}
+                      >
+                        이 클럽에 가입한 회원이 없습니다.
                       </td>
                     </tr>
-                  );
-                  })}
+                  ) : (
+                    clubUsers.map((user) => {
+                      const membership =
+                        user.clubs?.find((c) => c.id === club.id) || {};
+                      const clubRole = membership.role || 'member';
+
+                      return (
+                        <tr key={`${club.id}-${user.id}`}>
+                          <td className="user-name-cell">
+                            <div className="user-name-content">
+                              <div className="user-avatar">
+                                {user.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="user-name-text">
+                                {user.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="user-email-cell">
+                            <span className="user-email-text">
+                              {user.email}
+                            </span>
+                          </td>
+                          <td className="role-cell">
+                            {clubRole === 'owner' ? (
+                              // 소유자는 선택 불가, 읽기 전용으로만 표시
+                              <span
+                                className={`role-badge ${getRoleBadgeClass(
+                                  'admin'
+                                )}`}
+                              >
+                                클럽 소유자
+                              </span>
+                            ) : (
+                              <select
+                                value={clubRole}
+                                onChange={(e) =>
+                                  handleClubRoleChange(
+                                    user.id,
+                                    club.id,
+                                    e.target.value
+                                  )
+                                }
+                                className={`role-select ${getRoleBadgeClass(
+                                  clubRole === 'member' ? 'user' : 'admin'
+                                )}`}
+                                disabled={
+                                  user.id === currentUser?.id ||
+                                  user.email === 'syun4224@naver.com'
+                                }
+                              >
+                                <option value="member">일반 회원</option>
+                                <option value="admin">클럽 운영진</option>
+                              </select>
+                            )}
+                          </td>
+                          <td className="status-cell">
+                            <label className="status-toggle">
+                              <input
+                                type="checkbox"
+                                checked={user.is_active}
+                                onChange={(e) =>
+                                  handleStatusChange(user.id, e.target.checked)
+                                }
+                                disabled={user.id === currentUser?.id}
+                              />
+                              <span
+                                className={`status-indicator ${
+                                  user.is_active ? 'active' : 'inactive'
+                                }`}
+                              >
+                                {user.is_active ? '활성' : '비활성'}
+                              </span>
+                            </label>
+                          </td>
+                          <td className="date-cell">
+                            <span className="date-text">
+                              {user.created_at
+                                ? new Date(user.created_at).toLocaleDateString(
+                                    'ko-KR'
+                                  )
+                                : '-'}
+                            </span>
+                          </td>
+                          <td className="date-cell">
+                            <span className="date-text">
+                              {user.last_login
+                                ? new Date(user.last_login).toLocaleDateString(
+                                    'ko-KR'
+                                  )
+                                : '-'}
+                            </span>
+                          </td>
+                          <td className="actions-cell">
+                            {user.id === currentUser?.id ? (
+                              <span className="current-user-badge">
+                                현재 사용자
+                              </span>
+                            ) : user.email === 'syun4224@naver.com' ? (
+                              <span className="protected-user-badge">
+                                보호된 계정
+                              </span>
+                            ) : (
+                              <button
+                                className="delete-user-btn"
+                                onClick={() => handleDeleteClick(user, club.id)}
+                                title="클럽에서 탈퇴"
+                              >
+                                탈퇴
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -632,17 +852,35 @@ const UserManagement = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>사용자 삭제 확인</h3>
+              <h3>
+                {deleteModal.clubId ? '클럽에서 탈퇴 확인' : '사용자 삭제 확인'}
+              </h3>
             </div>
             <div className="modal-body">
-              <p>
-                <strong>{deleteModal.user?.name}</strong>(
-                {deleteModal.user?.email}) 사용자를 삭제하시겠습니까?
-              </p>
-              <p className="warning-text">
-                ⚠️ 이 작업은 되돌릴 수 없습니다. 모든 사용자 데이터가 영구적으로
-                삭제됩니다.
-              </p>
+              {deleteModal.clubId ? (
+                <>
+                  <p>
+                    <strong>{deleteModal.user?.name}</strong>(
+                    {deleteModal.user?.email}) 사용자를 이 클럽에서
+                    탈퇴시키시겠습니까?
+                  </p>
+                  <p className="warning-text">
+                    ⚠️ 이 작업은 되돌릴 수 없습니다. 사용자는 이 클럽에서만
+                    탈퇴되며, 다른 클럽의 멤버십은 유지됩니다.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong>{deleteModal.user?.name}</strong>(
+                    {deleteModal.user?.email}) 사용자를 삭제하시겠습니까?
+                  </p>
+                  <p className="warning-text">
+                    ⚠️ 이 작업은 되돌릴 수 없습니다. 모든 사용자 데이터가
+                    영구적으로 삭제됩니다.
+                  </p>
+                </>
+              )}
             </div>
             <div className="modal-footer">
               <button
@@ -655,7 +893,7 @@ const UserManagement = () => {
                 className="modal-btn modal-btn-danger"
                 onClick={handleDeleteConfirm}
               >
-                삭제
+                {deleteModal.clubId ? '탈퇴' : '삭제'}
               </button>
             </div>
           </div>

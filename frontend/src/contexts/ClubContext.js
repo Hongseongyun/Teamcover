@@ -33,7 +33,10 @@ export const ClubProvider = ({ children }) => {
       setLoading(true);
       const response = await clubAPI.getUserClubs();
       if (response.data.success) {
-        const clubsData = response.data.clubs || [];
+        // 승인된 클럽만 필터링 (슈퍼관리자는 모든 클럽 포함)
+        const clubsData = (response.data.clubs || []).filter(
+          (club) => isSuperAdmin || club.status === 'approved' || !club.status
+        );
         setClubs(clubsData);
 
         // 저장된 클럽이 있으면 그 클럽을 우선 선택

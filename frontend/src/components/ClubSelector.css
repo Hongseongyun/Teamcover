@@ -71,7 +71,8 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  min-width: 200px;
+  min-width: 280px;
+  max-width: 400px;
   background: var(--bg-primary, #fff);
   border: 1px solid var(--border-color, #ddd);
   border-radius: 8px;
@@ -87,6 +88,15 @@
   padding: 0.75rem 1rem;
   cursor: pointer;
   transition: background 0.2s;
+  gap: 0.5rem;
+}
+
+.club-item-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .club-item:hover {
@@ -100,6 +110,18 @@
 
 .club-item-name {
   color: var(--text-primary, #333);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.club-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .club-item-role {
@@ -109,6 +131,37 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
+  flex-shrink: 0;
+}
+
+.club-item-leave-btn {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.club-item-leave-btn:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+[data-theme='dark'] .club-item-leave-btn {
+  color: #fca5a5;
+  border-color: #f87171;
+}
+
+[data-theme='dark'] .club-item-leave-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #fca5a5;
+  color: #fca5a5;
 }
 
 .club-item-divider {

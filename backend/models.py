@@ -105,11 +105,16 @@ class ClubMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='member')  # 'member', 'admin', 'owner'
+    status = db.Column(db.String(20), nullable=False, default='approved')  # 'pending', 'approved', 'rejected'
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    requested_at = db.Column(db.DateTime, default=datetime.utcnow)  # 가입 요청 시간
+    approved_at = db.Column(db.DateTime, nullable=True)  # 승인 시간
+    approved_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 승인한 사용자 ID
     
     # 관계
-    user = db.relationship('User', backref=db.backref('club_memberships', lazy=True))
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('club_memberships', lazy=True))
     club = db.relationship('Club', backref=db.backref('memberships', lazy=True))
+    approver = db.relationship('User', foreign_keys=[approved_by])
     
     # 중복 가입 방지
     __table_args__ = (db.UniqueConstraint('user_id', 'club_id', name='unique_user_club'),)
@@ -120,13 +125,17 @@ class ClubMember(db.Model):
             'user_id': self.user_id,
             'club_id': self.club_id,
             'role': self.role,
+            'status': self.status,
             'joined_at': self.joined_at.strftime('%Y-%m-%d %H:%M:%S') if self.joined_at else None,
+            'requested_at': self.requested_at.strftime('%Y-%m-%d %H:%M:%S') if self.requested_at else None,
+            'approved_at': self.approved_at.strftime('%Y-%m-%d %H:%M:%S') if self.approved_at else None,
+            'approved_by': self.approved_by,
             'user_name': self.user.name if self.user else None,
             'club_name': self.club.name if self.club else None
         }
     
     def __repr__(self):
-        return f'<ClubMember {self.user_id} - {self.club_id} ({self.role})>'
+        return f'<ClubMember {self.user_id} - {self.club_id} ({self.role}, {self.status})>'
 
 class Member(db.Model):
     """회원 모델"""

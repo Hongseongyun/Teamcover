@@ -84,7 +84,7 @@ def get_user_clubs():
         is_super_admin = current_user and current_user.role == 'super_admin'
         
         if is_super_admin:
-            # 슈퍼관리자는 모든 클럽 조회
+            # 슈퍼관리자는 모든 클럽 조회 (승인 여부와 관계없이)
             all_clubs = Club.query.order_by(Club.name.asc()).all()
             clubs_data = []
             for club in all_clubs:
@@ -93,18 +93,24 @@ def get_user_clubs():
                 membership = ClubMember.query.filter_by(user_id=user_id, club_id=club.id).first()
                 if membership:
                     club_data['role'] = membership.role
+                    club_data['status'] = membership.status
                     club_data['joined_at'] = membership.joined_at.strftime('%Y-%m-%d %H:%M:%S') if membership.joined_at else None
                 else:
                     club_data['role'] = None  # 가입하지 않은 클럽
+                    club_data['status'] = None
                     club_data['joined_at'] = None
                 clubs_data.append(club_data)
         else:
-            # 일반 사용자는 가입한 클럽만 조회
-            memberships = ClubMember.query.filter_by(user_id=user_id).all()
+            # 일반 사용자는 승인된 클럽만 조회
+            memberships = ClubMember.query.filter_by(
+                user_id=user_id,
+                status='approved'
+            ).all()
             clubs_data = []
             for membership in memberships:
                 club_data = membership.club.to_dict()
                 club_data['role'] = membership.role
+                club_data['status'] = membership.status
                 club_data['joined_at'] = membership.joined_at.strftime('%Y-%m-%d %H:%M:%S') if membership.joined_at else None
                 clubs_data.append(club_data)
         
@@ -195,12 +201,41 @@ def get_club(club_id):
         return jsonify({'success': False, 'message': f'클럽 조회 실패: {str(e)}'}), 500
 
 # 클럽 가입
-@clubs_bp.route('/<int:club_id>/join', methods=['POST'])
-@jwt_required()
-def join_club(club_id):
-    """클럽 가입"""
+@clubs_bp.route('/available', methods=['GET'])
+@jwt_required(optional=True)
+def get_available_clubs():
+    """가입 가능한 클럽 목록 조회 (회원가입 시 클럽 선택용)"""
     try:
-        user_id = int(get_jwt_identity())
+        clubs = Club.query.all()
+        clubs_data = [club.to_dict() for club in clubs]
+        
+        return jsonify({
+            'success': True,
+            'clubs': clubs_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'클럽 목록 조회 실패: {str(e)}'}), 500
+
+@clubs_bp.route('/select-after-signup', methods=['POST'])
+def select_club_after_signup():
+    """구글 로그인 후 클럽 선택 및 가입 처리"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        club_id = data.get('club_id')
+        email = data.get('email')
+        
+        if not user_id or not club_id or not email:
+            return jsonify({'success': False, 'message': '필수 정보가 누락되었습니다.'}), 400
+        
+        # 사용자 확인
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
+        
+        # 이메일 확인 (보안)
+        if user.email != email:
+            return jsonify({'success': False, 'message': '이메일이 일치하지 않습니다.'}), 403
         
         # 클럽 존재 확인
         club = Club.query.get_or_404(club_id)
@@ -210,18 +245,130 @@ def join_club(club_id):
         if existing:
             return jsonify({'success': False, 'message': '이미 가입한 클럽입니다.'}), 400
         
-        # 가입
-        membership = ClubMember(
-            user_id=user_id,
-            club_id=club_id,
-            role='member'
+        # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+        is_super_admin = user.role == 'super_admin'
+        
+        if is_super_admin:
+            membership = ClubMember(
+                user_id=user_id,
+                club_id=club_id,
+                role='member',
+                status='approved',
+                requested_at=datetime.utcnow(),
+                approved_at=datetime.utcnow(),
+                approved_by=user_id
+            )
+        else:
+            membership = ClubMember(
+                user_id=user_id,
+                club_id=club_id,
+                role='member',
+                status='pending',
+                requested_at=datetime.utcnow()
+            )
+        
+        db.session.add(membership)
+        db.session.commit()
+        
+        # 로그인 처리
+        from flask_login import login_user
+        login_user(user, remember=True)
+        user.last_login = datetime.utcnow()
+        
+        # JWT 토큰 생성
+        from flask_jwt_extended import create_access_token
+        from datetime import timedelta
+        import uuid
+        jti = str(uuid.uuid4())
+        access_token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(days=7),
+            additional_claims={"jti": jti}
         )
+        
+        # 새 토큰의 jti를 활성 토큰으로 저장
+        user.active_token = jti
+        db.session.commit()
+        
+        # 클럽 정보와 멤버십 상태 포함
+        club_data = club.to_dict()
+        club_data['membership_status'] = membership.status
+        
+        return jsonify({
+            'success': True,
+            'message': '클럽이 선택되었습니다.' if is_super_admin else '클럽 가입 요청이 제출되었습니다. 승인을 기다려주세요.',
+            'user': user.to_dict(),
+            'access_token': access_token,
+            'club': club_data
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 선택 실패: {str(e)}'}), 500
+
+@clubs_bp.route('/<int:club_id>/join', methods=['POST'])
+@jwt_required()
+def join_club(club_id):
+    """클럽 가입 요청 (승인 대기 상태)"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        # 슈퍼관리자는 즉시 가입
+        is_super_admin = current_user and current_user.role == 'super_admin'
+        
+        # 클럽 존재 확인
+        club = Club.query.get_or_404(club_id)
+        
+        # 이미 가입했는지 확인
+        existing = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
+        if existing:
+            if existing.status == 'approved':
+                return jsonify({'success': False, 'message': '이미 가입한 클럽입니다.'}), 400
+            elif existing.status == 'pending':
+                return jsonify({'success': False, 'message': '이미 가입 요청이 대기 중입니다.'}), 400
+            elif existing.status == 'rejected':
+                # 거부된 경우 다시 요청 가능
+                existing.status = 'pending'
+                existing.requested_at = datetime.utcnow()
+                existing.approved_at = None
+                existing.approved_by = None
+                db.session.commit()
+                return jsonify({
+                    'success': True,
+                    'message': '클럽 가입 요청이 다시 제출되었습니다. 승인을 기다려주세요.',
+                    'club': club.to_dict()
+                })
+        
+        # 가입 요청 생성
+        if is_super_admin:
+            # 슈퍼관리자는 즉시 승인
+            membership = ClubMember(
+                user_id=user_id,
+                club_id=club_id,
+                role='member',
+                status='approved',
+                requested_at=datetime.utcnow(),
+                approved_at=datetime.utcnow(),
+                approved_by=user_id
+            )
+            message = '클럽에 가입되었습니다.'
+        else:
+            # 일반 회원은 승인 대기
+            membership = ClubMember(
+                user_id=user_id,
+                club_id=club_id,
+                role='member',
+                status='pending',
+                requested_at=datetime.utcnow()
+            )
+            message = '클럽 가입 요청이 제출되었습니다. 슈퍼관리자의 승인을 기다려주세요.'
+        
         db.session.add(membership)
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': '클럽에 가입되었습니다.',
+            'message': message,
             'club': club.to_dict()
         })
     except Exception as e:
@@ -254,6 +401,40 @@ def leave_club(club_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'클럽 탈퇴 실패: {str(e)}'}), 500
+
+# 클럽에서 사용자 강제 탈퇴 (슈퍼관리자 전용)
+@clubs_bp.route('/<int:club_id>/members/<int:user_id>/remove', methods=['POST'])
+@jwt_required()
+def remove_member_from_club(club_id, user_id):
+    """클럽에서 사용자 강제 탈퇴 (슈퍼관리자만 가능)"""
+    try:
+        current_user_id = int(get_jwt_identity())
+        current_user = User.query.get(current_user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        membership = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
+        if not membership:
+            return jsonify({'success': False, 'message': '해당 클럽에 가입된 사용자가 아닙니다.'}), 404
+        
+        # owner는 탈퇴 불가 (다른 owner에게 권한 이전 필요)
+        if membership.role == 'owner':
+            return jsonify({'success': False, 'message': '클럽 소유자는 탈퇴시킬 수 없습니다. 먼저 소유권을 이전해주세요.'}), 400
+        
+        user_name = membership.user.name if membership.user else 'Unknown'
+        club_name = membership.club.name if membership.club else 'Unknown'
+        
+        db.session.delete(membership)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_name}님을 {club_name}에서 탈퇴시켰습니다.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽에서 탈퇴시키는데 실패했습니다: {str(e)}'}), 500
 
 # 클럽 설명 수정
 @clubs_bp.route('/<int:club_id>/description', methods=['PUT'])
@@ -361,13 +542,20 @@ def select_club(club_id):
         if not membership and not is_super_admin:
             return jsonify({'success': False, 'message': '가입하지 않은 클럽입니다.'}), 403
         
+        # 일반 사용자는 승인된 클럽만 선택 가능
+        if membership and not is_super_admin:
+            if membership.status != 'approved':
+                return jsonify({'success': False, 'message': '승인 대기 중인 클럽입니다. 승인을 기다려주세요.'}), 403
+        
         # 클럽 정보 반환 (프론트엔드에서 localStorage에 저장)
         club_data = club.to_dict()
         if membership:
             club_data['role'] = membership.role
+            club_data['status'] = membership.status
         else:
             # 슈퍼관리자가 가입하지 않은 클럽을 선택한 경우
             club_data['role'] = None  # 슈퍼관리자 권한으로 표시
+            club_data['status'] = None
         
         return jsonify({
             'success': True,
@@ -431,3 +619,138 @@ def update_club_member_role(club_id, user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'클럽 역할 변경 실패: {str(e)}'}), 500
+
+# 승인 대기 중인 클럽 가입 요청 목록 조회 (슈퍼관리자 전용)
+@clubs_bp.route('/join-requests', methods=['GET'])
+@jwt_required()
+def get_join_requests():
+    """승인 대기 중인 클럽 가입 요청 목록 조회"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        # 승인 대기 중인 요청 조회
+        pending_requests = ClubMember.query.filter_by(status='pending').order_by(
+            ClubMember.requested_at.asc()
+        ).all()
+        
+        # 클럽별로 그룹화
+        requests_by_club = {}
+        for request in pending_requests:
+            club_id = request.club_id
+            if club_id not in requests_by_club:
+                requests_by_club[club_id] = {
+                    'club': request.club.to_dict(),
+                    'requests': []
+                }
+            requests_by_club[club_id]['requests'].append({
+                'id': request.id,
+                'user_id': request.user_id,
+                'user_name': request.user.name if request.user else None,
+                'user_email': request.user.email if request.user else None,
+                'requested_at': request.requested_at.strftime('%Y-%m-%d %H:%M:%S') if request.requested_at else None,
+                'status': request.status
+            })
+        
+        return jsonify({
+            'success': True,
+            'requests_by_club': requests_by_club,
+            'total_count': len(pending_requests)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'가입 요청 목록 조회 실패: {str(e)}'}), 500
+
+# 승인 대기 중인 클럽 가입 요청 개수 조회 (슈퍼관리자 전용)
+@clubs_bp.route('/join-requests/count', methods=['GET'])
+@jwt_required()
+def get_join_requests_count():
+    """승인 대기 중인 클럽 가입 요청 개수 조회"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        # 승인 대기 중인 요청 개수 조회
+        count = ClubMember.query.filter_by(status='pending').count()
+        
+        return jsonify({
+            'success': True,
+            'count': count
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'가입 요청 개수 조회 실패: {str(e)}'}), 500
+
+# 클럽 가입 요청 승인/거부 (슈퍼관리자 전용)
+@clubs_bp.route('/join-requests/<int:request_id>/approve', methods=['POST'])
+@jwt_required()
+def approve_join_request(request_id):
+    """클럽 가입 요청 승인"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        # 가입 요청 조회
+        membership = ClubMember.query.get_or_404(request_id)
+        
+        if membership.status != 'pending':
+            return jsonify({'success': False, 'message': '승인 대기 중인 요청이 아닙니다.'}), 400
+        
+        # 승인 처리
+        membership.status = 'approved'
+        membership.approved_at = datetime.utcnow()
+        membership.approved_by = user_id
+        if not membership.joined_at:
+            membership.joined_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '클럽 가입 요청이 승인되었습니다.',
+            'membership': membership.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'가입 요청 승인 실패: {str(e)}'}), 500
+
+# 클럽 가입 요청 거부 (슈퍼관리자 전용)
+@clubs_bp.route('/join-requests/<int:request_id>/reject', methods=['POST'])
+@jwt_required()
+def reject_join_request(request_id):
+    """클럽 가입 요청 거부"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        # 가입 요청 조회
+        membership = ClubMember.query.get_or_404(request_id)
+        
+        if membership.status != 'pending':
+            return jsonify({'success': False, 'message': '승인 대기 중인 요청이 아닙니다.'}), 400
+        
+        # 거부 처리
+        membership.status = 'rejected'
+        membership.approved_at = datetime.utcnow()
+        membership.approved_by = user_id
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '클럽 가입 요청이 거부되었습니다.',
+            'membership': membership.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'가입 요청 거부 실패: {str(e)}'}), 500

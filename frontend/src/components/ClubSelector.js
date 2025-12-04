@@ -4,7 +4,15 @@ import { useAuth } from '../contexts/AuthContext';
 import './ClubSelector.css';
 
 const ClubSelector = () => {
-  const { clubs, currentClub, selectClub, loading, createClub, joinClub } = useClub();
+  const {
+    clubs,
+    currentClub,
+    selectClub,
+    loading,
+    createClub,
+    joinClub,
+    leaveClub,
+  } = useClub();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -18,9 +26,12 @@ const ClubSelector = () => {
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
-  
+  const [leavingClubId, setLeavingClubId] = useState(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [clubToLeave, setClubToLeave] = useState(null);
+
   const isSuperAdmin = user && user.role === 'super_admin';
-  
+
   // 모든 클럽 목록 로드 (가입 모달용)
   const loadAllClubs = async () => {
     try {
@@ -37,7 +48,7 @@ const ClubSelector = () => {
       setLoadingAllClubs(false);
     }
   };
-  
+
   // 가입 모달 열기
   const handleOpenJoinModal = () => {
     setShowJoinModal(true);
@@ -74,31 +85,75 @@ const ClubSelector = () => {
             onClick={() => setIsOpen(false)}
           />
           <div className="club-dropdown">
-            {clubs.map((club) => (
-              <div
-                key={club.id}
-                className={`club-item ${
-                  currentClub && club.id === currentClub.id ? 'active' : ''
-                }`}
-                onClick={() => {
-                  if (!currentClub || club.id !== currentClub.id) {
-                    selectClub(club.id);
-                  }
-                  setIsOpen(false);
-                }}
-              >
-                <div className="club-item-name">{club.name}</div>
-                {club.role && (
-                  <div className="club-item-role">
-                    {club.role === 'owner'
-                      ? '소유자'
-                      : club.role === 'admin'
-                      ? '운영진'
-                      : '일반 회원'}
+            {clubs.map((club) => {
+              const isPending = club.status === 'pending';
+              const isApproved = !club.status || club.status === 'approved';
+
+              return (
+                <div
+                  key={club.id}
+                  className={`club-item ${
+                    currentClub && club.id === currentClub.id ? 'active' : ''
+                  } ${isPending ? 'pending' : ''}`}
+                  onClick={() => {
+                    if (isPending) {
+                      // 승인 대기 중인 클럽은 선택 불가
+                      return;
+                    }
+                    if (!currentClub || club.id !== currentClub.id) {
+                      selectClub(club.id);
+                    }
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    opacity: isPending ? 0.6 : 1,
+                    cursor: isPending ? 'not-allowed' : 'pointer',
+                  }}
+                  title={isPending ? '승인 대기 중입니다' : ''}
+                >
+                  <div className="club-item-content">
+                    <div className="club-item-name">
+                      {club.name}
+                      {isPending && (
+                        <span
+                          style={{
+                            marginLeft: '0.5rem',
+                            fontSize: '0.75rem',
+                            color: '#f59e0b',
+                          }}
+                        >
+                          (승인 대기)
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="club-item-right">
+                    {club.role && isApproved && (
+                      <div className="club-item-role">
+                        {club.role === 'owner'
+                          ? '소유자'
+                          : club.role === 'admin'
+                          ? '운영진'
+                          : '일반 회원'}
+                      </div>
+                    )}
+                    {club.role && club.role !== 'owner' && isApproved && (
+                      <button
+                        className="club-item-leave-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setClubToLeave(club);
+                          setShowLeaveModal(true);
+                        }}
+                        title="클럽 탈퇴"
+                      >
+                        탈퇴
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
             <div className="club-item-divider"></div>
             {isSuperAdmin ? (
               <div
@@ -147,7 +202,7 @@ const ClubSelector = () => {
               onSubmit={async (e) => {
                 e.preventDefault();
                 setError('');
-                
+
                 if (!clubFormData.name.trim()) {
                   setError('클럽 이름을 입력해주세요.');
                   return;
@@ -261,11 +316,15 @@ const ClubSelector = () => {
 
             <div className="club-join-content">
               {loadingAllClubs ? (
-                <div className="club-join-loading">클럽 목록을 불러오는 중...</div>
+                <div className="club-join-loading">
+                  클럽 목록을 불러오는 중...
+                </div>
               ) : (
                 <>
                   {allClubs.length === 0 ? (
-                    <div className="club-join-empty">가입 가능한 클럽이 없습니다.</div>
+                    <div className="club-join-empty">
+                      가입 가능한 클럽이 없습니다.
+                    </div>
                   ) : (
                     <div className="club-join-list">
                       {allClubs.map((club) => {
@@ -273,23 +332,24 @@ const ClubSelector = () => {
                         return (
                           <div
                             key={club.id}
-                            className={`club-join-item ${isMember ? 'joined' : ''}`}
+                            className={`club-join-item ${
+                              isMember ? 'joined' : ''
+                            }`}
                           >
                             <div className="club-join-item-info">
-                              <div className="club-join-item-name">{club.name}</div>
+                              <div className="club-join-item-name">
+                                {club.name}
+                              </div>
                               {club.description && (
                                 <div className="club-join-item-description">
                                   {club.description}
                                 </div>
                               )}
-                              <div className="club-join-item-meta">
-                                {club.is_points_enabled && (
-                                  <span className="club-join-item-badge">포인트 시스템 활성화</span>
-                                )}
-                              </div>
                             </div>
                             {isMember ? (
-                              <div className="club-join-item-status">가입됨</div>
+                              <div className="club-join-item-status">
+                                가입됨
+                              </div>
                             ) : (
                               <button
                                 className="club-join-item-button"
@@ -298,13 +358,26 @@ const ClubSelector = () => {
                                   setError('');
                                   const result = await joinClub(club.id);
                                   setJoining(false);
-                                  
+
                                   if (result.success) {
-                                    // 가입 성공 후 해당 클럽 선택
-                                    await selectClub(club.id);
-                                    setShowJoinModal(false);
+                                    // 슈퍼관리자는 즉시 가입되므로 클럽 선택
+                                    if (isSuperAdmin) {
+                                      await selectClub(club.id);
+                                      setShowJoinModal(false);
+                                    } else {
+                                      // 일반 회원은 승인 대기 메시지 표시
+                                      alert(
+                                        '클럽 가입 요청이 제출되었습니다. 슈퍼관리자의 승인을 기다려주세요.'
+                                      );
+                                      setShowJoinModal(false);
+                                      // 클럽 목록 새로고침
+                                      await loadAllClubs();
+                                    }
                                   } else {
-                                    setError(result.message || '클럽 가입에 실패했습니다.');
+                                    setError(
+                                      result.message ||
+                                        '클럽 가입에 실패했습니다.'
+                                    );
                                   }
                                 }}
                                 disabled={joining}
@@ -320,6 +393,85 @@ const ClubSelector = () => {
                   {error && <div className="club-create-error">{error}</div>}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 클럽 탈퇴 확인 모달 */}
+      {showLeaveModal && clubToLeave && (
+        <div
+          className="club-create-modal-overlay"
+          onClick={() => {
+            setShowLeaveModal(false);
+            setClubToLeave(null);
+          }}
+        >
+          <div
+            className="club-create-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="club-create-modal-header">
+              <h2>클럽 탈퇴 확인</h2>
+              <button
+                className="club-create-modal-close"
+                onClick={() => {
+                  setShowLeaveModal(false);
+                  setClubToLeave(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="club-create-form">
+              <p
+                style={{
+                  marginBottom: '1.5rem',
+                  color: 'var(--text-primary, #333)',
+                }}
+              >
+                <strong>{clubToLeave.name}</strong> 클럽에서 탈퇴하시겠습니까?
+              </p>
+              <p
+                className="club-create-checkbox-description"
+                style={{ marginBottom: '1.5rem' }}
+              >
+                탈퇴 후에는 이 클럽의 모든 데이터에 접근할 수 없습니다.
+              </p>
+              <div className="club-create-form-actions">
+                <button
+                  type="button"
+                  className="club-create-cancel"
+                  onClick={() => {
+                    setShowLeaveModal(false);
+                    setClubToLeave(null);
+                  }}
+                  disabled={leavingClubId === clubToLeave.id}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="club-create-submit"
+                  style={{ background: '#ef4444' }}
+                  onClick={async () => {
+                    setLeavingClubId(clubToLeave.id);
+                    const result = await leaveClub(clubToLeave.id);
+                    setLeavingClubId(null);
+
+                    if (result.success) {
+                      setShowLeaveModal(false);
+                      setClubToLeave(null);
+                      setIsOpen(false);
+                    } else {
+                      setError(result.message || '클럽 탈퇴에 실패했습니다.');
+                    }
+                  }}
+                  disabled={leavingClubId === clubToLeave.id}
+                >
+                  {leavingClubId === clubToLeave.id ? '탈퇴 중...' : '탈퇴'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

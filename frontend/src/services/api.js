@@ -143,6 +143,8 @@ export const authAPI = {
     api.post('/api/auth/google/confirm-login', data),
   login: (data) => api.post('/api/auth/login', data),
   googleLogin: (data) => api.post('/api/auth/google', data),
+  selectClubAfterSignup: (data) =>
+    api.post('/api/clubs/select-after-signup', data),
   logout: () => api.post('/api/auth/logout'),
   logoutOtherDevices: () => api.post('/api/auth/logout-other-devices'),
   getCurrentUser: () => api.get('/api/auth/me'),
@@ -220,11 +222,14 @@ export const paymentAPI = {
 // 클럽 관리 API
 export const clubAPI = {
   getAllClubs: () => api.get('/api/clubs/public'), // 회원가입용 (인증 불필요)
+  getAvailableClubs: () => api.get('/api/clubs/available'), // 구글 로그인 후 클럽 선택용
   getUserClubs: () => api.get('/api/clubs/'), // 슬래시 추가하여 308 리다이렉트 방지
   createClub: (data) => api.post('/api/clubs', data),
   getClub: (clubId) => api.get(`/api/clubs/${clubId}`),
   joinClub: (clubId) => api.post(`/api/clubs/${clubId}/join`),
   leaveClub: (clubId) => api.post(`/api/clubs/${clubId}/leave`),
+  removeMemberFromClub: (clubId, userId) =>
+    api.post(`/api/clubs/${clubId}/members/${userId}/remove`),
   selectClub: (clubId) => api.post(`/api/clubs/${clubId}/select`),
   updateClubDescription: (clubId, data) =>
     api.put(`/api/clubs/${clubId}/description`, data),
@@ -232,6 +237,13 @@ export const clubAPI = {
   // 클럽 멤버 역할 변경 (슈퍼관리자 전용)
   updateMemberRole: (clubId, userId, data) =>
     api.put(`/api/clubs/${clubId}/members/${userId}/role`, data),
+  // 클럽 가입 요청 관리 (슈퍼관리자 전용)
+  getJoinRequests: () => api.get('/api/clubs/join-requests'),
+  getJoinRequestsCount: () => api.get('/api/clubs/join-requests/count'),
+  approveJoinRequest: (requestId) =>
+    api.post(`/api/clubs/join-requests/${requestId}/approve`),
+  rejectJoinRequest: (requestId) =>
+    api.post(`/api/clubs/join-requests/${requestId}/reject`),
 };
 
 // 게시판 API

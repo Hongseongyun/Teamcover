@@ -306,26 +306,49 @@ def google_login():
                     from models import Club, ClubMember
                     club = Club.query.get(club_id)
                     if club:
-                        membership = ClubMember(
-                            user_id=user.id,
-                            club_id=club_id,
-                            role='member'
-                        )
+                        # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+                        current_user_obj = User.query.get(user.id)
+                        is_super_admin = current_user_obj and current_user_obj.role == 'super_admin'
+                        
+                        if is_super_admin:
+                            membership = ClubMember(
+                                user_id=user.id,
+                                club_id=club_id,
+                                role='member',
+                                status='approved',
+                                requested_at=datetime.utcnow(),
+                                approved_at=datetime.utcnow(),
+                                approved_by=user.id
+                            )
+                        else:
+                            membership = ClubMember(
+                                user_id=user.id,
+                                club_id=club_id,
+                                role='member',
+                                status='pending',
+                                requested_at=datetime.utcnow()
+                            )
                         db.session.add(membership)
-                else:
-                    # 클럽을 선택하지 않은 경우, 기본 클럽(Teamcover)에 가입
-                    from models import Club, ClubMember
-                    default_club = Club.query.filter_by(name='Teamcover').first()
-                    if default_club:
-                        membership = ClubMember(
-                            user_id=user.id,
-                            club_id=default_club.id,
-                            role='member'
-                        )
-                        db.session.add(membership)
+                # 클럽을 선택하지 않은 경우, 클럽 선택이 필요함을 표시
+                # (기본 클럽에 자동 가입하지 않음)
         
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
+        
+        # 새 사용자이고 클럽에 가입하지 않은 경우 클럽 선택 필요
+        if is_new_user:
+            from models import ClubMember
+            has_club = ClubMember.query.filter_by(user_id=user.id).first() is not None
+            if not has_club:
+                # 사용자는 생성되었지만 클럽 선택이 필요함
+                db.session.commit()  # 사용자 정보는 저장
+                return jsonify({
+                    'success': True,
+                    'message': '클럽을 선택해주세요.',
+                    'needs_club_selection': True,
+                    'user': user.to_dict(),
+                    'email': email
+                })
         
         # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
         has_active_session = user.active_token is not None and user.active_token.strip() != ''
@@ -503,6 +526,7 @@ def google_callback():
             if existing_user:
                 # 기존 사용자에 구글 ID 연결
                 existing_user.google_id = google_id
+                db.session.commit()  # 구글 ID 연결 저장
                 user = existing_user
             else:
                 # 새 사용자 생성 - 구글 로그인은 바로 활성화
@@ -525,23 +549,31 @@ def google_callback():
                     from models import Club, ClubMember
                     club = Club.query.get(club_id)
                     if club:
-                        membership = ClubMember(
-                            user_id=user.id,
-                            club_id=club_id,
-                            role='member'
-                        )
+                        # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+                        current_user_obj = User.query.get(user.id)
+                        is_super_admin = current_user_obj and current_user_obj.role == 'super_admin'
+                        
+                        if is_super_admin:
+                            membership = ClubMember(
+                                user_id=user.id,
+                                club_id=club_id,
+                                role='member',
+                                status='approved',
+                                requested_at=datetime.utcnow(),
+                                approved_at=datetime.utcnow(),
+                                approved_by=user.id
+                            )
+                        else:
+                            membership = ClubMember(
+                                user_id=user.id,
+                                club_id=club_id,
+                                role='member',
+                                status='pending',
+                                requested_at=datetime.utcnow()
+                            )
                         db.session.add(membership)
-                else:
-                    # 클럽을 선택하지 않은 경우, 기본 클럽(Teamcover)에 가입
-                    from models import Club, ClubMember
-                    default_club = Club.query.filter_by(name='Teamcover').first()
-                    if default_club:
-                        membership = ClubMember(
-                            user_id=user.id,
-                            club_id=default_club.id,
-                            role='member'
-                        )
-                        db.session.add(membership)
+                # 클럽을 선택하지 않은 경우, 클럽 선택이 필요함을 표시
+                # (기본 클럽에 자동 가입하지 않음)
                 
                 try:
                     db.session.commit()
@@ -553,6 +585,32 @@ def google_callback():
         
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
+        
+        # 모든 사용자에 대해 클럽 가입 여부 확인 (새 사용자든 기존 사용자든)
+        from models import ClubMember
+        has_club = ClubMember.query.filter_by(user_id=user.id).first() is not None
+        
+        # 클럽에 가입하지 않은 경우 클럽 선택 필요
+        if not has_club:
+            # 새 사용자인 경우 사용자 정보는 이미 commit되었으므로 바로 반환
+            if is_new_user:
+                return jsonify({
+                    'success': True,
+                    'message': '클럽을 선택해주세요.',
+                    'needs_club_selection': True,
+                    'user': user.to_dict(),
+                    'email': email
+                })
+            else:
+                # 기존 사용자인 경우에도 클럽이 없으면 클럽 선택 필요
+                # (구글 ID만 연결된 경우 등)
+                return jsonify({
+                    'success': True,
+                    'message': '클럽을 선택해주세요.',
+                    'needs_club_selection': True,
+                    'user': user.to_dict(),
+                    'email': email
+                })
         
         # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
         has_active_session = user.active_token is not None and user.active_token.strip() != ''
