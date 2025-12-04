@@ -369,7 +369,7 @@ const BowlingHero = () => {
               theme === 'dark' ? 'text-slate-300' : 'text-slate-600'
             }`}
           >
-            팀 커버와 함께하는 스마트한 볼링 관리
+            Bowlib와 함께하는 스마트한 볼링 관리
           </p>
         </div>
 
