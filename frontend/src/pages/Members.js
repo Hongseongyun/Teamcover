@@ -182,13 +182,20 @@ const Members = () => {
   });
 
   useEffect(() => {
-    // 클럽이 선택될 때까지 대기
-    if (!clubLoading && currentClub) {
+    // 클럽이 선택될 때까지 대기 (슈퍼관리자는 클럽 선택 없이도 접근 가능)
+    console.log('Members: useEffect', {
+      clubLoading,
+      currentClub: currentClub?.name,
+      isSuperAdmin,
+      shouldLoad: !clubLoading && (currentClub || isSuperAdmin),
+    });
+
+    if (!clubLoading && (currentClub || isSuperAdmin)) {
       loadMembers();
       checkPasswordStatus();
       checkPrivacyStatus();
     }
-  }, [clubLoading, currentClub]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clubLoading, currentClub, isSuperAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 개인정보 보호 상태가 변경될 때마다 회원 목록 다시 로드
   useEffect(() => {
@@ -551,8 +558,15 @@ const Members = () => {
     }
   };
 
-  // 클럽이 로드 중이거나 선택되지 않았으면 대기
-  if (clubLoading || !currentClub) {
+  // 클럽이 로드 중이거나 선택되지 않았으면 대기 (슈퍼관리자는 클럽 선택 없이도 접근 가능)
+  console.log('Members: Render check', {
+    clubLoading,
+    currentClub: currentClub?.name,
+    isSuperAdmin,
+    shouldShow: !clubLoading && (currentClub || isSuperAdmin),
+  });
+
+  if (clubLoading || (!currentClub && !isSuperAdmin)) {
     return <div className="loading">클럽 정보를 불러오는 중...</div>;
   }
 
