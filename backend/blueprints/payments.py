@@ -216,16 +216,22 @@ def update_payment(payment_id):
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
         
-        # 관리자만 접근 가능
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = current_user.role == 'super_admin'
-        if not is_super_admin:
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-            if not has_permission:
-                return jsonify({'success': False, 'message': result}), 403
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
         
         data = request.get_json()
         
@@ -350,16 +356,22 @@ def delete_payment(payment_id):
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id))
         
-        # 관리자만 접근 가능
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = current_user.role == 'super_admin'
-        if not is_super_admin:
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-            if not has_permission:
-                return jsonify({'success': False, 'message': result}), 403
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
         
         payment = Payment.query.options(joinedload(Payment.member)).get_or_404(payment_id)
         
@@ -408,17 +420,22 @@ def get_payment_stats():
         # 현재 사용자 확인
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
         
-        # 관리자만 접근 가능
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = current_user.role == 'super_admin'
-        if not is_super_admin:
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-            if not has_permission:
-                return jsonify({'success': False, 'message': result}), 403
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
         
         # 월별 통계
         monthly_stats = {}
@@ -533,15 +550,22 @@ def fund_ledger_endpoint():
             
             user_id = get_jwt_identity()
             current_user = User.query.get(int(user_id)) if user_id else None
-            if not current_user or current_user.role not in ['super_admin', 'admin']:
-                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+            if not current_user:
+                return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
             
-            # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-            is_super_admin = current_user.role == 'super_admin'
-            if not is_super_admin:
+            # 슈퍼관리자 또는 시스템 관리자인지 확인
+            is_system_admin = current_user.role in ['super_admin', 'admin']
+            
+            # 클럽별 운영진인지 확인
+            is_club_admin = False
+            if not is_system_admin:
                 has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-                if not has_permission:
-                    return jsonify({'success': False, 'message': result}), 403
+                if has_permission:
+                    is_club_admin = True
+                else:
+                    return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+            
+            # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
 
             from_month = request.args.get('from_month')
             q = FundLedger.query.filter_by(club_id=club_id)
@@ -599,15 +623,22 @@ def fund_ledger_endpoint():
         
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = current_user.role == 'super_admin'
-        if not is_super_admin:
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-            if not has_permission:
-                return jsonify({'success': False, 'message': result}), 403
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
 
         data = request.get_json() or {}
         entry_type = data.get('entry_type')  # 'credit' or 'debit'
@@ -754,8 +785,27 @@ def payment_balance():
         # PUT - 관리자만
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'})
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
+        
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
 
         data = request.get_json() or {}
         balance = data.get('balance')
