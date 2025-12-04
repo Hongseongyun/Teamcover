@@ -40,8 +40,23 @@ def get_members():
         except Exception as e:
             pass
         
-        # 관리자(슈퍼관리자 또는 운영진)인 경우 개인정보 보호 비밀번호 검증 확인
-        if current_user_obj and current_user_obj.role in ['super_admin', 'admin']:
+        # 관리자(슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진)인 경우 개인정보 보호 비밀번호 검증 확인
+        is_system_admin = current_user_obj and current_user_obj.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        club_id = get_current_club_id()
+        if club_id and current_user_obj:
+            from models import ClubMember
+            membership = ClubMember.query.filter_by(
+                user_id=current_user_obj.id,
+                club_id=club_id,
+                status='approved'
+            ).first()
+            if membership and membership.role in ['admin', 'owner']:
+                is_club_admin = True
+        
+        if is_system_admin or is_club_admin:
             # 전역 개인정보 보호 비밀번호 설정 확인
             privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
             if not privacy_setting or not privacy_setting.setting_value:
@@ -69,16 +84,22 @@ def get_members():
                         # 토큰 만료 시간 체크 및 사용자 ID 체크
                         if current_time >= exp_time:
                             hide_privacy = True  # 기본적으로 마스킹
+                            print(f"[PRIVACY] Token expired: current_time={current_time}, exp_time={exp_time}")
                         elif token_user_id != current_user_id:
                             hide_privacy = True  # 기본적으로 마스킹
-                        elif privacy_access_granted and user_role in ['super_admin', 'admin']:
-                            hide_privacy = False  # 원본 데이터 허용
+                            print(f"[PRIVACY] User ID mismatch: token_user_id={token_user_id}, current_user_id={current_user_id}")
+                        elif privacy_access_granted:
+                            hide_privacy = False  # 원본 데이터 허용 (운영진도 포함)
+                            print(f"[PRIVACY] Access granted: user_role={user_role}, is_system_admin={is_system_admin}, is_club_admin={is_club_admin}")
                         else:
                             hide_privacy = True  # 기본적으로 마스킹
+                            print(f"[PRIVACY] Access not granted: privacy_access_granted={privacy_access_granted}")
                     except Exception as e:
                         hide_privacy = True  # 기본적으로 마스킹
+                        print(f"[PRIVACY] Token decode error: {str(e)}")
                 else:
                     hide_privacy = True  # 기본적으로 마스킹
+                    print(f"[PRIVACY] No privacy token in header")
         
         # 클럽 필터링 (슈퍼관리자도 선택한 클럽의 데이터만 조회)
         club_id = get_current_club_id()
@@ -727,9 +748,27 @@ def verify_privacy_access():
         if not current_user_obj:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
         
-        if current_user_obj.role not in ['super_admin', 'admin']:
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user_obj.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        club_id = get_current_club_id()
+        if club_id:
+            from models import ClubMember
+            membership = ClubMember.query.filter_by(
+                user_id=current_user_obj.id,
+                club_id=club_id,
+                status='approved'
+            ).first()
+            if membership and membership.role in ['admin', 'owner']:
+                is_club_admin = True
+        
+        # 운영진이 아니면 접근 거부
+        if not is_system_admin and not is_club_admin:
             return jsonify({'success': False, 'message': '관리자만 접근 가능합니다.'})
         
+        # 운영진도 비밀번호를 입력받아서 검증
         data = request.get_json()
         password = data.get('password', '')
         
@@ -742,7 +781,7 @@ def verify_privacy_access():
             return jsonify({'success': False, 'message': '개인정보 보호 비밀번호가 설정되지 않았습니다.'})
         
         if check_password_hash(privacy_setting.setting_value, password):
-            # JWT 토큰에 개인정보 접근 권한 추가
+            # 비밀번호가 맞으면 운영진은 자동으로 허용
             from flask_jwt_extended import create_access_token
             from datetime import timedelta
             
@@ -755,8 +794,6 @@ def verify_privacy_access():
                     'user_role': current_user_obj.role
                 }
             )
-            
-            # 토큰 생성 완료
             
             return jsonify({
                 'success': True, 
@@ -788,44 +825,63 @@ def check_privacy_status():
         # 기본적으로 마스킹된 상태
         privacy_unlocked = False
         
-        if current_user_obj and current_user_obj.role in ['super_admin', 'admin']:
-            # 전역 개인정보 보호 비밀번호 설정 확인
-            privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
-            if not privacy_setting or not privacy_setting.setting_value:
-                # 비밀번호가 설정되지 않은 경우 자동으로 해제
-                privacy_unlocked = True
-            else:
-                # 헤더에서 개인정보 접근 토큰 확인
-                privacy_token = request.headers.get('X-Privacy-Token')
-                if privacy_token:
-                    try:
-                        from flask_jwt_extended import decode_token
-                        import time
-                        # 개인정보 접근 토큰 디코딩
-                        decoded_token = decode_token(privacy_token)
-                        jwt_claims = decoded_token
-                        privacy_access_granted = jwt_claims.get('privacy_access_granted', False)
-                        user_role = jwt_claims.get('user_role')
-                        exp_time = jwt_claims.get('exp', 0)
-                        current_time = int(time.time())
-                        
-                        # 토큰 사용자 ID와 현재 사용자 ID 비교
-                        token_user_id = jwt_claims.get('sub', '')
-                        current_user_id = str(current_user_obj.id)
-                        
-                        # 토큰 만료 시간 체크 및 사용자 ID 체크
-                        if current_time >= exp_time:
-                            privacy_unlocked = False  # 토큰 만료
-                        elif token_user_id != current_user_id:
-                            privacy_unlocked = False  # 사용자 ID 불일치
-                        elif privacy_access_granted and user_role in ['super_admin', 'admin']:
-                            privacy_unlocked = True  # 원본 데이터 허용
-                        else:
-                            privacy_unlocked = False  # 기본적으로 마스킹
-                    except Exception as e:
-                        privacy_unlocked = False  # 토큰 디코딩 실패
+        if current_user_obj:
+            # 슈퍼관리자 또는 시스템 관리자인지 확인
+            is_system_admin = current_user_obj.role in ['super_admin', 'admin']
+            
+            # 클럽별 운영진인지 확인
+            is_club_admin = False
+            club_id = get_current_club_id()
+            if club_id:
+                from models import ClubMember
+                membership = ClubMember.query.filter_by(
+                    user_id=current_user_obj.id,
+                    club_id=club_id,
+                    status='approved'
+                ).first()
+                if membership and membership.role in ['admin', 'owner']:
+                    is_club_admin = True
+            
+            # 운영진이면 자동으로 잠금 해제
+            if is_system_admin or is_club_admin:
+                # 전역 개인정보 보호 비밀번호 설정 확인
+                privacy_setting = AppSetting.query.filter_by(setting_key='privacy_password').first()
+                if not privacy_setting or not privacy_setting.setting_value:
+                    # 비밀번호가 설정되지 않은 경우 자동으로 해제
+                    privacy_unlocked = True
                 else:
-                    privacy_unlocked = False  # 토큰 없음
+                    # 헤더에서 개인정보 접근 토큰 확인
+                    privacy_token = request.headers.get('X-Privacy-Token')
+                    if privacy_token:
+                        try:
+                            from flask_jwt_extended import decode_token
+                            import time
+                            # 개인정보 접근 토큰 디코딩
+                            decoded_token = decode_token(privacy_token)
+                            jwt_claims = decoded_token
+                            privacy_access_granted = jwt_claims.get('privacy_access_granted', False)
+                            user_role = jwt_claims.get('user_role')
+                            exp_time = jwt_claims.get('exp', 0)
+                            current_time = int(time.time())
+                            
+                            # 토큰 사용자 ID와 현재 사용자 ID 비교
+                            token_user_id = jwt_claims.get('sub', '')
+                            current_user_id = str(current_user_obj.id)
+                            
+                            # 토큰 만료 시간 체크 및 사용자 ID 체크
+                            if current_time >= exp_time:
+                                privacy_unlocked = False  # 토큰 만료
+                            elif token_user_id != current_user_id:
+                                privacy_unlocked = False  # 사용자 ID 불일치
+                            elif privacy_access_granted:
+                                privacy_unlocked = True  # 원본 데이터 허용
+                            else:
+                                privacy_unlocked = False  # 기본적으로 마스킹
+                        except Exception as e:
+                            privacy_unlocked = False  # 토큰 디코딩 실패
+                    else:
+                        # 운영진이지만 토큰이 없으면 잠금 상태 유지 (비밀번호 입력 필요)
+                        privacy_unlocked = False
         
         return jsonify({
             'success': True,

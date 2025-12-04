@@ -38,7 +38,7 @@ def handle_preflight():
             else:
                 # 개발 환경에서는 모든 origin 허용
                 response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Club-Id")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Club-Id,X-Privacy-Token")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         response.headers.add('Access-Control-Max-Age', '3600')

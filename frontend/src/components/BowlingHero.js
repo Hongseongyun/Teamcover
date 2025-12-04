@@ -19,8 +19,8 @@ const BOWLING_ITEMS = [
   },
   {
     id: 3,
-    image: '/bowling-pin.png',
-    type: 'pin',
+    image: 'bowling_abag.png',
+    type: 'abag',
     radius: 58,
   },
   {
@@ -50,7 +50,7 @@ const BOWLING_ITEMS = [
   {
     id: 8,
     image: '/bowling-bag.png',
-    type: 'bag',
+    type: '3bag',
     radius: 65,
   },
 ];
@@ -66,11 +66,8 @@ function createInitialBodies(width, height) {
     let placed = false;
 
     while (!placed && attempts < maxAttempts) {
-      const x =
-        padding +
-        Math.random() * (width - padding * 2); // padding~(width-padding) 사이
-      const y =
-        padding + Math.random() * (height - padding * 2 - 200); // 윗쪽 여백 조금 더
+      const x = padding + Math.random() * (width - padding * 2); // padding~(width-padding) 사이
+      const y = padding + Math.random() * (height - padding * 2 - 200); // 윗쪽 여백 조금 더
 
       const radius = item.radius;
       let overlaps = false;
@@ -131,7 +128,16 @@ const BowlingHero = () => {
     // 초기 바디 생성
     const initial = createInitialBodies(width, height);
     bodiesRef.current = initial;
-    setRenderBodies(initial.map(({ id, x, y, radius, image, type }) => ({ id, x, y, radius, image, type })));
+    setRenderBodies(
+      initial.map(({ id, x, y, radius, image, type }) => ({
+        id,
+        x,
+        y,
+        radius,
+        image,
+        type,
+      }))
+    );
 
     // 마우스 이동 핸들러
     const handleMouseMove = (e) => {
@@ -211,7 +217,7 @@ const BowlingHero = () => {
             const relDotN = relativeVx * nx + relativeVy * ny;
 
             if (relDotN < 0) {
-              const impulse = (-relDotN * bounce);
+              const impulse = -relDotN * bounce;
               const ix = impulse * nx;
               const iy = impulse * ny;
 
@@ -273,7 +279,11 @@ const BowlingHero = () => {
         const nearTop = b.y < cornerThreshold;
         const nearBottom = b.y > height - cornerThreshold;
 
-        if ((nearLeft || nearRight) && (nearTop || nearBottom) && (hitHorizontal || hitVertical)) {
+        if (
+          (nearLeft || nearRight) &&
+          (nearTop || nearBottom) &&
+          (hitHorizontal || hitVertical)
+        ) {
           const dx = centerX - b.x;
           const dy = centerY - b.y;
           const distToCenter = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -382,5 +392,3 @@ const BowlingHero = () => {
 };
 
 export default BowlingHero;
-
-

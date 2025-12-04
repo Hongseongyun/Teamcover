@@ -242,6 +242,7 @@ const Members = () => {
   // 개인정보 클릭 핸들러
   const handlePrivacyClick = (e) => {
     e.preventDefault();
+    // 운영진이든 일반 사용자든 비밀번호 입력 모달 표시
     if (!privacyUnlocked) {
       setShowPasswordModal(true);
     }
@@ -262,6 +263,8 @@ const Members = () => {
 
         // 개인정보 상태 확인 후 회원 목록 다시 로드
         await checkPrivacyStatus();
+        // 토큰이 저장된 후 회원 목록 다시 로드 (토큰이 헤더에 포함되도록)
+        await loadMembers();
       } else {
         setPasswordError(response.data.message);
       }

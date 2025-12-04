@@ -34,8 +34,10 @@ export const ClubProvider = ({ children }) => {
       const response = await clubAPI.getUserClubs();
       if (response.data.success) {
         // 승인된 클럽만 필터링 (슈퍼관리자는 모든 클럽 포함)
+        const currentIsSuperAdmin = user && user.role === 'super_admin';
         const clubsData = (response.data.clubs || []).filter(
-          (club) => isSuperAdmin || club.status === 'approved' || !club.status
+          (club) =>
+            currentIsSuperAdmin || club.status === 'approved' || !club.status
         );
         setClubs(clubsData);
 
@@ -71,7 +73,7 @@ export const ClubProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // 기본 클럽 선택 (Teamcover 우선)
   const selectDefaultClub = useCallback(async (clubs) => {
@@ -180,16 +182,21 @@ export const ClubProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     lastTokenRef.current = token;
 
-    if (token) {
+    if (token && user) {
+      // 사용자 정보가 로드된 후에만 클럽 목록 로드
       loadClubs();
-    } else {
+    } else if (!token) {
+      // 토큰이 없으면 클럽 정보 초기화
       setLoading(false);
       setCurrentClub(null);
       setClubs([]);
       localStorage.removeItem('currentClubId');
     }
+    // user가 아직 로드 중이면 기다림 (loading 상태 유지)
+  }, [user, loadClubs]);
 
-    // 토큰 변경 감지 (다른 탭에서 로그인/로그아웃 시)
+  // 토큰 변경 감지 (다른 탭에서 로그인/로그아웃 시)
+  useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'token') {
         const newToken = e.newValue;
