@@ -792,11 +792,15 @@ const Messages = () => {
                       formatDate(kstData) !== formatDate(prevKstData);
 
                     // 내가 보낸 마지막 메시지인지 확인
-                    // 다음 메시지가 없거나, 다음 메시지가 상대방이 보낸 메시지이거나, 다음 메시지가 전송 중이면 마지막
-                    const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
-                    const isLastMyMessage = msg.is_mine && (
-                      !nextMsg || !nextMsg.is_mine || nextMsg.is_sending
-                    );
+                    // 1. 내가 보낸 메시지여야 함
+                    // 2. 전체 메시지 목록에서 마지막 메시지여야 함 (상대가 그 이후에 메시지를 보내지 않았어야 함)
+                    // 3. 전송 중인 메시지가 있으면 그것이 마지막이므로 제외
+                    let lastMsgIndex = messages.length - 1;
+                    while (lastMsgIndex >= 0 && messages[lastMsgIndex].is_sending) {
+                      lastMsgIndex--;
+                    }
+                    const lastMsg = lastMsgIndex >= 0 ? messages[lastMsgIndex] : null;
+                    const isLastMyMessage = msg.is_mine && lastMsg && lastMsg.id === msg.id && !msg.is_sending;
 
                     return (
                       <React.Fragment key={msg.id}>
