@@ -567,6 +567,53 @@ def select_club(club_id):
 
 
 # 특정 사용자의 클럽 내 역할 변경 (슈퍼관리자 전용)
+@clubs_bp.route('/<int:club_id>/users', methods=['GET'])
+@jwt_required()
+def get_club_users(club_id):
+    """클럽에 가입한 모든 사용자(User) 목록 조회"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        # 클럽 존재 확인
+        club = Club.query.get_or_404(club_id)
+        
+        # 슈퍼관리자이거나 해당 클럽의 승인된 멤버인지 확인
+        is_super_admin = current_user and current_user.role == 'super_admin'
+        if not is_super_admin:
+            membership = ClubMember.query.filter_by(
+                user_id=user_id, club_id=club_id, status='approved'
+            ).first()
+            if not membership:
+                return jsonify({'success': False, 'message': '클럽에 가입하지 않았습니다.'}), 403
+        
+        # 클럽에 가입한 모든 승인된 회원 조회
+        memberships = ClubMember.query.filter_by(
+            club_id=club_id, status='approved'
+        ).all()
+        
+        users_data = []
+        for membership in memberships:
+            user = User.query.get(membership.user_id)
+            if user:
+                # 일반 사용자가 조회할 때는 슈퍼관리자 제외
+                if not is_super_admin and user.role == 'super_admin':
+                    continue
+                users_data.append({
+                    'id': user.id,
+                    'name': user.name,
+                    'email': user.email,
+                    'role': membership.role,
+                    'user_role': user.role,  # User의 role도 포함
+                })
+        
+        return jsonify({
+            'success': True,
+            'users': users_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'회원 목록 조회 실패: {str(e)}'}), 500
+
 @clubs_bp.route('/<int:club_id>/members/<int:user_id>/role', methods=['PUT'])
 @jwt_required()
 def update_club_member_role(club_id, user_id):

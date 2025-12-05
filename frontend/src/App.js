@@ -7,6 +7,7 @@ import { ClubProvider } from './contexts/ClubContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAuthCallback from './components/GoogleAuthCallback';
+import FloatingMessageButton from './components/FloatingMessageButton';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import EmailVerification from './pages/EmailVerification';
@@ -19,7 +20,6 @@ import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
 import Board from './pages/Board';
-import Messages from './pages/Messages';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
@@ -103,16 +103,9 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route
-                  path="/messages"
-                  element={
-                    <ProtectedRoute requiredRole="user">
-                      <Messages />
-                    </ProtectedRoute>
-                  }
-                />
               </Routes>
             </main>
+            <FloatingMessageButton />
             <SpeedInsights />
           </div>
         </ClubProvider>

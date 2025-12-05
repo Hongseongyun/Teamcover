@@ -240,6 +240,7 @@ export const clubAPI = {
   getUserClubs: () => api.get('/api/clubs/'), // 슬래시 추가하여 308 리다이렉트 방지
   createClub: (data) => api.post('/api/clubs', data),
   getClub: (clubId) => api.get(`/api/clubs/${clubId}`),
+  getClubUsers: (clubId) => api.get(`/api/clubs/${clubId}/users`),
   joinClub: (clubId) => api.post(`/api/clubs/${clubId}/join`),
   leaveClub: (clubId) => api.post(`/api/clubs/${clubId}/leave`),
   removeMemberFromClub: (clubId, userId) =>

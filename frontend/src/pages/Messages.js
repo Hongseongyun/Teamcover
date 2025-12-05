@@ -1,11 +1,19 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { messageAPI } from '../services/api';
+import { messageAPI, clubAPI, memberAPI, authAPI } from '../services/api';
+import { useClub } from '../contexts/ClubContext';
 import './Messages.css';
 
 const Messages = () => {
   const { user } = useAuth();
+  const { currentClub } = useClub();
+  const [activeTab, setActiveTab] = useState('conversations'); // 'conversations' or 'clubs'
   const [conversations, setConversations] = useState([]);
+  const [clubs, setClubs] = useState([]);
+  const [selectedClub, setSelectedClub] = useState(null);
+  const [clubMembers, setClubMembers] = useState([]);
+  const [loadingClubs, setLoadingClubs] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
@@ -154,15 +162,35 @@ const Messages = () => {
     }
   };
 
+  const [superAdminConversations, setSuperAdminConversations] = useState([]);
+  const [normalConversations, setNormalConversations] = useState([]);
+
   const loadConversations = useCallback(async () => {
     try {
       setLoadingConversations(true);
       const res = await messageAPI.getConversations();
       if (res.data.success) {
-        setConversations(res.data.conversations || []);
+        const allConversations = res.data.conversations || [];
+        
+        // 슈퍼관리자와의 대화와 일반 대화 분리
+        const superAdmin = allConversations.filter(
+          (conv) => conv.user_role === 'super_admin'
+        );
+        const normal = allConversations.filter(
+          (conv) => conv.user_role !== 'super_admin'
+        );
+        
+        setSuperAdminConversations(superAdmin);
+        setNormalConversations(normal);
+        // 전체 대화 목록도 유지 (기존 코드 호환성)
+        setConversations([...superAdmin, ...normal]);
       }
     } catch (e) {
       console.error('대화 목록 로드 실패:', e);
+      // 에러 발생 시 빈 배열로 설정
+      setSuperAdminConversations([]);
+      setNormalConversations([]);
+      setConversations([]);
     } finally {
       setLoadingConversations(false);
     }
@@ -199,9 +227,55 @@ const Messages = () => {
     [selectedUser]
   );
 
+  // 클럽 목록 로드
+  const loadClubs = useCallback(async () => {
+    try {
+      setLoadingClubs(true);
+      const res = await clubAPI.getUserClubs();
+      if (res.data.success) {
+        setClubs(res.data.clubs || []);
+      }
+    } catch (e) {
+      console.error('클럽 목록 로드 실패:', e);
+    } finally {
+      setLoadingClubs(false);
+    }
+  }, []);
+
+  // 클럽 회원 목록 로드
+  const loadClubMembers = useCallback(async (clubId) => {
+    if (!clubId) return;
+    try {
+      setLoadingMembers(true);
+      // 클럽 선택 (임시로 localStorage에 저장)
+      const prevClubId = localStorage.getItem('currentClubId');
+      localStorage.setItem('currentClubId', clubId.toString());
+      
+      // 클럽 회원(User) 목록 가져오기
+      const res = await clubAPI.getClubUsers(clubId);
+      if (res.data.success) {
+        setClubMembers(res.data.users || []);
+      }
+      
+      // 이전 클럽 ID 복원
+      if (prevClubId) {
+        localStorage.setItem('currentClubId', prevClubId);
+      } else {
+        localStorage.removeItem('currentClubId');
+      }
+    } catch (e) {
+      console.error('클럽 회원 목록 로드 실패:', e);
+      setClubMembers([]);
+    } finally {
+      setLoadingMembers(false);
+    }
+  }, []);
+
   useEffect(() => {
+    // 클럽 선택과 무관하게 대화 목록과 클럽 목록 로드
     loadConversations();
-  }, [loadConversations]);
+    loadClubs();
+  }, [loadConversations, loadClubs]);
 
   useEffect(() => {
     scrollToBottom();
@@ -220,6 +294,24 @@ const Messages = () => {
         c.user_id === conv.user_id ? { ...c, unread_count: 0 } : c
       )
     );
+  };
+
+  const handleSelectClub = async (club) => {
+    setSelectedClub(club);
+    await loadClubMembers(club.id);
+  };
+
+  const handleSelectMember = async (member) => {
+    setSelectedUser({
+      id: member.id,
+      name: member.name,
+      email: member.email,
+    });
+    await loadMessages(member.id);
+    // 클럽 탭에서 대화 탭으로 전환
+    setActiveTab('conversations');
+    // 대화 목록 갱신
+    await loadConversations();
   };
 
   const handleSendMessage = async () => {
@@ -324,45 +416,236 @@ const Messages = () => {
       <h1 className="messages-title">메세지</h1>
       <div className="messages-container">
         <div className="conversation-list">
-          <div className="conversation-list-header">대화 목록</div>
-          {loadingConversations ? (
-            <div className="conversation-empty">대화 목록을 불러오는 중...</div>
-          ) : conversations.length === 0 ? (
-            <div className="conversation-empty">
-              아직 대화가 없습니다. 메세지를 보내보세요.
-            </div>
-          ) : (
-            <ul>
-              {conversations.map((conv) => (
-                <li
-                  key={conv.user_id}
-                  className={`conversation-item ${
-                    selectedUser?.id === conv.user_id ? 'active' : ''
-                  }`}
-                  onClick={() => handleSelectConversation(conv)}
-                >
-                  <div className="conversation-avatar">
-                    {conv.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                  <div className="conversation-main">
-                    <div className="conversation-name-row">
-                      <span className="conversation-name">{conv.name}</span>
-                      {conv.unread_count > 0 && (
-                        <span className="conversation-unread-badge">
-                          {conv.unread_count}
-                        </span>
+          <div className="messages-tabs">
+            <button
+              className={`messages-tab ${activeTab === 'conversations' ? 'active' : ''}`}
+              onClick={() => setActiveTab('conversations')}
+            >
+              대화
+            </button>
+            <button
+              className={`messages-tab ${activeTab === 'clubs' ? 'active' : ''}`}
+              onClick={() => setActiveTab('clubs')}
+            >
+              클럽
+            </button>
+          </div>
+
+          {activeTab === 'conversations' ? (
+            <>
+              <div className="conversation-list-header">대화 목록</div>
+              {loadingConversations ? (
+                <div className="conversation-empty">대화 목록을 불러오는 중...</div>
+              ) : superAdminConversations.length === 0 && normalConversations.length === 0 ? (
+                <div className="conversation-empty">
+                  아직 대화가 없습니다. 메세지를 보내보세요.
+                </div>
+              ) : (
+                <>
+                  {superAdminConversations.length > 0 && (
+                    <>
+                      <div className="conversation-section-divider">슈퍼관리자</div>
+                      <ul>
+                        {superAdminConversations.map((conv) => (
+                          <li
+                            key={conv.user_id}
+                            className={`conversation-item ${
+                              selectedUser?.id === conv.user_id ? 'active' : ''
+                            }`}
+                            onClick={() => handleSelectConversation(conv)}
+                          >
+                            <div className="conversation-avatar super-admin-avatar">
+                              {conv.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="conversation-main">
+                              <div className="conversation-name-row">
+                                <span className="conversation-name">{conv.name}</span>
+                                {conv.unread_count > 0 && (
+                                  <span className="conversation-unread-badge">
+                                    {conv.unread_count}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="conversation-last-message">
+                                {conv.last_message}
+                              </div>
+                            </div>
+                            <div className="conversation-time">
+                              {formatConversationTime(conv.last_time)}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {normalConversations.length > 0 && (
+                    <>
+                      {superAdminConversations.length > 0 && (
+                        <div className="conversation-section-divider">일반 대화</div>
                       )}
-                    </div>
-                    <div className="conversation-last-message">
-                      {conv.last_message}
-                    </div>
+                      <ul>
+                        {normalConversations.map((conv) => (
+                          <li
+                            key={conv.user_id}
+                            className={`conversation-item ${
+                              selectedUser?.id === conv.user_id ? 'active' : ''
+                            }`}
+                            onClick={() => handleSelectConversation(conv)}
+                          >
+                            <div className="conversation-avatar">
+                              {conv.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="conversation-main">
+                              <div className="conversation-name-row">
+                                <span className="conversation-name">{conv.name}</span>
+                                {conv.unread_count > 0 && (
+                                  <span className="conversation-unread-badge">
+                                    {conv.unread_count}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="conversation-last-message">
+                                {conv.last_message}
+                              </div>
+                            </div>
+                            <div className="conversation-time">
+                              {formatConversationTime(conv.last_time)}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="conversation-list-header">클럽 목록</div>
+              {loadingClubs ? (
+                <div className="conversation-empty">클럽 목록을 불러오는 중...</div>
+              ) : clubs.length === 0 ? (
+                <div className="conversation-empty">
+                  가입한 클럽이 없습니다.
+                </div>
+              ) : selectedClub ? (
+                <>
+                  <div className="club-back-header">
+                    <button
+                      className="club-back-button"
+                      onClick={() => {
+                        setSelectedClub(null);
+                        setClubMembers([]);
+                      }}
+                    >
+                      ← 뒤로
+                    </button>
+                    <span className="club-name">{selectedClub.name}</span>
                   </div>
-                  <div className="conversation-time">
-                    {formatConversationTime(conv.last_time)}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  {loadingMembers ? (
+                    <div className="conversation-empty">회원 목록을 불러오는 중...</div>
+                  ) : clubMembers.length === 0 ? (
+                    <div className="conversation-empty">
+                      이 클럽에 회원이 없습니다.
+                    </div>
+                  ) : (
+                    <ul>
+                      {clubMembers
+                        .filter((member) => member.id !== user?.id)
+                        .map((member) => (
+                          <li
+                            key={member.id}
+                            className={`conversation-item ${
+                              selectedUser?.id === member.id ? 'active' : ''
+                            }`}
+                            onClick={() => handleSelectMember(member)}
+                          >
+                            <div className="conversation-avatar">
+                              {member.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="conversation-main">
+                              <div className="conversation-name-row">
+                                <span className="conversation-name">{member.name}</span>
+                              </div>
+                              <div className="conversation-last-message">
+                                {member.email || '이메일 없음'}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <>
+                  {user?.role === 'super_admin' && (
+                    <li
+                      className={`conversation-item ${
+                        selectedClub?.id === 'all' ? 'active' : ''
+                      }`}
+                      onClick={async () => {
+                        try {
+                          setLoadingMembers(true);
+                          const res = await authAPI.getUsers();
+                          if (res.data.success) {
+                            const allUsers = (res.data.users || [])
+                              .filter((u) => u.id !== user?.id && u.is_active)
+                              .map((u) => ({
+                                id: u.id,
+                                name: u.name,
+                                email: u.email || '',
+                              }));
+                            setClubMembers(allUsers);
+                            setSelectedClub({ id: 'all', name: '모든 사용자' });
+                          }
+                        } catch (e) {
+                          console.error('모든 사용자 목록 로드 실패:', e);
+                        } finally {
+                          setLoadingMembers(false);
+                        }
+                      }}
+                    >
+                      <div className="conversation-avatar club-avatar">
+                        👥
+                      </div>
+                      <div className="conversation-main">
+                        <div className="conversation-name-row">
+                          <span className="conversation-name">모든 사용자</span>
+                        </div>
+                        <div className="conversation-last-message">
+                          클릭하여 전체 사용자 목록 보기
+                        </div>
+                      </div>
+                    </li>
+                  )}
+                  <ul>
+                    {clubs
+                      .filter((club) => club.status === 'approved')
+                      .map((club) => (
+                        <li
+                          key={club.id}
+                          className={`conversation-item ${
+                            selectedClub?.id === club.id ? 'active' : ''
+                          }`}
+                          onClick={() => handleSelectClub(club)}
+                        >
+                          <div className="conversation-avatar club-avatar">
+                            {club.name?.charAt(0)?.toUpperCase() || 'C'}
+                          </div>
+                          <div className="conversation-main">
+                            <div className="conversation-name-row">
+                              <span className="conversation-name">{club.name}</span>
+                            </div>
+                            <div className="conversation-last-message">
+                              클릭하여 회원 목록 보기
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                </>
+              )}
+            </>
           )}
         </div>
 

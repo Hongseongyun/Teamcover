@@ -15,6 +15,12 @@
   min-height: 480px;
 }
 
+/* 모달 내에서 사용될 때 */
+.floating-message-content .messages-container {
+  height: 100%;
+  min-height: 0;
+}
+
 .conversation-list {
   width: 28%;
   min-width: 240px;
@@ -26,11 +32,119 @@
   overflow: hidden;
 }
 
+.messages-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-card);
+}
+
+.messages-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.messages-tab:hover {
+  color: var(--color-text);
+  background: var(--surface-subtle);
+}
+
+.messages-tab.active {
+  color: var(--toss-primary);
+  border-bottom-color: var(--toss-primary);
+  font-weight: 600;
+}
+
 .conversation-list-header {
   padding: 0.75rem 1rem;
   background: var(--navbar-bg);
   color: var(--navbar-text-strong);
   font-weight: 600;
+}
+
+.club-back-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--navbar-bg);
+  color: var(--navbar-text-strong);
+  font-weight: 600;
+}
+
+.club-back-button {
+  background: transparent;
+  border: none;
+  color: var(--navbar-text-strong);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+}
+
+.club-back-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.club-name {
+  flex: 1;
+}
+
+.conversation-avatar.club-avatar {
+  background: var(--toss-secondary);
+  font-size: 1.2rem;
+}
+
+.conversation-avatar.super-admin-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-weight: 600;
+}
+
+.conversation-section-divider {
+  padding: 0.5rem 1rem;
+  background: var(--surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.club-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--navbar-bg);
+  color: var(--navbar-text-strong);
+  font-weight: 600;
+}
+
+.club-section-title {
+  font-weight: 600;
+}
+
+.club-view-all-button {
+  background: var(--toss-primary);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.club-view-all-button:hover {
+  background: var(--toss-primary-dark);
 }
 
 .conversation-list ul {

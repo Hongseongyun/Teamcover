@@ -69,30 +69,47 @@ def get_conversations():
     # 슈퍼관리자인지 확인
     is_super_admin = user.role == 'super_admin'
 
-    # 슈퍼관리자가 아닌 경우에만 클럽 선택 필수
+    # 일반 사용자: 가입한 모든 클럽의 회원과의 대화 조회
     if not is_super_admin:
-        club_id = get_current_club_id()
-        if not club_id:
-            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
-
-        # 현재 사용자가 해당 클럽의 승인된 멤버인지 확인
-        is_member, result = require_club_membership(user.id, club_id)
-        if not is_member:
-            return jsonify({'success': False, 'message': result}), 403
-
-        # 같은 클럽에 가입된 모든 사용자 (본인 제외)
-        membership_q = ClubMember.query.filter_by(
-            club_id=club_id, status='approved'
-        )
-        member_user_ids = {m.user_id for m in membership_q if m.user_id}
-        member_user_ids.discard(user.id)
-
-        if not member_user_ids:
+        # 사용자가 가입한 모든 클럽 조회
+        user_memberships = ClubMember.query.filter_by(
+            user_id=user.id, status='approved'
+        ).all()
+        
+        if not user_memberships:
             return jsonify({'success': True, 'conversations': []})
 
-        # 해당 사용자들 정보 미리 조회
-        users = User.query.filter(User.id.in_(member_user_ids)).all()
+        # 사용자가 가입한 모든 클럽 ID
+        user_club_ids = {m.club_id for m in user_memberships}
+
+        # 모든 클럽에 가입된 모든 사용자 (본인 제외, 슈퍼관리자 제외)
+        all_memberships = ClubMember.query.filter(
+            ClubMember.club_id.in_(user_club_ids),
+            ClubMember.status == 'approved',
+            ClubMember.user_id != user.id
+        ).all()
+        
+        member_user_ids = {m.user_id for m in all_memberships}
+
+        # 해당 사용자들 정보 미리 조회 (슈퍼관리자 제외)
+        users = User.query.filter(
+            User.id.in_(member_user_ids),
+            User.role != 'super_admin'  # 슈퍼관리자 제외
+        ).all()
+        member_user_ids = {u.id for u in users}  # 슈퍼관리자 제외된 ID만 사용
         user_map = {u.id: u for u in users}
+
+        # 슈퍼관리자와의 대화도 별도로 조회
+        super_admin_users = User.query.filter(
+            User.role == 'super_admin',
+            User.id != user.id,
+            User.is_active == True
+        ).all()
+        super_admin_user_ids = {u.id for u in super_admin_users}
+        super_admin_user_map = {u.id: u for u in super_admin_users}
+
+        if not member_user_ids and not super_admin_user_ids:
+            return jsonify({'success': True, 'conversations': []})
 
         # 내가 보낸/받은 모든 메세지 중, 같은 클럽 회원과의 메세지만 조회
         messages = (
@@ -115,27 +132,12 @@ def get_conversations():
             if other_id not in member_user_ids:
                 continue
 
+            # 대화가 없으면 초기화
             if other_id not in conversations:
                 other_user = user_map.get(other_id)
-                conversations[other_id] = {
-                    'user_id': other_id,
-                    'name': other_user.name if other_user else '알 수 없음',
-                    'email': other_user.email if other_user else '',
-                    'last_message': msg.content,
-                    'last_time': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
-                    if msg.created_at
-                    else None,
-                    'unread_count': 0,
-                }
-
-            # 내가 받은 메세지 중 읽지 않은 것만 카운트
-            if msg.receiver_id == user.id and not msg.is_read:
-                conversations[other_id]['unread_count'] += 1
-
-        # 아직 대화를 한 번도 하지 않은 같은 클럽 회원들도 목록에 포함
-        for other_id in member_user_ids:
-            if other_id not in conversations:
-                other_user = user_map.get(other_id)
+                if not other_user:
+                    # user_map에 없으면 직접 조회 (메시지가 있는 사용자)
+                    other_user = User.query.get(other_id)
                 conversations[other_id] = {
                     'user_id': other_id,
                     'name': other_user.name if other_user else '알 수 없음',
@@ -143,7 +145,65 @@ def get_conversations():
                     'last_message': '',
                     'last_time': None,
                     'unread_count': 0,
+                    'user_role': other_user.role if other_user else 'user',
                 }
+
+            # 마지막 메시지 업데이트 (시간이 더 최신인 경우만)
+            msg_time = msg.created_at.strftime('%Y-%m-%d %H:%M:%S') if msg.created_at else None
+            current_last_time = conversations[other_id]['last_time']
+            
+            # 시간 비교: msg_time이 더 최신이거나 현재 last_time이 없으면 업데이트
+            if not current_last_time or (msg_time and msg_time > current_last_time):
+                conversations[other_id]['last_message'] = msg.content
+                conversations[other_id]['last_time'] = msg_time
+
+            # 내가 받은 메세지 중 읽지 않은 것만 카운트
+            if msg.receiver_id == user.id and not msg.is_read:
+                conversations[other_id]['unread_count'] += 1
+
+        # 슈퍼관리자와의 메시지 조회
+        if super_admin_user_ids:
+            super_admin_messages = (
+                Message.query.filter(
+                    ((Message.sender_id == user.id) | (Message.receiver_id == user.id))
+                    & (
+                        (Message.sender_id.in_(super_admin_user_ids))
+                        | (Message.receiver_id.in_(super_admin_user_ids))
+                    )
+                )
+                .filter(Message.is_deleted == False)
+                .order_by(Message.created_at.desc())
+                .all()
+            )
+
+            for msg in super_admin_messages:
+                other_id = msg.receiver_id if msg.sender_id == user.id else msg.sender_id
+                if other_id not in super_admin_user_ids:
+                    continue
+
+                if other_id not in conversations:
+                    other_user = super_admin_user_map.get(other_id)
+                    conversations[other_id] = {
+                        'user_id': other_id,
+                        'name': other_user.name if other_user else '알 수 없음',
+                        'email': other_user.email if other_user else '',
+                        'last_message': '',
+                        'last_time': None,
+                        'unread_count': 0,
+                        'user_role': 'super_admin',  # 슈퍼관리자 표시
+                    }
+
+                msg_time = msg.created_at.strftime('%Y-%m-%d %H:%M:%S') if msg.created_at else None
+                current_last_time = conversations[other_id]['last_time']
+                
+                if not current_last_time or (msg_time and msg_time > current_last_time):
+                    conversations[other_id]['last_message'] = msg.content
+                    conversations[other_id]['last_time'] = msg_time
+
+                if msg.receiver_id == user.id and not msg.is_read:
+                    conversations[other_id]['unread_count'] += 1
+
+        # 메시지가 있는 사용자만 대화 목록에 포함 (대화를 한 번도 하지 않은 회원은 제외)
     else:
         # 슈퍼관리자인 경우: 모든 활성 사용자와의 대화 조회
         # 본인을 제외한 모든 활성 사용자
@@ -177,25 +237,7 @@ def get_conversations():
             if other_id not in member_user_ids:
                 continue
 
-            if other_id not in conversations:
-                other_user = user_map.get(other_id)
-                conversations[other_id] = {
-                    'user_id': other_id,
-                    'name': other_user.name if other_user else '알 수 없음',
-                    'email': other_user.email if other_user else '',
-                    'last_message': msg.content,
-                    'last_time': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
-                    if msg.created_at
-                    else None,
-                    'unread_count': 0,
-                }
-
-            # 내가 받은 메세지 중 읽지 않은 것만 카운트
-            if msg.receiver_id == user.id and not msg.is_read:
-                conversations[other_id]['unread_count'] += 1
-
-        # 아직 대화를 한 번도 하지 않은 모든 활성 사용자도 목록에 포함
-        for other_id in member_user_ids:
+            # 대화가 없으면 초기화
             if other_id not in conversations:
                 other_user = user_map.get(other_id)
                 conversations[other_id] = {
@@ -206,6 +248,21 @@ def get_conversations():
                     'last_time': None,
                     'unread_count': 0,
                 }
+
+            # 마지막 메시지 업데이트 (시간이 더 최신인 경우만)
+            msg_time = msg.created_at.strftime('%Y-%m-%d %H:%M:%S') if msg.created_at else None
+            current_last_time = conversations[other_id]['last_time']
+            
+            # 시간 비교: msg_time이 더 최신이거나 현재 last_time이 없으면 업데이트
+            if not current_last_time or (msg_time and msg_time > current_last_time):
+                conversations[other_id]['last_message'] = msg.content
+                conversations[other_id]['last_time'] = msg_time
+
+            # 내가 받은 메세지 중 읽지 않은 것만 카운트
+            if msg.receiver_id == user.id and not msg.is_read:
+                conversations[other_id]['unread_count'] += 1
+
+        # 메시지가 있는 사용자만 대화 목록에 포함 (대화를 한 번도 하지 않은 사용자는 제외)
 
     # 최신 순 정렬
     conv_list = sorted(
