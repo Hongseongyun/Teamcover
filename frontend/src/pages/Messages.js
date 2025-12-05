@@ -410,9 +410,15 @@ const Messages = () => {
       const res = await messageAPI.sendMessage(selectedUser.id, content);
       if (res.data.success) {
         // 임시 메시지를 실제 메시지로 교체
+        // is_read_by_receiver가 명확하게 설정되도록 보장 (False일 때도 명확하게 처리)
+        const receivedMessage = {
+          ...res.data.message,
+          // is_read_by_receiver가 None이거나 False면 False, True일 때만 True
+          is_read_by_receiver: res.data.message.is_read_by_receiver === true,
+        };
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === tempMessage.id ? res.data.message : msg
+            msg.id === tempMessage.id ? receivedMessage : msg
           )
         );
         scrollToBottom();
@@ -785,6 +791,13 @@ const Messages = () => {
                       !prevKstData ||
                       formatDate(kstData) !== formatDate(prevKstData);
 
+                    // 내가 보낸 마지막 메시지인지 확인
+                    // 다음 메시지가 없거나, 다음 메시지가 상대방이 보낸 메시지이거나, 다음 메시지가 전송 중이면 마지막
+                    const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+                    const isLastMyMessage = msg.is_mine && (
+                      !nextMsg || !nextMsg.is_mine || nextMsg.is_sending
+                    );
+
                     return (
                       <React.Fragment key={msg.id}>
                         {showDateDivider && (
@@ -833,15 +846,6 @@ const Messages = () => {
                                   <div className="chat-time">
                                     {formatTime(kstData)}
                                   </div>
-                                  {msg.is_mine && (
-                                    <div className="chat-read-status">
-                                      {msg.is_read_by_receiver ? (
-                                        <span className="chat-read-indicator" title="읽음">✓✓</span>
-                                      ) : (
-                                        <span className="chat-unread-indicator" title="안 읽음">✓</span>
-                                      )}
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -852,6 +856,16 @@ const Messages = () => {
                             </div>
                           )}
                         </div>
+                        {/* 내가 보낸 마지막 메시지 아래에만 읽음 상태 표시 */}
+                        {isLastMyMessage && !msg.is_sending && (
+                          <div className="chat-read-status-row">
+                            {msg.is_read_by_receiver === true ? (
+                              <span className="chat-read-status-text">읽음</span>
+                            ) : (
+                              <span className="chat-unread-status-text">안읽음</span>
+                            )}
+                          </div>
+                        )}
                       </React.Fragment>
                     );
                   })

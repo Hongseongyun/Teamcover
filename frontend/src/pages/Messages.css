@@ -427,21 +427,21 @@
   text-align: right;
 }
 
-.chat-read-status {
+.chat-read-status-row {
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
+  padding: 0.25rem 0.75rem 0.5rem;
+  margin-top: -0.25rem;
 }
 
-.chat-read-indicator {
-  font-size: 0.65rem;
+.chat-read-status-text {
+  font-size: 0.7rem;
   color: #3b82f6;
-  margin-left: 0.15rem;
 }
 
-.chat-unread-indicator {
-  font-size: 0.65rem;
+.chat-unread-status-text {
+  font-size: 0.7rem;
   color: #9ca3af;
-  margin-left: 0.15rem;
 }
 
 .chat-loading,
