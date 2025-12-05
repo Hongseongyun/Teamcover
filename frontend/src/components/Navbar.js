@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useClub } from '../contexts/ClubContext';
-import { clubAPI } from '../services/api';
+import { clubAPI, inquiryAPI } from '../services/api';
 import ClubSelector from './ClubSelector';
 import './Navbar.css';
 
@@ -16,6 +16,7 @@ const Navbar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
+  const [unreadInquiryCount, setUnreadInquiryCount] = useState(0);
 
   useEffect(() => {
     if (user?.role === 'super_admin' && isAuthenticated) {
@@ -42,6 +43,37 @@ const Navbar = () => {
     }
   }, [user, isAuthenticated]);
 
+  // 새로운 문의 확인 (운영진 및 슈퍼관리자)
+  useEffect(() => {
+    const shouldCheckInquiries = () => {
+      if (!isAuthenticated || !user) return false;
+      // 슈퍼관리자 또는 클럽 운영진인 경우
+      return user.role === 'super_admin' || isClubAdmin;
+    };
+
+    if (shouldCheckInquiries()) {
+      loadUnreadInquiryCount();
+      // 30초마다 새로운 문의 확인
+      const interval = setInterval(() => {
+        loadUnreadInquiryCount();
+      }, 30000);
+
+      // 문의 페이지에서 문의를 확인했을 때 갱신
+      const handleInquiryUpdate = () => {
+        loadUnreadInquiryCount();
+      };
+
+      window.addEventListener('inquiryUpdated', handleInquiryUpdate);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('inquiryUpdated', handleInquiryUpdate);
+      };
+    } else {
+      setUnreadInquiryCount(0);
+    }
+  }, [user, isAuthenticated, isClubAdmin, currentClub]);
+
   const loadJoinRequestsCount = async () => {
     try {
       const response = await clubAPI.getJoinRequestsCount();
@@ -50,6 +82,17 @@ const Navbar = () => {
       }
     } catch (error) {
       console.error('승인 요청 개수 로드 실패:', error);
+    }
+  };
+
+  const loadUnreadInquiryCount = async () => {
+    try {
+      const response = await inquiryAPI.getUnreadCount();
+      if (response.data.success) {
+        setUnreadInquiryCount(response.data.unread_count || 0);
+      }
+    } catch (error) {
+      console.error('새로운 문의 개수 로드 실패:', error);
     }
   };
 
@@ -153,28 +196,38 @@ const Navbar = () => {
                   </Link>
                 </li>
               )}
-            {canAccessPage('/board') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to="/board"
-                  className={`nav-link ${isActive('/board')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  게시판
-                </Link>
-              </li>
-            )}
-            {canAccessPage('/inquiry') && (
-              <li className="nav-item">
-                <Link
-                  to="/inquiry"
-                  className={`nav-link ${isActive('/inquiry')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  문의하기
-                </Link>
-              </li>
-            )}
+            {/* 슈퍼관리자는 클럽 선택 전에도 게시판/문의하기 접근 가능 */}
+            {canAccessPage('/board') &&
+              (currentClub || hasRole('super_admin')) && (
+                <li className="nav-item">
+                  <Link
+                    to="/board"
+                    className={`nav-link ${isActive('/board')}`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    게시판
+                  </Link>
+                </li>
+              )}
+            {canAccessPage('/inquiry') &&
+              (currentClub || hasRole('super_admin')) && (
+                <li className="nav-item">
+                  <Link
+                    to="/inquiry"
+                    className={`nav-link ${isActive('/inquiry')} ${
+                      unreadInquiryCount > 0 ? 'has-notification' : ''
+                    }`}
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    문의하기
+                    {unreadInquiryCount > 0 && (
+                      <span className="notification-badge">
+                        {unreadInquiryCount}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              )}
             {canAccessPage('/payments') && currentClub && (
               <li className="nav-item">
                 <Link

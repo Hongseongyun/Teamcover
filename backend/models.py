@@ -32,6 +32,9 @@ class User(UserMixin, db.Model):
     # 활성 세션 관리
     active_token = db.Column(db.Text, nullable=True)  # 현재 활성화된 JWT 토큰
     
+    # FCM 푸시 알림 토큰
+    fcm_token = db.Column(db.Text, nullable=True)  # Firebase Cloud Messaging 토큰
+    
     def __repr__(self):
         return f'<User {self.email}>'
     
@@ -490,14 +493,20 @@ class Inquiry(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     title = db.Column(db.String(30), nullable=False)  # 제목 (30자 이내)
     content = db.Column(db.String(200), nullable=False)  # 내용 (200자 이내)
     is_private = db.Column(db.Boolean, default=True)  # 비공개 여부 (기본값: 비공개)
+    reply = db.Column(db.Text, nullable=True)  # 답변 내용
+    replied_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 답변한 사용자 ID
+    replied_at = db.Column(db.DateTime, nullable=True)  # 답변 시간
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # 관계
-    user = db.relationship('User', backref=db.backref('inquiries', lazy=True))
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('inquiries', lazy=True))
+    club = db.relationship('Club', backref=db.backref('inquiries', lazy=True))
+    replier = db.relationship('User', foreign_keys=[replied_by])
     
     def to_dict(self):
         """프론트용 딕셔너리 변환"""
@@ -505,15 +514,52 @@ class Inquiry(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'user_name': self.user.name if self.user else None,
+            'club_id': self.club_id,
+            'club_name': self.club.name if self.club else None,
             'title': self.title,
             'content': self.content,
             'is_private': self.is_private,
+            'reply': self.reply,
+            'replied_by': self.replied_by,
+            'replier_name': self.replier.name if self.replier else None,
+            'replied_at': self.replied_at.strftime('%Y-%m-%d %H:%M:%S') if self.replied_at else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+            'reply_comments': [comment.to_dict() for comment in self.reply_comments] if self.reply_comments else [],
+        }
+    
+    def __repr__(self):
+        return f'<Inquiry {self.id} by {self.user_id}>'
+
+class InquiryReplyComment(db.Model):
+    """문의 답변 댓글 모델"""
+    __tablename__ = 'inquiry_reply_comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    inquiry_id = db.Column(db.Integer, db.ForeignKey('inquiries.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)  # 댓글 내용
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    inquiry = db.relationship('Inquiry', backref=db.backref('reply_comments', lazy=True, cascade='all, delete-orphan'))
+    user = db.relationship('User', backref=db.backref('inquiry_reply_comments', lazy=True))
+    
+    def to_dict(self):
+        """프론트용 딕셔너리 변환"""
+        return {
+            'id': self.id,
+            'inquiry_id': self.inquiry_id,
+            'user_id': self.user_id,
+            'user_name': self.user.name if self.user else None,
+            'content': self.content,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
         }
     
     def __repr__(self):
-        return f'<Inquiry {self.id} by {self.user_id}>'
+        return f'<InquiryReplyComment {self.id} on inquiry {self.inquiry_id}>'
 
 class AppSetting(db.Model):
     """앱 설정 모델 (전역 설정)"""
@@ -623,6 +669,7 @@ class Post(db.Model):
     
     # 관계
     author = db.relationship('User', backref=db.backref('posts', lazy=True))
+    club = db.relationship('Club', backref=db.backref('posts', lazy=True))
     comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan')
     likes = db.relationship('Like', backref='post', lazy=True, cascade='all, delete-orphan')
     
@@ -635,6 +682,7 @@ class Post(db.Model):
             'author_id': self.author_id,
             'author_name': self.author.name if self.author else None,
             'club_id': self.club_id,
+            'club_name': self.club.name if self.club else None,
             'is_global': self.club_id is None,  # 전체 게시글 여부
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,

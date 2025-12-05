@@ -36,41 +36,49 @@ def handle_preflight():
 @posts_bp.route('', methods=['GET'])
 @jwt_required()
 def get_posts():
-    """게시글 목록 조회 (공지사항 상단 고정)"""
+    """게시글 목록 조회 (공지사항 상단 고정)
+    - 슈퍼관리자: 모든 클럽의 게시글 조회 가능 (클럽 선택 없이도)
+    - 일반 사용자: 선택한 클럽의 게시글만 조회
+    """
     try:
-        # 클럽 필터링
-        club_id = get_current_club_id()
-        if not club_id:
-            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
-        
         user_id = get_jwt_identity()
         if not user_id:
             return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
+        # 사용자 정보 확인
         try:
             current_user = User.query.get(int(user_id))
             if not current_user:
                 return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
             
             is_super_admin = current_user.role == 'super_admin'
-            
-            # 슈퍼관리자가 아닌 경우에만 클럽 가입 확인
-            if not is_super_admin:
-                is_member, result = require_club_membership(int(user_id), club_id)
-                if not is_member:
-                    return jsonify({'success': False, 'message': result}), 403
         except (ValueError, TypeError) as e:
             return jsonify({'success': False, 'message': f'유효하지 않은 사용자 ID입니다: {str(e)}'}), 400
+        
+        # 슈퍼관리자는 클럽 선택 없이도 모든 게시글 조회 가능
+        club_id = get_current_club_id()
+        if not is_super_admin:
+            if not club_id:
+                return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+            
+            # 일반 사용자는 클럽 가입 확인 필요
+            is_member, result = require_club_membership(int(user_id), club_id)
+            if not is_member:
+                return jsonify({'success': False, 'message': result}), 403
         
         post_type = request.args.get('type', 'all')  # 'all', 'free', 'notice'
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 20))
         
-        # 클럽별 게시글 + 전체 게시글 조회 (club_id가 null인 게시글은 모든 클럽이 볼 수 있음)
-        query = Post.query.filter(
-            (Post.club_id == club_id) | (Post.club_id.is_(None))
-        )
+        # 슈퍼관리자는 모든 게시글 조회, 일반 사용자는 클럽별 게시글 조회
+        if is_super_admin:
+            # 슈퍼관리자: 모든 게시글 조회
+            query = Post.query
+        else:
+            # 일반 사용자: 클럽별 게시글 + 전체 게시글 조회 (club_id가 null인 게시글은 모든 클럽이 볼 수 있음)
+            query = Post.query.filter(
+                (Post.club_id == club_id) | (Post.club_id.is_(None))
+            )
         
         if post_type != 'all':
             query = query.filter_by(post_type=post_type)

@@ -63,6 +63,18 @@ const Board = () => {
     }
   };
 
+  // 슈퍼관리자인 경우 클럽별로 게시글 분류
+  const postsByClub = isSuperAdmin
+    ? posts.reduce((acc, post) => {
+        const clubName = post.club_name || '클럽 미지정';
+        if (!acc[clubName]) {
+          acc[clubName] = [];
+        }
+        acc[clubName].push(post);
+        return acc;
+      }, {})
+    : null;
+
   const handleCreatePost = () => {
     setEditingPost(null);
     setShowPostForm(true);
@@ -171,74 +183,155 @@ const Board = () => {
         <div className="loading">로딩 중...</div>
       ) : (
         <>
-          <div className="posts-list">
-            {posts.length === 0 ? (
-              <div className="no-posts">게시글이 없습니다.</div>
-            ) : (
-              posts.map((post) => (
-                <div
-                  key={post.id}
-                  className="post-item"
-                  onClick={() => handlePostClick(post)}
-                >
-                  <div className="post-header">
-                    <span className={`post-type ${post.post_type}`}>
-                      {post.post_type === 'notice' ? '공지' : '자유'}
-                    </span>
-                    {post.is_global && (
-                      <span className="global-badge">전체</span>
+          {/* 슈퍼관리자인 경우 클럽별로 분류 표시 */}
+          {isSuperAdmin && postsByClub ? (
+            <div className="posts-list-by-club">
+              {Object.entries(postsByClub).map(([clubName, clubPosts]) => (
+                <div key={clubName} className="posts-club-section">
+                  <h2 className="posts-club-title">{clubName}</h2>
+                  <div className="posts-list">
+                    {clubPosts.length === 0 ? (
+                      <div className="no-posts">게시글이 없습니다.</div>
+                    ) : (
+                      clubPosts.map((post) => (
+                        <div
+                          key={post.id}
+                          className="post-item"
+                          onClick={() => handlePostClick(post)}
+                        >
+                          <div className="post-header">
+                            <span className={`post-type ${post.post_type}`}>
+                              {post.post_type === 'notice' ? '공지' : '자유'}
+                            </span>
+                            {post.is_global && (
+                              <span className="global-badge">전체</span>
+                            )}
+                            <h3 className="post-title">{post.title}</h3>
+                            {isAdmin && post.post_type === 'notice' && (
+                              <span className="admin-badge">운영진</span>
+                            )}
+                          </div>
+                          <div className="post-content-preview">
+                            {post.content.length > 100
+                              ? `${post.content.substring(0, 100)}...`
+                              : post.content}
+                          </div>
+                          {post.images && post.images.length > 0 && (
+                            <div className="post-images-preview">
+                              <span className="image-count">
+                                📷 {post.images.length}
+                              </span>
+                            </div>
+                          )}
+                          <div className="post-footer">
+                            <span className="post-author">
+                              {post.author_name}
+                            </span>
+                            <span className="post-date">{post.created_at}</span>
+                            <div className="post-stats">
+                              <span>💬 {post.comment_count}</span>
+                              <span>❤️ {post.like_count}</span>
+                            </div>
+                          </div>
+                          {(post.author_id === user?.id || isAdmin) && (
+                            <div className="post-actions">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditPost(post);
+                                }}
+                                className="btn-edit"
+                              >
+                                수정
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePost(post.id);
+                                }}
+                                className="btn-delete"
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))
                     )}
-                    <h3 className="post-title">{post.title}</h3>
-                    {isAdmin && post.post_type === 'notice' && (
-                      <span className="admin-badge">운영진</span>
-                    )}
                   </div>
-                  <div className="post-content-preview">
-                    {post.content.length > 100
-                      ? `${post.content.substring(0, 100)}...`
-                      : post.content}
-                  </div>
-                  {post.images && post.images.length > 0 && (
-                    <div className="post-images-preview">
-                      <span className="image-count">
-                        📷 {post.images.length}
-                      </span>
-                    </div>
-                  )}
-                  <div className="post-footer">
-                    <span className="post-author">{post.author_name}</span>
-                    <span className="post-date">{post.created_at}</span>
-                    <div className="post-stats">
-                      <span>💬 {post.comment_count}</span>
-                      <span>❤️ {post.like_count}</span>
-                    </div>
-                  </div>
-                  {(post.author_id === user?.id || isAdmin) && (
-                    <div className="post-actions">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditPost(post);
-                        }}
-                        className="btn-edit"
-                      >
-                        수정
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePost(post.id);
-                        }}
-                        className="btn-delete"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="posts-list">
+              {posts.length === 0 ? (
+                <div className="no-posts">게시글이 없습니다.</div>
+              ) : (
+                posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="post-item"
+                    onClick={() => handlePostClick(post)}
+                  >
+                    <div className="post-header">
+                      <span className={`post-type ${post.post_type}`}>
+                        {post.post_type === 'notice' ? '공지' : '자유'}
+                      </span>
+                      {post.is_global && (
+                        <span className="global-badge">전체</span>
+                      )}
+                      <h3 className="post-title">{post.title}</h3>
+                      {isAdmin && post.post_type === 'notice' && (
+                        <span className="admin-badge">운영진</span>
+                      )}
+                    </div>
+                    <div className="post-content-preview">
+                      {post.content.length > 100
+                        ? `${post.content.substring(0, 100)}...`
+                        : post.content}
+                    </div>
+                    {post.images && post.images.length > 0 && (
+                      <div className="post-images-preview">
+                        <span className="image-count">
+                          📷 {post.images.length}
+                        </span>
+                      </div>
+                    )}
+                    <div className="post-footer">
+                      <span className="post-author">{post.author_name}</span>
+                      <span className="post-date">{post.created_at}</span>
+                      <div className="post-stats">
+                        <span>💬 {post.comment_count}</span>
+                        <span>❤️ {post.like_count}</span>
+                      </div>
+                    </div>
+                    {(post.author_id === user?.id || isAdmin) && (
+                      <div className="post-actions">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditPost(post);
+                          }}
+                          className="btn-edit"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePost(post.id);
+                          }}
+                          className="btn-delete"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
           {pagination.pages > 1 && (
             <div className="pagination">

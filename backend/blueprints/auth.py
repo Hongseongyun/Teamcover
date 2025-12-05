@@ -1677,6 +1677,37 @@ def change_password():
         print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'비밀번호 변경 중 오류가 발생했습니다: {str(e)}'})
 
+@auth_bp.route('/register-fcm-token', methods=['POST'])
+@jwt_required()
+def register_fcm_token():
+    """FCM 토큰 등록/업데이트"""
+    try:
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        user = User.query.get(int(user_id))
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
+        
+        data = request.get_json()
+        fcm_token = data.get('fcm_token', '').strip()
+        
+        if not fcm_token:
+            return jsonify({'success': False, 'message': 'FCM 토큰이 필요합니다.'}), 400
+        
+        # FCM 토큰 저장
+        user.fcm_token = fcm_token
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'FCM 토큰이 등록되었습니다.'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'FCM 토큰 등록 실패: {str(e)}'}), 500
+
 @auth_bp.route('/delete-account', methods=['POST'])
 @jwt_required()
 def delete_account():

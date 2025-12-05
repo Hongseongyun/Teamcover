@@ -165,6 +165,7 @@ export const authAPI = {
   updateName: (data) => api.post('/api/auth/update-name', data),
   changePassword: (data) => api.post('/api/auth/change-password', data),
   deleteAccount: (data) => api.post('/api/auth/delete-account', data),
+  registerFcmToken: (data) => api.post('/api/auth/register-fcm-token', data),
 };
 
 // 구글시트 가져오기 API
@@ -229,10 +230,8 @@ export const messageAPI = {
   },
   sendMessage: (userId, content) =>
     api.post(`/api/messages/with/${userId}`, { content }),
-  markAsRead: (userId) =>
-    api.post(`/api/messages/with/${userId}/read`),
-  deleteMessage: (messageId) =>
-    api.delete(`/api/messages/${messageId}`),
+  markAsRead: (userId) => api.post(`/api/messages/with/${userId}/read`),
+  deleteMessage: (messageId) => api.delete(`/api/messages/${messageId}`),
 };
 
 // 클럽 관리 API
@@ -292,10 +291,32 @@ export const postAPI = {
 
 export const inquiryAPI = {
   getInquiries: () => api.get('/api/inquiries'),
-  getInquiry: (inquiryId) => api.get(`/api/inquiries/${inquiryId}`),
+  getInquiry: (inquiryId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(
+      `/api/inquiries/${inquiryId}${queryString ? '?' + queryString : ''}`
+    );
+  },
   createInquiry: (data) => api.post('/api/inquiries', data),
-  updateInquiry: (inquiryId, data) => api.put(`/api/inquiries/${inquiryId}`, data),
+  updateInquiry: (inquiryId, data) =>
+    api.put(`/api/inquiries/${inquiryId}`, data),
   deleteInquiry: (inquiryId) => api.delete(`/api/inquiries/${inquiryId}`),
+  replyInquiry: (inquiryId, data) =>
+    api.post(`/api/inquiries/${inquiryId}/reply`, data),
+  updateInquiryReply: (inquiryId, data) =>
+    api.put(`/api/inquiries/${inquiryId}/reply`, data),
+  deleteInquiryReply: (inquiryId) =>
+    api.delete(`/api/inquiries/${inquiryId}/reply`),
+  getReplyComments: (inquiryId) =>
+    api.get(`/api/inquiries/${inquiryId}/reply/comments`),
+  createReplyComment: (inquiryId, data) =>
+    api.post(`/api/inquiries/${inquiryId}/reply/comments`, data),
+  updateReplyComment: (inquiryId, commentId, data) =>
+    api.put(`/api/inquiries/${inquiryId}/reply/comments/${commentId}`, data),
+  deleteReplyComment: (inquiryId, commentId) =>
+    api.delete(`/api/inquiries/${inquiryId}/reply/comments/${commentId}`),
+  // Unread inquiry count (for admins and super admins)
+  getUnreadCount: () => api.get('/api/inquiries/unread-count'),
 };
 
 export default api;

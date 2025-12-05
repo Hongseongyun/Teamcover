@@ -25,7 +25,11 @@ def require_club_membership(user_id, club_id):
     if not club_id:
         return False, '클럽이 선택되지 않았습니다.'
     
-    membership = ClubMember.query.filter_by(user_id=user_id, club_id=club_id).first()
+    membership = ClubMember.query.filter_by(
+        user_id=user_id, 
+        club_id=club_id,
+        status='approved'
+    ).first()
     if not membership:
         return False, '가입하지 않은 클럽입니다.'
     
@@ -42,11 +46,19 @@ def check_club_permission(user_id, club_id, required_role='member'):
     Returns:
         tuple: (has_permission: bool, membership_or_error_message)
     """
-    is_member, result = require_club_membership(user_id, club_id)
-    if not is_member:
-        return False, result
+    if not club_id:
+        return False, '클럽이 선택되지 않았습니다.'
     
-    membership = result
+    # status='approved'인 멤버십만 확인
+    membership = ClubMember.query.filter_by(
+        user_id=user_id, 
+        club_id=club_id,
+        status='approved'
+    ).first()
+    
+    if not membership:
+        return False, '가입하지 않은 클럽이거나 승인되지 않은 클럽입니다.'
+    
     role_hierarchy = {'member': 1, 'admin': 2, 'owner': 3}
     user_role_level = role_hierarchy.get(membership.role, 0)
     required_role_level = role_hierarchy.get(required_role, 0)
