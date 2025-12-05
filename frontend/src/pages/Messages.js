@@ -11,6 +11,7 @@ const Messages = () => {
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
   // UTC 시간을 한국 시간(KST, UTC+9)으로 변환
@@ -222,20 +223,46 @@ const Messages = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!selectedUser || !newMessage.trim()) return;
+    if (!selectedUser || !newMessage.trim() || sending) return;
     const content = newMessage.trim();
+    setSending(true);
+    
+    // 전송 중 메시지를 임시로 표시
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      content: content,
+      is_mine: true,
+      created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      is_sending: true, // 전송 중 플래그
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+    setNewMessage('');
+    scrollToBottom();
+    
     try {
       const res = await messageAPI.sendMessage(selectedUser.id, content);
       if (res.data.success) {
-        setMessages((prev) => [...prev, res.data.message]);
-        setNewMessage('');
+        // 임시 메시지를 실제 메시지로 교체
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === tempMessage.id ? res.data.message : msg
+          )
+        );
         scrollToBottom();
         window.dispatchEvent(new Event('messagesUpdated'));
         // 대화 목록 갱신 (마지막 메세지 반영)
         await loadConversations();
+      } else {
+        // 전송 실패 시 임시 메시지 제거
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       }
     } catch (e) {
       console.error('메세지 전송 실패:', e);
+      // 전송 실패 시 임시 메시지 제거
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+      alert('메시지 전송에 실패했습니다.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -243,6 +270,52 @@ const Messages = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  // 메시지 삭제 가능 여부 확인 (10분 이내)
+  const canDeleteMessage = (createdAt) => {
+    if (!createdAt) return false;
+    
+    // 백엔드에서 받은 UTC 시간 문자열을 UTC Date로 파싱
+    try {
+      const isoString = createdAt.replace(' ', 'T') + 'Z';
+      const messageUtcTime = new Date(isoString);
+      
+      if (isNaN(messageUtcTime.getTime())) return false;
+      
+      // 현재 UTC 시간
+      const nowUtcTime = new Date();
+      
+      // 시간 차이 계산 (밀리초)
+      const timeDiff = nowUtcTime.getTime() - messageUtcTime.getTime();
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      // 10분 이내인지 확인
+      return minutesDiff <= 10;
+    } catch (e) {
+      console.error('메시지 삭제 가능 여부 확인 실패:', e);
+      return false;
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!window.confirm('이 메시지를 삭제하시겠습니까?')) {
+      return;
+    }
+    try {
+      const res = await messageAPI.deleteMessage(messageId);
+      if (res.data.success) {
+        // 메시지 목록에서 삭제
+        setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+        // 대화 목록 갱신
+        await loadConversations();
+        window.dispatchEvent(new Event('messagesUpdated'));
+      }
+    } catch (e) {
+      console.error('메시지 삭제 실패:', e);
+      const errorMessage = e.response?.data?.message || '메시지 삭제에 실패했습니다.';
+      alert(errorMessage);
     }
   };
 
@@ -314,6 +387,35 @@ const Messages = () => {
                   </div>
                 ) : (
                   messages.map((msg, index) => {
+                    // 전송 중 메시지는 시간 변환 불필요
+                    if (msg.is_sending) {
+                      const prevMsg = index > 0 ? messages[index - 1] : null;
+                      const showDateDivider = !prevMsg || prevMsg.is_sending;
+                      
+                      return (
+                        <React.Fragment key={msg.id}>
+                          {showDateDivider && (
+                            <div className="chat-date-divider">
+                              <span>오늘</span>
+                            </div>
+                          )}
+                          <div className={`chat-message-row mine`}>
+                            <div className="chat-bubble-wrapper">
+                              <div className="chat-bubble">
+                                <div className="chat-content sending">
+                                  {msg.content}
+                                  <span className="sending-indicator"> 전송중..</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="chat-avatar small mine">
+                              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                          </div>
+                        </React.Fragment>
+                      );
+                    }
+                    
                     const kstData = convertToKST(msg.created_at);
                     if (!kstData) return null;
                     
@@ -345,10 +447,34 @@ const Messages = () => {
                           )}
                           <div className="chat-bubble-wrapper">
                             <div className="chat-bubble">
-                              <div className="chat-content">{msg.content}</div>
-                              <div className="chat-time">
-                                {formatTime(kstData)}
-                              </div>
+                              {msg.is_deleted ? (
+                                <div className="chat-content deleted">
+                                  메시지가 삭제되었습니다
+                                </div>
+                              ) : msg.is_sending ? (
+                                <div className="chat-content sending">
+                                  {msg.content}
+                                  <span className="sending-indicator"> 전송중..</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="chat-content">{msg.content}</div>
+                                  {msg.is_mine && canDeleteMessage(msg.created_at) && (
+                                    <button
+                                      className="chat-delete-button"
+                                      onClick={() => handleDeleteMessage(msg.id)}
+                                      title="메시지 삭제 (10분 이내)"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {!msg.is_sending && (
+                                <div className="chat-time">
+                                  {formatTime(kstData)}
+                                </div>
+                              )}
                             </div>
                           </div>
                           {msg.is_mine && (
@@ -375,9 +501,9 @@ const Messages = () => {
                 <button
                   className="chat-send-button"
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim()}
+                  disabled={!newMessage.trim() || sending}
                 >
-                  전송
+                  {sending ? '전송중...' : '전송'}
                 </button>
               </div>
             </>

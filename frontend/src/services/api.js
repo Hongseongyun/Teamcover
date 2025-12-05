@@ -229,6 +229,8 @@ export const messageAPI = {
     api.post(`/api/messages/with/${userId}`, { content }),
   markAsRead: (userId) =>
     api.post(`/api/messages/with/${userId}/read`),
+  deleteMessage: (messageId) =>
+    api.delete(`/api/messages/${messageId}`),
 };
 
 // 클럽 관리 API

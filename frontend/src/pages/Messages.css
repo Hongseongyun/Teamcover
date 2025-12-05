@@ -242,6 +242,61 @@
 .chat-content {
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+}
+
+.chat-content.deleted {
+  font-style: italic;
+  opacity: 0.6;
+  color: #9ca3af;
+}
+
+.chat-content.sending {
+  opacity: 0.7;
+}
+
+.sending-indicator {
+  font-style: italic;
+  color: #9ca3af;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.chat-delete-button {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  padding: 0;
+}
+
+.chat-bubble:hover .chat-delete-button {
+  opacity: 1;
+}
+
+.chat-delete-button:hover {
+  background: rgba(239, 68, 68, 0.8);
 }
 
 .chat-time {

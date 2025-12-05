@@ -46,6 +46,7 @@ def unread_count():
 
     count = (
         Message.query.filter_by(receiver_id=user.id, is_read=False)
+        .filter(Message.is_deleted == False)  # 삭제되지 않은 메시지만 카운트
         .with_entities(Message.id)
         .count()
     )
@@ -102,6 +103,7 @@ def get_conversations():
                     | (Message.receiver_id.in_(member_user_ids))
                 )
             )
+            .filter(Message.is_deleted == False)  # 삭제되지 않은 메시지만 조회
             .order_by(Message.created_at.desc())
             .all()
         )
@@ -163,6 +165,7 @@ def get_conversations():
                     | (Message.receiver_id.in_(member_user_ids))
                 )
             )
+            .filter(Message.is_deleted == False)  # 삭제되지 않은 메시지만 조회
             .order_by(Message.created_at.desc())
             .all()
         )
@@ -233,6 +236,7 @@ def get_messages_with_user(other_user_id):
                 & (Message.receiver_id == user.id)
             )
         )
+        .filter(Message.is_deleted == False)  # 삭제되지 않은 메시지만 조회
         .order_by(Message.created_at.asc())
         .all()
     )
@@ -292,10 +296,51 @@ def mark_as_read(other_user_id):
 
     updated = (
         Message.query.filter_by(sender_id=other_user_id, receiver_id=user.id, is_read=False)
+        .filter(Message.is_deleted == False)
         .update({'is_read': True})
     )
     db.session.commit()
 
     return jsonify({'success': True, 'updated': updated})
+
+
+@messages_bp.route('/<int:message_id>', methods=['DELETE'])
+@jwt_required()
+def delete_message(message_id):
+    """본인이 보낸 메시지 삭제 (소프트 삭제)
+    
+    메시지를 보낸 후 10분 이내에만 삭제 가능
+    """
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+
+    message = Message.query.get(message_id)
+    if not message:
+        return jsonify({'success': False, 'message': '메시지를 찾을 수 없습니다.'}), 404
+
+    # 본인이 보낸 메시지만 삭제 가능
+    if message.sender_id != user.id:
+        return jsonify({'success': False, 'message': '본인이 보낸 메시지만 삭제할 수 있습니다.'}), 403
+
+    # 이미 삭제된 메시지인지 확인
+    if message.is_deleted:
+        return jsonify({'success': False, 'message': '이미 삭제된 메시지입니다.'}), 400
+
+    # 메시지 생성 후 10분 이내인지 확인
+    if message.created_at:
+        from datetime import timedelta
+        time_elapsed = datetime.utcnow() - message.created_at
+        if time_elapsed > timedelta(minutes=10):
+            return jsonify({
+                'success': False,
+                'message': '메시지를 보낸 후 10분 이내에만 삭제할 수 있습니다.'
+            }), 400
+
+    # 소프트 삭제
+    message.is_deleted = True
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': '메시지가 삭제되었습니다.'})
 
 

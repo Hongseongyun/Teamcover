@@ -457,6 +457,7 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+    is_deleted = db.Column(db.Boolean, default=False)  # 삭제 여부 (soft delete)
 
     sender = db.relationship('User', foreign_keys=[sender_id], backref=db.backref('sent_messages', lazy=True))
     receiver = db.relationship('User', foreign_keys=[receiver_id], backref=db.backref('received_messages', lazy=True))
@@ -469,10 +470,11 @@ class Message(db.Model):
             'receiver_id': self.receiver_id,
             'sender_name': self.sender.name if self.sender else None,
             'receiver_name': self.receiver.name if self.receiver else None,
-            'content': self.content,
+            'content': self.content if not self.is_deleted else None,  # 삭제된 메시지는 내용 숨김
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'is_read': self.is_read,
             'is_mine': current_user_id is not None and self.sender_id == current_user_id,
+            'is_deleted': self.is_deleted,
         }
 
 class AppSetting(db.Model):
