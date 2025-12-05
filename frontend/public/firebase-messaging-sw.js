@@ -75,6 +75,10 @@ self.addEventListener('notificationclick', (event) => {
   const data = event.notification.data;
   if (data?.type === 'inquiry' && data?.inquiry_id) {
     event.waitUntil(clients.openWindow(`/inquiry`));
+  } else if (data?.type === 'inquiry_reply' && data?.inquiry_id) {
+    event.waitUntil(clients.openWindow(`/inquiry`));
+  } else if (data?.type === 'message') {
+    event.waitUntil(clients.openWindow(`/`));
   } else {
     event.waitUntil(clients.openWindow('/'));
   }

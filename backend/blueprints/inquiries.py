@@ -236,7 +236,14 @@ def create_inquiry():
         # 해당 클럽의 운영진과 슈퍼관리자에게 푸시 알림 전송
         try:
             from fcm_service import send_notification_to_club_admins
-            send_notification_to_club_admins(
+            print(f'\n{"="*60}')
+            print(f'📤 문의 등록 시작')
+            print(f'   작성자: {user.name} (ID: {user.id})')
+            print(f'   클럽 ID: {club_id}')
+            print(f'   제목: {title[:30]}...')
+            print(f'   문의 ID: {inquiry.id}')
+            print(f'{"="*60}')
+            result = send_notification_to_club_admins(
                 club_id=club_id,
                 title='새로운 문의가 등록되었습니다',
                 body=f'{user.name}님이 "{title}" 문의를 작성했습니다.',
@@ -247,9 +254,19 @@ def create_inquiry():
                     'club_id': str(club_id) if club_id else None
                 }
             )
+            print(f'{"="*60}')
+            if result > 0:
+                print(f'✅ 문의 푸시 알림 전송 성공: {result}명의 관리자에게 전송')
+            else:
+                print(f'⚠️ 문의 푸시 알림 전송 실패: 관리자에게 FCM 토큰이 없거나 Firebase가 초기화되지 않았습니다.')
+            print(f'{"="*60}\n')
         except Exception as e:
             # 푸시 알림 실패가 문의 등록에 영향을 주지 않도록 함
-            print(f'푸시 알림 전송 실패: {str(e)}')
+            print(f'\n{"="*60}')
+            print(f'❌ 문의 푸시 알림 전송 중 오류 발생: {str(e)}')
+            import traceback
+            print(f'   상세 오류: {traceback.format_exc()}')
+            print(f'{"="*60}\n')
         
         return jsonify({
             'success': True,
@@ -401,6 +418,42 @@ def reply_inquiry(inquiry_id):
         inquiry.updated_at = datetime.utcnow()
         
         db.session.commit()
+        
+        # 문의 작성자에게 푸시 알림 전송
+        try:
+            from fcm_service import send_notification_to_user
+            inquiry_author = User.query.get(inquiry.user_id)
+            if inquiry_author:
+                print(f'\n{"="*60}')
+                print(f'📤 문의 답변 완료: {user.name} -> {inquiry_author.name}')
+                print(f'   문의 ID: {inquiry_id}')
+                print(f'   문의 제목: {inquiry.title[:30]}...')
+                print(f'   답변자: {user.name} ({user.role})')
+                print(f'{"="*60}')
+                result = send_notification_to_user(
+                    user_id=inquiry.user_id,
+                    title='문의 답변이 완료되었습니다',
+                    body=f'"{inquiry.title}" 문의에 답변이 등록되었습니다.',
+                    data={
+                        'type': 'inquiry_reply',
+                        'inquiry_id': str(inquiry.id),
+                        'inquiry_title': inquiry.title,
+                        'replier_name': user.name,
+                        'club_id': str(inquiry.club_id) if inquiry.club_id else None
+                    }
+                )
+                if result:
+                    print(f'✅ 문의 답변 푸시 알림 전송 성공 (작성자: {inquiry_author.email})')
+                else:
+                    print(f'⚠️ 문의 답변 푸시 알림 전송 실패 (작성자: {inquiry_author.email}): FCM 토큰이 없거나 Firebase가 초기화되지 않았습니다.')
+                print(f'{"="*60}\n')
+        except Exception as e:
+            # 푸시 알림 실패가 답변 등록에 영향을 주지 않도록 함
+            print(f'\n{"="*60}')
+            print(f'❌ 문의 답변 푸시 알림 전송 중 오류 발생: {str(e)}')
+            import traceback
+            print(f'   상세 오류: {traceback.format_exc()}')
+            print(f'{"="*60}\n')
         
         return jsonify({
             'success': True,

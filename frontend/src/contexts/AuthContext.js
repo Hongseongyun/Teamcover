@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { authAPI, messageAPI } from '../services/api';
+import { authAPI, messageAPI, inquiryAPI } from '../services/api';
 import { getFCMToken, setupMessageListener } from '../config/firebase';
 
 const AuthContext = createContext();
@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const lastUnreadCountRef = useRef(0);
+  const lastUnreadInquiryCountRef = useRef(0);
 
   // FCM 토큰 등록 함수
   const registerFCMToken = async () => {
@@ -179,7 +180,7 @@ export const AuthProvider = ({ children }) => {
 
     const cleanup = setupMessageListener((payload) => {
       if (payload) {
-        console.log('포그라운드 메시지 수신:', payload);
+        console.log('📨 포그라운드 메시지 수신:', payload);
         
         // 푸시 알림 표시
         if (window.showPushNotification) {
@@ -187,9 +188,11 @@ export const AuthProvider = ({ children }) => {
           const data = payload.data || {};
           
           let onClick = null;
+          let notificationType = 'info';
           
           // 메시지 타입인 경우 메시지 모달 열기 (FloatingMessageButton)
           if (data.type === 'message') {
+            notificationType = 'info';
             onClick = () => {
               // FloatingMessageButton의 메시지 모달을 열기 위한 이벤트 발생
               window.dispatchEvent(new CustomEvent('openMessageModal'));
@@ -197,18 +200,39 @@ export const AuthProvider = ({ children }) => {
           }
           // 문의 타입인 경우 문의 페이지로 이동
           else if (data.type === 'inquiry') {
+            notificationType = 'warning';
             onClick = () => {
               window.location.href = '/inquiry';
             };
+            console.log('📋 문의 알림 수신:', {
+              inquiry_id: data.inquiry_id,
+              user_name: data.user_name,
+              club_id: data.club_id
+            });
+          }
+          // 문의 답변 완료 타입인 경우 문의 페이지로 이동
+          else if (data.type === 'inquiry_reply') {
+            notificationType = 'success';
+            onClick = () => {
+              window.location.href = '/inquiry';
+            };
+            console.log('✅ 문의 답변 알림 수신:', {
+              inquiry_id: data.inquiry_id,
+              inquiry_title: data.inquiry_title,
+              replier_name: data.replier_name,
+              club_id: data.club_id
+            });
           }
           
           window.showPushNotification({
-            type: 'info',
+            type: notificationType,
             title: notification.title || '알림',
             body: notification.body || '',
             onClick,
             duration: 5000,
           });
+        } else {
+          console.warn('⚠️ window.showPushNotification이 정의되지 않았습니다.');
         }
       }
     });
@@ -221,6 +245,9 @@ export const AuthProvider = ({ children }) => {
     if (!token || !user) return;
 
     let intervalId = null;
+    let timeoutId = null;
+    let isFirstCheck = true; // 첫 번째 확인인지 여부
+    let hasShownInitialNotification = false; // 초기 알림 표시 여부
 
     const checkUnreadMessages = async () => {
       try {
@@ -229,10 +256,10 @@ export const AuthProvider = ({ children }) => {
           const currentCount = response.data.count || 0;
           const previousCount = lastUnreadCountRef.current;
 
-          // 새로운 메시지가 있는 경우 알림 표시
-          if (currentCount > previousCount && previousCount > 0) {
+          // 첫 번째 확인이 아니고, 새로운 메시지가 있는 경우 알림 표시
+          if (!isFirstCheck && currentCount > previousCount && previousCount >= 0) {
             const newMessagesCount = currentCount - previousCount;
-            if (window.showPushNotification) {
+            if (window.showPushNotification && newMessagesCount > 0) {
               window.showPushNotification({
                 type: 'info',
                 title: '새로운 메시지',
@@ -245,6 +272,26 @@ export const AuthProvider = ({ children }) => {
               });
             }
           }
+          // 첫 번째 확인이고 읽지 않은 메시지가 있는 경우 알림 표시 (한 번만)
+          else if (isFirstCheck && currentCount > 0 && !hasShownInitialNotification) {
+            if (window.showPushNotification) {
+              window.showPushNotification({
+                type: 'info',
+                title: '읽지 않은 메시지',
+                body: `읽지 않은 메시지 ${currentCount}개가 있습니다.`,
+                onClick: () => {
+                  // FloatingMessageButton의 메시지 모달을 열기 위한 이벤트 발생
+                  window.dispatchEvent(new CustomEvent('openMessageModal'));
+                },
+                duration: 5000,
+              });
+              hasShownInitialNotification = true;
+            }
+            isFirstCheck = false;
+          }
+          else if (isFirstCheck) {
+            isFirstCheck = false;
+          }
 
           lastUnreadCountRef.current = currentCount;
         }
@@ -253,8 +300,10 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // 초기 확인
-    checkUnreadMessages();
+    // 초기 확인 (약간의 지연을 두어 FCM 토큰 등록 후 실행)
+    timeoutId = setTimeout(() => {
+      checkUnreadMessages();
+    }, 2000);
 
     // 30초마다 확인
     intervalId = setInterval(checkUnreadMessages, 30000);
@@ -262,6 +311,89 @@ export const AuthProvider = ({ children }) => {
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [token, user]);
+
+  // 주기적으로 읽지 않은 문의 확인 및 알림 표시 (운영진/슈퍼관리자용)
+  useEffect(() => {
+    if (!token || !user) return;
+    
+    // 모든 사용자에 대해 확인 (백엔드 API가 권한을 체크)
+    // 슈퍼관리자, 시스템 admin, 클럽 운영진 모두 확인
+    // 백엔드에서 권한이 없는 사용자는 0을 반환하므로 안전합니다.
+
+    let intervalId = null;
+    let timeoutId = null;
+    let isFirstCheck = true;
+    let hasShownInitialNotification = false; // 초기 알림 표시 여부
+
+    const checkUnreadInquiries = async () => {
+      try {
+        const response = await inquiryAPI.getUnreadCount();
+        if (response.data.success) {
+          const currentCount = response.data.unread_count || 0;
+          const previousCount = lastUnreadInquiryCountRef.current;
+
+          // 첫 번째 확인이 아니고, 새로운 문의가 있는 경우 알림 표시
+          if (!isFirstCheck && currentCount > previousCount && previousCount >= 0) {
+            const newInquiriesCount = currentCount - previousCount;
+            if (window.showPushNotification && newInquiriesCount > 0) {
+              window.showPushNotification({
+                type: 'warning',
+                title: '새로운 문의',
+                body: `답변이 필요한 문의 ${newInquiriesCount}개가 있습니다.`,
+                onClick: () => {
+                  window.location.href = '/inquiry';
+                },
+                duration: 5000,
+              });
+            }
+          }
+          // 첫 번째 확인이고 읽지 않은 문의가 있는 경우 알림 표시 (한 번만)
+          else if (isFirstCheck && currentCount > 0 && !hasShownInitialNotification) {
+            if (window.showPushNotification) {
+              window.showPushNotification({
+                type: 'warning',
+                title: '답변이 필요한 문의',
+                body: `답변이 필요한 문의 ${currentCount}개가 있습니다.`,
+                onClick: () => {
+                  window.location.href = '/inquiry';
+                },
+                duration: 5000,
+              });
+              hasShownInitialNotification = true;
+            }
+            isFirstCheck = false;
+          }
+          else if (isFirstCheck) {
+            isFirstCheck = false;
+          }
+
+          lastUnreadInquiryCountRef.current = currentCount;
+        }
+      } catch (error) {
+        console.error('읽지 않은 문의 확인 실패:', error);
+      }
+    };
+
+    // 초기 확인 (약간의 지연을 두어 FCM 토큰 등록 후 실행)
+    timeoutId = setTimeout(() => {
+      checkUnreadInquiries();
+    }, 2500);
+
+    // 30초마다 확인
+    intervalId = setInterval(checkUnreadInquiries, 30000);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, [token, user]);
