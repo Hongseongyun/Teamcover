@@ -669,7 +669,7 @@ const Inquiry = () => {
                 </div>
               )}
 
-            {/* 문의 작성자가 자신의 문의를 볼 때만 수정/삭제 버튼 표시 (답변이 없을 때만) */}
+            {/* 문의 작성자가 자신의 문의를 볼 때만 수정 버튼 표시 (답변이 없을 때만) */}
             {selectedInquiry.user_id === user?.id && !selectedInquiry.reply && (
               <div className="inquiry-detail-actions">
                 <button
@@ -678,6 +678,12 @@ const Inquiry = () => {
                 >
                   수정
                 </button>
+              </div>
+            )}
+            
+            {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
+            {(selectedInquiry.user_id === user?.id || canReply) && (
+              <div className="inquiry-detail-actions">
                 <button
                   className="inquiry-delete-button"
                   onClick={() => handleDeleteInquiry(selectedInquiry.id)}
@@ -839,26 +845,35 @@ const Inquiry = () => {
                               {formatDate(inquiry.created_at)}
                             </span>
                           </div>
-                          <div className="inquiry-item-actions">
-                            <button
-                              className="inquiry-edit-button-small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditInquiry(inquiry);
-                              }}
-                            >
-                              수정
-                            </button>
-                            <button
-                              className="inquiry-delete-button-small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteInquiry(inquiry.id);
-                              }}
-                            >
-                              삭제
-                            </button>
-                          </div>
+                          {/* 수정 버튼: 작성자만 (답변이 없을 때만) */}
+                          {inquiry.user_id === user?.id && !inquiry.reply && (
+                            <div className="inquiry-item-actions">
+                              <button
+                                className="inquiry-edit-button-small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditInquiry(inquiry);
+                                }}
+                              >
+                                수정
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
+                          {(inquiry.user_id === user?.id || canReply) && (
+                            <div className="inquiry-item-actions">
+                              <button
+                                className="inquiry-delete-button-small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteInquiry(inquiry.id);
+                                }}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -903,26 +918,35 @@ const Inquiry = () => {
                       {formatDate(inquiry.created_at)}
                     </span>
                   </div>
-                  <div className="inquiry-item-actions">
-                    <button
-                      className="inquiry-edit-button-small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditInquiry(inquiry);
-                      }}
-                    >
-                      수정
-                    </button>
-                    <button
-                      className="inquiry-delete-button-small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteInquiry(inquiry.id);
-                      }}
-                    >
-                      삭제
-                    </button>
-                  </div>
+                  {/* 수정 버튼: 작성자만 (답변이 없을 때만) */}
+                  {inquiry.user_id === user?.id && !inquiry.reply && (
+                    <div className="inquiry-item-actions">
+                      <button
+                        className="inquiry-edit-button-small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditInquiry(inquiry);
+                        }}
+                      >
+                        수정
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
+                  {(inquiry.user_id === user?.id || canReply) && (
+                    <div className="inquiry-item-actions">
+                      <button
+                        className="inquiry-delete-button-small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteInquiry(inquiry.id);
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

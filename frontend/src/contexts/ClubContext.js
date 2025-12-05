@@ -255,11 +255,6 @@ export const ClubProvider = ({ children }) => {
     isAdmin: (() => {
       const isAdminValue =
         currentClub?.role === 'admin' || currentClub?.role === 'owner';
-      console.log('ClubContext: isAdmin calculation', {
-        currentClub: currentClub?.name,
-        role: currentClub?.role,
-        isAdmin: isAdminValue,
-      });
       return isAdminValue;
     })(),
     isOwner: currentClub?.role === 'owner',

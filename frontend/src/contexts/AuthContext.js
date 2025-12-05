@@ -25,7 +25,6 @@ export const AuthProvider = ({ children }) => {
       const fcmToken = await getFCMToken();
       if (fcmToken) {
         await authAPI.registerFcmToken({ fcm_token: fcmToken });
-        console.log('FCM 토큰 등록 완료');
       }
     } catch (error) {
       console.error('FCM 토큰 등록 실패:', error);
@@ -180,8 +179,6 @@ export const AuthProvider = ({ children }) => {
 
     const cleanup = setupMessageListener((payload) => {
       if (payload) {
-        console.log('📨 포그라운드 메시지 수신:', payload);
-        
         // 푸시 알림 표시
         if (window.showPushNotification) {
           const notification = payload.notification || {};
@@ -204,11 +201,6 @@ export const AuthProvider = ({ children }) => {
             onClick = () => {
               window.location.href = '/inquiry';
             };
-            console.log('📋 문의 알림 수신:', {
-              inquiry_id: data.inquiry_id,
-              user_name: data.user_name,
-              club_id: data.club_id
-            });
           }
           
           window.showPushNotification({
@@ -218,8 +210,6 @@ export const AuthProvider = ({ children }) => {
             onClick,
             duration: 5000,
           });
-        } else {
-          console.warn('⚠️ window.showPushNotification이 정의되지 않았습니다.');
         }
       }
     });

@@ -259,14 +259,7 @@ def create_inquiry():
         # 해당 클럽의 운영진과 슈퍼관리자에게 푸시 알림 전송
         try:
             from fcm_service import send_notification_to_club_admins
-            print(f'\n{"="*60}')
-            print(f'📤 문의 등록 시작')
-            print(f'   작성자: {user.name} (ID: {user.id})')
-            print(f'   클럽 ID: {club_id}')
-            print(f'   제목: {title[:30]}...')
-            print(f'   문의 ID: {inquiry.id}')
-            print(f'{"="*60}')
-            result = send_notification_to_club_admins(
+            send_notification_to_club_admins(
                 club_id=club_id,
                 title='새로운 문의가 등록되었습니다',
                 body=f'{user.name}님이 "{title}" 문의를 작성했습니다.',
@@ -277,19 +270,9 @@ def create_inquiry():
                     'club_id': str(club_id) if club_id else None
                 }
             )
-            print(f'{"="*60}')
-            if result > 0:
-                print(f'✅ 문의 푸시 알림 전송 성공: {result}명의 관리자에게 전송')
-            else:
-                print(f'⚠️ 문의 푸시 알림 전송 실패: 관리자에게 FCM 토큰이 없거나 Firebase가 초기화되지 않았습니다.')
-            print(f'{"="*60}\n')
         except Exception as e:
             # 푸시 알림 실패가 문의 등록에 영향을 주지 않도록 함
-            print(f'\n{"="*60}')
-            print(f'❌ 문의 푸시 알림 전송 중 오류 발생: {str(e)}')
-            import traceback
-            print(f'   상세 오류: {traceback.format_exc()}')
-            print(f'{"="*60}\n')
+            pass
         
         return jsonify({
             'success': True,
@@ -361,23 +344,46 @@ def update_inquiry(inquiry_id):
 @inquiries_bp.route('/<int:inquiry_id>', methods=['DELETE'])
 @jwt_required()
 def delete_inquiry(inquiry_id):
-    """문의하기 삭제"""
+    """문의하기 삭제
+    - 작성자: 자신이 작성한 문의 삭제 가능
+    - 슈퍼관리자: 모든 문의 삭제 가능
+    - 클럽 운영진: 해당 클럽의 문의 삭제 가능
+    """
     try:
         user = get_current_user()
         if not user:
             return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
         
-        # 모든 회원이 작성 가능 (슈퍼관리자 제외)
-        if user.role == 'super_admin':
-            return jsonify({'success': False, 'message': '슈퍼관리자는 문의를 작성할 수 없습니다.'}), 403
-        
         inquiry = Inquiry.query.get(inquiry_id)
         if not inquiry:
             return jsonify({'success': False, 'message': '문의를 찾을 수 없습니다.'}), 404
         
-        # 자신이 작성한 문의만 삭제 가능
-        if inquiry.user_id != user.id:
-            return jsonify({'success': False, 'message': '접근 권한이 없습니다.'}), 403
+        # 슈퍼관리자는 모든 문의 삭제 가능
+        if user.role == 'super_admin':
+            pass  # 권한 확인 통과
+        # 작성자는 자신이 작성한 문의만 삭제 가능
+        elif inquiry.user_id == user.id:
+            pass  # 권한 확인 통과
+        # 클럽 운영진은 해당 클럽의 문의만 삭제 가능
+        else:
+            if not inquiry.club_id:
+                return jsonify({'success': False, 'message': '클럽이 지정되지 않은 문의입니다.'}), 400
+            
+            club_id = get_current_club_id()
+            if not club_id:
+                return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+            
+            # 해당 클럽 운영진 권한 확인
+            has_permission, result = check_club_permission(user.id, club_id, 'admin')
+            if not has_permission:
+                return jsonify({
+                    'success': False, 
+                    'message': f'접근 권한이 없습니다. 작성자이거나 클럽 운영진 권한이 필요합니다. ({result})'
+                }), 403
+            
+            # 해당 클럽의 문의인지 확인
+            if inquiry.club_id != club_id:
+                return jsonify({'success': False, 'message': '다른 클럽의 문의는 삭제할 수 없습니다.'}), 403
         
         db.session.delete(inquiry)
         db.session.commit()
@@ -461,20 +467,11 @@ def reply_inquiry(inquiry_id):
                 db.session.add(auto_message)
                 db.session.commit()
                 
-                print(f'\n{"="*60}')
-                print(f'📤 문의 답변 완료 - 자동 메시지 전송')
-                print(f'   답변자: {user.name} ({user.role})')
-                print(f'   작성자: {inquiry_author.name} ({inquiry_author.email})')
-                print(f'   문의 ID: {inquiry_id}')
-                print(f'   문의 제목: {inquiry.title[:30]}...')
-                print(f'   메시지 ID: {auto_message.id}')
-                print(f'{"="*60}\n')
-                
                 # 메시지 전송 후 푸시 알림은 messages.py의 send_message 함수에서 처리됨
                 # 여기서는 직접 푸시 알림을 보내지 않고, 메시지 전송 로직을 재사용
                 try:
                     from fcm_service import send_notification_to_user
-                    result = send_notification_to_user(
+                    send_notification_to_user(
                         user_id=inquiry_author.id,
                         title='새로운 메시지',
                         body=f'{user.name}님으로부터 메시지가 도착했습니다: 문의 답변이 완료되었습니다.',
@@ -486,22 +483,11 @@ def reply_inquiry(inquiry_id):
                             'content': message_content[:100]
                         }
                     )
-                    if result:
-                        print(f'✅ 문의 답변 메시지 푸시 알림 전송 성공 (작성자: {inquiry_author.email})')
-                    else:
-                        print(f'⚠️ 문의 답변 메시지 푸시 알림 전송 실패 (작성자: {inquiry_author.email})')
                 except Exception as e:
-                    print(f'⚠️ 문의 답변 메시지 푸시 알림 전송 중 오류: {str(e)}')
-            elif inquiry_author and inquiry_author.id == user.id:
-                print(f'⚠️ 자기 자신의 문의에 답변했으므로 메시지를 보내지 않습니다.')
+                    pass
         except Exception as e:
             # 메시지 전송 실패가 답변 등록에 영향을 주지 않도록 함
             db.session.rollback()
-            print(f'\n{"="*60}')
-            print(f'❌ 문의 답변 자동 메시지 전송 중 오류 발생: {str(e)}')
-            import traceback
-            print(f'   상세 오류: {traceback.format_exc()}')
-            print(f'{"="*60}\n')
         
         return jsonify({
             'success': True,

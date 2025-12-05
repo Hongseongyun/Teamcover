@@ -12,9 +12,8 @@ from email_service import init_mail
 try:
     from fcm_service import init_fcm
     init_fcm()
-    print("✅ Firebase FCM 서비스 초기화 시도 완료")
 except Exception as e:
-    print(f"⚠️ Firebase FCM 서비스 초기화 실패 (푸시 알림이 작동하지 않을 수 있습니다): {str(e)}")
+    pass
 
 # Blueprint import (OCR 제외)
 from blueprints.auth import auth_bp
@@ -78,24 +77,20 @@ def check_if_token_revoked(jwt_header, jwt_payload):
     try:
         user_id = jwt_payload.get('sub')
         if not user_id:
-            print(f"[TOKEN_CHECK] No user_id in token")
             return True  # 사용자 ID가 없으면 무효화된 것으로 간주
         
         user = User.query.get(int(user_id))
         if not user:
-            print(f"[TOKEN_CHECK] User not found: {user_id}")
             return True  # 사용자가 없으면 무효화된 것으로 간주
         
         # active_token이 없으면 (첫 로그인 또는 로그아웃) 허용
         if not user.active_token:
-            print(f"[TOKEN_CHECK] No active_token for user {user_id}, allowing")
             return False  # 블랙리스트에 없음 (유효)
         
         # 현재 토큰의 jti 가져오기
         current_jti = jwt_payload.get('jti')
         
         if not current_jti:
-            print(f"[TOKEN_CHECK] No jti in token for user {user_id}, revoking (all tokens must have jti)")
             # jti가 없으면 이전 방식 토큰이므로 무효화 (모든 토큰은 jti를 포함해야 함)
             return True
         
@@ -105,22 +100,16 @@ def check_if_token_revoked(jwt_header, jwt_payload):
         if active_token_is_jti:
             # active_token도 jti 형식이면 jti로 비교
             if user.active_token != current_jti:
-                print(f"[TOKEN_CHECK] Token revoked: active_token={user.active_token[:8]}..., current_jti={current_jti[:8]}...")
                 return True  # 블랙리스트에 있음 (무효화됨)
             else:
-                print(f"[TOKEN_CHECK] Token valid: jti matches")
                 return False  # 블랙리스트에 없음 (유효)
         else:
             # active_token이 전체 토큰 문자열이면, jti 토큰은 무효화된 것으로 간주
             # (새 로그인이 발생했으므로)
-            print(f"[TOKEN_CHECK] Token revoked: active_token is old format, current token has jti")
             return True  # 블랙리스트에 있음 (무효화됨)
         
     except Exception as e:
-        # 에러 발생 시 로그 출력하고 안전하게 처리
-        print(f"[TOKEN_CHECK] Error in check_if_token_revoked: {e}")
-        import traceback
-        traceback.print_exc()
+        # 에러 발생 시 안전하게 처리
         return False  # 에러 발생 시 일단 허용 (서버가 멈추지 않도록)
 
 @login_manager.user_loader
@@ -137,10 +126,6 @@ allowed_origins = app.config.get('CORS_ALLOWED_ORIGINS', [
 ])
 
 # CORS 설정 디버깅
-print(f"=== CORS 설정 정보 ===")
-print(f"Allowed Origins: {allowed_origins}")
-print(f"Frontend Base URL: {app.config.get('FRONTEND_BASE_URL')}")
-print(f"CORS Origins Config: {app.config.get('CORS_ORIGINS')}")
 
 # CORS 설정
 
@@ -282,18 +267,14 @@ with app.app_context():
         print("✅ 데이터베이스 연결 성공")
         # 데이터베이스 테이블 생성
         db.create_all()
-        print("✅ 데이터베이스 테이블 생성 완료")
     except Exception as e:
-        print(f"❌ 데이터베이스 초기화 실패: {e}")
         # 연결 실패 시 재시도 로직
         import time
         time.sleep(5)  # 5초 대기 후 재시도
         try:
             db.session.execute(text('SELECT 1'))
             db.create_all()
-            print("✅ 데이터베이스 재연결 성공")
         except Exception as e2:
-            print(f"❌ 데이터베이스 재연결 실패: {e2}")
 
 if __name__ == '__main__':
     # Railway 환경에서는 PORT 환경변수를 사용

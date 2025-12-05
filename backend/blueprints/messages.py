@@ -343,8 +343,7 @@ def send_message(other_user_id):
     # 수신자에게 푸시 알림 전송
     try:
         from fcm_service import send_notification_to_user
-        print(f'📤 메시지 전송: {user.name} -> {other_user.name}, 내용: {content[:30]}...')
-        result = send_notification_to_user(
+        send_notification_to_user(
             user_id=other_user.id,
             title='새로운 메시지',
             body=f'{user.name}님으로부터 메시지가 도착했습니다: {content[:50]}',
@@ -356,15 +355,9 @@ def send_message(other_user_id):
                 'content': content[:100]  # 긴 메시지는 일부만 전송
             }
         )
-        if result:
-            print(f'✅ 푸시 알림 전송 성공: {other_user.name} ({other_user.email})')
-        else:
-            print(f'⚠️ 푸시 알림 전송 실패: {other_user.name} ({other_user.email})')
     except Exception as e:
         # 푸시 알림 실패가 메시지 전송에 영향을 주지 않도록 함
-        print(f'❌ 푸시 알림 전송 중 오류 발생: {str(e)}')
-        import traceback
-        print(f'   상세 오류: {traceback.format_exc()}')
+        pass
 
     return jsonify({'success': True, 'message': message.to_dict(current_user_id=user.id)})
 
