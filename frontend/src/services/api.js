@@ -219,7 +219,7 @@ export const paymentAPI = {
   deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
 };
 
-// 메세지 / 채팅 API
+// 메시지 / 채팅 API
 export const messageAPI = {
   getUnreadCount: () => api.get('/api/messages/unread-count'),
   getConversations: () => api.get('/api/messages/conversations'),
@@ -288,6 +288,14 @@ export const postAPI = {
         'Content-Type': 'multipart/form-data',
       },
     }),
+};
+
+export const inquiryAPI = {
+  getInquiries: () => api.get('/api/inquiries'),
+  getInquiry: (inquiryId) => api.get(`/api/inquiries/${inquiryId}`),
+  createInquiry: (data) => api.post('/api/inquiries', data),
+  updateInquiry: (inquiryId, data) => api.put(`/api/inquiries/${inquiryId}`, data),
+  deleteInquiry: (inquiryId) => api.delete(`/api/inquiries/${inquiryId}`),
 };
 
 export default api;

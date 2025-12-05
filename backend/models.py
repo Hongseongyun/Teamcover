@@ -448,7 +448,7 @@ class Point(db.Model):
 
 
 class Message(db.Model):
-    """사용자 간 1:1 메세지 모델"""
+    """사용자 간 1:1 메시지 모델"""
     __tablename__ = 'messages'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -483,6 +483,37 @@ class Message(db.Model):
                 else None
             ),
         }
+
+class Inquiry(db.Model):
+    """문의하기 모델"""
+    __tablename__ = 'inquiries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(30), nullable=False)  # 제목 (30자 이내)
+    content = db.Column(db.String(200), nullable=False)  # 내용 (200자 이내)
+    is_private = db.Column(db.Boolean, default=True)  # 비공개 여부 (기본값: 비공개)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('inquiries', lazy=True))
+    
+    def to_dict(self):
+        """프론트용 딕셔너리 변환"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'user_name': self.user.name if self.user else None,
+            'title': self.title,
+            'content': self.content,
+            'is_private': self.is_private,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+        }
+    
+    def __repr__(self):
+        return f'<Inquiry {self.id} by {self.user_id}>'
 
 class AppSetting(db.Model):
     """앱 설정 모델 (전역 설정)"""

@@ -229,12 +229,12 @@ const Messages = () => {
                 )
               );
             } catch (e) {
-              console.error('메세지 읽음 처리 실패:', e);
+              console.error('메시지 읽음 처리 실패:', e);
             }
           }
         }
       } catch (e) {
-        console.error('메세지 로드 실패:', e);
+        console.error('메시지 로드 실패:', e);
       } finally {
         setLoadingMessages(false);
         setTimeout(scrollToBottom, 10);
@@ -423,14 +423,14 @@ const Messages = () => {
         );
         scrollToBottom();
         window.dispatchEvent(new Event('messagesUpdated'));
-        // 대화 목록 갱신 (마지막 메세지 반영)
+        // 대화 목록 갱신 (마지막 메시지 반영)
         await loadConversations();
       } else {
         // 전송 실패 시 임시 메시지 제거
         setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       }
     } catch (e) {
-      console.error('메세지 전송 실패:', e);
+      console.error('메시지 전송 실패:', e);
       // 전송 실패 시 임시 메시지 제거
       setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
       alert('메시지 전송에 실패했습니다.');
@@ -494,8 +494,8 @@ const Messages = () => {
 
   return (
     <div className="messages-page responsive-page">
-      <h1 className="messages-title">메세지</h1>
-      <div className="messages-container">
+      <h1 className="messages-title">메시지</h1>
+      <div className={`messages-container ${selectedUser ? 'has-selected-user' : ''}`}>
         <div className="conversation-list">
           <div className="messages-tabs">
             <button
@@ -519,7 +519,7 @@ const Messages = () => {
                 <div className="conversation-empty">대화 목록을 불러오는 중...</div>
               ) : superAdminConversations.length === 0 && normalConversations.length === 0 ? (
                 <div className="conversation-empty">
-                  아직 대화가 없습니다. 메세지를 보내보세요.
+                  아직 대화가 없습니다. 메시지를 보내보세요.
                 </div>
               ) : (
                 <>
@@ -734,6 +734,13 @@ const Messages = () => {
           {selectedUser ? (
             <>
               <div className="chat-header">
+                <button
+                  className="chat-back-button"
+                  onClick={() => setSelectedUser(null)}
+                  aria-label="뒤로가기"
+                >
+                  ←
+                </button>
                 <div className="chat-header-avatar">
                   {selectedUser.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
@@ -744,10 +751,10 @@ const Messages = () => {
               </div>
               <div className="chat-messages">
                 {loadingMessages ? (
-                  <div className="chat-loading">메세지를 불러오는 중...</div>
+                  <div className="chat-loading">메시지를 불러오는 중...</div>
                 ) : messages.length === 0 ? (
                   <div className="chat-empty">
-                    아직 메세지가 없습니다. 첫 메세지를 보내보세요.
+                    아직 메시지가 없습니다. 첫 메시지를 보내보세요.
                   </div>
                 ) : (
                   messages.map((msg, index) => {
@@ -879,7 +886,7 @@ const Messages = () => {
               <div className="chat-input-bar">
                 <textarea
                   className="chat-input"
-                  placeholder="메세지를 입력하세요"
+                  placeholder="메시지를 입력하세요"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -896,7 +903,7 @@ const Messages = () => {
             </>
           ) : (
             <div className="chat-placeholder">
-              왼쪽에서 대화 상대를 선택하거나 새 메세지를 보내세요.
+              왼쪽에서 대화 상대를 선택하거나 새 메시지를 보내세요.
             </div>
           )}
         </div>

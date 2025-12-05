@@ -79,6 +79,7 @@ const Navbar = () => {
       '/user-management': hasRole('super_admin'),
       '/board': hasRole('user'),
       '/messages': hasRole('user'),
+      '/inquiry': hasRole('user') || hasRole('admin'), // 일반 사용자 및 운영진
     };
 
     return pagePermissions[page] || false;
@@ -160,6 +161,17 @@ const Navbar = () => {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   게시판
+                </Link>
+              </li>
+            )}
+            {canAccessPage('/inquiry') && (
+              <li className="nav-item">
+                <Link
+                  to="/inquiry"
+                  className={`nav-link ${isActive('/inquiry')}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  문의하기
                 </Link>
               </li>
             )}

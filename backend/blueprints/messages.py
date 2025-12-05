@@ -59,7 +59,7 @@ def get_conversations():
     """현재 선택된 클럽에 가입된 회원 기준 대화 목록
 
     - 같은 클럽(승인된 ClubMember)인 사용자 모두를 후보로 사용
-    - 각 사용자별 마지막 메세지 / 안 읽은 개수 요약
+    - 각 사용자별 마지막 메시지 / 안 읽은 개수 요약
     - 슈퍼관리자는 클럽 선택 없이도 모든 사용자와의 대화 조회 가능
     """
     user = get_current_user()
@@ -111,7 +111,7 @@ def get_conversations():
         if not member_user_ids and not super_admin_user_ids:
             return jsonify({'success': True, 'conversations': []})
 
-        # 내가 보낸/받은 모든 메세지 중, 같은 클럽 회원과의 메세지만 조회
+        # 내가 보낸/받은 모든 메시지 중, 같은 클럽 회원과의 메시지만 조회
         messages = (
             Message.query.filter(
                 ((Message.sender_id == user.id) | (Message.receiver_id == user.id))
@@ -157,7 +157,7 @@ def get_conversations():
                 conversations[other_id]['last_message'] = msg.content
                 conversations[other_id]['last_time'] = msg_time
 
-            # 내가 받은 메세지 중 읽지 않은 것만 카운트
+            # 내가 받은 메시지 중 읽지 않은 것만 카운트
             if msg.receiver_id == user.id and not msg.is_read:
                 conversations[other_id]['unread_count'] += 1
 
@@ -216,7 +216,7 @@ def get_conversations():
         if not member_user_ids:
             return jsonify({'success': True, 'conversations': []})
 
-        # 내가 보낸/받은 모든 메세지 조회
+        # 내가 보낸/받은 모든 메시지 조회
         messages = (
             Message.query.filter(
                 ((Message.sender_id == user.id) | (Message.receiver_id == user.id))
@@ -258,7 +258,7 @@ def get_conversations():
                 conversations[other_id]['last_message'] = msg.content
                 conversations[other_id]['last_time'] = msg_time
 
-            # 내가 받은 메세지 중 읽지 않은 것만 카운트
+            # 내가 받은 메시지 중 읽지 않은 것만 카운트
             if msg.receiver_id == user.id and not msg.is_read:
                 conversations[other_id]['unread_count'] += 1
 
@@ -275,7 +275,7 @@ def get_conversations():
 @messages_bp.route('/with/<int:other_user_id>', methods=['GET'])
 @jwt_required()
 def get_messages_with_user(other_user_id):
-    """특정 사용자와의 메세지 목록"""
+    """특정 사용자와의 메시지 목록"""
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
@@ -316,7 +316,7 @@ def get_messages_with_user(other_user_id):
 @messages_bp.route('/with/<int:other_user_id>', methods=['POST'])
 @jwt_required()
 def send_message(other_user_id):
-    """특정 사용자에게 메세지 전송"""
+    """특정 사용자에게 메시지 전송"""
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
@@ -328,7 +328,7 @@ def send_message(other_user_id):
     data = request.get_json() or {}
     content = (data.get('content') or '').strip()
     if not content:
-        return jsonify({'success': False, 'message': '메세지 내용을 입력해주세요.'}), 400
+        return jsonify({'success': False, 'message': '메시지 내용을 입력해주세요.'}), 400
 
     message = Message(
         sender_id=user.id,
@@ -346,7 +346,7 @@ def send_message(other_user_id):
 @messages_bp.route('/with/<int:other_user_id>/read', methods=['POST'])
 @jwt_required()
 def mark_as_read(other_user_id):
-    """상대방이 보낸 메세지를 모두 읽음 처리"""
+    """상대방이 보낸 메시지를 모두 읽음 처리"""
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401

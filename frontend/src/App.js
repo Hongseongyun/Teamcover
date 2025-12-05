@@ -20,6 +20,7 @@ import TeamAssignment from './pages/TeamAssignment';
 import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
 import Board from './pages/Board';
+import Inquiry from './pages/Inquiry';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
@@ -100,6 +101,14 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="user">
                       <Board />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/inquiry"
+                  element={
+                    <ProtectedRoute requiredRole="user">
+                      <Inquiry />
                     </ProtectedRoute>
                   }
                 />

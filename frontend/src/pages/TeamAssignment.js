@@ -55,6 +55,28 @@ const TeamAssignment = () => {
 
   // 게스트 추가 모달 상태
   const [showGuestModal, setShowGuestModal] = useState(false);
+
+  // 모달이 열릴 때 배경 스크롤 막기
+  useEffect(() => {
+    if (showScoreInputModal || showGuestModal) {
+      // 현재 스크롤 위치 저장
+      const scrollY = window.scrollY;
+      // body 스타일 적용
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // 모달이 닫힐 때 스크롤 복원
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showScoreInputModal, showGuestModal]);
   const [guestData, setGuestData] = useState({
     name: '',
     average: '',
@@ -1093,9 +1115,7 @@ const TeamAssignment = () => {
   // 여성 회원 분포 검증 함수
   const validateFemaleDistribution = (teams, allPlayers) => {
     // 전체 여성 회원 수 계산
-    const totalFemaleCount = allPlayers.filter(
-      (p) => p.gender === '여'
-    ).length;
+    const totalFemaleCount = allPlayers.filter((p) => p.gender === '여').length;
 
     // 여성 회원이 없으면 검증 통과
     if (totalFemaleCount === 0) {
@@ -1109,8 +1129,8 @@ const TeamAssignment = () => {
     const minFemalePerTeam = Math.floor(totalFemaleCount / teamCount);
 
     // 각 팀의 여성 회원 수 확인
-    const teamFemaleCounts = teams.map((team) =>
-      team.players.filter((p) => p.gender === '여').length
+    const teamFemaleCounts = teams.map(
+      (team) => team.players.filter((p) => p.gender === '여').length
     );
 
     // 모든 팀이 최소 여성 회원 수를 만족하는지 확인
@@ -2043,10 +2063,12 @@ const TeamAssignment = () => {
     // 전체 선수 정보 추출
     const allPlayers = bestTeams.flatMap((team) => team.players);
     const validation = validateFemaleDistribution(bestTeams, allPlayers);
-    
+
     if (!validation.isValid) {
       // 검증 실패 시 원본 팀 구성 반환 (밸런싱 전 상태)
-      console.warn('⚠️ 밸런싱 후 여성 회원 분포가 깨졌습니다. 원본 팀 구성 유지.');
+      console.warn(
+        '⚠️ 밸런싱 후 여성 회원 분포가 깨졌습니다. 원본 팀 구성 유지.'
+      );
       return teamsToBalance;
     }
 

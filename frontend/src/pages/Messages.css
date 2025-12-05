@@ -245,6 +245,7 @@
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  flex-shrink: 0;
 }
 
 .chat-header-avatar {
@@ -505,13 +506,88 @@
 
 @media (max-width: 900px) {
   .messages-container {
-    flex-direction: column;
+    flex-direction: row;
     height: calc(100vh - 160px);
+    position: relative;
   }
 
   .conversation-list {
     width: 100%;
     min-width: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 10;
+    transition: transform 0.3s ease;
+  }
+
+  .chat-panel {
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    transition: transform 0.3s ease;
+    background: var(--surface-card);
+    border-radius: 0.75rem;
+    box-shadow: var(--toss-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 대화가 선택되지 않았을 때: 목록만 보임 */
+  .messages-container:not(.has-selected-user) .conversation-list {
+    transform: translateX(0);
+  }
+
+  .messages-container:not(.has-selected-user) .chat-panel {
+    transform: translateX(100%);
+  }
+
+  /* 대화가 선택되었을 때: 채팅창만 보임 */
+  .messages-container.has-selected-user .conversation-list {
+    transform: translateX(-100%);
+  }
+
+  .messages-container.has-selected-user .chat-panel {
+    transform: translateX(0);
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .chat-back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .chat-back-button:hover {
+    background: var(--surface-subtle);
+  }
+}
+
+/* 데스크톱에서는 뒤로가기 버튼 숨김 (미디어 쿼리 밖에서 기본값) */
+@media (min-width: 901px) {
+  .chat-back-button {
+    display: none !important;
   }
 }
 

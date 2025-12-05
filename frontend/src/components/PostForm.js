@@ -16,6 +16,26 @@ const PostForm = ({ post, onClose, isAdmin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 모달이 열릴 때 배경 스크롤 막기
+  useEffect(() => {
+    // 현재 스크롤 위치 저장
+    const scrollY = window.scrollY;
+    // body 스타일 적용
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // 컴포넌트가 언마운트될 때 스크롤 복원
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
   useEffect(() => {
     if (post) {
       setTitle(post.title);

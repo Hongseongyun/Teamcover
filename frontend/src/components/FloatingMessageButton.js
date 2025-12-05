@@ -9,6 +9,28 @@ const FloatingMessageButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // 모달이 열릴 때 배경 스크롤 막기
+  useEffect(() => {
+    if (isOpen) {
+      // 현재 스크롤 위치 저장
+      const scrollY = window.scrollY;
+      // body 스타일 적용
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // 모달이 닫힐 때 스크롤 복원
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isAuthenticated || !hasRole('user')) {
       return;
@@ -21,7 +43,7 @@ const FloatingMessageButton = () => {
           setUnreadCount(res.data.count || 0);
         }
       } catch (e) {
-        console.error('메세지 안 읽은 개수 로드 실패:', e);
+        console.error('메시지 안 읽은 개수 로드 실패:', e);
       }
     };
 
