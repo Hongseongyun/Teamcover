@@ -223,8 +223,10 @@ export const paymentAPI = {
 export const messageAPI = {
   getUnreadCount: () => api.get('/api/messages/unread-count'),
   getConversations: () => api.get('/api/messages/conversations'),
-  getMessagesWithUser: (userId) =>
-    api.get(`/api/messages/with/${userId}`),
+  getMessagesWithUser: (userId, markRead = true) => {
+    const url = `/api/messages/with/${userId}`;
+    return api.get(url);
+  },
   sendMessage: (userId, content) =>
     api.post(`/api/messages/with/${userId}`, { content }),
   markAsRead: (userId) =>

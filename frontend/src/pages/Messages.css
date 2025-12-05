@@ -413,11 +413,35 @@
   background: rgba(239, 68, 68, 0.8);
 }
 
+.chat-message-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.1rem;
+  justify-content: flex-end;
+}
+
 .chat-time {
   font-size: 0.7rem;
   color: #9ca3af;
   text-align: right;
-  margin-top: 0.1rem;
+}
+
+.chat-read-status {
+  display: flex;
+  align-items: center;
+}
+
+.chat-read-indicator {
+  font-size: 0.65rem;
+  color: #3b82f6;
+  margin-left: 0.15rem;
+}
+
+.chat-unread-indicator {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  margin-left: 0.15rem;
 }
 
 .chat-loading,

@@ -475,6 +475,13 @@ class Message(db.Model):
             'is_read': self.is_read,
             'is_mine': current_user_id is not None and self.sender_id == current_user_id,
             'is_deleted': self.is_deleted,
+            # 내가 보낸 메시지인 경우 상대방이 읽었는지 여부
+            # 상대방이 받은 메시지 중 내가 보낸 메시지가 읽혔는지 확인
+            'is_read_by_receiver': (
+                self.is_read 
+                if (current_user_id is not None and self.sender_id == current_user_id and self.receiver_id != current_user_id)
+                else None
+            ),
         }
 
 class AppSetting(db.Model):

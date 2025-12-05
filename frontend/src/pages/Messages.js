@@ -212,6 +212,22 @@ const Messages = () => {
               await messageAPI.markAsRead(otherUserId);
               // 상단 네비게이션 뱃지 갱신을 위해 커스텀 이벤트 디스패치
               window.dispatchEvent(new Event('messagesUpdated'));
+              // 대화 목록의 unread_count 즉시 업데이트 (알림 즉시 사라지게)
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.user_id === otherUserId ? { ...c, unread_count: 0 } : c
+                )
+              );
+              setSuperAdminConversations((prev) =>
+                prev.map((c) =>
+                  c.user_id === otherUserId ? { ...c, unread_count: 0 } : c
+                )
+              );
+              setNormalConversations((prev) =>
+                prev.map((c) =>
+                  c.user_id === otherUserId ? { ...c, unread_count: 0 } : c
+                )
+              );
             } catch (e) {
               console.error('메세지 읽음 처리 실패:', e);
             }
@@ -281,6 +297,52 @@ const Messages = () => {
     scrollToBottom();
   }, [messages]);
 
+  // 실시간 메시지 폴링 (선택된 사용자가 있을 때만)
+  useEffect(() => {
+    if (!selectedUser?.id) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await messageAPI.getMessagesWithUser(selectedUser.id);
+        if (res.data.success) {
+          const newMessages = res.data.messages || [];
+          // 새 메시지가 있는지 확인
+          const currentLastMessageId = messages.length > 0 ? messages[messages.length - 1]?.id : null;
+          const newLastMessageId = newMessages.length > 0 ? newMessages[newMessages.length - 1]?.id : null;
+          
+          // 새 메시지가 있으면 업데이트
+          if (newLastMessageId !== currentLastMessageId || newMessages.length !== messages.length) {
+            setMessages(newMessages);
+            // 내가 받은 메시지면 읽음 처리
+            const hasUnread = newMessages.some(
+              (msg) => !msg.is_mine && !msg.is_read
+            );
+            if (hasUnread) {
+              await messageAPI.markAsRead(selectedUser.id);
+              window.dispatchEvent(new Event('messagesUpdated'));
+              // 대화 목록 갱신
+              await loadConversations();
+            }
+            scrollToBottom();
+          } else {
+            // 메시지가 없어도 읽음 상태는 업데이트 (읽음 확인 표시)
+            setMessages((prev) => {
+              const updated = prev.map((msg) => {
+                const newMsg = newMessages.find((m) => m.id === msg.id);
+                return newMsg ? { ...msg, is_read_by_receiver: newMsg.is_read_by_receiver } : msg;
+              });
+              return updated;
+            });
+          }
+        }
+      } catch (e) {
+        console.error('실시간 메시지 확인 실패:', e);
+      }
+    }, 2000); // 2초마다 확인
+
+    return () => clearInterval(pollInterval);
+  }, [selectedUser?.id, messages.length, loadConversations]);
+
   const handleSelectConversation = async (conv) => {
     setSelectedUser({
       id: conv.user_id,
@@ -288,12 +350,25 @@ const Messages = () => {
       email: conv.email,
     });
     await loadMessages(conv.user_id);
-    // 선택한 대화의 unread_count 초기화
+    // 선택한 대화의 unread_count 즉시 초기화 (알림 즉시 사라지게)
     setConversations((prev) =>
       prev.map((c) =>
         c.user_id === conv.user_id ? { ...c, unread_count: 0 } : c
       )
     );
+    // 슈퍼관리자와 일반 대화 목록도 즉시 업데이트
+    setSuperAdminConversations((prev) =>
+      prev.map((c) =>
+        c.user_id === conv.user_id ? { ...c, unread_count: 0 } : c
+      )
+    );
+    setNormalConversations((prev) =>
+      prev.map((c) =>
+        c.user_id === conv.user_id ? { ...c, unread_count: 0 } : c
+      )
+    );
+    // 대화 목록 갱신 (서버와 동기화)
+    await loadConversations();
   };
 
   const handleSelectClub = async (club) => {
@@ -754,8 +829,19 @@ const Messages = () => {
                                 </>
                               )}
                               {!msg.is_sending && (
-                                <div className="chat-time">
-                                  {formatTime(kstData)}
+                                <div className="chat-message-footer">
+                                  <div className="chat-time">
+                                    {formatTime(kstData)}
+                                  </div>
+                                  {msg.is_mine && (
+                                    <div className="chat-read-status">
+                                      {msg.is_read_by_receiver ? (
+                                        <span className="chat-read-indicator" title="읽음">✓✓</span>
+                                      ) : (
+                                        <span className="chat-unread-indicator" title="안 읽음">✓</span>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
