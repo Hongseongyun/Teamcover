@@ -68,6 +68,21 @@
   font-weight: 600;
 }
 
+/* 라이트모드에서 명시적 색상 적용 - 밝은 색상으로 변경 */
+html:not([data-theme='dark']) .conversation-list-header,
+html:not([data-theme='dark']) .messages-container .conversation-list-header {
+  background: #f9fafb !important;
+  background-color: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+/* 다크모드에서는 원래 어두운 색상 유지 */
+html[data-theme='dark'] .conversation-list-header {
+  background: var(--navbar-bg) !important;
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text-strong) !important;
+}
+
 .club-back-header {
   display: flex;
   align-items: center;
@@ -76,6 +91,21 @@
   background: var(--navbar-bg);
   color: var(--navbar-text-strong);
   font-weight: 600;
+}
+
+/* 라이트모드에서 명시적 색상 적용 - 밝은 색상으로 변경 */
+html:not([data-theme='dark']) .club-back-header,
+html:not([data-theme='dark']) .messages-container .club-back-header {
+  background: #f9fafb !important;
+  background-color: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+/* 다크모드에서는 원래 어두운 색상 유지 */
+html[data-theme='dark'] .club-back-header {
+  background: var(--navbar-bg) !important;
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text-strong) !important;
 }
 
 .club-back-button {
@@ -91,6 +121,25 @@
 .club-back-button:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* 라이트모드에서 club-back-button 스타일 */
+html:not([data-theme='dark']) .club-back-button {
+  color: #1f2937 !important;
+}
+
+html:not([data-theme='dark']) .club-back-button:hover {
+  background: rgba(148, 163, 184, 0.15) !important;
+}
+
+/* 다크모드에서는 원래 색상 유지 */
+html[data-theme='dark'] .club-back-button {
+  color: var(--navbar-text-strong) !important;
+}
+
+html[data-theme='dark'] .club-back-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
 
 .club-name {
   flex: 1;
@@ -126,6 +175,21 @@
   background: var(--navbar-bg);
   color: var(--navbar-text-strong);
   font-weight: 600;
+}
+
+/* 라이트모드에서 명시적 색상 적용 - 밝은 색상으로 변경 */
+html:not([data-theme='dark']) .club-section-header,
+html:not([data-theme='dark']) .messages-container .club-section-header {
+  background: #f9fafb !important;
+  background-color: #f9fafb !important;
+  color: #1f2937 !important;
+}
+
+/* 다크모드에서는 원래 어두운 색상 유지 */
+html[data-theme='dark'] .club-section-header {
+  background: var(--navbar-bg) !important;
+  background-color: var(--navbar-bg) !important;
+  color: var(--navbar-text-strong) !important;
 }
 
 .club-section-title {
@@ -281,6 +345,11 @@
   background: radial-gradient(circle at top left, #0f172a 0, #111827 40%, #020617 100%);
 }
 
+/* 라이트모드에서 채팅 메시지 영역 배경 */
+:root:not([data-theme='dark']) .chat-messages {
+  background: #f9fafb !important;
+}
+
 .chat-date-divider {
   display: flex;
   align-items: center;
@@ -297,11 +366,23 @@
   background: rgba(148, 163, 184, 0.3);
 }
 
+/* 라이트모드에서 날짜 구분선 */
+:root:not([data-theme='dark']) .chat-date-divider::before,
+:root:not([data-theme='dark']) .chat-date-divider::after {
+  background: rgba(148, 163, 184, 0.2);
+}
+
 .chat-date-divider span {
   padding: 0 0.75rem;
   font-size: 0.75rem;
   color: var(--color-text-muted);
   background: radial-gradient(circle at top left, #0f172a 0, #111827 40%, #020617 100%);
+}
+
+/* 라이트모드에서 날짜 구분선 배경 */
+:root:not([data-theme='dark']) .chat-date-divider span {
+  background: #f9fafb !important;
+  color: #6b7280;
 }
 
 .chat-message-row {
@@ -325,6 +406,12 @@
   align-items: center;
   justify-content: center;
   margin: 0 0.3rem;
+}
+
+/* 라이트모드에서 아바타 스타일 */
+:root:not([data-theme='dark']) .chat-avatar.small {
+  background: #6b7280;
+  color: #ffffff;
 }
 
 .chat-avatar.small.mine {
@@ -352,6 +439,19 @@
 
 .chat-message-row.mine .chat-bubble {
   background: #2563eb;
+}
+
+/* 라이트모드에서 채팅 버블 스타일 */
+:root:not([data-theme='dark']) .chat-bubble {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+:root:not([data-theme='dark']) .chat-message-row.mine .chat-bubble {
+  background: #e0f2fe !important; /* 옅은 파란색 */
+  color: #0c4a6e !important; /* 진한 파란색 텍스트 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 .chat-content {
@@ -465,6 +565,12 @@
   padding: 0.5rem 0.75rem 0.65rem;
   border-top: 1px solid rgba(148, 163, 184, 0.25);
   background: #020617;
+}
+
+/* 라이트모드에서 입력 바 배경 */
+:root:not([data-theme='dark']) .chat-input-bar {
+  background: #ffffff;
+  border-top-color: rgba(148, 163, 184, 0.2);
 }
 
 .chat-input {
@@ -589,6 +695,116 @@
   .chat-back-button {
     display: none !important;
   }
+}
+
+/* 라이트모드 스타일 (명시적 설정) */
+:root:not([data-theme='dark']) {
+  --navbar-bg: #2c3e50;
+  --navbar-text-strong: #ffffff;
+}
+
+:root:not([data-theme='dark']) .conversation-list,
+:root:not([data-theme='dark']) .chat-panel {
+  background: #ffffff;
+}
+
+/* 중복 제거 - 위에서 이미 정의됨 */
+
+:root:not([data-theme='dark']) .conversation-item {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+
+:root:not([data-theme='dark']) .conversation-item:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+:root:not([data-theme='dark']) .conversation-item.active {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+:root:not([data-theme='dark']) .conversation-name {
+  color: #1f2937;
+}
+
+:root:not([data-theme='dark']) .conversation-last-message {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .conversation-time {
+  color: #9ca3af;
+}
+
+:root:not([data-theme='dark']) .chat-header {
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+  background: #ffffff;
+}
+
+:root:not([data-theme='dark']) .chat-header-name {
+  color: #1f2937;
+}
+
+:root:not([data-theme='dark']) .chat-header-email {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .chat-messages {
+  background: #f9fafb !important;
+}
+
+:root:not([data-theme='dark']) .chat-content {
+  color: #1f2937 !important;
+}
+
+:root:not([data-theme='dark']) .chat-message-row.mine .chat-content {
+  color: #0c4a6e !important;
+}
+
+:root:not([data-theme='dark']) .chat-time {
+  color: #9ca3af;
+}
+
+:root:not([data-theme='dark']) .chat-input {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+:root:not([data-theme='dark']) .chat-input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4) !important;
+}
+
+:root:not([data-theme='dark']) .chat-placeholder {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .chat-empty {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .chat-loading {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .conversation-empty {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .messages-tab {
+  color: #6b7280;
+}
+
+:root:not([data-theme='dark']) .messages-tab:hover {
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+:root:not([data-theme='dark']) .conversation-section-divider {
+  background: #f9fafb;
+  color: #6b7280;
+  border-top-color: #e5e7eb;
+  border-bottom-color: #e5e7eb;
 }
 
 

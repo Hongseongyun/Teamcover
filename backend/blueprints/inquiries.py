@@ -15,7 +15,7 @@ def handle_preflight():
         request_origin = request.headers.get('Origin')
         if request_origin and request_origin in allowed_origins:
             response.headers.add("Access-Control-Allow-Origin", request_origin)
-        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization,X-Requested-With,X-Club-Id,X-Privacy-Token")
         response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
         response.headers.add('Access-Control-Allow-Credentials', 'true')
         return response
