@@ -8,6 +8,14 @@ from models import db, User
 from config import Config
 from email_service import init_mail
 
+# Firebase 초기화 (앱 시작 시)
+try:
+    from fcm_service import init_fcm
+    init_fcm()
+    print("✅ Firebase FCM 서비스 초기화 시도 완료")
+except Exception as e:
+    print(f"⚠️ Firebase FCM 서비스 초기화 실패 (푸시 알림이 작동하지 않을 수 있습니다): {str(e)}")
+
 # Blueprint import (OCR 제외)
 from blueprints.auth import auth_bp
 from blueprints.members import members_bp

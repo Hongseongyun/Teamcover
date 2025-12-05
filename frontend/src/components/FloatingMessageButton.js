@@ -56,9 +56,16 @@ const FloatingMessageButton = () => {
 
     window.addEventListener('messagesUpdated', handleMessagesUpdated);
 
+    // 외부에서 메시지 모달을 열기 위한 이벤트 리스너
+    const handleOpenMessageModal = () => {
+      setIsOpen(true);
+    };
+    window.addEventListener('openMessageModal', handleOpenMessageModal);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('messagesUpdated', handleMessagesUpdated);
+      window.removeEventListener('openMessageModal', handleOpenMessageModal);
     };
   }, [isAuthenticated, hasRole]);
 

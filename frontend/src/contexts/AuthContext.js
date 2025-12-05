@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { authAPI, messageAPI } from '../services/api';
+import { getFCMToken, setupMessageListener } from '../config/firebase';
 
 const AuthContext = createContext();
 
@@ -15,6 +16,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const lastUnreadCountRef = useRef(0);
+
+  // FCM 토큰 등록 함수
+  const registerFCMToken = async () => {
+    try {
+      const fcmToken = await getFCMToken();
+      if (fcmToken) {
+        await authAPI.registerFcmToken({ fcm_token: fcmToken });
+        console.log('FCM 토큰 등록 완료');
+      }
+    } catch (error) {
+      console.error('FCM 토큰 등록 실패:', error);
+    }
+  };
 
   // 로그인
   const login = async (email, password) => {
@@ -32,6 +47,9 @@ export const AuthProvider = ({ children }) => {
 
         // 개인정보 접근 토큰 삭제 (새로운 로그인 시 이전 토큰 무효화)
         localStorage.removeItem('privacy_token');
+
+        // FCM 토큰 등록
+        registerFCMToken();
 
         return {
           success: true,
@@ -60,6 +78,10 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setToken(jwtToken);
         localStorage.setItem('token', jwtToken);
+        
+        // FCM 토큰 등록
+        registerFCMToken();
+        
         return { success: true, message: '구글 로그인이 완료되었습니다.' };
       } else {
         return { success: false, message: response.data.message };
@@ -132,6 +154,8 @@ export const AuthProvider = ({ children }) => {
           const response = await authAPI.getCurrentUser();
           if (response.data.success) {
             setUser(response.data.user);
+            // FCM 토큰 등록
+            registerFCMToken();
           } else {
             // 토큰이 유효하지 않으면 제거
             localStorage.removeItem('token');
@@ -148,6 +172,99 @@ export const AuthProvider = ({ children }) => {
 
     getCurrentUser();
   }, [token]);
+
+  // 포그라운드 메시지 수신 처리
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const cleanup = setupMessageListener((payload) => {
+      if (payload) {
+        console.log('포그라운드 메시지 수신:', payload);
+        
+        // 푸시 알림 표시
+        if (window.showPushNotification) {
+          const notification = payload.notification || {};
+          const data = payload.data || {};
+          
+          let onClick = null;
+          
+          // 메시지 타입인 경우 메시지 모달 열기 (FloatingMessageButton)
+          if (data.type === 'message') {
+            onClick = () => {
+              // FloatingMessageButton의 메시지 모달을 열기 위한 이벤트 발생
+              window.dispatchEvent(new CustomEvent('openMessageModal'));
+            };
+          }
+          // 문의 타입인 경우 문의 페이지로 이동
+          else if (data.type === 'inquiry') {
+            onClick = () => {
+              window.location.href = '/inquiry';
+            };
+          }
+          
+          window.showPushNotification({
+            type: 'info',
+            title: notification.title || '알림',
+            body: notification.body || '',
+            onClick,
+            duration: 5000,
+          });
+        }
+      }
+    });
+
+    return cleanup;
+  }, [token, user]);
+
+  // 주기적으로 읽지 않은 메시지 확인 및 알림 표시
+  useEffect(() => {
+    if (!token || !user) return;
+
+    let intervalId = null;
+
+    const checkUnreadMessages = async () => {
+      try {
+        const response = await messageAPI.getUnreadCount();
+        if (response.data.success) {
+          const currentCount = response.data.count || 0;
+          const previousCount = lastUnreadCountRef.current;
+
+          // 새로운 메시지가 있는 경우 알림 표시
+          if (currentCount > previousCount && previousCount > 0) {
+            const newMessagesCount = currentCount - previousCount;
+            if (window.showPushNotification) {
+              window.showPushNotification({
+                type: 'info',
+                title: '새로운 메시지',
+                body: `읽지 않은 메시지 ${newMessagesCount}개가 있습니다.`,
+                onClick: () => {
+                  // FloatingMessageButton의 메시지 모달을 열기 위한 이벤트 발생
+                  window.dispatchEvent(new CustomEvent('openMessageModal'));
+                },
+                duration: 5000,
+              });
+            }
+          }
+
+          lastUnreadCountRef.current = currentCount;
+        }
+      } catch (error) {
+        console.error('읽지 않은 메시지 확인 실패:', error);
+      }
+    };
+
+    // 초기 확인
+    checkUnreadMessages();
+
+    // 30초마다 확인
+    intervalId = setInterval(checkUnreadMessages, 30000);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [token, user]);
 
   // 10분 이상 아무 동작이 없으면 자동 로그아웃
   useEffect(() => {

@@ -38,9 +38,13 @@ def init_fcm():
                     pass
         
         _fcm_initialized = True
-        print("Firebase Admin SDK 초기화 완료")
+        print("✅ Firebase Admin SDK 초기화 완료")
     except Exception as e:
-        print(f"Firebase Admin SDK 초기화 실패: {str(e)}")
+        print(f"❌ Firebase Admin SDK 초기화 실패: {str(e)}")
+        print("   백엔드 .env 파일에 다음 중 하나를 설정해주세요:")
+        print("   1. FIREBASE_CREDENTIALS_PATH=/path/to/firebase-service-account-key.json")
+        print("   2. FIREBASE_CREDENTIALS_JSON={\"type\":\"service_account\",...}")
+        print("   Firebase Console > 프로젝트 설정 > 서비스 계정 탭에서 키를 생성하세요.")
         _fcm_initialized = False
 
 def send_notification_to_admins(title, body, data=None):
@@ -164,4 +168,58 @@ def send_notification_to_club_admins(club_id, title, body, data=None):
     except Exception as e:
         print(f"푸시 알림 전송 중 오류 발생: {str(e)}")
         return 0
+
+def send_notification_to_user(user_id, title, body, data=None):
+    """특정 사용자에게 푸시 알림 전송"""
+    try:
+        init_fcm()
+        
+        if not _fcm_initialized:
+            print("❌ Firebase가 초기화되지 않아 푸시 알림을 전송할 수 없습니다.")
+            print("   백엔드 .env 파일에 FIREBASE_CREDENTIALS_PATH 또는 FIREBASE_CREDENTIALS_JSON을 설정해주세요.")
+            return False
+        
+        # 사용자 조회
+        user = User.query.get(user_id)
+        if not user:
+            print(f"❌ 사용자를 찾을 수 없습니다. (사용자 ID: {user_id})")
+            return False
+        if not user.fcm_token:
+            print(f"⚠️ 사용자에게 FCM 토큰이 등록되지 않았습니다. (사용자 ID: {user_id}, 이메일: {user.email})")
+            return False
+        if not user.is_active:
+            print(f"⚠️ 비활성화된 사용자입니다. (사용자 ID: {user_id}, 이메일: {user.email})")
+            return False
+        
+        try:
+            message = messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                data=data or {},
+                token=user.fcm_token
+            )
+            
+            response = messaging.send(message)
+            print(f"✅ 푸시 알림 전송 성공 (사용자: {user.email}, 메시지 ID: {response})")
+            print(f"   제목: {title}")
+            print(f"   내용: {body}")
+            return True
+        except messaging.UnregisteredError:
+            # 토큰이 만료된 경우 DB에서 제거
+            print(f"만료된 FCM 토큰 제거 (사용자: {user.email})")
+            user.fcm_token = None
+            db.session.commit()
+            return False
+        except Exception as e:
+            print(f"❌ 푸시 알림 전송 실패 (사용자: {user.email}): {str(e)}")
+            import traceback
+            print(f"   상세 오류: {traceback.format_exc()}")
+            return False
+    except Exception as e:
+        print(f"❌ 푸시 알림 전송 중 오류 발생: {str(e)}")
+        import traceback
+        print(f"   상세 오류: {traceback.format_exc()}")
+        return False
 

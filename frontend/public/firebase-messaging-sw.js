@@ -7,34 +7,63 @@ importScripts(
 );
 
 // Firebase 초기화
-firebase.initializeApp({
-  apiKey: '%REACT_APP_FIREBASE_API_KEY%',
-  authDomain: '%REACT_APP_FIREBASE_AUTH_DOMAIN%',
-  projectId: '%REACT_APP_FIREBASE_PROJECT_ID%',
-  storageBucket: '%REACT_APP_FIREBASE_STORAGE_BUCKET%',
-  messagingSenderId: '%REACT_APP_FIREBASE_MESSAGING_SENDER_ID%',
-  appId: '%REACT_APP_FIREBASE_APP_ID%',
-});
+// 환경변수는 빌드 시점에 주입되거나, fetch를 통해 가져올 수 있습니다
+// 여기서는 self.location을 통해 현재 도메인에서 설정을 가져옵니다
+const firebaseConfig = {
+  apiKey: self.firebaseConfig?.apiKey || '',
+  authDomain: self.firebaseConfig?.authDomain || '',
+  projectId: self.firebaseConfig?.projectId || '',
+  storageBucket: self.firebaseConfig?.storageBucket || '',
+  messagingSenderId: self.firebaseConfig?.messagingSenderId || '',
+  appId: self.firebaseConfig?.appId || '',
+};
 
-const messaging = firebase.messaging();
+// 설정이 있는 경우에만 초기화
+let messaging = null;
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    messaging = firebase.messaging();
+  } catch (error) {
+    console.error('Firebase 초기화 실패:', error);
+  }
+}
+
+// 메시지로 Firebase 설정 받기
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'FIREBASE_CONFIG') {
+    const config = event.data.config;
+    if (config && config.apiKey && config.projectId && !messaging) {
+      try {
+        firebase.initializeApp(config);
+        messaging = firebase.messaging();
+        console.log('Service Worker에서 Firebase 초기화 완료');
+      } catch (error) {
+        console.error('Service Worker에서 Firebase 초기화 실패:', error);
+      }
+    }
+  }
+});
 
 // 백그라운드 메시지 수신 처리
-messaging.onBackgroundMessage((payload) => {
-  console.log('백그라운드 메시지 수신:', payload);
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    console.log('백그라운드 메시지 수신:', payload);
 
-  const notificationTitle = payload.notification?.title || '새 알림';
-  const notificationOptions = {
-    body: payload.notification?.body || '',
-    icon: '/favicon.ico',
-    tag: payload.data?.type || 'notification',
-    data: payload.data,
-  };
+    const notificationTitle = payload.notification?.title || '새 알림';
+    const notificationOptions = {
+      body: payload.notification?.body || '',
+      icon: '/favicon.ico',
+      tag: payload.data?.type || 'notification',
+      data: payload.data,
+    };
 
-  return self.registration.showNotification(
-    notificationTitle,
-    notificationOptions
-  );
-});
+    return self.registration.showNotification(
+      notificationTitle,
+      notificationOptions
+    );
+  });
+}
 
 // 알림 클릭 처리
 self.addEventListener('notificationclick', (event) => {

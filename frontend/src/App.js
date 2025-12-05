@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAuthCallback from './components/GoogleAuthCallback';
 import FloatingMessageButton from './components/FloatingMessageButton';
+import PushNotificationManager from './components/PushNotificationManager';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import EmailVerification from './pages/EmailVerification';
@@ -115,6 +116,7 @@ function App() {
               </Routes>
             </main>
             <FloatingMessageButton />
+            <PushNotificationManager />
             <SpeedInsights />
           </div>
         </ClubProvider>

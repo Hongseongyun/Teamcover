@@ -1,0 +1,156 @@
+.push-notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.push-notification {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  animation: slideIn 0.3s ease-out;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #3b82f6;
+}
+
+.push-notification:hover {
+  transform: translateX(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.push-notification.info {
+  border-left-color: #3b82f6;
+}
+
+.push-notification.success {
+  border-left-color: #10b981;
+}
+
+.push-notification.warning {
+  border-left-color: #f59e0b;
+}
+
+.push-notification.error {
+  border-left-color: #ef4444;
+}
+
+.push-notification-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+
+.push-notification.info .push-notification-icon {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.push-notification.success .push-notification-icon {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.push-notification.warning .push-notification-icon {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.push-notification.error .push-notification-icon {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.push-notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.push-notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.push-notification-body {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.push-notification-close {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.push-notification-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.push-notification.closing {
+  animation: slideOut 0.3s ease-out forwards;
+}
+
+/* 모바일 대응 */
+@media (max-width: 640px) {
+  .push-notification-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .push-notification {
+    padding: 12px;
+  }
+}
+
