@@ -788,6 +788,43 @@
   border: 2px solid var(--toss-danger);
 }
 
+.payment-status.point {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background-color: #fef3c7;
+  color: #d97706;
+  border: 2px solid #f59e0b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-status.point:hover:not(:disabled) {
+  background-color: #fde68a;
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+[data-theme='dark'] .payment-status.point {
+  background-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+[data-theme='dark'] .payment-status.point:hover:not(:disabled) {
+  background-color: rgba(245, 158, 11, 0.4);
+}
+
+.payment-status.point:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .payment-status.exempt {
   display: inline-flex;
   align-items: center;

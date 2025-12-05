@@ -928,8 +928,9 @@ const Payments = () => {
       );
       if (!exists && !alreadyTemp) {
         const tempId = `temp_${memberId}_${monthCursor}_${Date.now()}_${i}`;
-        const isPaid = status === 'paid';
+        const isPaid = status === 'paid' || status === 'point';
         const isExempt = status === 'exempt';
+        const paidWithPoints = status === 'point';
 
         // 월별 납입 현황에서는 항상 정상 금액으로 표시 (5000원)
         // 저장 시에만 1월 할인을 적용
@@ -941,6 +942,7 @@ const Payments = () => {
           amount: amountPerMonth, // 표시용으로는 항상 정상 금액
           is_paid: isPaid,
           is_exempt: isExempt,
+          paid_with_points: paidWithPoints,
           member_name: members.find((m) => m.id === memberId)?.name || '',
           // 1월에 12개월 선납인 경우 그룹 ID
           prepayGroupId: prepayGroupId,
@@ -981,6 +983,7 @@ const Payments = () => {
 
   // 면제 상태를 관리하기 위한 별도 state
   const [tempExemptStates, setTempExemptStates] = useState({});
+  const [tempPaidWithPointsStates, setTempPaidWithPointsStates] = useState({});
   const [tempDeletePayments, setTempDeletePayments] = useState([]);
 
   // 면제 상태 가져오기
@@ -1002,6 +1005,25 @@ const Payments = () => {
     return originalExemptState;
   };
 
+  // 포인트 납부 상태 가져오기
+  const getTempPaidWithPointsState = (paymentId, originalPaidWithPointsState) => {
+    // paymentId를 문자열과 숫자 모두 확인
+    const idStr = String(paymentId);
+    const idNum =
+      typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+
+    if (tempPaidWithPointsStates[paymentId] !== undefined) {
+      return tempPaidWithPointsStates[paymentId];
+    }
+    if (tempPaidWithPointsStates[idStr] !== undefined) {
+      return tempPaidWithPointsStates[idStr];
+    }
+    if (tempPaidWithPointsStates[idNum] !== undefined) {
+      return tempPaidWithPointsStates[idNum];
+    }
+    return originalPaidWithPointsState;
+  };
+
   // 납입 상태 순환 함수
   const togglePaymentCycle = (payment) => {
     const paymentId = payment.id;
@@ -1013,25 +1035,36 @@ const Payments = () => {
       const tempPayment = tempNewPayments.find((p) => p.id === paymentId);
       if (!tempPayment) return;
 
-      // 상태 순환: 납입완료 → 면제 → 미납 → 삭제
+      // 상태 순환: 납입완료 → 포인트 → 면제 → 미납 → 삭제
       const currentIsExempt = tempPayment.is_exempt || false;
       const currentIsPaid = tempPayment.is_paid || false;
+      const currentPaidWithPoints = tempPayment.paid_with_points || false;
 
       // 면제 상태인 경우 → 미납으로 변경
       if (currentIsExempt) {
         setTempNewPayments((prev) =>
           prev.map((p) =>
-            p.id === paymentId ? { ...p, is_exempt: false, is_paid: false } : p
+            p.id === paymentId ? { ...p, is_exempt: false, is_paid: false, paid_with_points: false } : p
           )
         );
         return;
       }
 
-      // 납입완료 상태인 경우 → 면제로 변경
-      if (currentIsPaid) {
+      // 포인트 상태인 경우 → 면제로 변경
+      if (currentIsPaid && currentPaidWithPoints) {
         setTempNewPayments((prev) =>
           prev.map((p) =>
-            p.id === paymentId ? { ...p, is_paid: false, is_exempt: true } : p
+            p.id === paymentId ? { ...p, is_paid: false, is_exempt: true, paid_with_points: false } : p
+          )
+        );
+        return;
+      }
+
+      // 납입완료 상태인 경우 → 포인트로 변경
+      if (currentIsPaid && !currentPaidWithPoints) {
+        setTempNewPayments((prev) =>
+          prev.map((p) =>
+            p.id === paymentId ? { ...p, is_paid: true, is_exempt: false, paid_with_points: true } : p
           )
         );
         return;
@@ -1078,11 +1111,70 @@ const Payments = () => {
     // 현재 상태 확인 (임시 상태가 있으면 그것을 사용, 없으면 원본 상태 사용)
     const currentIsPaid = getTempPaymentState(paymentId, payment.is_paid);
     const currentIsExempt = getTempExemptState(paymentId, payment.is_exempt);
+    const currentPaidWithPoints = getTempPaidWithPointsState(paymentId, payment.paid_with_points || false);
 
-    // 상태 순환: 납입완료(✓) → 면제 → 미납(✗) → 초기화(삭제) → 납입완료(✓) → ...
+    // 상태 순환: 납입완료(✓) → 포인트 → 면제 → 미납(✗) → 초기화(삭제) → 납입완료(✓) → ...
 
-    // 1. 납입완료 상태인 경우 → 면제로 변경 (면제보다 먼저 확인)
-    if (currentIsPaid === true && currentIsExempt !== true) {
+    // 1. 납입완료 상태인 경우 → 포인트로 변경
+    if (currentIsPaid === true && !currentPaidWithPoints && currentIsExempt !== true) {
+      // 포인트로 설정
+      // paymentId를 숫자로 통일하여 저장
+      const paidId =
+        typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+      setTempPaidWithPointsStates((prev) => ({
+        ...prev,
+        [paidId]: true,
+      }));
+      setTempPaymentStates((prev) => ({
+        ...prev,
+        [paidId]: true,
+      }));
+      setTempExemptStates((prev) => {
+        const newExempt = { ...prev };
+        delete newExempt[paidId];
+        delete newExempt[String(paidId)];
+        return newExempt;
+      });
+      // 삭제 목록에서 제거 (이미 삭제 예정이었던 경우 취소)
+      setTempDeletePayments((prev) =>
+        prev.filter((pId) => {
+          const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+          return pIdNum === paidId;
+        })
+      );
+      return;
+    }
+
+    // 2. 포인트 상태인 경우 → 면제로 변경
+    if (currentIsPaid === true && currentPaidWithPoints && currentIsExempt !== true) {
+      // 면제로 설정하고 포인트 해제
+      // paymentId를 숫자로 통일하여 저장
+      const paidId =
+        typeof paymentId === 'string' ? parseInt(paymentId, 10) : paymentId;
+      setTempExemptStates((prev) => ({
+        ...prev,
+        [paidId]: true,
+      }));
+      setTempPaymentStates((prev) => ({
+        ...prev,
+        [paidId]: false,
+      }));
+      setTempPaidWithPointsStates((prev) => ({
+        ...prev,
+        [paidId]: false,
+      }));
+      // 삭제 목록에서 제거 (이미 삭제 예정이었던 경우 취소)
+      setTempDeletePayments((prev) =>
+        prev.filter((pId) => {
+          const pIdNum = typeof pId === 'string' ? parseInt(pId, 10) : pId;
+          return pIdNum === paidId;
+        })
+      );
+      return;
+    }
+
+    // 3. 납입완료 상태인 경우 → 면제로 변경 (레거시 - 이제는 사용되지 않음)
+    if (currentIsPaid === true && currentIsExempt !== true && !currentPaidWithPoints) {
       // 면제로 설정하고 납입 완료 해제
       // paymentId를 숫자로 통일하여 저장
       const paidId =
@@ -1105,7 +1197,7 @@ const Payments = () => {
       return;
     }
 
-    // 2. 면제 상태인 경우 → 미납(x)으로 변경
+    // 3. 면제 상태인 경우 → 미납(x)으로 변경
     if (currentIsExempt === true) {
       // 면제 해제하고 미납으로 설정
       // paymentId를 숫자로 통일하여 저장
@@ -1129,7 +1221,7 @@ const Payments = () => {
       return;
     }
 
-    // 3. 미납 상태인 경우 → 초기화(삭제)로 변경
+    // 4. 미납 상태인 경우 → 초기화(삭제)로 변경
     // 삭제 목록에 추가
     // paymentId를 숫자로 통일하여 저장
     const unpaidId =
@@ -1169,6 +1261,10 @@ const Payments = () => {
               ? tempPaymentStates[paymentId]
               : payment.is_paid,
           is_exempt: isExempt,
+          paid_with_points:
+            tempPaidWithPointsStates[paymentId] !== undefined
+              ? tempPaidWithPointsStates[paymentId]
+              : payment.paid_with_points || false,
         };
 
         updates.push(paymentAPI.updatePayment(payment.id, updateData));
@@ -1184,9 +1280,31 @@ const Payments = () => {
 
         // 삭제 예정이 아닌 경우만 업데이트
         if (!tempDeletePayments.includes(parseInt(paymentId))) {
+          const updateData = {
+            is_paid: isPaid,
+            paid_with_points:
+              tempPaidWithPointsStates[paymentId] !== undefined
+                ? tempPaidWithPointsStates[paymentId]
+                : payment.paid_with_points || false,
+          };
+          updates.push(paymentAPI.updatePayment(payment.id, updateData));
+        }
+      }
+
+      // paid_with_points만 변경된 납입들
+      for (const [paymentId, paidWithPoints] of Object.entries(tempPaidWithPointsStates)) {
+        // 이미 위에서 처리된 경우는 건너뛰기
+        if (tempExemptStates[paymentId] !== undefined) continue;
+        if (tempPaymentStates[paymentId] !== undefined) continue;
+
+        const payment = payments.find((p) => p.id === parseInt(paymentId));
+        if (!payment) continue;
+
+        // 삭제 예정이 아닌 경우만 업데이트
+        if (!tempDeletePayments.includes(parseInt(paymentId))) {
           updates.push(
             paymentAPI.updatePayment(payment.id, {
-              is_paid: isPaid,
+              paid_with_points: paidWithPoints,
             })
           );
         }
@@ -1248,6 +1366,7 @@ const Payments = () => {
           payment_date: paymentDate,
           is_paid: group.is_paid,
           is_exempt: group.is_exempt || false,
+          paid_with_points: group.paid_with_points || false,
           note: note,
         });
       });
@@ -1262,6 +1381,7 @@ const Payments = () => {
           payment_date: paymentDate,
           is_paid: tempPayment.is_paid,
           is_exempt: tempPayment.is_exempt || false,
+          paid_with_points: tempPayment.paid_with_points || false,
           note: '',
         });
       });
@@ -1274,6 +1394,7 @@ const Payments = () => {
       await Promise.all([...deletePromises, ...updates, ...newPayments]);
       setTempPaymentStates({});
       setTempExemptStates({});
+      setTempPaidWithPointsStates({});
       setTempDeletePayments([]);
       setTempNewPayments([]);
       await loadPayments();
@@ -1290,6 +1411,7 @@ const Payments = () => {
   const cancelTempChanges = () => {
     setTempPaymentStates({});
     setTempExemptStates({});
+    setTempPaidWithPointsStates({});
     setTempDeletePayments([]);
     setTempNewPayments([]);
   };
@@ -1318,6 +1440,7 @@ const Payments = () => {
     Object.keys(tempPaymentStates).length > 0 ||
     tempNewPayments.length > 0 ||
     Object.keys(tempExemptStates).length > 0 ||
+    Object.keys(tempPaidWithPointsStates).length > 0 ||
     tempDeletePayments.length > 0;
 
   if (loading) {
@@ -2255,7 +2378,7 @@ const Payments = () => {
                                 const isTemp = paymentId
                                   .toString()
                                   .startsWith('temp_');
-                                let isPaid, isExempt;
+                                let isPaid, isExempt, paidWithPoints;
 
                                 if (isTemp) {
                                   // 임시 새 납입인 경우
@@ -2264,6 +2387,7 @@ const Payments = () => {
                                   );
                                   isPaid = tempPayment?.is_paid || false;
                                   isExempt = tempPayment?.is_exempt || false;
+                                  paidWithPoints = tempPayment?.paid_with_points || false;
                                 } else {
                                   // 기존 납입인 경우
                                   // 임시 상태를 가져올 때 getTempPaymentState 함수 사용 (타입 일관성)
@@ -2276,14 +2400,35 @@ const Payments = () => {
                                     paymentId,
                                     payment.is_exempt
                                   );
+                                  // 포인트 상태 확인
+                                  paidWithPoints = getTempPaidWithPointsState(
+                                    paymentId,
+                                    payment.paid_with_points || false
+                                  );
                                 }
 
-                                // 납입 완료 상태 (면제보다 먼저 확인)
-                                if (isPaid === true) {
+                                // 포인트 상태 (납입완료이면서 포인트로 납부한 경우)
+                                if (isPaid === true && paidWithPoints === true) {
+                                  return (
+                                    <button
+                                      className="payment-status point"
+                                      title="클릭하여 면제로 변경"
+                                      onClick={() =>
+                                        togglePaymentCycle(payment)
+                                      }
+                                      disabled={submitting}
+                                    >
+                                      P
+                                    </button>
+                                  );
+                                }
+
+                                // 납입 완료 상태 (포인트가 아닌 경우)
+                                if (isPaid === true && !paidWithPoints) {
                                   return (
                                     <button
                                       className="payment-status paid"
-                                      title="클릭하여 면제로 변경"
+                                      title="클릭하여 포인트로 변경"
                                       onClick={() =>
                                         togglePaymentCycle(payment)
                                       }
@@ -2421,6 +2566,7 @@ const Payments = () => {
                   {Object.keys(tempPaymentStates).length +
                     tempNewPayments.length +
                     Object.keys(tempExemptStates).length +
+                    Object.keys(tempPaidWithPointsStates).length +
                     tempDeletePayments.length}
                   개의 변경사항이 있습니다.
                 </span>
@@ -3311,6 +3457,7 @@ const Payments = () => {
                         disabled={submitting}
                       >
                         <option value="paid">납입</option>
+                        <option value="point">포인트</option>
                         <option value="exempt">면제</option>
                         <option value="unpaid">미납</option>
                       </select>

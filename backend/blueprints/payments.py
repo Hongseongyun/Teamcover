@@ -8,6 +8,20 @@ from utils.club_helpers import get_current_club_id, require_club_membership, che
 # 납입 관리 Blueprint
 payments_bp = Blueprint('payments', __name__, url_prefix='/api/payments')
 
+# 포인트 날짜 계산 헬퍼 함수
+def get_point_date_for_payment(payment):
+    """납입 내역에 대한 포인트 차감 날짜를 계산합니다.
+    월회비는 month 필드를 기반으로, 정기전은 payment_date를 사용합니다.
+    """
+    if payment.payment_type == 'monthly' and payment.month:
+        # month가 'YYYY-MM' 형식이므로 해당 월의 첫째 날로 설정
+        try:
+            return datetime.strptime(payment.month + '-01', '%Y-%m-%d').date()
+        except:
+            return payment.payment_date
+    else:
+        return payment.payment_date
+
 @payments_bp.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
@@ -169,22 +183,28 @@ def add_payment():
         except Exception:
             db.session.rollback()
 
-        # 포인트 자동 차감 처리: 정기전(game) + 납입완료 + 포인트로 납부 + 면제 아님
+        # 포인트 자동 차감 처리: 정기전(game) 또는 월회비(monthly) + 납입완료 + 포인트로 납부 + 면제 아님
         try:
             should_create_point = (
-                new_payment.payment_type == 'game'
-                and new_payment.is_paid is True
+                new_payment.is_paid is True
                 and new_payment.is_exempt is False
                 and new_payment.paid_with_points is True
             )
             if should_create_point:
+                # 월회비는 5000원, 정기전은 실제 금액
+                point_amount = 5000 if new_payment.payment_type == 'monthly' else abs(new_payment.amount)
+                point_reason = '월회비' if new_payment.payment_type == 'monthly' else '정기전 게임비'
+                
+                # 포인트 차감 날짜 계산
+                point_date = get_point_date_for_payment(new_payment)
+                
                 point = Point(
                     member_id=new_payment.member_id,
                     club_id=club_id,  # 클럽 ID 추가
                     point_type='사용',
-                    amount=abs(new_payment.amount),  # 사용은 양수 저장, 계산 시 차감
-                    reason='정기전 게임비',
-                    point_date=new_payment.payment_date,
+                    amount=point_amount,  # 사용은 양수 저장, 계산 시 차감
+                    reason=point_reason,
+                    point_date=point_date,
                     note=f'PAYMENT:{new_payment.id}'
                 )
                 db.session.add(point)
@@ -298,21 +318,27 @@ def update_payment(payment_id):
             linked_point = Point.query.filter_by(note=f'PAYMENT:{payment.id}').first()
 
             should_have_point = (
-                payment.payment_type == 'game'
-                and payment.is_paid is True
+                payment.is_paid is True
                 and payment.is_exempt is False
                 and payment.paid_with_points is True
             )
 
             if should_have_point and linked_point is None:
                 # 새로 생성
+                # 월회비는 5000원, 정기전은 실제 금액
+                point_amount = 5000 if payment.payment_type == 'monthly' else abs(payment.amount)
+                point_reason = '월회비' if payment.payment_type == 'monthly' else '정기전 게임비'
+                
+                # 포인트 차감 날짜 계산
+                point_date = get_point_date_for_payment(payment)
+                
                 new_point = Point(
                     member_id=payment.member_id,
                     club_id=club_id,  # 클럽 ID 추가
                     point_type='사용',
-                    amount=abs(payment.amount),
-                    reason='정기전 게임비',
-                    point_date=payment.payment_date,
+                    amount=point_amount,
+                    reason=point_reason,
+                    point_date=point_date,
                     note=f'PAYMENT:{payment.id}'
                 )
                 db.session.add(new_point)
@@ -323,13 +349,22 @@ def update_payment(payment_id):
                 db.session.commit()
             elif linked_point is not None:
                 # 포인트는 유지되지만 금액/날짜가 바뀐 경우 동기화
+                # 월회비는 5000원, 정기전은 실제 금액
+                expected_amount = 5000 if payment.payment_type == 'monthly' else abs(payment.amount)
+                
+                # 포인트 차감 날짜 계산
+                expected_point_date = get_point_date_for_payment(payment)
+                
                 needs_update = (
-                    (payment.payment_date != prev_payment_date)
-                    or (abs(payment.amount) != linked_point.amount)
+                    (expected_point_date != linked_point.point_date)
+                    or (expected_amount != linked_point.amount)
                 )
                 if needs_update:
-                    linked_point.point_date = payment.payment_date
-                    linked_point.amount = abs(payment.amount)
+                    linked_point.point_date = expected_point_date
+                    linked_point.amount = expected_amount
+                    # 월회비인 경우 reason도 업데이트
+                    if payment.payment_type == 'monthly':
+                        linked_point.reason = '월회비'
                     db.session.commit()
         except Exception:
             db.session.rollback()
@@ -499,13 +534,11 @@ def get_payment_stats():
 # 내부 유틸: 결제-장부 동기화
 def _sync_payment_to_ledger(payment: Payment):
     """결제 레코드를 장부에 반영/삭제한다."""
-    # 결제 반영 조건: 납입완료 + 면제 아님
+    # 결제 반영 조건: 납입완료 + 면제 아님 + 포인트 납부 아님
     should_exist = (
         bool(payment.is_paid)
         and not bool(payment.is_exempt)
-        and not (
-            payment.payment_type == 'game' and bool(payment.paid_with_points)
-        )
+        and not bool(payment.paid_with_points)  # 포인트 납부는 장부에 기록하지 않음
     )
     # 기존 장부
     existing = FundLedger.query.filter_by(payment_id=payment.id).all()
@@ -576,14 +609,14 @@ def fund_ledger_endpoint():
             q = q.order_by(FundLedger.event_date.desc())
             rows = q.all()
 
-            # 과거 데이터 보정: 포인트 납부 정기전 게임비 제거 & 입금 처리 유지
-            game_payment_ids = [
-                row.payment_id for row in rows if row.source == 'game' and row.payment_id
+            # 과거 데이터 보정: 포인트 납부 납입 내역 제거 & 입금 처리 유지
+            payment_ids = [
+                row.payment_id for row in rows if row.payment_id
             ]
             paid_with_points_ids = set()
-            if game_payment_ids:
+            if payment_ids:
                 paid_with_points_payments = Payment.query.filter(
-                    Payment.id.in_(game_payment_ids),
+                    Payment.id.in_(payment_ids),
                     Payment.paid_with_points.is_(True),
                 ).all()
                 paid_with_points_ids = {p.id for p in paid_with_points_payments}
@@ -591,11 +624,12 @@ def fund_ledger_endpoint():
             entries_updated = False
             cleaned_rows = []
             for row in rows:
+                # 포인트 납부인 경우 장부에서 제거
+                if row.payment_id in paid_with_points_ids:
+                    db.session.delete(row)
+                    entries_updated = True
+                    continue
                 if row.source == 'game':
-                    if row.payment_id in paid_with_points_ids:
-                        db.session.delete(row)
-                        entries_updated = True
-                        continue
                     if row.entry_type != 'credit':
                         row.entry_type = 'credit'
                         entries_updated = True
