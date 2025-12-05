@@ -210,19 +210,6 @@ export const AuthProvider = ({ children }) => {
               club_id: data.club_id
             });
           }
-          // 문의 답변 완료 타입인 경우 문의 페이지로 이동
-          else if (data.type === 'inquiry_reply') {
-            notificationType = 'success';
-            onClick = () => {
-              window.location.href = '/inquiry';
-            };
-            console.log('✅ 문의 답변 알림 수신:', {
-              inquiry_id: data.inquiry_id,
-              inquiry_title: data.inquiry_title,
-              replier_name: data.replier_name,
-              club_id: data.club_id
-            });
-          }
           
           window.showPushNotification({
             type: notificationType,

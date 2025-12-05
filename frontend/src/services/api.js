@@ -297,6 +297,7 @@ export const inquiryAPI = {
       `/api/inquiries/${inquiryId}${queryString ? '?' + queryString : ''}`
     );
   },
+  getRepliedCount: () => api.get('/api/inquiries/replied-count'),
   createInquiry: (data) => api.post('/api/inquiries', data),
   updateInquiry: (inquiryId, data) =>
     api.put(`/api/inquiries/${inquiryId}`, data),

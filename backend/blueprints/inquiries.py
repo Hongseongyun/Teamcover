@@ -83,6 +83,29 @@ def get_inquiries():
     except Exception as e:
         return jsonify({'success': False, 'message': f'문의 목록 조회 실패: {str(e)}'}), 500
 
+# 답변이 달린 문의 개수 조회 (작성자용)
+@inquiries_bp.route('/replied-count', methods=['GET'])
+@jwt_required()
+def get_replied_inquiry_count():
+    """답변이 달린 문의 개수 조회 (작성자용)"""
+    try:
+        user = get_current_user()
+        if not user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        # 사용자가 작성한 문의 중 답변이 달린 문의 개수 조회
+        replied_count = Inquiry.query.filter(
+            Inquiry.user_id == user.id,
+            Inquiry.reply.isnot(None)
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'replied_count': replied_count
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'답변 달린 문의 개수 조회 실패: {str(e)}'}), 500
+
 # 새로운 문의 확인 (답변이 없는 문의 개수)
 @inquiries_bp.route('/unread-count', methods=['GET'])
 @jwt_required()
@@ -419,38 +442,63 @@ def reply_inquiry(inquiry_id):
         
         db.session.commit()
         
-        # 문의 작성자에게 푸시 알림 전송
+        # 문의 작성자에게 자동 메시지 전송
         try:
-            from fcm_service import send_notification_to_user
+            from models import Message
             inquiry_author = User.query.get(inquiry.user_id)
-            if inquiry_author:
+            if inquiry_author and inquiry_author.id != user.id:  # 자기 자신에게는 메시지 보내지 않음
+                # 메시지 내용 생성 (문의 바로가기 링크 포함)
+                message_content = f'문의하신 "{inquiry.title}"에 답변이 등록되었습니다.\n\n답변 내용:\n{reply[:200]}{"..." if len(reply) > 200 else ""}\n\n[문의 보기: /inquiry?inquiry_id={inquiry.id}]'
+                
+                # 자동 메시지 생성
+                auto_message = Message(
+                    sender_id=user.id,
+                    receiver_id=inquiry_author.id,
+                    content=message_content,
+                    created_at=datetime.utcnow(),
+                    is_read=False,
+                )
+                db.session.add(auto_message)
+                db.session.commit()
+                
                 print(f'\n{"="*60}')
-                print(f'📤 문의 답변 완료: {user.name} -> {inquiry_author.name}')
+                print(f'📤 문의 답변 완료 - 자동 메시지 전송')
+                print(f'   답변자: {user.name} ({user.role})')
+                print(f'   작성자: {inquiry_author.name} ({inquiry_author.email})')
                 print(f'   문의 ID: {inquiry_id}')
                 print(f'   문의 제목: {inquiry.title[:30]}...')
-                print(f'   답변자: {user.name} ({user.role})')
-                print(f'{"="*60}')
-                result = send_notification_to_user(
-                    user_id=inquiry.user_id,
-                    title='문의 답변이 완료되었습니다',
-                    body=f'"{inquiry.title}" 문의에 답변이 등록되었습니다.',
-                    data={
-                        'type': 'inquiry_reply',
-                        'inquiry_id': str(inquiry.id),
-                        'inquiry_title': inquiry.title,
-                        'replier_name': user.name,
-                        'club_id': str(inquiry.club_id) if inquiry.club_id else None
-                    }
-                )
-                if result:
-                    print(f'✅ 문의 답변 푸시 알림 전송 성공 (작성자: {inquiry_author.email})')
-                else:
-                    print(f'⚠️ 문의 답변 푸시 알림 전송 실패 (작성자: {inquiry_author.email}): FCM 토큰이 없거나 Firebase가 초기화되지 않았습니다.')
+                print(f'   메시지 ID: {auto_message.id}')
                 print(f'{"="*60}\n')
+                
+                # 메시지 전송 후 푸시 알림은 messages.py의 send_message 함수에서 처리됨
+                # 여기서는 직접 푸시 알림을 보내지 않고, 메시지 전송 로직을 재사용
+                try:
+                    from fcm_service import send_notification_to_user
+                    result = send_notification_to_user(
+                        user_id=inquiry_author.id,
+                        title='새로운 메시지',
+                        body=f'{user.name}님으로부터 메시지가 도착했습니다: 문의 답변이 완료되었습니다.',
+                        data={
+                            'type': 'message',
+                            'sender_id': str(user.id),
+                            'sender_name': user.name,
+                            'message_id': str(auto_message.id),
+                            'content': message_content[:100]
+                        }
+                    )
+                    if result:
+                        print(f'✅ 문의 답변 메시지 푸시 알림 전송 성공 (작성자: {inquiry_author.email})')
+                    else:
+                        print(f'⚠️ 문의 답변 메시지 푸시 알림 전송 실패 (작성자: {inquiry_author.email})')
+                except Exception as e:
+                    print(f'⚠️ 문의 답변 메시지 푸시 알림 전송 중 오류: {str(e)}')
+            elif inquiry_author and inquiry_author.id == user.id:
+                print(f'⚠️ 자기 자신의 문의에 답변했으므로 메시지를 보내지 않습니다.')
         except Exception as e:
-            # 푸시 알림 실패가 답변 등록에 영향을 주지 않도록 함
+            # 메시지 전송 실패가 답변 등록에 영향을 주지 않도록 함
+            db.session.rollback()
             print(f'\n{"="*60}')
-            print(f'❌ 문의 답변 푸시 알림 전송 중 오류 발생: {str(e)}')
+            print(f'❌ 문의 답변 자동 메시지 전송 중 오류 발생: {str(e)}')
             import traceback
             print(f'   상세 오류: {traceback.format_exc()}')
             print(f'{"="*60}\n')

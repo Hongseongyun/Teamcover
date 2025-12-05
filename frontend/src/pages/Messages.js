@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { messageAPI, clubAPI, memberAPI, authAPI } from '../services/api';
 import { useClub } from '../contexts/ClubContext';
@@ -7,6 +8,7 @@ import './Messages.css';
 const Messages = () => {
   const { user } = useAuth();
   const { currentClub } = useClub();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('conversations'); // 'conversations' or 'clubs'
   const [conversations, setConversations] = useState([]);
   const [clubs, setClubs] = useState([]);
@@ -446,6 +448,68 @@ const Messages = () => {
     }
   };
 
+  // 메시지 내용 렌더링 (문의 링크 처리)
+  const renderMessageContent = (content) => {
+    if (!content) return '';
+    
+    // [문의 보기: /inquiry?inquiry_id=123] 형식의 링크 찾기
+    const linkPattern = /\[문의 보기: (\/inquiry\?inquiry_id=\d+)\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = linkPattern.exec(content)) !== null) {
+      // 링크 이전 텍스트
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+      
+      // 링크 경로를 변수에 저장 (클로저 문제 해결)
+      const linkPath = match[1];
+      
+      // 링크 버튼
+      parts.push(
+        <React.Fragment key={`link-${match.index}`}>
+          <br />
+          <button
+            className="inquiry-link-button"
+            onClick={() => {
+              navigate(linkPath);
+              // 메시지 모달 닫기 (부모 컴포넌트에서 처리)
+              window.dispatchEvent(new CustomEvent('closeMessageModal'));
+            }}
+            style={{
+              marginTop: '8px',
+              padding: '6px 12px',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            📋 문의 보기
+          </button>
+        </React.Fragment>
+      );
+      
+      lastIndex = linkPattern.lastIndex;
+    }
+    
+    // 남은 텍스트
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+    
+    // 링크가 없으면 원본 텍스트 반환
+    if (parts.length === 0) {
+      return content;
+    }
+    
+    return parts;
+  };
+
   // 메시지 삭제 가능 여부 확인 (10분 이내)
   const canDeleteMessage = (createdAt) => {
     if (!createdAt) return false;
@@ -840,7 +904,9 @@ const Messages = () => {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="chat-content">{msg.content}</div>
+                                  <div className="chat-content">
+                                    {renderMessageContent(msg.content)}
+                                  </div>
                                   {msg.is_mine && canDeleteMessage(msg.created_at) && (
                                     <button
                                       className="chat-delete-button"
