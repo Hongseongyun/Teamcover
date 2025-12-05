@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useClub } from '../contexts/ClubContext';
-import { clubAPI } from '../services/api';
+import { clubAPI, messageAPI } from '../services/api';
 import ClubSelector from './ClubSelector';
 import './Navbar.css';
 
@@ -16,6 +16,7 @@ const Navbar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   useEffect(() => {
     if (user?.role === 'super_admin' && isAuthenticated) {
@@ -41,6 +42,39 @@ const Navbar = () => {
       };
     }
   }, [user, isAuthenticated]);
+
+  // 메세지 안 읽은 개수 로드 & 폴링
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    const loadUnread = async () => {
+      try {
+        const res = await messageAPI.getUnreadCount();
+        if (res.data.success) {
+          setUnreadMessagesCount(res.data.count || 0);
+        }
+      } catch (e) {
+        console.error('메세지 안 읽은 개수 로드 실패:', e);
+      }
+    };
+
+    loadUnread();
+    const interval = setInterval(loadUnread, 15000);
+
+    const handleMessagesUpdated = () => {
+      loadUnread();
+    };
+
+    window.addEventListener('messagesUpdated', handleMessagesUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesUpdated', handleMessagesUpdated);
+    };
+  }, [isAuthenticated]);
 
   const loadJoinRequestsCount = async () => {
     try {
@@ -78,6 +112,7 @@ const Navbar = () => {
       '/team-assignment': isAdminForCurrentClub,
       '/user-management': hasRole('super_admin'),
       '/board': hasRole('user'),
+      '/messages': hasRole('user'),
     };
 
     return pagePermissions[page] || false;
@@ -159,6 +194,24 @@ const Navbar = () => {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   게시판
+                </Link>
+              </li>
+            )}
+            {canAccessPage('/messages') && (
+              <li className="nav-item">
+                <Link
+                  to="/messages"
+                  className={`nav-link ${isActive('/messages')} ${
+                    unreadMessagesCount > 0 ? 'has-notification' : ''
+                  }`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  메세지
+                  {unreadMessagesCount > 0 && (
+                    <span className="notification-badge">
+                      {unreadMessagesCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             )}
@@ -271,6 +324,19 @@ const Navbar = () => {
                   >
                     <span className="mypage-icon">👤</span>
                     <span>마이페이지</span>
+                  </Link>
+                  <Link
+                    to="/messages"
+                    className="dropdown-item"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <span className="mypage-icon">💬</span>
+                    <span>메세지</span>
+                    {unreadMessagesCount > 0 && (
+                      <span className="dropdown-badge">
+                        {unreadMessagesCount}
+                      </span>
+                    )}
                   </Link>
                   <button
                     className="dropdown-item logout-item"

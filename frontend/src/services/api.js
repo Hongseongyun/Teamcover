@@ -219,6 +219,18 @@ export const paymentAPI = {
   deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
 };
 
+// 메세지 / 채팅 API
+export const messageAPI = {
+  getUnreadCount: () => api.get('/api/messages/unread-count'),
+  getConversations: () => api.get('/api/messages/conversations'),
+  getMessagesWithUser: (userId) =>
+    api.get(`/api/messages/with/${userId}`),
+  sendMessage: (userId, content) =>
+    api.post(`/api/messages/with/${userId}`, { content }),
+  markAsRead: (userId) =>
+    api.post(`/api/messages/with/${userId}/read`),
+};
+
 // 클럽 관리 API
 export const clubAPI = {
   getAllClubs: () => api.get('/api/clubs/public'), // 회원가입용 (인증 불필요)

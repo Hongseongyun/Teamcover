@@ -446,6 +446,35 @@ class Point(db.Model):
     def __repr__(self):
         return f'<Point {self.member.name} {self.point_type} {self.amount}>'
 
+
+class Message(db.Model):
+    """사용자 간 1:1 메세지 모델"""
+    __tablename__ = 'messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref=db.backref('sent_messages', lazy=True))
+    receiver = db.relationship('User', foreign_keys=[receiver_id], backref=db.backref('received_messages', lazy=True))
+
+    def to_dict(self, current_user_id=None):
+        """프론트용 딕셔너리 변환"""
+        return {
+            'id': self.id,
+            'sender_id': self.sender_id,
+            'receiver_id': self.receiver_id,
+            'sender_name': self.sender.name if self.sender else None,
+            'receiver_name': self.receiver.name if self.receiver else None,
+            'content': self.content,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'is_read': self.is_read,
+            'is_mine': current_user_id is not None and self.sender_id == current_user_id,
+        }
+
 class AppSetting(db.Model):
     """앱 설정 모델 (전역 설정)"""
     __tablename__ = 'app_settings'

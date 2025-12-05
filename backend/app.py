@@ -18,6 +18,7 @@ from blueprints.ocr import ocr_bp
 from blueprints.payments import payments_bp
 from blueprints.posts import posts_bp
 from blueprints.clubs import clubs_bp
+from blueprints.messages import messages_bp
 
 # Google Sheets 기능을 선택적으로 로드
 try:
@@ -162,6 +163,7 @@ app.register_blueprint(ocr_bp)
 app.register_blueprint(payments_bp)
 app.register_blueprint(posts_bp)
 app.register_blueprint(clubs_bp)
+app.register_blueprint(messages_bp)
 
 # Google Sheets 기능이 사용 가능한 경우에만 등록
 if SHEETS_AVAILABLE:
