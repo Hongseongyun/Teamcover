@@ -275,6 +275,7 @@ with app.app_context():
             db.session.execute(text('SELECT 1'))
             db.create_all()
         except Exception as e2:
+            print(f"⚠️ 데이터베이스 재연결 실패: {str(e2)}")
 
 if __name__ == '__main__':
     # Railway 환경에서는 PORT 환경변수를 사용
