@@ -233,7 +233,9 @@ const Board = () => {
                               <span>❤️ {post.like_count}</span>
                             </div>
                           </div>
-                          {(post.author_id === user?.id || isAdmin) && (
+                          {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
+                          {(post.author_id === user?.id || 
+                            (isAdmin && (user?.role === 'super_admin' || post.author_role !== 'super_admin'))) && (
                             <div className="post-actions">
                               <button
                                 onClick={(e) => {
@@ -305,7 +307,9 @@ const Board = () => {
                         <span>❤️ {post.like_count}</span>
                       </div>
                     </div>
-                    {(post.author_id === user?.id || isAdmin) && (
+                    {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
+                    {(post.author_id === user?.id || 
+                      (isAdmin && (user?.role === 'super_admin' || post.author_role !== 'super_admin'))) && (
                       <div className="post-actions">
                         <button
                           onClick={(e) => {

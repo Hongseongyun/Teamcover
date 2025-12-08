@@ -180,7 +180,7 @@ const GoogleAuthCallback = () => {
             console.log('User logged in successfully:', userData);
             setStatus('리디렉션 중...');
             isProcessing = false; // 성공 시 플래그 리셋
-            navigate(redirectTo, { replace: true });
+            navigate('/', { replace: true }); // 항상 랜딩 페이지로 이동
           }
         } else {
           isProcessing = false; // 실패 시 플래그 리셋
@@ -261,7 +261,8 @@ const GoogleAuthCallback = () => {
         setStatus('리디렉션 중...');
 
         // 페이지 새로고침하여 모든 컨텍스트가 제대로 초기화되도록 함
-        window.location.href = clubSelectionData.redirectTo || '/';
+        // 항상 랜딩 페이지로 이동
+        window.location.href = '/';
       } else {
         alert(response.data.message || '클럽 선택에 실패했습니다.');
       }
@@ -344,7 +345,7 @@ const GoogleAuthCallback = () => {
                       setToken(pendingData.access_token);
                       localStorage.setItem('token', pendingData.access_token);
                       setShowConfirmModal(false);
-                      navigate(pendingData.redirectTo, { replace: true });
+                      navigate('/', { replace: true }); // 항상 랜딩 페이지로 이동
                     } else if (pendingData.email) {
                       // 새 방식 (확인 후 로그인)
                       const response = await authAPI.googleConfirmLogin({
@@ -356,7 +357,7 @@ const GoogleAuthCallback = () => {
                         setToken(access_token);
                         localStorage.setItem('token', access_token);
                         setShowConfirmModal(false);
-                        navigate(pendingData.redirectTo, { replace: true });
+                        navigate('/', { replace: true }); // 항상 랜딩 페이지로 이동
                       } else {
                         setStatus('로그인 실패: ' + response.data.message);
                         setTimeout(() => {

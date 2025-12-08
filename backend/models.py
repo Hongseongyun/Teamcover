@@ -514,6 +514,7 @@ class Inquiry(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'user_name': self.user.name if self.user else None,
+            'user_role': self.user.role if self.user else None,  # 작성자 role 추가
             'club_id': self.club_id,
             'club_name': self.club.name if self.club else None,
             'title': self.title,
@@ -681,6 +682,7 @@ class Post(db.Model):
             'post_type': self.post_type,
             'author_id': self.author_id,
             'author_name': self.author.name if self.author else None,
+            'author_role': self.author.role if self.author else None,  # 작성자 role 추가
             'club_id': self.club_id,
             'club_name': self.club.name if self.club else None,
             'is_global': self.club_id is None,  # 전체 게시글 여부

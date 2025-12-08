@@ -681,8 +681,9 @@ const Inquiry = () => {
               </div>
             )}
             
-            {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
-            {(selectedInquiry.user_id === user?.id || canReply) && (
+            {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
+            {(selectedInquiry.user_id === user?.id || 
+              (canReply && (user?.role === 'super_admin' || selectedInquiry.user_role !== 'super_admin'))) && (
               <div className="inquiry-detail-actions">
                 <button
                   className="inquiry-delete-button"
@@ -860,8 +861,9 @@ const Inquiry = () => {
                             </div>
                           )}
                           
-                          {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
-                          {(inquiry.user_id === user?.id || canReply) && (
+                          {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
+                          {(inquiry.user_id === user?.id || 
+                            (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
                             <div className="inquiry-item-actions">
                               <button
                                 className="inquiry-delete-button-small"
@@ -933,8 +935,9 @@ const Inquiry = () => {
                     </div>
                   )}
                   
-                  {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 */}
-                  {(inquiry.user_id === user?.id || canReply) && (
+                  {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
+                  {(inquiry.user_id === user?.id || 
+                    (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
                     <div className="inquiry-item-actions">
                       <button
                         className="inquiry-delete-button-small"

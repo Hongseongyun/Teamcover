@@ -301,7 +301,7 @@ const Login = () => {
             // 회원가입 직후이므로 활성 세션은 없을 것이지만, 확인 모달은 표시하지 않음
             result = await login(formData.email, formData.password);
             if (result.success) {
-              navigate(from, { replace: true });
+              navigate('/', { replace: true }); // 항상 랜딩 페이지로 이동
             } else {
               setError(result.message);
             }
@@ -321,8 +321,8 @@ const Login = () => {
           setPendingNavigation(from);
           setShowActiveSessionModal(true);
         } else {
-          // 로그인 성공 시 바로 메인으로 이동 (클럽은 네비게이션에서 선택)
-          navigate(from, { replace: true });
+          // 로그인 성공 시 항상 랜딩 페이지로 이동
+          navigate('/', { replace: true });
         }
       } else {
         setError(result.message);
@@ -677,11 +677,8 @@ const Login = () => {
                       pendingLoginData.password
                     );
                     if (result.success) {
-                      if (pendingNavigation) {
-                        navigate(pendingNavigation, { replace: true });
-                      } else {
-                        navigate(from, { replace: true });
-                      }
+                      // 항상 랜딩 페이지로 이동
+                      navigate('/', { replace: true });
                     } else {
                       setError(result.message);
                     }
@@ -757,9 +754,8 @@ const Login = () => {
                     if (result.success) {
                       setShowActiveSessionModal(false);
                       setSuccessMessage('다른 기기에서 로그아웃되었습니다.');
-                      if (pendingNavigation) {
-                        navigate(pendingNavigation, { replace: true });
-                      }
+                      // 항상 랜딩 페이지로 이동
+                      navigate('/', { replace: true });
                     } else {
                       setError(
                         result.message || '다른 기기 로그아웃에 실패했습니다.'
@@ -779,9 +775,8 @@ const Login = () => {
                 className="btn-secondary"
                 onClick={() => {
                   setShowActiveSessionModal(false);
-                  if (pendingNavigation) {
-                    navigate(pendingNavigation, { replace: true });
-                  }
+                  // 항상 랜딩 페이지로 이동
+                  navigate('/', { replace: true });
                 }}
                 disabled={loading}
               >

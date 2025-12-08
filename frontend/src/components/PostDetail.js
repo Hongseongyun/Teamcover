@@ -186,7 +186,9 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
           <div className="post-detail-info">
             <span className="post-author">{post.author_name}</span>
             <span className="post-date">{post.created_at}</span>
-            {(post.author_id === user?.id || isAdmin) && (
+            {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
+            {(post.author_id === user?.id || 
+              (isAdmin && (user?.role === 'super_admin' || post.author_role !== 'super_admin'))) && (
               <div className="post-detail-actions">
                 <button onClick={() => onEdit(post)} className="btn-edit">
                   수정
