@@ -442,9 +442,6 @@ const Login = () => {
                     {availableClubs.map((club) => (
                       <option key={club.id} value={club.id}>
                         {club.name}
-                        {club.is_points_enabled
-                          ? ' (포인트 시스템 활성화)'
-                          : ''}
                       </option>
                     ))}
                   </select>
