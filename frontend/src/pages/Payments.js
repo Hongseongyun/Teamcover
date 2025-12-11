@@ -1756,13 +1756,13 @@ const Payments = () => {
                 </div>
                 <div
                   className="form-group"
-                  style={{ flex: '0 0 auto', alignSelf: 'flex-end' }}
+                  style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}
                 >
-                  <label>&nbsp;</label>
                   <button
                     className="btn btn-primary"
                     type="submit"
                     disabled={ledgerLoading || ledgerSaving}
+                    style={{ marginTop: '1.75rem' }}
                   >
                     {ledgerSaving ? '저장 중...' : '추가'}
                   </button>

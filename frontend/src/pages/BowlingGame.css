@@ -1,0 +1,450 @@
+.bowling-game-container {
+  min-height: calc(100vh - 80px);
+  padding: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 상단 점수판 */
+.score-board-top {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 15px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  border-bottom: 3px solid #667eea;
+}
+
+.frame-scores-top {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.frame-box {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 70px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.frame-box.active {
+  border-color: #4caf50;
+  background: #f1f8f4;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+}
+
+.frame-num {
+  font-size: 12px;
+  font-weight: bold;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.frame-rolls-top {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  margin-bottom: 5px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.frame-rolls-top .roll1,
+.frame-rolls-top .roll2 {
+  min-width: 20px;
+  padding: 2px 4px;
+  background: #f5f5f5;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.frame-score-top {
+  font-size: 16px;
+  font-weight: bold;
+  color: #667eea;
+  min-height: 20px;
+}
+
+.total-box {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  padding: 12px 20px;
+  min-width: 100px;
+  text-align: center;
+  margin-left: 10px;
+}
+
+.total-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  opacity: 0.9;
+}
+
+.total-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* 게임 콘텐츠 영역 */
+.bowling-game-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 20px;
+  padding: 20px;
+  position: relative;
+}
+
+/* POWER 미터 (왼쪽) */
+.power-meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  height: 400px;
+}
+
+.meter-label {
+  font-size: 18px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.meter-bar-container {
+  width: 40px;
+  height: 350px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.meter-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 20px;
+  transition: height 0.2s;
+}
+
+.power-bar {
+  background: linear-gradient(to top, #2196F3 0%, #64B5F6 100%);
+  box-shadow: 0 0 20px rgba(33, 150, 243, 0.5);
+}
+
+.effect-bar {
+  background: linear-gradient(to top, #9C27B0 0%, #BA68C8 100%);
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.5);
+}
+
+.effect-arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  color: white;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* EFFECT 미터 (오른쪽) */
+.effect-meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80px;
+  height: 400px;
+}
+
+/* 게임 영역 */
+.game-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bowling-canvas {
+  background: #2c3e50;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 4px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 위치 조절 오버레이 */
+.position-control-overlay {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.position-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #667eea;
+  background: white;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+  font-weight: bold;
+}
+
+.position-btn:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  transform: scale(1.1);
+}
+
+.position-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.position-indicator-overlay {
+  width: 200px;
+  height: 25px;
+  background: #e0e0e0;
+  border-radius: 12px;
+  position: relative;
+  border: 2px solid #ccc;
+}
+
+.position-marker-overlay {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: #667eea;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: left 0.2s;
+}
+
+/* 액션 버튼 */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.throw-btn,
+.next-btn,
+.reset-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.throw-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.throw-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.throw-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.next-btn {
+  background: #4caf50;
+}
+
+.next-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.reset-btn {
+  background: #f44336;
+}
+
+.reset-btn:hover {
+  background: #da190b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+/* 하단 슬라이더 컨트롤 */
+.control-sliders {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+  border-top: 3px solid #667eea;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.slider-group label {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.power-slider,
+.effect-slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e0e0e0;
+}
+
+.power-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2196F3;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.power-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2196F3;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.effect-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9C27B0;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.effect-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9C27B0;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-value {
+  text-align: center;
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1rem;
+}
+
+@media (max-width: 1200px) {
+  .bowling-game-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .power-meter,
+  .effect-meter {
+    flex-direction: row;
+    width: auto;
+    height: auto;
+  }
+  
+  .meter-bar-container {
+    width: 350px;
+    height: 40px;
+  }
+  
+  .meter-bar {
+    width: 100%;
+    height: 100%;
+    bottom: auto;
+    left: 0;
+  }
+  
+  .power-bar {
+    background: linear-gradient(to right, #2196F3 0%, #64B5F6 100%);
+  }
+  
+  .effect-bar {
+    background: linear-gradient(to right, #9C27B0 0%, #BA68C8 100%);
+  }
+  
+  .effect-arrow {
+    left: auto;
+    right: 10px;
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translateY(-50%);
+  }
+}
+
+@media (max-width: 768px) {
+  .frame-scores-top {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  
+  .frame-box {
+    min-width: 50px;
+    padding: 6px;
+  }
+  
+  .bowling-canvas {
+    width: 100%;
+    height: auto;
+  }
+  
+  .control-sliders {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
