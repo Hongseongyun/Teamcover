@@ -662,7 +662,20 @@ def logout():
     try:
         # 현재 사용자의 active_token 제거
         try:
+            # get_jwt_identity()가 None을 반환할 수 있으므로 (토큰 만료 등)
+            # get_jwt()를 사용하여 토큰 페이로드를 직접 확인
             user_id = get_jwt_identity()
+            
+            # get_jwt_identity()가 None이면 get_jwt()로 페이로드 확인 (만료된 토큰도 디코딩 가능)
+            if not user_id:
+                from flask_jwt_extended import get_jwt
+                try:
+                    jwt_data = get_jwt()
+                    if jwt_data:
+                        user_id = jwt_data.get('sub')  # JWT 페이로드의 sub 필드에 사용자 ID가 있음
+                except:
+                    pass
+            
             if user_id:
                 user = User.query.get(int(user_id))
                 if user:
