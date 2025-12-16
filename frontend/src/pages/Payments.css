@@ -1612,6 +1612,13 @@
   font-size: 1rem;
 }
 
+/* 정기전 게임비 모달의 버튼 크기 통일 */
+.game-payment-modal .modal-footer .btn {
+  min-width: 80px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
 /* 선입 납입 모달 다크모드 스타일 */
 [data-theme='dark'] .prepay-modal .form-group label {
   color: rgba(226, 232, 240, 0.9);
