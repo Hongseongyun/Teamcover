@@ -247,7 +247,7 @@
 .users-table th {
   background: #f8fafc;
   padding: 1rem;
-  text-align: left;
+  text-align: center;
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
@@ -267,6 +267,7 @@
   vertical-align: middle;
   height: 60px; /* 모든 셀의 높이를 일정하게 설정 */
   overflow: hidden; /* 내용이 넘치면 숨김 */
+  text-align: center;
 }
 
 [data-theme='dark'] .users-table td {
@@ -289,6 +290,7 @@
 .user-name-content {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   height: 100%;
 }
