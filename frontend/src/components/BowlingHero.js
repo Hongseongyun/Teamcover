@@ -337,8 +337,7 @@ const BowlingHero = () => {
             transform: `translate(${b.x}px, ${b.y}px) translate(-50%, -50%)`,
             width: `${b.radius * 2}px`,
             height: `${b.radius * 2}px`,
-            filter:
-              'drop-shadow(0 24px 55px rgba(15,23,42,0.45)) drop-shadow(0 10px 20px rgba(15,23,42,0.35))',
+            filter: 'none',
             transition: 'transform 0.04s linear',
             zIndex: 1,
           }}
@@ -348,6 +347,7 @@ const BowlingHero = () => {
             alt={b.type}
             className="w-full h-full object-contain select-none"
             draggable={false}
+            style={{ filter: 'none' }}
           />
         </div>
       ))}
@@ -377,9 +377,9 @@ const BowlingHero = () => {
           <div className="mt-8 pointer-events-auto">
             <button
               onClick={() => navigate('/login')}
-              className="bg-slate-800 hover:bg-slate-700 text-white px-12 py-4 rounded-xl font-semibold text-lg shadow-lg transition-all duration-300"
+              className="bg-slate-800 hover:bg-slate-700 text-white px-12 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
               style={{
-                boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                boxShadow: 'none',
               }}
             >
               지금 시작하기
