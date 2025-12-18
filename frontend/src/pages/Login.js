@@ -624,13 +624,7 @@ const Login = () => {
 
       {/* 로그인 전 확인 모달 */}
       {showLoginConfirmModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowLoginConfirmModal(false);
-            setPendingLoginData(null);
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <svg
@@ -707,10 +701,7 @@ const Login = () => {
 
       {/* 다른 기기 로그인 알림 모달 (로그인 후) */}
       {showActiveSessionModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowActiveSessionModal(false)}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <svg

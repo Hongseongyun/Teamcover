@@ -294,13 +294,7 @@ const GoogleAuthCallback = () => {
 
       {/* 구글 로그인 확인 모달 */}
       {showConfirmModal && pendingData && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowConfirmModal(false);
-            navigate('/login', { replace: true });
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <svg
@@ -391,13 +385,7 @@ const GoogleAuthCallback = () => {
 
       {/* 클럽 선택 모달 */}
       {showClubSelectModal && clubSelectionData && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowClubSelectModal(false);
-            navigate('/login', { replace: true });
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <svg
@@ -485,15 +473,7 @@ const GoogleAuthCallback = () => {
 
       {/* 승인 대기 모달 */}
       {showApprovalPendingModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowApprovalPendingModal(false);
-            // 로그아웃 처리
-            localStorage.removeItem('token');
-            navigate('/login', { replace: true });
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-icon">
               <svg

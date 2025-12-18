@@ -44,15 +44,17 @@ const Payments = () => {
 
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // 정기전 게임비 관리 상태
+  // 게임비 납입 관리 상태
   const [showGamePaymentModal, setShowGamePaymentModal] = useState(false);
   const [gamePaymentDate, setGamePaymentDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [gameType, setGameType] = useState('regular'); // 'regular' 또는 'event'
+  const [gameAmount, setGameAmount] = useState(14000); // 기본 게임비
   const [gamePaymentMembers, setGamePaymentMembers] = useState([]);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [availableMembers, setAvailableMembers] = useState([]);
-  // 정기전 게임비 임시 상태 관리 (일괄 저장용)
+  // 게임비 임시 상태 관리 (일괄 저장용)
   const [tempGamePaymentStates, setTempGamePaymentStates] = useState({});
 
   // 임시 상태 관리 (여러 개 수정 후 일괄 저장)
@@ -375,11 +377,13 @@ const Payments = () => {
     }
   };
 
-  // 정기전 게임비 관리 함수들
+  // 게임비 납입 관리 함수들
   const openGamePaymentModal = () => {
     const today = new Date().toISOString().split('T')[0];
     setShowGamePaymentModal(true);
     setGamePaymentDate(today);
+    setGameType('regular');
+    setGameAmount(14000);
     setGamePaymentMembers([]);
     setMemberSearchQuery('');
     setAvailableMembers(members); // 회원 목록 초기화
@@ -398,6 +402,19 @@ const Payments = () => {
       const gamePayments = payments.filter(
         (p) => p.payment_type === 'game' && p.payment_date === date
       );
+
+      // 첫 번째 게임비에서 게임 종류와 금액 가져오기
+      if (gamePayments.length > 0) {
+        const firstPayment = gamePayments[0];
+        // note 필드에서 게임 종류 추출 (형식: "정기전" 또는 "이벤트전")
+        const note = firstPayment.note || '';
+        if (note.includes('이벤트전')) {
+          setGameType('event');
+        } else {
+          setGameType('regular');
+        }
+        setGameAmount(firstPayment.amount || 14000);
+      }
 
       const memberPayments = gamePayments.map((payment) => ({
         member_id: payment.member_id,
@@ -445,7 +462,7 @@ const Payments = () => {
       ]);
     }
     setMemberSearchQuery('');
-    // 불필요한 전체 회원 목록 재로드 제거 (성능 향상)
+    setAvailableMembers(members); // 검색 결과 초기화
   };
 
   const removeMemberFromGamePayment = (memberId) => {
@@ -552,20 +569,23 @@ const Payments = () => {
         await loadPayments();
         await loadFundLedger();
         closeGamePaymentModal();
-        alert('해당 날짜의 정기전 게임비 내역이 삭제되었습니다.');
+        alert('해당 날짜의 게임비 내역이 삭제되었습니다.');
         return;
       }
+
+      // 게임 종류에 따른 note 설정
+      const gameTypeNote = gameType === 'event' ? '이벤트전' : '정기전';
 
       // 추가/수정해야 할 납입
       for (const memberPayment of gamePaymentMembers) {
         const paymentData = {
           member_id: memberPayment.member_id,
           payment_type: 'game',
-          amount: 14000,
+          amount: gameAmount,
           payment_date: gamePaymentDate,
           is_paid: memberPayment.is_paid,
           paid_with_points: !!memberPayment.paid_with_points,
-          note: '',
+          note: gameTypeNote,
         };
 
         if (memberPayment.payment_id) {
@@ -583,7 +603,7 @@ const Payments = () => {
       await loadPayments();
       await loadFundLedger();
       closeGamePaymentModal();
-      alert('정기전 게임비가 저장되었습니다.');
+      alert('게임비가 저장되었습니다.');
     } catch (error) {
       console.error('정기전 게임비 저장 실패:', error);
       alert('정기전 게임비 저장에 실패했습니다.');
@@ -2597,16 +2617,16 @@ const Payments = () => {
             </div>
           )}
 
-          {/* 정기전 게임비 관리 섹션 */}
+          {/* 게임비 납입 관리 섹션 */}
           {isAdmin && (
             <div className="section-card">
               <div className="game-payment-header">
-                <h3 className="section-title">정기전 게임비 관리</h3>
+                <h3 className="section-title">게임비 납입 관리</h3>
                 <button
                   className="btn btn-primary"
                   onClick={openGamePaymentModal}
                 >
-                  정기전 게임비 관리
+                  추가하기
                 </button>
               </div>
 
@@ -2642,7 +2662,7 @@ const Payments = () => {
                           color: '#666',
                         }}
                       >
-                        등록된 정기전 게임비 내역이 없습니다.
+                        등록된 게임비 내역이 없습니다.
                       </div>
                     );
                   }
@@ -2651,12 +2671,24 @@ const Payments = () => {
                     <div className="game-payment-cards-container">
                       {sortedDates.map((date) => {
                         const datePayments = paymentsByDate[date];
+                        // 게임 종류별로 그룹화
+                        const regularPayments = datePayments.filter(
+                          (p) => !p.note || p.note === '정기전'
+                        );
+                        const eventPayments = datePayments.filter(
+                          (p) => p.note === '이벤트전'
+                        );
+                        
                         // 회원명으로 정렬
-                        const sortedPayments = [...datePayments].sort((a, b) =>
+                        const sortedRegularPayments = [...regularPayments].sort((a, b) =>
+                          a.member_name.localeCompare(b.member_name)
+                        );
+                        const sortedEventPayments = [...eventPayments].sort((a, b) =>
                           a.member_name.localeCompare(b.member_name)
                         );
 
-                        const changeCount = sortedPayments.reduce(
+                        const allPayments = [...sortedRegularPayments, ...sortedEventPayments];
+                        const changeCount = allPayments.reduce(
                           (count, payment) =>
                             tempGamePaymentStates[payment.id]
                               ? count + 1
@@ -2666,9 +2698,26 @@ const Payments = () => {
 
                         return (
                           <div key={date} className="game-payment-date-section">
-                            <h4 className="game-payment-date-title">{date}</h4>
+                            <h4 className="game-payment-date-title">
+                              {date}
+                              {sortedRegularPayments.length > 0 && sortedEventPayments.length > 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                                  (정기전 {sortedRegularPayments.length}명, 이벤트전 {sortedEventPayments.length}명)
+                                </span>
+                              )}
+                              {sortedRegularPayments.length > 0 && sortedEventPayments.length === 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                                  (정기전)
+                                </span>
+                              )}
+                              {sortedRegularPayments.length === 0 && sortedEventPayments.length > 0 && (
+                                <span style={{ marginLeft: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+                                  (이벤트전)
+                                </span>
+                              )}
+                            </h4>
                             <div className="game-payment-cards-grid">
-                              {sortedPayments.map((payment) => {
+                              {allPayments.map((payment) => {
                                 // 임시 상태가 있으면 임시 상태 사용, 없으면 원본 상태 사용
                                 const tempState =
                                   tempGamePaymentStates[payment.id];
@@ -3199,15 +3248,10 @@ const Payments = () => {
 
       {/* 정기전 게임비 모달 */}
       {showGamePaymentModal && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeGamePaymentModal();
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content game-payment-modal">
             <div className="modal-header">
-              <h3>정기전 게임비 관리</h3>
+              <h3>게임비 납입 관리</h3>
               <button
                 className="btn btn-sm btn-secondary"
                 onClick={closeGamePaymentModal}
@@ -3225,6 +3269,33 @@ const Payments = () => {
                   value={gamePaymentDate}
                   onChange={(e) => handleDateChange(e.target.value)}
                   className="form-control"
+                />
+              </div>
+
+              {/* 게임 종류 선택 */}
+              <div className="form-group">
+                <label>게임 종류 *</label>
+                <select
+                  value={gameType}
+                  onChange={(e) => setGameType(e.target.value)}
+                  className="form-control"
+                  disabled={submitting}
+                >
+                  <option value="regular">정기전</option>
+                  <option value="event">이벤트전</option>
+                </select>
+              </div>
+
+              {/* 게임비 입력 */}
+              <div className="form-group">
+                <label>게임비 (원) *</label>
+                <input
+                  type="number"
+                  value={gameAmount}
+                  onChange={(e) => setGameAmount(parseInt(e.target.value) || 0)}
+                  className="form-control"
+                  min="0"
+                  disabled={submitting}
                 />
               </div>
 
@@ -3364,15 +3435,7 @@ const Payments = () => {
 
       {/* 선입 추가 모달 */}
       {showPrepayModal && prepayTarget && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowPrepayModal(false);
-              setPrepayTarget(null);
-            }
-          }}
-        >
+        <div className="modal-overlay">
           <div className="modal-content prepay-modal">
             <div className="modal-header">
               <h3>선입 납입 추가</h3>

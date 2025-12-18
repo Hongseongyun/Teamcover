@@ -179,10 +179,7 @@ const ClubSelector = () => {
 
       {/* 클럽 생성 모달 */}
       {showCreateModal && (
-        <div
-          className="club-create-modal-overlay"
-          onClick={() => setShowCreateModal(false)}
-        >
+        <div className="club-create-modal-overlay">
           <div
             className="club-create-modal"
             onClick={(e) => e.stopPropagation()}
@@ -295,7 +292,6 @@ const ClubSelector = () => {
       {showJoinModal && (
         <div
           className="club-create-modal-overlay"
-          onClick={() => setShowJoinModal(false)}
         >
           <div
             className="club-create-modal"
@@ -400,13 +396,7 @@ const ClubSelector = () => {
 
       {/* 클럽 탈퇴 확인 모달 */}
       {showLeaveModal && clubToLeave && (
-        <div
-          className="club-create-modal-overlay"
-          onClick={() => {
-            setShowLeaveModal(false);
-            setClubToLeave(null);
-          }}
-        >
+        <div className="club-create-modal-overlay">
           <div
             className="club-create-modal"
             onClick={(e) => e.stopPropagation()}

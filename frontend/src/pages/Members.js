@@ -1044,10 +1044,7 @@ const Members = () => {
 
       {/* 개인정보 보호 비밀번호 입력 모달 */}
       {showPasswordModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowPasswordModal(false)}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>🔒 개인정보 보호</h3>
             <p>전화번호와 이메일을 보려면 비밀번호를 입력하세요.</p>
@@ -1092,10 +1089,7 @@ const Members = () => {
 
       {/* 비밀번호 설정 모달 */}
       {showPasswordSetting && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowPasswordSetting(false)}
-        >
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>🔒 개인정보 보호 비밀번호 설정</h3>
             <p>

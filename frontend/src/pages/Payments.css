@@ -1027,6 +1027,11 @@
   margin-bottom: 1.5rem;
 }
 
+/* 정기전 게임비 관리 섹션 상단 여백 추가 */
+.section-card:has(.game-payment-header) {
+  margin-top: 3rem;
+}
+
 .game-payment-header .section-title {
   margin-bottom: 0;
 }

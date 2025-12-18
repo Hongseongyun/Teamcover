@@ -728,15 +728,22 @@ def manage_fund_ledger_item(ledger_id):
         
         user_id = get_jwt_identity()
         current_user = User.query.get(int(user_id)) if user_id else None
-        if not current_user or current_user.role not in ['super_admin', 'admin']:
-            return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
         
-        # 슈퍼관리자는 가입 여부 확인 생략, 일반 사용자는 가입 확인 필요
-        is_super_admin = current_user.role == 'super_admin'
-        if not is_super_admin:
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
             has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
-            if not has_permission:
-                return jsonify({'success': False, 'message': result}), 403
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 접근 가능
 
         entry = FundLedger.query.get_or_404(ledger_id)
         

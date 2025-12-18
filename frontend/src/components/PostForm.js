@@ -132,7 +132,7 @@ const PostForm = ({ post, onClose, isAdmin }) => {
   };
 
   return (
-    <div className="post-form-overlay" onClick={onClose}>
+    <div className="post-form-overlay">
       <div className="post-form-modal" onClick={(e) => e.stopPropagation()}>
         <div className="post-form-header">
           <h2>{post ? '게시글 수정' : '게시글 작성'}</h2>
