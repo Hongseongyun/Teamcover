@@ -294,7 +294,13 @@ const Navbar = () => {
                   {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <span className="user-name">{user?.name}</span>
-                <span className="user-role">({user?.role})</span>
+                <span className="user-role">
+                  ({user?.role === 'super_admin' 
+                    ? 'super_admin' 
+                    : isClubAdmin 
+                    ? 'admin' 
+                    : user?.role})
+                </span>
                 <span
                   className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`}
                 >
@@ -304,32 +310,6 @@ const Navbar = () => {
 
               {showUserMenu && (
                 <div className="user-dropdown">
-                  <div className="user-dropdown-header">
-                    <div className="user-dropdown-avatar">
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                    <div className="user-dropdown-info">
-                      <div className="user-dropdown-name">{user?.name}</div>
-                      <div className="user-dropdown-email">{user?.email}</div>
-                    </div>
-                  </div>
-                  <div className="user-dropdown-role">
-                    <span className="role-icon">
-                      {user?.role === 'super_admin'
-                        ? '👑'
-                        : user?.role === 'admin'
-                        ? '⭐'
-                        : '👤'}
-                    </span>
-                    <span className="role-text">
-                      {user?.role === 'super_admin'
-                        ? '슈퍼관리자'
-                        : user?.role === 'admin'
-                        ? '관리자'
-                        : '사용자'}
-                    </span>
-                  </div>
-                  <div className="dropdown-divider"></div>
                   <Link
                     to="/mypage"
                     className="dropdown-item"
