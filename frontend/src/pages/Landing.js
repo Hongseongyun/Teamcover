@@ -238,12 +238,6 @@ const Landing = () => {
           </div>
         </div>
       )}
-
-      <footer className="landing-footer">
-        <div className="container">
-          <p>&copy; 2025 Teamcover. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 };

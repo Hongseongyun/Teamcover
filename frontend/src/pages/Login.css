@@ -1,8 +1,11 @@
 .login-container {
   min-height: 100vh;
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow-x: hidden;
   /* Landing 페이지와 통일된 배경 (라이트 모드) */
   background: radial-gradient(
       circle at 10% 20%,
@@ -15,7 +18,14 @@
       transparent 55%
     ),
     linear-gradient(180deg, #f3f4ff 0%, #f9fafb 55%, #eef2ff 100%);
+  background-size: cover;
+  background-attachment: fixed;
   padding: 2rem;
+  /* 화면 전체를 채우기 위한 설정 */
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
 }
 
 /* 다크 모드에서 Landing 페이지와 통일된 배경 */
@@ -31,6 +41,8 @@
       transparent 55%
     ),
     linear-gradient(180deg, #020617 0%, #020617 55%, #020617 100%);
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 .login-card {

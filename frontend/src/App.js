@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ClubProvider } from './contexts/ClubContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAuthCallback from './components/GoogleAuthCallback';
 import FloatingMessageButton from './components/FloatingMessageButton';
@@ -115,6 +116,7 @@ function App() {
                 />
               </Routes>
             </main>
+            <Footer />
             <FloatingMessageButton />
             <PushNotificationManager />
             <SpeedInsights />

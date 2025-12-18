@@ -252,6 +252,10 @@ body {
   flex-direction: column;
 }
 
+.App > main {
+  flex: 1;
+}
+
 .main-content {
   flex: 1;
   padding: 0;
