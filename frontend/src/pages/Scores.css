@@ -3560,6 +3560,7 @@
   padding: 1rem;
   background: var(--toss-gray-50);
   border-top: 1px solid var(--toss-gray-200);
+  min-width: 500px;
 }
 
 .averages-table-new .no-data {
@@ -4085,6 +4086,10 @@
 
 @media (max-width: 600px) {
   .averages-table-new {
+    min-width: 400px;
+  }
+
+  .show-more-btn-container {
     min-width: 400px;
   }
 
