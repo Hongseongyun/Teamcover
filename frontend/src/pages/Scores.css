@@ -3602,16 +3602,44 @@
   border-collapse: collapse;
   background: var(--toss-white);
   min-width: 500px;
+  table-layout: fixed;
 }
 
 .averages-table-new th {
   background: var(--toss-gray-50);
   padding: 1rem 0.75rem;
-  text-align: center;
+  text-align: center !important;
   font-weight: 600;
   color: var(--toss-gray-700);
   border-bottom: 2px solid var(--toss-gray-200);
   font-size: 0.9rem;
+}
+
+/* 헤더와 데이터 셀의 너비를 맞추기 위해 각 열에 동일한 너비 적용 */
+.averages-table-new th:nth-child(1) {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.averages-table-new th:nth-child(2) {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+.averages-table-new th:nth-child(3) {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+  text-align: center !important;
+}
+
+.averages-table-new th:nth-child(4) {
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  text-align: center !important;
 }
 
 .averages-table-new td {
@@ -3636,11 +3664,15 @@
 
 .averages-table-new .rank-column {
   width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   font-weight: 600;
 }
 
 .averages-table-new .name-column {
   width: 120px;
+  min-width: 120px;
+  max-width: 120px;
   font-weight: 600;
   color: var(--toss-gray-900);
 }
@@ -3649,6 +3681,8 @@
 
 .averages-table-new .score-column {
   width: 100px;
+  min-width: 100px;
+  max-width: 100px;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--toss-primary);
@@ -3656,6 +3690,45 @@
 
 .averages-table-new .tier-column {
   width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+}
+
+/* 560px 이하에서 헤더와 데이터 셀 너비 일치 보장 */
+@media (max-width: 560px) {
+  .averages-table-new {
+    table-layout: fixed !important;
+  }
+
+  .averages-table-new th:nth-child(1),
+  .averages-table-new td.rank-column {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+  }
+
+  .averages-table-new th:nth-child(2),
+  .averages-table-new td.name-column {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+
+  .averages-table-new th:nth-child(3),
+  .averages-table-new td.score-column {
+    width: 100px !important;
+    min-width: 100px !important;
+    max-width: 100px !important;
+    text-align: center !important;
+  }
+
+  .averages-table-new th:nth-child(4),
+  .averages-table-new td.tier-column {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+    text-align: center !important;
+  }
 }
 
 .show-more-btn-container {
