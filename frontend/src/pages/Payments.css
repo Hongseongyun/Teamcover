@@ -784,7 +784,7 @@
   background-color: var(--toss-gray-50);
   position: sticky;
   left: 0;
-  z-index: 12;
+  z-index: 15;
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -1412,25 +1412,49 @@
 
   .monthly-calendar-table table {
     min-width: 1080px; /* 칸 크기 유지를 위해 최소 너비 보장 */
-    table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
+    table-layout: fixed; /* 고정 레이아웃으로 변경하여 칸 크기 통일 */
     font-size: 0.875rem;
   }
 
   .monthly-calendar-table th,
   .monthly-calendar-table td {
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 0.15rem;
+  }
+
+  .monthly-calendar-table th.member-col,
+  .monthly-calendar-table td.member-name {
+    width: 50px !important;
+    min-width: 50px !important;
+    padding: 0.5rem 0.15rem !important;
+    background-color: var(--toss-white) !important;
   }
 
   .member-col {
-    min-width: 80px;
     position: sticky;
     left: 0;
     background: var(--toss-white);
-    z-index: 1;
+    z-index: 15;
+  }
+
+  .monthly-calendar-table th.member-col {
+    z-index: 15;
   }
 
   .month-col {
+    width: 60px;
     min-width: 60px;
+    max-width: 60px;
+  }
+
+  .monthly-calendar-table td.status-cell {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+  }
+
+  [data-theme='dark'] .monthly-calendar-table th.member-col,
+  [data-theme='dark'] .monthly-calendar-table td.member-name {
+    background-color: rgba(15, 23, 42, 0.95) !important;
   }
 
   .filter-section {
@@ -1510,6 +1534,38 @@
   .payments-table .show-more-btn-container {
     min-width: 600px;
   }
+}
+
+/* 회비관리 페이지 드롭다운 메뉴 z-index 조정 - 모든 경우를 포함 */
+div.action-menu-dropdown,
+.payments-page div.action-menu-dropdown,
+.payments-page .payments-table div.action-menu-dropdown,
+.payments-page .action-menu-container div.action-menu-dropdown,
+.payments-page .payments-table .action-menu-container div.action-menu-dropdown,
+.monthly-calendar-table div.action-menu-dropdown,
+.monthly-calendar-table .action-menu-container div.action-menu-dropdown {
+  z-index: 10000 !important;
+  position: absolute !important;
+}
+
+/* 테이블 셀 overflow 조정 - 드롭다운이 잘리지 않도록 */
+.payments-page .payments-table td {
+  overflow: visible !important;
+}
+
+.payments-page .payments-table td .action-menu-container {
+  position: relative;
+  overflow: visible !important;
+}
+
+.payments-page .payments-table {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* 테이블 자체도 overflow 조정 */
+.payments-page .payments-table table {
+  overflow: visible;
 }
 
 @media (max-width: 480px) {
@@ -1955,7 +2011,20 @@
   /* 장부관리 테이블: 글씨 크기 축소 및 스크롤 활성화 */
   .payments-table {
     overflow-x: auto;
+    overflow-y: visible;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .payments-table td {
+    overflow: visible !important;
+  }
+
+  .payments-table td .action-menu-container {
+    overflow: visible !important;
+  }
+
+  .payments-table table {
+    overflow: visible;
   }
 
   .payments-table table {
@@ -2022,6 +2091,16 @@
   /* 더보기 버튼 컨테이너: 테이블과 동일한 최소 너비 */
   .payments-table .show-more-btn-container {
     min-width: 650px;
+  }
+
+  /* 드롭다운 메뉴 z-index 조정 */
+  .payments-page .action-menu-container .action-menu-dropdown,
+  .payments-page .action-menu-dropdown,
+  .payments-page .payments-table .action-menu-container .action-menu-dropdown,
+  .payments-page .payments-table .action-menu-dropdown,
+  .monthly-calendar-table .action-menu-container .action-menu-dropdown,
+  .monthly-calendar-table .action-menu-dropdown {
+    z-index: 10000 !important;
   }
 }
 

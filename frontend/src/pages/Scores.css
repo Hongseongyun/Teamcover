@@ -710,6 +710,12 @@
   font-size: 1.1rem;
 }
 
+/* 200 이상 점수 빨간색 스타일 */
+.score-high {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .ocr-actions {
   margin-top: 1.5rem;
 }
