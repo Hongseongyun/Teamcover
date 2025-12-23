@@ -413,6 +413,16 @@
   color: var(--toss-gray-800);
 }
 
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .all-games-table th,
+[data-theme='dark'] .all-games-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+[data-theme='dark'] .all-games-table th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 /* 기존 폼 스타일 */
 .form-section {
   margin-bottom: 2rem;
@@ -644,6 +654,16 @@
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .points-table th,
+[data-theme='dark'] .points-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+[data-theme='dark'] .points-table th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 /* 회원 이름 열 sticky (두 번째 열) */

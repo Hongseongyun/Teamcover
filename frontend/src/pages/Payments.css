@@ -229,6 +229,16 @@
   color: var(--toss-gray-700);
 }
 
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .payments-table th,
+[data-theme='dark'] .payments-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+[data-theme='dark'] .payments-table th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 .payments-table tbody tr:hover {
   background-color: var(--toss-gray-50);
 }
@@ -1851,8 +1861,12 @@
 
 [data-theme='dark'] .game-payment-table th,
 [data-theme='dark'] .game-payment-table td {
-  border-bottom-color: rgba(148, 163, 184, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
   color: rgba(226, 232, 240, 0.9);
+}
+
+[data-theme='dark'] .game-payment-table th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .game-payment-table th {

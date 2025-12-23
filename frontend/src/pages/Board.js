@@ -6,6 +6,7 @@ import { postAPI } from '../services/api';
 import PostForm from '../components/PostForm';
 import PostDetail from '../components/PostDetail';
 import './Board.css';
+import './Members.css'; // action-menu 스타일 사용
 
 const Board = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const Board = () => {
     total: 0,
     pages: 0,
   });
+  const [openPostMenuId, setOpenPostMenuId] = useState(null); // 게시글 메뉴 열림 상태
 
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = isSuperAdmin || clubIsAdmin;
@@ -193,72 +195,128 @@ const Board = () => {
                     {clubPosts.length === 0 ? (
                       <div className="no-posts">게시글이 없습니다.</div>
                     ) : (
-                      clubPosts.map((post) => (
-                        <div
-                          key={post.id}
-                          className="post-item"
-                          onClick={() => handlePostClick(post)}
-                        >
-                          <div className="post-header">
-                            <span className={`post-type ${post.post_type}`}>
-                              {post.post_type === 'notice' ? '공지' : '자유'}
-                            </span>
-                            {post.is_global && (
-                              <span className="global-badge">전체</span>
-                            )}
-                            <h3 className="post-title">{post.title}</h3>
-                            {isAdmin && post.post_type === 'notice' && (
-                              <span className="admin-badge">운영진</span>
-                            )}
-                          </div>
-                          <div className="post-content-preview">
-                            {post.content.length > 100
-                              ? `${post.content.substring(0, 100)}...`
-                              : post.content}
-                          </div>
-                          {post.images && post.images.length > 0 && (
-                            <div className="post-images-preview">
-                              <span className="image-count">
-                                📷 {post.images.length}
+                      clubPosts.map((post, index) => {
+                        const isLastTwo = index >= clubPosts.length - 2;
+                        return (
+                          <div
+                            key={post.id}
+                            className="post-item"
+                            onClick={() => handlePostClick(post)}
+                          >
+                            <div className="post-header">
+                              <span className={`post-type ${post.post_type}`}>
+                                {post.post_type === 'notice' ? '공지' : '자유'}
                               </span>
+                              {post.is_global && (
+                                <span className="global-badge">전체</span>
+                              )}
+                              <h3 className="post-title">{post.title}</h3>
+                              {isAdmin && post.post_type === 'notice' && (
+                                <span className="admin-badge">운영진</span>
+                              )}
                             </div>
-                          )}
-                          <div className="post-footer">
-                            <span className="post-author">
-                              {post.author_name}
-                            </span>
-                            <span className="post-date">{post.created_at}</span>
-                            <div className="post-stats">
-                              <span>💬 {post.comment_count}</span>
-                              <span>❤️ {post.like_count}</span>
+                            <div className="post-content-preview">
+                              {post.content.length > 100
+                                ? `${post.content.substring(0, 100)}...`
+                                : post.content}
                             </div>
+                            {post.images && post.images.length > 0 && (
+                              <div className="post-images-preview">
+                                <span className="image-count">
+                                  📷 {post.images.length}
+                                </span>
+                              </div>
+                            )}
+                            <div className="post-footer">
+                              <span className="post-author">
+                                {post.author_name}
+                              </span>
+                              <span className="post-date">
+                                {post.created_at}
+                              </span>
+                              <div className="post-stats">
+                                <span>💬 {post.comment_count}</span>
+                                <span>❤️ {post.like_count}</span>
+                              </div>
+                            </div>
+                            {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
+                            {(post.author_id === user?.id ||
+                              (isAdmin &&
+                                (user?.role === 'super_admin' ||
+                                  post.author_role !== 'super_admin'))) && (
+                              <div className="post-actions">
+                                <div
+                                  className={`action-menu-container ${
+                                    isLastTwo ? 'menu-open-up' : ''
+                                  }`}
+                                  data-item-id={post.id}
+                                >
+                                  <button
+                                    className="btn btn-sm btn-menu-toggle"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const button = e.currentTarget;
+                                      const container = button.closest(
+                                        '.action-menu-container'
+                                      );
+                                      const rect =
+                                        button.getBoundingClientRect();
+                                      const viewportHeight = window.innerHeight;
+                                      const dropdownHeight = 100;
+                                      const spaceBelow =
+                                        viewportHeight - rect.bottom;
+
+                                      const shouldOpenUp =
+                                        isLastTwo ||
+                                        spaceBelow < dropdownHeight;
+
+                                      if (shouldOpenUp) {
+                                        container.classList.add('menu-open-up');
+                                      } else {
+                                        container.classList.remove(
+                                          'menu-open-up'
+                                        );
+                                      }
+
+                                      setOpenPostMenuId(
+                                        openPostMenuId === post.id
+                                          ? null
+                                          : post.id
+                                      );
+                                    }}
+                                  >
+                                    ⋯
+                                  </button>
+                                  {openPostMenuId === post.id && (
+                                    <div className="action-menu-dropdown">
+                                      <button
+                                        className="action-menu-item"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditPost(post);
+                                          setOpenPostMenuId(null);
+                                        }}
+                                      >
+                                        수정
+                                      </button>
+                                      <button
+                                        className="action-menu-item action-menu-item-danger"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeletePost(post.id);
+                                          setOpenPostMenuId(null);
+                                        }}
+                                      >
+                                        삭제
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
-                          {(post.author_id === user?.id || 
-                            (isAdmin && (user?.role === 'super_admin' || post.author_role !== 'super_admin'))) && (
-                            <div className="post-actions">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditPost(post);
-                                }}
-                                className="btn-edit"
-                              >
-                                수정
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeletePost(post.id);
-                                }}
-                                className="btn-delete"
-                              >
-                                삭제
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -269,70 +327,117 @@ const Board = () => {
               {posts.length === 0 ? (
                 <div className="no-posts">게시글이 없습니다.</div>
               ) : (
-                posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="post-item"
-                    onClick={() => handlePostClick(post)}
-                  >
-                    <div className="post-header">
-                      <span className={`post-type ${post.post_type}`}>
-                        {post.post_type === 'notice' ? '공지' : '자유'}
-                      </span>
-                      {post.is_global && (
-                        <span className="global-badge">전체</span>
-                      )}
-                      <h3 className="post-title">{post.title}</h3>
-                      {isAdmin && post.post_type === 'notice' && (
-                        <span className="admin-badge">운영진</span>
-                      )}
-                    </div>
-                    <div className="post-content-preview">
-                      {post.content.length > 100
-                        ? `${post.content.substring(0, 100)}...`
-                        : post.content}
-                    </div>
-                    {post.images && post.images.length > 0 && (
-                      <div className="post-images-preview">
-                        <span className="image-count">
-                          📷 {post.images.length}
+                posts.map((post, index) => {
+                  const isLastTwo = index >= posts.length - 2;
+                  return (
+                    <div
+                      key={post.id}
+                      className="post-item"
+                      onClick={() => handlePostClick(post)}
+                    >
+                      <div className="post-header">
+                        <span className={`post-type ${post.post_type}`}>
+                          {post.post_type === 'notice' ? '공지' : '자유'}
                         </span>
+                        {post.is_global && (
+                          <span className="global-badge">전체</span>
+                        )}
+                        <h3 className="post-title">{post.title}</h3>
+                        {isAdmin && post.post_type === 'notice' && (
+                          <span className="admin-badge">운영진</span>
+                        )}
                       </div>
-                    )}
-                    <div className="post-footer">
-                      <span className="post-author">{post.author_name}</span>
-                      <span className="post-date">{post.created_at}</span>
-                      <div className="post-stats">
-                        <span>💬 {post.comment_count}</span>
-                        <span>❤️ {post.like_count}</span>
+                      <div className="post-content-preview">
+                        {post.content.length > 100
+                          ? `${post.content.substring(0, 100)}...`
+                          : post.content}
                       </div>
+                      {post.images && post.images.length > 0 && (
+                        <div className="post-images-preview">
+                          <span className="image-count">
+                            📷 {post.images.length}
+                          </span>
+                        </div>
+                      )}
+                      <div className="post-footer">
+                        <span className="post-author">{post.author_name}</span>
+                        <span className="post-date">{post.created_at}</span>
+                        <div className="post-stats">
+                          <span>💬 {post.comment_count}</span>
+                          <span>❤️ {post.like_count}</span>
+                        </div>
+                      </div>
+                      {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
+                      {(post.author_id === user?.id ||
+                        (isAdmin &&
+                          (user?.role === 'super_admin' ||
+                            post.author_role !== 'super_admin'))) && (
+                        <div className="post-actions">
+                          <div
+                            className={`action-menu-container ${
+                              isLastTwo ? 'menu-open-up' : ''
+                            }`}
+                            data-item-id={post.id}
+                          >
+                            <button
+                              className="btn btn-sm btn-menu-toggle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const button = e.currentTarget;
+                                const container = button.closest(
+                                  '.action-menu-container'
+                                );
+                                const rect = button.getBoundingClientRect();
+                                const viewportHeight = window.innerHeight;
+                                const dropdownHeight = 100;
+                                const spaceBelow = viewportHeight - rect.bottom;
+
+                                const shouldOpenUp =
+                                  isLastTwo || spaceBelow < dropdownHeight;
+
+                                if (shouldOpenUp) {
+                                  container.classList.add('menu-open-up');
+                                } else {
+                                  container.classList.remove('menu-open-up');
+                                }
+
+                                setOpenPostMenuId(
+                                  openPostMenuId === post.id ? null : post.id
+                                );
+                              }}
+                            >
+                              ⋯
+                            </button>
+                            {openPostMenuId === post.id && (
+                              <div className="action-menu-dropdown">
+                                <button
+                                  className="action-menu-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditPost(post);
+                                    setOpenPostMenuId(null);
+                                  }}
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  className="action-menu-item action-menu-item-danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeletePost(post.id);
+                                    setOpenPostMenuId(null);
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {/* 수정/삭제 버튼: 본인이 작성했거나, 관리자이면서 슈퍼관리자가 작성한 글이 아닌 경우만 표시 */}
-                    {(post.author_id === user?.id || 
-                      (isAdmin && (user?.role === 'super_admin' || post.author_role !== 'super_admin'))) && (
-                      <div className="post-actions">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditPost(post);
-                          }}
-                          className="btn-edit"
-                        >
-                          수정
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeletePost(post.id);
-                          }}
-                          className="btn-delete"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

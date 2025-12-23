@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { messageAPI, clubAPI, memberAPI, authAPI } from '../services/api';
 import { useClub } from '../contexts/ClubContext';
 import './Messages.css';
+import './Members.css'; // action-menu 스타일 사용
 
 const Messages = () => {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const [openMessageMenuId, setOpenMessageMenuId] = useState(null); // 메시지 메뉴 열림 상태
 
   // UTC 시간을 한국 시간(KST, UTC+9)으로 변환
   // 반환값: { date: Date 객체, kstHours: number, kstMinutes: number, ... }
@@ -294,6 +296,64 @@ const Messages = () => {
     loadConversations();
     loadClubs();
   }, [loadConversations, loadClubs]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest('.action-menu-container') &&
+        openMessageMenuId
+      ) {
+        setOpenMessageMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMessageMenuId]);
+
+  // 드롭다운이 열릴 때 위치 재계산
+  useEffect(() => {
+    if (openMessageMenuId) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = document.querySelector(
+            `.action-menu-container[data-item-id="${openMessageMenuId}"]`
+          );
+          if (container) {
+            const button = container.querySelector('.btn-menu-toggle');
+            const dropdown = container.querySelector('.action-menu-dropdown');
+
+            if (button && dropdown) {
+              const buttonRect = button.getBoundingClientRect();
+              const dropdownRect = dropdown.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+
+              const spaceBelow = viewportHeight - buttonRect.bottom;
+              const dropdownHeight = dropdownRect.height + 10;
+
+              // 마지막 두 항목인지 확인 (messages 기준)
+              const allContainers = document.querySelectorAll(
+                '.action-menu-container[data-item-id]'
+              );
+              const currentIndex = Array.from(allContainers).findIndex(
+                (c) => c.getAttribute('data-item-id') === String(openMessageMenuId)
+              );
+              const isLastTwo = currentIndex >= allContainers.length - 2;
+
+              if (isLastTwo || spaceBelow < dropdownHeight) {
+                container.classList.add('menu-open-up');
+              } else {
+                container.classList.remove('menu-open-up');
+              }
+            }
+          }
+        });
+      });
+    }
+  }, [openMessageMenuId, messages]);
 
   useEffect(() => {
     scrollToBottom();

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, clubAPI } from '../services/api';
 import './UserManagement.css';
+import './Members.css'; // action-menu 스타일 사용
 
 const UserManagement = () => {
   const { user: currentUser } = useAuth();
@@ -13,6 +14,8 @@ const UserManagement = () => {
   const [joinRequests, setJoinRequests] = useState({});
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [allClubs, setAllClubs] = useState([]);
+  const [openUserMenuId, setOpenUserMenuId] = useState(null); // 사용자 메뉴 열림 상태
+  const [openClubMenuId, setOpenClubMenuId] = useState(null); // 클럽 메뉴 열림 상태
 
   useEffect(() => {
     loadUsers();
@@ -21,6 +24,24 @@ const UserManagement = () => {
       loadAllClubs();
     }
   }, [currentUser]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest('.action-menu-container') &&
+        (openUserMenuId || openClubMenuId)
+      ) {
+        setOpenUserMenuId(null);
+        setOpenClubMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openUserMenuId, openClubMenuId]);
 
   const loadUsers = async () => {
     try {
@@ -425,14 +446,36 @@ const UserManagement = () => {
               </span>
               <span className="club-section-count">({clubUsers.length}명)</span>
               {currentUser?.role === 'super_admin' && club.id !== 1 && (
-                <button
-                  type="button"
-                  className="club-delete-btn"
-                  onClick={() => handleDeleteClub(club)}
-                  disabled={clubDeletingId === club.id}
-                >
-                  {clubDeletingId === club.id ? '삭제 중...' : '클럽 삭제'}
-                </button>
+                <div className="action-menu-container" data-item-id={club.id}>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-menu-toggle"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenClubMenuId(
+                        openClubMenuId === club.id ? null : club.id
+                      );
+                    }}
+                    disabled={clubDeletingId === club.id}
+                  >
+                    {clubDeletingId === club.id ? '삭제 중...' : '⋯'}
+                  </button>
+                  {openClubMenuId === club.id && (
+                    <div className="action-menu-dropdown">
+                      <button
+                        className="action-menu-item action-menu-item-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClub(club);
+                          setOpenClubMenuId(null);
+                        }}
+                        disabled={clubDeletingId === club.id}
+                      >
+                        클럽 삭제
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
             <div className="users-table-container">
@@ -463,7 +506,8 @@ const UserManagement = () => {
                       </td>
                     </tr>
                   ) : (
-                    clubUsers.map((user) => {
+                    clubUsers.map((user, index) => {
+                      const isLastTwo = index >= clubUsers.length - 2;
                       const membership =
                         user.clubs?.find((c) => c.id === club.id) || {};
                       const clubRole = membership.role || 'member';
@@ -565,13 +609,62 @@ const UserManagement = () => {
                                 보호된 계정
                               </span>
                             ) : (
-                              <button
-                                className="delete-user-btn"
-                                onClick={() => handleDeleteClick(user, club.id)}
-                                title="클럽에서 탈퇴"
+                              <div
+                                className={`action-menu-container ${
+                                  isLastTwo ? 'menu-open-up' : ''
+                                }`}
+                                data-item-id={`${user.id}-${club.id}`}
                               >
-                                탈퇴
-                              </button>
+                                <button
+                                  className="btn btn-sm btn-menu-toggle"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const button = e.currentTarget;
+                                    const container = button.closest(
+                                      '.action-menu-container'
+                                    );
+                                    const rect = button.getBoundingClientRect();
+                                    const viewportHeight = window.innerHeight;
+                                    const dropdownHeight = 100;
+                                    const spaceBelow =
+                                      viewportHeight - rect.bottom;
+
+                                    const shouldOpenUp =
+                                      isLastTwo || spaceBelow < dropdownHeight;
+
+                                    if (shouldOpenUp) {
+                                      container.classList.add('menu-open-up');
+                                    } else {
+                                      container.classList.remove(
+                                        'menu-open-up'
+                                      );
+                                    }
+
+                                    setOpenUserMenuId(
+                                      openUserMenuId === `${user.id}-${club.id}`
+                                        ? null
+                                        : `${user.id}-${club.id}`
+                                    );
+                                  }}
+                                  title="클럽에서 탈퇴"
+                                >
+                                  ⋯
+                                </button>
+                                {openUserMenuId === `${user.id}-${club.id}` && (
+                                  <div className="action-menu-dropdown">
+                                    <button
+                                      className="action-menu-item action-menu-item-danger"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteClick(user, club.id);
+                                        setOpenUserMenuId(null);
+                                      }}
+                                    >
+                                      탈퇴
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -689,13 +782,37 @@ const UserManagement = () => {
                           보호된 계정
                         </span>
                       ) : (
-                        <button
-                          className="delete-user-btn"
-                          onClick={() => handleDeleteClick(user)}
-                          title="사용자 삭제"
+                        <div
+                          className="action-menu-container"
+                          data-item-id={user.id}
                         >
-                          삭제
-                        </button>
+                          <button
+                            className="btn btn-sm btn-menu-toggle"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenUserMenuId(
+                                openUserMenuId === user.id ? null : user.id
+                              );
+                            }}
+                            title="사용자 삭제"
+                          >
+                            ⋯
+                          </button>
+                          {openUserMenuId === user.id && (
+                            <div className="action-menu-dropdown">
+                              <button
+                                className="action-menu-item action-menu-item-danger"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(user);
+                                  setOpenUserMenuId(null);
+                                }}
+                              >
+                                삭제
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -728,96 +845,125 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {noClubUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td className="user-name-cell">
-                      <div className="user-name-content">
-                        <div className="user-avatar">
-                          {user.name.charAt(0).toUpperCase()}
+                {noClubUsers.map((user, index) => {
+                  const isLastTwo = index >= noClubUsers.length - 2;
+                  return (
+                    <tr key={user.id}>
+                      <td className="user-name-cell">
+                        <div className="user-name-content">
+                          <div className="user-avatar">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="user-name-text">{user.name}</span>
                         </div>
-                        <span className="user-name-text">{user.name}</span>
-                      </div>
-                    </td>
-                    <td className="user-email-cell">
-                      <span className="user-email-text">{user.email}</span>
-                    </td>
-                    <td className="role-cell">
-                      <select
-                        value={user.role}
-                        onChange={(e) =>
-                          handleRoleChange(user.id, e.target.value)
-                        }
-                        className={`role-select ${getRoleBadgeClass(
-                          user.role
-                        )}`}
-                        disabled={
-                          user.id === currentUser?.id ||
-                          user.email === 'syun4224@naver.com'
-                        }
-                      >
-                        <option value="user">일반 사용자</option>
-                        <option value="admin">운영진</option>
-                        {user.email === 'syun4224@naver.com' && (
-                          <option value="super_admin">슈퍼 관리자</option>
-                        )}
-                      </select>
-                    </td>
-                    <td className="status-cell">
-                      <label className="status-toggle">
-                        <input
-                          type="checkbox"
-                          checked={user.is_active}
+                      </td>
+                      <td className="user-email-cell">
+                        <span className="user-email-text">{user.email}</span>
+                      </td>
+                      <td className="role-cell">
+                        <select
+                          value={user.role}
                           onChange={(e) =>
-                            handleStatusChange(user.id, e.target.checked)
+                            handleRoleChange(user.id, e.target.value)
                           }
-                          disabled={user.id === currentUser?.id}
-                        />
-                        <span
-                          className={`status-indicator ${
-                            user.is_active ? 'active' : 'inactive'
-                          }`}
+                          className={`role-select ${getRoleBadgeClass(
+                            user.role
+                          )}`}
+                          disabled={
+                            user.id === currentUser?.id ||
+                            user.email === 'syun4224@naver.com'
+                          }
                         >
-                          {user.is_active ? '활성' : '비활성'}
+                          <option value="user">일반 사용자</option>
+                          <option value="admin">운영진</option>
+                          {user.email === 'syun4224@naver.com' && (
+                            <option value="super_admin">슈퍼 관리자</option>
+                          )}
+                        </select>
+                      </td>
+                      <td className="status-cell">
+                        <label className="status-toggle">
+                          <input
+                            type="checkbox"
+                            checked={user.is_active}
+                            onChange={(e) =>
+                              handleStatusChange(user.id, e.target.checked)
+                            }
+                            disabled={user.id === currentUser?.id}
+                          />
+                          <span
+                            className={`status-indicator ${
+                              user.is_active ? 'active' : 'inactive'
+                            }`}
+                          >
+                            {user.is_active ? '활성' : '비활성'}
+                          </span>
+                        </label>
+                      </td>
+                      <td className="date-cell">
+                        <span className="date-text">
+                          {user.created_at
+                            ? new Date(user.created_at).toLocaleDateString(
+                                'ko-KR'
+                              )
+                            : '-'}
                         </span>
-                      </label>
-                    </td>
-                    <td className="date-cell">
-                      <span className="date-text">
-                        {user.created_at
-                          ? new Date(user.created_at).toLocaleDateString(
-                              'ko-KR'
-                            )
-                          : '-'}
-                      </span>
-                    </td>
-                    <td className="date-cell">
-                      <span className="date-text">
-                        {user.last_login
-                          ? new Date(user.last_login).toLocaleDateString(
-                              'ko-KR'
-                            )
-                          : '-'}
-                      </span>
-                    </td>
-                    <td className="actions-cell">
-                      {user.id === currentUser?.id ? (
-                        <span className="current-user-badge">현재 사용자</span>
-                      ) : user.email === 'syun4224@naver.com' ? (
-                        <span className="protected-user-badge">
-                          보호된 계정
+                      </td>
+                      <td className="date-cell">
+                        <span className="date-text">
+                          {user.last_login
+                            ? new Date(user.last_login).toLocaleDateString(
+                                'ko-KR'
+                              )
+                            : '-'}
                         </span>
-                      ) : (
-                        <button
-                          className="delete-user-btn"
-                          onClick={() => handleDeleteClick(user)}
-                          title="사용자 삭제"
-                        >
-                          삭제
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="actions-cell">
+                        {user.id === currentUser?.id ? (
+                          <span className="current-user-badge">
+                            현재 사용자
+                          </span>
+                        ) : user.email === 'syun4224@naver.com' ? (
+                          <span className="protected-user-badge">
+                            보호된 계정
+                          </span>
+                        ) : (
+                          <div
+                            className="action-menu-container"
+                            data-item-id={user.id}
+                          >
+                            <button
+                              className="btn btn-sm btn-menu-toggle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenUserMenuId(
+                                  openUserMenuId === user.id ? null : user.id
+                                );
+                              }}
+                              title="사용자 삭제"
+                            >
+                              ⋯
+                            </button>
+                            {openUserMenuId === user.id && (
+                              <div className="action-menu-dropdown">
+                                <button
+                                  className="action-menu-item action-menu-item-danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteClick(user);
+                                    setOpenUserMenuId(null);
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

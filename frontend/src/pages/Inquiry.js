@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
 import { inquiryAPI } from '../services/api';
 import './Inquiry.css';
+import './Members.css'; // action-menu 스타일 사용
 
 const Inquiry = () => {
   const { user } = useAuth();
@@ -22,6 +23,9 @@ const Inquiry = () => {
   const [replyComments, setReplyComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
   const [editingCommentId, setEditingCommentId] = useState(null);
+  const [openInquiryMenuId, setOpenInquiryMenuId] = useState(null); // 문의 메뉴 열림 상태
+  const [openReplyMenuId, setOpenReplyMenuId] = useState(null); // 답변 메뉴 열림 상태
+  const [openCommentMenuId, setOpenCommentMenuId] = useState(null); // 댓글 메뉴 열림 상태
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -38,6 +42,70 @@ const Inquiry = () => {
       fetchInquiries();
     }
   }, [user]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest('.action-menu-container') &&
+        (openInquiryMenuId || openReplyMenuId || openCommentMenuId)
+      ) {
+        setOpenInquiryMenuId(null);
+        setOpenReplyMenuId(null);
+        setOpenCommentMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openInquiryMenuId, openReplyMenuId, openCommentMenuId]);
+
+  // 드롭다운이 열릴 때 위치 재계산
+  useEffect(() => {
+    if (openInquiryMenuId || openCommentMenuId) {
+      const menuId = openInquiryMenuId || openCommentMenuId;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = document.querySelector(
+            `.action-menu-container[data-item-id="${menuId}"]`
+          );
+          if (container) {
+            const button = container.querySelector('.btn-menu-toggle');
+            const dropdown = container.querySelector('.action-menu-dropdown');
+
+            if (button && dropdown) {
+              const buttonRect = button.getBoundingClientRect();
+              const dropdownRect = dropdown.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+
+              const spaceBelow = viewportHeight - buttonRect.bottom;
+              const dropdownHeight = dropdownRect.height + 10;
+
+              // 마지막 두 항목인지 확인
+              const parentList = container.closest('.inquiry-list, .inquiry-comments-list');
+              if (parentList) {
+                const allContainers = parentList.querySelectorAll(
+                  '.action-menu-container[data-item-id]'
+                );
+                const currentIndex = Array.from(allContainers).findIndex(
+                  (c) => c.getAttribute('data-item-id') === String(menuId)
+                );
+                const isLastTwo = currentIndex >= allContainers.length - 2;
+
+                if (isLastTwo || spaceBelow < dropdownHeight) {
+                  container.classList.add('menu-open-up');
+                } else {
+                  container.classList.remove('menu-open-up');
+                }
+              }
+            }
+          }
+        });
+      });
+    }
+  }, [openInquiryMenuId, openCommentMenuId]);
 
   const fetchInquiries = async () => {
     try {
@@ -474,18 +542,46 @@ const Inquiry = () => {
                 </div>
                 {canReply && (
                   <div className="inquiry-reply-actions">
-                    <button
-                      className="inquiry-edit-button-small"
-                      onClick={handleEditReply}
+                    <div
+                      className="action-menu-container"
+                      data-item-id="reply"
                     >
-                      수정
-                    </button>
-                    <button
-                      className="inquiry-delete-button-small"
-                      onClick={handleDeleteReply}
-                    >
-                      삭제
-                    </button>
+                      <button
+                        className="btn btn-sm btn-menu-toggle"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenReplyMenuId(
+                            openReplyMenuId === 'reply' ? null : 'reply'
+                          );
+                        }}
+                      >
+                        ⋯
+                      </button>
+                      {openReplyMenuId === 'reply' && (
+                        <div className="action-menu-dropdown">
+                          <button
+                            className="action-menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditReply();
+                              setOpenReplyMenuId(null);
+                            }}
+                          >
+                            수정
+                          </button>
+                          <button
+                            className="action-menu-item action-menu-item-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteReply();
+                              setOpenReplyMenuId(null);
+                            }}
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -498,7 +594,9 @@ const Inquiry = () => {
                   {/* 댓글 목록 */}
                   {replyComments.length > 0 && (
                     <div className="inquiry-comments-list">
-                      {replyComments.map((comment) => (
+                      {replyComments.map((comment, index) => {
+                        const isLastTwo = index >= replyComments.length - 2;
+                        return (
                         <div key={comment.id} className="inquiry-comment-item">
                           <div className="inquiry-comment-header">
                             <span className="inquiry-comment-author">
@@ -546,26 +644,76 @@ const Inquiry = () => {
                               </div>
                               {comment.user_id === user?.id && (
                                 <div className="inquiry-comment-actions">
-                                  <button
-                                    className="inquiry-edit-button-tiny"
-                                    onClick={() => handleEditComment(comment)}
+                                  <div
+                                    className={`action-menu-container ${
+                                      isLastTwo ? 'menu-open-up' : ''
+                                    }`}
+                                    data-item-id={comment.id}
                                   >
-                                    수정
-                                  </button>
-                                  <button
-                                    className="inquiry-delete-button-tiny"
-                                    onClick={() =>
-                                      handleDeleteComment(comment.id)
-                                    }
-                                  >
-                                    삭제
-                                  </button>
+                                    <button
+                                      className="btn btn-sm btn-menu-toggle"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const button = e.currentTarget;
+                                        const container = button.closest(
+                                          '.action-menu-container'
+                                        );
+                                        const rect = button.getBoundingClientRect();
+                                        const viewportHeight = window.innerHeight;
+                                        const dropdownHeight = 100;
+                                        const spaceBelow =
+                                          viewportHeight - rect.bottom;
+
+                                        const shouldOpenUp =
+                                          isLastTwo || spaceBelow < dropdownHeight;
+
+                                        if (shouldOpenUp) {
+                                          container.classList.add('menu-open-up');
+                                        } else {
+                                          container.classList.remove('menu-open-up');
+                                        }
+
+                                        setOpenCommentMenuId(
+                                          openCommentMenuId === comment.id
+                                            ? null
+                                            : comment.id
+                                        );
+                                      }}
+                                    >
+                                      ⋯
+                                    </button>
+                                    {openCommentMenuId === comment.id && (
+                                      <div className="action-menu-dropdown">
+                                        <button
+                                          className="action-menu-item"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditComment(comment);
+                                            setOpenCommentMenuId(null);
+                                          }}
+                                        >
+                                          수정
+                                        </button>
+                                        <button
+                                          className="action-menu-item action-menu-item-danger"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteComment(comment.id);
+                                            setOpenCommentMenuId(null);
+                                          }}
+                                        >
+                                          삭제
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -669,28 +817,58 @@ const Inquiry = () => {
                 </div>
               )}
 
-            {/* 문의 작성자가 자신의 문의를 볼 때만 수정 버튼 표시 (답변이 없을 때만) */}
-            {selectedInquiry.user_id === user?.id && !selectedInquiry.reply && (
+            {/* 문의 작성자가 자신의 문의를 볼 때만 수정/삭제 버튼 표시 */}
+            {((selectedInquiry.user_id === user?.id && !selectedInquiry.reply) ||
+              (selectedInquiry.user_id === user?.id || 
+                (canReply && (user?.role === 'super_admin' || selectedInquiry.user_role !== 'super_admin')))) && (
               <div className="inquiry-detail-actions">
-                <button
-                  className="inquiry-edit-button"
-                  onClick={() => handleEditInquiry(selectedInquiry)}
+                <div
+                  className="action-menu-container"
+                  data-item-id={selectedInquiry.id}
                 >
-                  수정
-                </button>
-              </div>
-            )}
-            
-            {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
-            {(selectedInquiry.user_id === user?.id || 
-              (canReply && (user?.role === 'super_admin' || selectedInquiry.user_role !== 'super_admin'))) && (
-              <div className="inquiry-detail-actions">
-                <button
-                  className="inquiry-delete-button"
-                  onClick={() => handleDeleteInquiry(selectedInquiry.id)}
-                >
-                  삭제
-                </button>
+                  <button
+                    className="btn btn-sm btn-menu-toggle"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenInquiryMenuId(
+                        openInquiryMenuId === selectedInquiry.id
+                          ? null
+                          : selectedInquiry.id
+                      );
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {openInquiryMenuId === selectedInquiry.id && (
+                    <div className="action-menu-dropdown">
+                      {selectedInquiry.user_id === user?.id && !selectedInquiry.reply && (
+                        <button
+                          className="action-menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditInquiry(selectedInquiry);
+                            setOpenInquiryMenuId(null);
+                          }}
+                        >
+                          수정
+                        </button>
+                      )}
+                      {(selectedInquiry.user_id === user?.id || 
+                        (canReply && (user?.role === 'super_admin' || selectedInquiry.user_role !== 'super_admin'))) && (
+                        <button
+                          className="action-menu-item action-menu-item-danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteInquiry(selectedInquiry.id);
+                            setOpenInquiryMenuId(null);
+                          }}
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -806,7 +984,9 @@ const Inquiry = () => {
                 <div key={clubName} className="inquiry-club-section">
                   <h2 className="inquiry-club-title">{clubName}</h2>
                   <div className="inquiry-list">
-                    {clubInquiries.map((inquiry) => (
+                    {clubInquiries.map((inquiry, index) => {
+                      const isLastTwo = index >= clubInquiries.length - 2;
+                      return (
                       <div
                         key={inquiry.id}
                         className="inquiry-item"
@@ -847,38 +1027,63 @@ const Inquiry = () => {
                             </span>
                           </div>
                           {/* 수정 버튼: 작성자만 (답변이 없을 때만) */}
-                          {inquiry.user_id === user?.id && !inquiry.reply && (
+                          {((inquiry.user_id === user?.id && !inquiry.reply) ||
+                            (inquiry.user_id === user?.id || 
+                              (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin')))) && (
                             <div className="inquiry-item-actions">
-                              <button
-                                className="inquiry-edit-button-small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditInquiry(inquiry);
-                                }}
+                              <div
+                                className="action-menu-container"
+                                data-item-id={inquiry.id}
                               >
-                                수정
-                              </button>
-                            </div>
-                          )}
-                          
-                          {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
-                          {(inquiry.user_id === user?.id || 
-                            (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
-                            <div className="inquiry-item-actions">
-                              <button
-                                className="inquiry-delete-button-small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteInquiry(inquiry.id);
-                                }}
-                              >
-                                삭제
-                              </button>
+                                <button
+                                  className="btn btn-sm btn-menu-toggle"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenInquiryMenuId(
+                                      openInquiryMenuId === inquiry.id
+                                        ? null
+                                        : inquiry.id
+                                    );
+                                  }}
+                                >
+                                  ⋯
+                                </button>
+                                {openInquiryMenuId === inquiry.id && (
+                                  <div className="action-menu-dropdown">
+                                    {inquiry.user_id === user?.id && !inquiry.reply && (
+                                      <button
+                                        className="action-menu-item"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditInquiry(inquiry);
+                                          setOpenInquiryMenuId(null);
+                                        }}
+                                      >
+                                        수정
+                                      </button>
+                                    )}
+                                    {(inquiry.user_id === user?.id || 
+                                      (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
+                                      <button
+                                        className="action-menu-item action-menu-item-danger"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteInquiry(inquiry.id);
+                                          setOpenInquiryMenuId(null);
+                                        }}
+                                      >
+                                        삭제
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )
@@ -886,7 +1091,9 @@ const Inquiry = () => {
           </div>
         ) : (
           <div className="inquiry-list">
-            {inquiries.map((inquiry) => (
+            {inquiries.map((inquiry, index) => {
+              const isLastTwo = index >= inquiries.length - 2;
+              return (
               <div
                 key={inquiry.id}
                 className="inquiry-item"
@@ -951,10 +1158,11 @@ const Inquiry = () => {
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
       </div>
     </div>
   );

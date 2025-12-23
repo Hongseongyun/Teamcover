@@ -88,6 +88,7 @@ const Scores = () => {
   const [submitting, setSubmitting] = useState(false); // 스코어 등록 중 로딩 상태
   const [deletingScoreId, setDeletingScoreId] = useState(null); // 삭제 중인 스코어 ID
   const [deletingSelected, setDeletingSelected] = useState(false); // 일괄 삭제 중 로딩 상태
+  const [openScoreMenuId, setOpenScoreMenuId] = useState(null); // 스코어 메뉴 열림 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [editingScore, setEditingScore] = useState(null);
@@ -289,6 +290,65 @@ const Scores = () => {
       loadMemberAverages();
     }
   }, [clubLoading, currentClub, loadScores, loadMembers, loadMemberAverages]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.action-menu-container') && openScoreMenuId) {
+        setOpenScoreMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openScoreMenuId]);
+
+  // 드롭다운이 열릴 때 위치 재계산
+  useEffect(() => {
+    if (openScoreMenuId) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = document.querySelector(
+            `.action-menu-container[data-item-id="${openScoreMenuId}"]`
+          );
+          if (container) {
+            const button = container.querySelector('.btn-menu-toggle');
+            const dropdown = container.querySelector('.action-menu-dropdown');
+
+            if (button && dropdown) {
+              const buttonRect = button.getBoundingClientRect();
+              const dropdownRect = dropdown.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+
+              const spaceBelow = viewportHeight - buttonRect.bottom;
+              const dropdownHeight = dropdownRect.height + 10;
+
+              // 마지막 두 항목인지 확인 (각 그룹 내에서)
+              const groupContainer = container.closest('tbody');
+              if (groupContainer) {
+                const allContainers = groupContainer.querySelectorAll(
+                  '.action-menu-container[data-item-id]'
+                );
+                const currentIndex = Array.from(allContainers).findIndex(
+                  (c) =>
+                    c.getAttribute('data-item-id') === String(openScoreMenuId)
+                );
+                const isLastTwo = currentIndex >= allContainers.length - 2;
+
+                if (isLastTwo || spaceBelow < dropdownHeight) {
+                  container.classList.add('menu-open-up');
+                } else {
+                  container.classList.remove('menu-open-up');
+                }
+              }
+            }
+          }
+        });
+      });
+    }
+  }, [openScoreMenuId]);
 
   // 페이지 포커스 시 평균 순위 재요청(빠른 조회 버전)
   useEffect(() => {
@@ -2541,178 +2601,254 @@ const Scores = () => {
                         </td>
                       </tr>
                       {/* 해당 날짜의 스코어들 */}
-                      {group.scores.map((score) => (
-                        <tr key={score.id} className="score-row">
-                          {inlineEditingId === score.id ? (
-                            <>
-                              {isAdmin && (
-                                <td className="checkbox-col">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedScores.includes(score.id)}
-                                    onChange={() => handleSelectScore(score.id)}
-                                    className="select-checkbox"
-                                  />
-                                </td>
-                              )}
-                              <td className="member-name-col">
-                                <select
-                                  className="inline-select"
-                                  value={inlineEditData.member_name}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      member_name: e.target.value,
-                                    }))
-                                  }
-                                >
-                                  <option value="">회원 선택</option>
-                                  {members.map((m) => (
-                                    <option key={m.id} value={m.name}>
-                                      {m.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score1}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score1: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score2}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score2: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="number"
-                                  min="0"
-                                  max="300"
-                                  value={inlineEditData.score3}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      score3: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td>
-                                {(parseInt(inlineEditData.score1) || 0) +
-                                  (parseInt(inlineEditData.score2) || 0) +
-                                  (parseInt(inlineEditData.score3) || 0)}
-                              </td>
-                              <td>
-                                {(() => {
-                                  const t =
-                                    (parseInt(inlineEditData.score1) || 0) +
-                                    (parseInt(inlineEditData.score2) || 0) +
-                                    (parseInt(inlineEditData.score3) || 0);
-                                  return t > 0 ? (t / 3).toFixed(1) : '0.0';
-                                })()}
-                              </td>
-                              <td>
-                                <input
-                                  className="inline-input"
-                                  type="text"
-                                  value={inlineEditData.note}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      note: e.target.value,
-                                    }))
-                                  }
-                                />
-                              </td>
-                              <td className="inline-actions">
-                                <button
-                                  className="btn btn-sm btn-primary"
-                                  onClick={() => saveInlineEdit(score.id)}
-                                >
-                                  완료
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-secondary"
-                                  onClick={cancelInlineEdit}
-                                >
-                                  취소
-                                </button>
-                              </td>
-                            </>
-                          ) : (
-                            <>
-                              {isAdmin && (
-                                <td className="checkbox-col">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedScores.includes(score.id)}
-                                    onChange={() => handleSelectScore(score.id)}
-                                    className="select-checkbox"
-                                  />
-                                </td>
-                              )}
-                              <td className="member-name-col">
-                                {score.member_name}
-                              </td>
-                              <td>{score.score1}</td>
-                              <td>{score.score2}</td>
-                              <td>{score.score3}</td>
-                              <td>
-                                {score.score1 + score.score2 + score.score3}
-                              </td>
-                              <td>
-                                {(
-                                  (score.score1 + score.score2 + score.score3) /
-                                  3
-                                ).toFixed(1)}
-                              </td>
-                              <td>{score.note || '-'}</td>
-                              {isAdmin && (
-                                <td className="inline-actions">
-                                  <button
-                                    className="btn btn-sm btn-edit"
-                                    onClick={() => startInlineEdit(score)}
-                                  >
-                                    수정
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-delete"
-                                    onClick={() => handleDelete(score.id)}
-                                    disabled={
-                                      deletingScoreId !== null ||
-                                      deletingSelected
+                      {group.scores.map((score, scoreIndex) => {
+                        const isLastTwo = scoreIndex >= group.scores.length - 2;
+                        return (
+                          <tr key={score.id} className="score-row">
+                            {inlineEditingId === score.id ? (
+                              <>
+                                {isAdmin && (
+                                  <td className="checkbox-col">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedScores.includes(
+                                        score.id
+                                      )}
+                                      onChange={() =>
+                                        handleSelectScore(score.id)
+                                      }
+                                      className="select-checkbox"
+                                    />
+                                  </td>
+                                )}
+                                <td className="member-name-col">
+                                  <select
+                                    className="inline-select"
+                                    value={inlineEditData.member_name}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        member_name: e.target.value,
+                                      }))
                                     }
                                   >
-                                    삭제
+                                    <option value="">회원 선택</option>
+                                    {members.map((m) => (
+                                      <option key={m.id} value={m.name}>
+                                        {m.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                                <td>
+                                  <input
+                                    className="inline-input"
+                                    type="number"
+                                    min="0"
+                                    max="300"
+                                    value={inlineEditData.score1}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        score1: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    className="inline-input"
+                                    type="number"
+                                    min="0"
+                                    max="300"
+                                    value={inlineEditData.score2}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        score2: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    className="inline-input"
+                                    type="number"
+                                    min="0"
+                                    max="300"
+                                    value={inlineEditData.score3}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        score3: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </td>
+                                <td>
+                                  {(parseInt(inlineEditData.score1) || 0) +
+                                    (parseInt(inlineEditData.score2) || 0) +
+                                    (parseInt(inlineEditData.score3) || 0)}
+                                </td>
+                                <td>
+                                  {(() => {
+                                    const t =
+                                      (parseInt(inlineEditData.score1) || 0) +
+                                      (parseInt(inlineEditData.score2) || 0) +
+                                      (parseInt(inlineEditData.score3) || 0);
+                                    return t > 0 ? (t / 3).toFixed(1) : '0.0';
+                                  })()}
+                                </td>
+                                <td>
+                                  <input
+                                    className="inline-input"
+                                    type="text"
+                                    value={inlineEditData.note}
+                                    onChange={(e) =>
+                                      setInlineEditData((prev) => ({
+                                        ...prev,
+                                        note: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </td>
+                                <td className="inline-actions">
+                                  <button
+                                    className="btn btn-sm btn-primary"
+                                    onClick={() => saveInlineEdit(score.id)}
+                                  >
+                                    완료
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={cancelInlineEdit}
+                                  >
+                                    취소
                                   </button>
                                 </td>
-                              )}
-                            </>
-                          )}
-                        </tr>
-                      ))}
+                              </>
+                            ) : (
+                              <>
+                                {isAdmin && (
+                                  <td className="checkbox-col">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedScores.includes(
+                                        score.id
+                                      )}
+                                      onChange={() =>
+                                        handleSelectScore(score.id)
+                                      }
+                                      className="select-checkbox"
+                                    />
+                                  </td>
+                                )}
+                                <td className="member-name-col">
+                                  {score.member_name}
+                                </td>
+                                <td>{score.score1}</td>
+                                <td>{score.score2}</td>
+                                <td>{score.score3}</td>
+                                <td>
+                                  {score.score1 + score.score2 + score.score3}
+                                </td>
+                                <td>
+                                  {(
+                                    (score.score1 +
+                                      score.score2 +
+                                      score.score3) /
+                                    3
+                                  ).toFixed(1)}
+                                </td>
+                                <td>{score.note || '-'}</td>
+                                {isAdmin && (
+                                  <td className="inline-actions">
+                                    <div
+                                      className={`action-menu-container ${
+                                        isLastTwo ? 'menu-open-up' : ''
+                                      }`}
+                                      data-item-id={score.id}
+                                    >
+                                      <button
+                                        className="btn btn-sm btn-menu-toggle"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const button = e.currentTarget;
+                                          const container = button.closest(
+                                            '.action-menu-container'
+                                          );
+
+                                          // 마지막 두 개 항목은 무조건 위로 뜨게 설정
+                                          if (isLastTwo) {
+                                            container.classList.add(
+                                              'menu-open-up'
+                                            );
+                                          } else {
+                                            // 마지막 두 개가 아닌 경우에만 공간 체크
+                                            const rect =
+                                              button.getBoundingClientRect();
+                                            const viewportHeight =
+                                              window.innerHeight;
+                                            const dropdownHeight = 100;
+                                            const spaceBelow =
+                                              viewportHeight - rect.bottom;
+
+                                            if (spaceBelow < dropdownHeight) {
+                                              container.classList.add(
+                                                'menu-open-up'
+                                              );
+                                            } else {
+                                              container.classList.remove(
+                                                'menu-open-up'
+                                              );
+                                            }
+                                          }
+
+                                          setOpenScoreMenuId(
+                                            openScoreMenuId === score.id
+                                              ? null
+                                              : score.id
+                                          );
+                                        }}
+                                      >
+                                        ⋯
+                                      </button>
+                                      {openScoreMenuId === score.id && (
+                                        <div className="action-menu-dropdown">
+                                          <button
+                                            className="action-menu-item"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              startInlineEdit(score);
+                                              setOpenScoreMenuId(null);
+                                            }}
+                                          >
+                                            수정
+                                          </button>
+                                          <button
+                                            className="action-menu-item action-menu-item-danger"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDelete(score.id);
+                                              setOpenScoreMenuId(null);
+                                            }}
+                                            disabled={
+                                              deletingScoreId !== null ||
+                                              deletingSelected
+                                            }
+                                          >
+                                            삭제
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                )}
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </React.Fragment>
                   ))}
                 </tbody>
@@ -2917,188 +3053,267 @@ const Scores = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {getCurrentDateGroup().scores.map((score) => (
-                          <tr key={score.id} className="score-row">
-                            {inlineEditingId === score.id ? (
-                              <>
-                                {isAdmin && (
-                                  <td className="checkbox-col">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedScores.includes(
-                                        score.id
-                                      )}
-                                      onChange={() =>
-                                        handleSelectScore(score.id)
-                                      }
-                                      className="select-checkbox"
-                                    />
-                                  </td>
+                        {getCurrentDateGroup().scores.map(
+                          (score, scoreIndex) => {
+                            const currentGroup = getCurrentDateGroup();
+                            const isLastTwo =
+                              scoreIndex >= currentGroup.scores.length - 2;
+                            return (
+                              <tr key={score.id} className="score-row">
+                                {inlineEditingId === score.id ? (
+                                  <>
+                                    {isAdmin && (
+                                      <td className="checkbox-col">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedScores.includes(
+                                            score.id
+                                          )}
+                                          onChange={() =>
+                                            handleSelectScore(score.id)
+                                          }
+                                          className="select-checkbox"
+                                        />
+                                      </td>
+                                    )}
+                                    <td className="member-name-col">
+                                      <select
+                                        className="inline-select"
+                                        value={inlineEditData.member_name}
+                                        onChange={(e) =>
+                                          setInlineEditData((prev) => ({
+                                            ...prev,
+                                            member_name: e.target.value,
+                                          }))
+                                        }
+                                      >
+                                        <option value="">회원 선택</option>
+                                        {members.map((m) => (
+                                          <option key={m.id} value={m.name}>
+                                            {m.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td>
+                                      <input
+                                        className="inline-input"
+                                        type="number"
+                                        min="0"
+                                        max="300"
+                                        value={inlineEditData.score1}
+                                        onChange={(e) =>
+                                          setInlineEditData((prev) => ({
+                                            ...prev,
+                                            score1: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </td>
+                                    <td>
+                                      <input
+                                        className="inline-input"
+                                        type="number"
+                                        min="0"
+                                        max="300"
+                                        value={inlineEditData.score2}
+                                        onChange={(e) =>
+                                          setInlineEditData((prev) => ({
+                                            ...prev,
+                                            score2: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </td>
+                                    <td>
+                                      <input
+                                        className="inline-input"
+                                        type="number"
+                                        min="0"
+                                        max="300"
+                                        value={inlineEditData.score3}
+                                        onChange={(e) =>
+                                          setInlineEditData((prev) => ({
+                                            ...prev,
+                                            score3: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </td>
+                                    <td>
+                                      {(parseInt(inlineEditData.score1) || 0) +
+                                        (parseInt(inlineEditData.score2) || 0) +
+                                        (parseInt(inlineEditData.score3) || 0)}
+                                    </td>
+                                    <td>
+                                      {(() => {
+                                        const t =
+                                          (parseInt(inlineEditData.score1) ||
+                                            0) +
+                                          (parseInt(inlineEditData.score2) ||
+                                            0) +
+                                          (parseInt(inlineEditData.score3) ||
+                                            0);
+                                        return t > 0
+                                          ? (t / 3).toFixed(1)
+                                          : '0.0';
+                                      })()}
+                                    </td>
+                                    <td>
+                                      <input
+                                        className="inline-input"
+                                        type="text"
+                                        value={inlineEditData.note}
+                                        onChange={(e) =>
+                                          setInlineEditData((prev) => ({
+                                            ...prev,
+                                            note: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </td>
+                                    <td className="inline-actions">
+                                      <button
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => saveInlineEdit(score.id)}
+                                      >
+                                        완료
+                                      </button>
+                                      <button
+                                        className="btn btn-sm btn-secondary"
+                                        onClick={cancelInlineEdit}
+                                      >
+                                        취소
+                                      </button>
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    {isAdmin && (
+                                      <td className="checkbox-col">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedScores.includes(
+                                            score.id
+                                          )}
+                                          onChange={() =>
+                                            handleSelectScore(score.id)
+                                          }
+                                          className="select-checkbox"
+                                        />
+                                      </td>
+                                    )}
+                                    <td className="member-name-col">
+                                      {score.member_name}
+                                    </td>
+                                    <td>{score.score1}</td>
+                                    <td>{score.score2}</td>
+                                    <td>{score.score3}</td>
+                                    <td>
+                                      {score.score1 +
+                                        score.score2 +
+                                        score.score3}
+                                    </td>
+                                    <td>
+                                      {(
+                                        (score.score1 +
+                                          score.score2 +
+                                          score.score3) /
+                                        3
+                                      ).toFixed(1)}
+                                    </td>
+                                    <td>{score.note || '-'}</td>
+                                    {isAdmin && (
+                                      <td className="inline-actions">
+                                        <div
+                                          className={`action-menu-container ${
+                                            isLastTwo ? 'menu-open-up' : ''
+                                          }`}
+                                          data-item-id={score.id}
+                                        >
+                                          <button
+                                            className="btn btn-sm btn-menu-toggle"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              const button = e.currentTarget;
+                                              const container = button.closest(
+                                                '.action-menu-container'
+                                              );
+
+                                              // 마지막 두 개 항목은 무조건 위로 뜨게 설정
+                                              if (isLastTwo) {
+                                                container.classList.add(
+                                                  'menu-open-up'
+                                                );
+                                              } else {
+                                                // 마지막 두 개가 아닌 경우에만 공간 체크
+                                                const rect =
+                                                  button.getBoundingClientRect();
+                                                const viewportHeight =
+                                                  window.innerHeight;
+                                                const dropdownHeight = 100;
+                                                const spaceBelow =
+                                                  viewportHeight - rect.bottom;
+
+                                                if (
+                                                  spaceBelow < dropdownHeight
+                                                ) {
+                                                  container.classList.add(
+                                                    'menu-open-up'
+                                                  );
+                                                } else {
+                                                  container.classList.remove(
+                                                    'menu-open-up'
+                                                  );
+                                                }
+                                              }
+
+                                              setOpenScoreMenuId(
+                                                openScoreMenuId === score.id
+                                                  ? null
+                                                  : score.id
+                                              );
+                                            }}
+                                          >
+                                            ⋯
+                                          </button>
+                                          {openScoreMenuId === score.id && (
+                                            <div className="action-menu-dropdown">
+                                              <button
+                                                className="action-menu-item"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  startInlineEdit(score);
+                                                  setOpenScoreMenuId(null);
+                                                }}
+                                              >
+                                                수정
+                                              </button>
+                                              <button
+                                                className="action-menu-item action-menu-item-danger"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDelete(score.id);
+                                                  setOpenScoreMenuId(null);
+                                                }}
+                                                disabled={
+                                                  deletingScoreId !== null ||
+                                                  deletingSelected
+                                                }
+                                              >
+                                                삭제
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </td>
+                                    )}
+                                  </>
                                 )}
-                                <td className="member-name-col">
-                                  <select
-                                    className="inline-select"
-                                    value={inlineEditData.member_name}
-                                    onChange={(e) =>
-                                      setInlineEditData((prev) => ({
-                                        ...prev,
-                                        member_name: e.target.value,
-                                      }))
-                                    }
-                                  >
-                                    <option value="">회원 선택</option>
-                                    {members.map((m) => (
-                                      <option key={m.id} value={m.name}>
-                                        {m.name}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td>
-                                  <input
-                                    className="inline-input"
-                                    type="number"
-                                    min="0"
-                                    max="300"
-                                    value={inlineEditData.score1}
-                                    onChange={(e) =>
-                                      setInlineEditData((prev) => ({
-                                        ...prev,
-                                        score1: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    className="inline-input"
-                                    type="number"
-                                    min="0"
-                                    max="300"
-                                    value={inlineEditData.score2}
-                                    onChange={(e) =>
-                                      setInlineEditData((prev) => ({
-                                        ...prev,
-                                        score2: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                </td>
-                                <td>
-                                  <input
-                                    className="inline-input"
-                                    type="number"
-                                    min="0"
-                                    max="300"
-                                    value={inlineEditData.score3}
-                                    onChange={(e) =>
-                                      setInlineEditData((prev) => ({
-                                        ...prev,
-                                        score3: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                </td>
-                                <td>
-                                  {(parseInt(inlineEditData.score1) || 0) +
-                                    (parseInt(inlineEditData.score2) || 0) +
-                                    (parseInt(inlineEditData.score3) || 0)}
-                                </td>
-                                <td>
-                                  {(() => {
-                                    const t =
-                                      (parseInt(inlineEditData.score1) || 0) +
-                                      (parseInt(inlineEditData.score2) || 0) +
-                                      (parseInt(inlineEditData.score3) || 0);
-                                    return t > 0 ? (t / 3).toFixed(1) : '0.0';
-                                  })()}
-                                </td>
-                                <td>
-                                  <input
-                                    className="inline-input"
-                                    type="text"
-                                    value={inlineEditData.note}
-                                    onChange={(e) =>
-                                      setInlineEditData((prev) => ({
-                                        ...prev,
-                                        note: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                </td>
-                                <td className="inline-actions">
-                                  <button
-                                    className="btn btn-sm btn-primary"
-                                    onClick={() => saveInlineEdit(score.id)}
-                                  >
-                                    완료
-                                  </button>
-                                  <button
-                                    className="btn btn-sm btn-secondary"
-                                    onClick={cancelInlineEdit}
-                                  >
-                                    취소
-                                  </button>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                {isAdmin && (
-                                  <td className="checkbox-col">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedScores.includes(
-                                        score.id
-                                      )}
-                                      onChange={() =>
-                                        handleSelectScore(score.id)
-                                      }
-                                      className="select-checkbox"
-                                    />
-                                  </td>
-                                )}
-                                <td className="member-name-col">
-                                  {score.member_name}
-                                </td>
-                                <td>{score.score1}</td>
-                                <td>{score.score2}</td>
-                                <td>{score.score3}</td>
-                                <td>
-                                  {score.score1 + score.score2 + score.score3}
-                                </td>
-                                <td>
-                                  {(
-                                    (score.score1 +
-                                      score.score2 +
-                                      score.score3) /
-                                    3
-                                  ).toFixed(1)}
-                                </td>
-                                <td>{score.note || '-'}</td>
-                                {isAdmin && (
-                                  <td className="inline-actions">
-                                    <button
-                                      className="btn btn-sm btn-edit"
-                                      onClick={() => startInlineEdit(score)}
-                                    >
-                                      수정
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-delete"
-                                      onClick={() => handleDelete(score.id)}
-                                      disabled={
-                                        deletingScoreId !== null ||
-                                        deletingSelected
-                                      }
-                                    >
-                                      삭제
-                                    </button>
-                                  </td>
-                                )}
-                              </>
-                            )}
-                          </tr>
-                        ))}
+                              </tr>
+                            );
+                          }
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -16,6 +16,7 @@ import {
 import { Plus } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import './Points.css';
+import './Members.css'; // action-menu 스타일 사용
 
 // Chart.js 컴포넌트 등록
 ChartJS.register(
@@ -38,6 +39,7 @@ const Points = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false); // 포인트 등록 중 로딩 상태
   const [deletingPointId, setDeletingPointId] = useState(null); // 삭제 중인 포인트 ID
+  const [openPointMenuId, setOpenPointMenuId] = useState(null); // 포인트 메뉴 열림 상태
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportForm, setShowImportForm] = useState(false);
   const [editingPoint, setEditingPoint] = useState(null);
@@ -264,6 +266,64 @@ const Points = () => {
       loadMembers();
     }
   }, [clubLoading, currentClub, loadPoints]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest('.action-menu-container') &&
+        openPointMenuId
+      ) {
+        setOpenPointMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openPointMenuId]);
+
+  // 드롭다운이 열릴 때 위치 재계산
+  useEffect(() => {
+    if (openPointMenuId) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = document.querySelector(
+            `.action-menu-container[data-item-id="${openPointMenuId}"]`
+          );
+          if (container) {
+            const button = container.querySelector('.btn-menu-toggle');
+            const dropdown = container.querySelector('.action-menu-dropdown');
+
+            if (button && dropdown) {
+              const buttonRect = button.getBoundingClientRect();
+              const dropdownRect = dropdown.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+
+              const spaceBelow = viewportHeight - buttonRect.bottom;
+              const dropdownHeight = dropdownRect.height + 10;
+
+              // 마지막 두 항목인지 확인 (displayPoints 기준)
+              const allContainers = document.querySelectorAll(
+                '.points-table .action-menu-container[data-item-id]'
+              );
+              const currentIndex = Array.from(allContainers).findIndex(
+                (c) => c.getAttribute('data-item-id') === String(openPointMenuId)
+              );
+              const isLastTwo = currentIndex >= allContainers.length - 2;
+
+              if (isLastTwo || spaceBelow < dropdownHeight) {
+                container.classList.add('menu-open-up');
+              } else {
+                container.classList.remove('menu-open-up');
+              }
+            }
+          }
+        });
+      });
+    }
+  }, [openPointMenuId, points]);
 
   // 회원별 잔여 포인트의 합으로 잔여 포인트 재계산 (더 정확함)
   const memberBalances = calculateMemberBalances();
@@ -2126,7 +2186,9 @@ const Points = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayPoints.map((point) => (
+                  {displayPoints.map((point, index) => {
+                    const isLastTwo = index >= displayPoints.length - 2;
+                    return (
                     <tr
                       key={point.id}
                       className={editingId === point.id ? 'editing' : ''}
@@ -2293,25 +2355,75 @@ const Points = () => {
                             </button>
                           </>
                         ) : (
-                          <>
+                          <div
+                            className={`action-menu-container ${
+                              isLastTwo ? 'menu-open-up' : ''
+                            }`}
+                            data-item-id={point.id}
+                          >
                             <button
-                              className="btn btn-sm btn-edit"
-                              onClick={() => startInlineEdit(point)}
+                              className="btn btn-sm btn-menu-toggle"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const button = e.currentTarget;
+                                const container = button.closest(
+                                  '.action-menu-container'
+                                );
+                                const rect = button.getBoundingClientRect();
+                                const viewportHeight = window.innerHeight;
+                                const dropdownHeight = 100;
+                                const spaceBelow =
+                                  viewportHeight - rect.bottom;
+
+                                const shouldOpenUp =
+                                  isLastTwo || spaceBelow < dropdownHeight;
+
+                                if (shouldOpenUp) {
+                                  container.classList.add('menu-open-up');
+                                } else {
+                                  container.classList.remove('menu-open-up');
+                                }
+
+                                setOpenPointMenuId(
+                                  openPointMenuId === point.id
+                                    ? null
+                                    : point.id
+                                );
+                              }}
                             >
-                              수정
+                              ⋯
                             </button>
-                            <button
-                              className="btn btn-sm btn-delete"
-                              onClick={() => handleDelete(point.id)}
-                              disabled={deletingPointId !== null}
-                            >
-                              삭제
-                            </button>
-                          </>
+                            {openPointMenuId === point.id && (
+                              <div className="action-menu-dropdown">
+                                <button
+                                  className="action-menu-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startInlineEdit(point);
+                                    setOpenPointMenuId(null);
+                                  }}
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  className="action-menu-item action-menu-item-danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(point.id);
+                                    setOpenPointMenuId(null);
+                                  }}
+                                  disabled={deletingPointId !== null}
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

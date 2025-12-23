@@ -363,6 +363,16 @@
   background: var(--toss-white);
 }
 
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .table-form-table th,
+[data-theme='dark'] .table-form-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+[data-theme='dark'] .table-form-table th {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
 .table-form-table tr:hover td {
   background: var(--toss-gray-50);
 }
@@ -638,11 +648,12 @@
 [data-theme='dark'] .ocr-results-table th {
   background-color: rgba(37, 99, 235, 0.12);
   color: rgba(226, 232, 240, 0.95);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 [data-theme='dark'] .ocr-results-table td {
   color: rgba(226, 232, 240, 0.9);
-  border-bottom-color: rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .editable-input {
@@ -3553,6 +3564,15 @@
   vertical-align: middle;
 }
 
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .averages-table-new th {
+  border-bottom: 2px solid rgba(148, 163, 184, 0.4);
+}
+
+[data-theme='dark'] .averages-table-new td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
 .averages-table-new tr:hover {
   background: var(--toss-gray-50);
 }
@@ -3823,12 +3843,15 @@
   vertical-align: middle;
   text-align: center;
   height: 65px !important;
-  min-height: 65px;
-  max-height: 65px;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-direction: row !important;
+}
+
+/* 다크모드에서 테이블 선 더 잘 보이도록 */
+[data-theme='dark'] .averages-table th {
+  border-bottom: 2px solid rgba(148, 163, 184, 0.4);
+}
+
+[data-theme='dark'] .averages-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .average-row:hover {

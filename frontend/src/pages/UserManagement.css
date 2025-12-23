@@ -258,7 +258,7 @@
 [data-theme='dark'] .users-table th {
   background: rgba(30, 41, 59, 0.8);
   color: rgba(226, 232, 240, 0.95);
-  border-bottom-color: rgba(148, 163, 184, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 .users-table td {
@@ -271,7 +271,7 @@
 }
 
 [data-theme='dark'] .users-table td {
-  border-bottom-color: rgba(148, 163, 184, 0.2);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .users-table tbody tr:hover {

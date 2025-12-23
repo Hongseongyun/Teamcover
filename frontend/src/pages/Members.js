@@ -93,6 +93,7 @@ const Members = () => {
     is_staff: false,
     join_date: '',
   });
+  const [openMenuId, setOpenMenuId] = useState(null); // 열려있는 메뉴 ID
 
   // 구글시트 가져오기 관련 상태
   const [showImportForm, setShowImportForm] = useState(false);
@@ -204,6 +205,113 @@ const Members = () => {
       loadMembers();
     }
   }, [privacyUnlocked]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMenuId && !event.target.closest('.action-menu-container')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [openMenuId]);
+
+  // 드롭다운이 열릴 때 위치 재계산
+  useEffect(() => {
+    if (openMenuId) {
+      // 마지막 두 항목인지 확인
+      const sortedMembers = [...members].sort((a, b) => {
+        let valueA, valueB;
+
+        switch (sortField) {
+          case 'name':
+            valueA = a.name || '';
+            valueB = b.name || '';
+            break;
+          case 'tier':
+            const tierOrder = {
+              배치: 0,
+              아이언: 1,
+              브론즈: 2,
+              실버: 3,
+              골드: 4,
+              플레티넘: 5,
+              다이아: 6,
+              마스터: 7,
+              챌린저: 8,
+            };
+            valueA = tierOrder[a.tier] ?? -1;
+            valueB = tierOrder[b.tier] ?? -1;
+            break;
+          case 'join_date':
+            valueA = a.join_date
+              ? new Date(a.join_date).getTime()
+              : a.created_at
+              ? new Date(a.created_at).getTime()
+              : 0;
+            valueB = b.join_date
+              ? new Date(b.join_date).getTime()
+              : b.created_at
+              ? new Date(b.created_at).getTime()
+              : 0;
+            break;
+          default:
+            valueA = a.name || '';
+            valueB = b.name || '';
+        }
+
+        if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+        if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+      const memberIndex = sortedMembers.findIndex((m) => m.id === openMenuId);
+      const isLastTwo = memberIndex >= sortedMembers.length - 2;
+
+      // requestAnimationFrame을 사용하여 렌더링 완료 후 계산
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const container = document.querySelector(
+            `.action-menu-container[data-member-id="${openMenuId}"]`
+          );
+          if (container) {
+            const button = container.querySelector('.btn-menu-toggle');
+            const dropdown = container.querySelector('.action-menu-dropdown');
+
+            if (button && dropdown) {
+              const buttonRect = button.getBoundingClientRect();
+              const dropdownRect = dropdown.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+
+              // 버튼의 화면 하단까지의 거리
+              const spaceBelow = viewportHeight - buttonRect.bottom;
+              // 드롭다운의 실제 높이 (여유있게 10px 추가)
+              const dropdownHeight = dropdownRect.height + 10;
+
+              // 마지막 두 항목이거나 아래 공간이 부족하면 위로 열기
+              if (isLastTwo || spaceBelow < dropdownHeight) {
+                container.classList.add('menu-open-up');
+              } else {
+                container.classList.remove('menu-open-up');
+              }
+            }
+          }
+        });
+      });
+    } else {
+      // 메뉴가 닫힐 때 모든 컨테이너에서 클래스 제거
+      document
+        .querySelectorAll('.action-menu-container')
+        .forEach((container) => {
+          container.classList.remove('menu-open-up');
+        });
+    }
+  }, [openMenuId, members, sortField, sortOrder]);
 
   // 비밀번호 설정 여부 확인
   const checkPasswordStatus = async () => {
@@ -847,195 +955,248 @@ const Members = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedMembers.map((member) => (
-                  <tr key={member.id}>
-                    {inlineEditingId === member.id ? (
-                      <>
-                        <td>
-                          <input
-                            className="inline-input"
-                            type="text"
-                            value={inlineEditData.name}
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                name: e.target.value,
-                              }))
-                            }
-                            required
-                          />
-                        </td>
-                        <td>
-                          <input
-                            className="inline-input"
-                            type="tel"
-                            value={inlineEditData.phone}
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                phone: e.target.value,
-                              }))
-                            }
-                            disabled={!privacyUnlocked}
-                            placeholder={
-                              !privacyUnlocked
-                                ? '잠금 해제 후 편집 가능'
-                                : undefined
-                            }
-                          />
-                        </td>
-                        <td>
-                          <select
-                            className="inline-select"
-                            value={inlineEditData.gender}
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                gender: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">선택</option>
-                            <option value="남">남</option>
-                            <option value="여">여</option>
-                          </select>
-                        </td>
-                        <td>
-                          <TierBadge tier={member.tier} size="small" />
-                        </td>
-                        <td>
-                          {isAdmin ? (
-                            <label
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                              }}
+                {sortedMembers.map((member, index) => {
+                  const isLastTwo = index >= sortedMembers.length - 2;
+                  return (
+                    <tr key={member.id}>
+                      {inlineEditingId === member.id ? (
+                        <>
+                          <td>
+                            <input
+                              className="inline-input"
+                              type="text"
+                              value={inlineEditData.name}
+                              onChange={(e) =>
+                                setInlineEditData((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                              required
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="inline-input"
+                              type="tel"
+                              value={inlineEditData.phone}
+                              onChange={(e) =>
+                                setInlineEditData((prev) => ({
+                                  ...prev,
+                                  phone: e.target.value,
+                                }))
+                              }
+                              disabled={!privacyUnlocked}
+                              placeholder={
+                                !privacyUnlocked
+                                  ? '잠금 해제 후 편집 가능'
+                                  : undefined
+                              }
+                            />
+                          </td>
+                          <td>
+                            <select
+                              className="inline-select"
+                              value={inlineEditData.gender}
+                              onChange={(e) =>
+                                setInlineEditData((prev) => ({
+                                  ...prev,
+                                  gender: e.target.value,
+                                }))
+                              }
                             >
-                              <input
-                                type="checkbox"
-                                checked={inlineEditData.is_staff || false}
-                                onChange={(e) =>
-                                  setInlineEditData((prev) => ({
-                                    ...prev,
-                                    is_staff: e.target.checked,
-                                  }))
-                                }
-                              />
-                              운영진
-                            </label>
-                          ) : member.is_staff ? (
-                            <span className="badge badge-info">운영진</span>
-                          ) : (
-                            <span>-</span>
-                          )}
-                        </td>
-                        <td>
-                          <input
-                            className="inline-input"
-                            type="date"
-                            value={
-                              inlineEditData.join_date ||
-                              (member.created_at
-                                ? new Date(member.created_at)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : '')
-                            }
-                            onChange={(e) =>
-                              setInlineEditData((prev) => ({
-                                ...prev,
-                                join_date: e.target.value,
-                              }))
-                            }
-                          />
-                        </td>
-                        <td className="inline-actions">
-                          <button
-                            className="btn btn-sm btn-primary"
-                            onClick={() => saveInlineEdit(member.id)}
-                          >
-                            완료
-                          </button>
-                          <button
-                            className="btn btn-sm btn-secondary"
-                            onClick={cancelInlineEdit}
-                          >
-                            취소
-                          </button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td>{member.name}</td>
-                        <td className="privacy-cell-wrapper">
-                          <span className="privacy-text">
-                            {maskPhone(member.phone)}
-                          </span>
-                          {!privacyUnlocked && (
+                              <option value="">선택</option>
+                              <option value="남">남</option>
+                              <option value="여">여</option>
+                            </select>
+                          </td>
+                          <td>
+                            <TierBadge tier={member.tier} size="small" />
+                          </td>
+                          <td>
+                            {isAdmin ? (
+                              <label
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={inlineEditData.is_staff || false}
+                                  onChange={(e) =>
+                                    setInlineEditData((prev) => ({
+                                      ...prev,
+                                      is_staff: e.target.checked,
+                                    }))
+                                  }
+                                />
+                                운영진
+                              </label>
+                            ) : member.is_staff ? (
+                              <span className="badge badge-info">운영진</span>
+                            ) : (
+                              <span>-</span>
+                            )}
+                          </td>
+                          <td>
+                            <input
+                              className="inline-input"
+                              type="date"
+                              value={
+                                inlineEditData.join_date ||
+                                (member.created_at
+                                  ? new Date(member.created_at)
+                                      .toISOString()
+                                      .split('T')[0]
+                                  : '')
+                              }
+                              onChange={(e) =>
+                                setInlineEditData((prev) => ({
+                                  ...prev,
+                                  join_date: e.target.value,
+                                }))
+                              }
+                            />
+                          </td>
+                          <td className="inline-actions">
                             <button
-                              className="privacy-lock-btn"
-                              onClick={handlePrivacyClick}
-                              title="클릭하여 개인정보 보기"
+                              className="btn btn-sm btn-primary"
+                              onClick={() => saveInlineEdit(member.id)}
                             >
-                              <span className="lock-icon">🔒</span>
-                              <span className="unlock-icon">🔓</span>
+                              완료
                             </button>
-                          )}
-                        </td>
-                        <td>{member.gender || '-'}</td>
-                        <td>
-                          <TierBadge tier={member.tier} size="small" />
-                        </td>
-                        <td>
-                          {member.is_staff ? (
-                            <span
-                              style={{
-                                padding: '2px 6px',
-                                backgroundColor: '#e7f3ff',
-                                color: '#0066cc',
-                                borderRadius: '3px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                              }}
+                            <button
+                              className="btn btn-sm btn-secondary"
+                              onClick={cancelInlineEdit}
                             >
-                              운영진
+                              취소
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{member.name}</td>
+                          <td className="privacy-cell-wrapper">
+                            <span className="privacy-text">
+                              {maskPhone(member.phone)}
                             </span>
-                          ) : (
-                            '-'
-                          )}
-                        </td>
-                        <td>
-                          {member.join_date || member.created_at
-                            ? new Date(member.join_date || member.created_at)
-                                .toLocaleDateString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                })
-                                .replace(/\./g, '.')
-                                .replace(/\s/g, '')
-                            : '-'}
-                        </td>
-                        <td>
-                          <button
-                            className="btn btn-sm btn-edit"
-                            onClick={() => startInlineEdit(member)}
-                          >
-                            수정
-                          </button>
-                          <button
-                            className="btn btn-sm btn-delete"
-                            onClick={() => handleDelete(member.id)}
-                            disabled={deletingMemberId !== null}
-                          >
-                            삭제
-                          </button>
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))}
+                            {!privacyUnlocked && (
+                              <button
+                                className="privacy-lock-btn"
+                                onClick={handlePrivacyClick}
+                                title="클릭하여 개인정보 보기"
+                              >
+                                <span className="lock-icon">🔒</span>
+                                <span className="unlock-icon">🔓</span>
+                              </button>
+                            )}
+                          </td>
+                          <td>{member.gender || '-'}</td>
+                          <td>
+                            <TierBadge tier={member.tier} size="small" />
+                          </td>
+                          <td>
+                            {member.is_staff ? (
+                              <span
+                                style={{
+                                  padding: '2px 6px',
+                                  backgroundColor: '#e7f3ff',
+                                  color: '#0066cc',
+                                  borderRadius: '3px',
+                                  fontSize: '12px',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                운영진
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
+                          <td>
+                            {member.join_date || member.created_at
+                              ? new Date(member.join_date || member.created_at)
+                                  .toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                  })
+                                  .replace(/\./g, '.')
+                                  .replace(/\s/g, '')
+                              : '-'}
+                          </td>
+                          <td>
+                            <div
+                              className={`action-menu-container ${
+                                isLastTwo ? 'menu-open-up' : ''
+                              }`}
+                              data-member-id={member.id}
+                            >
+                              <button
+                                className="btn btn-sm btn-menu-toggle"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const button = e.currentTarget;
+                                  const container = button.closest(
+                                    '.action-menu-container'
+                                  );
+                                  const rect = button.getBoundingClientRect();
+                                  const viewportHeight = window.innerHeight;
+                                  const dropdownHeight = 100; // 드롭다운 예상 높이 (여유있게)
+                                  const spaceBelow =
+                                    viewportHeight - rect.bottom;
+
+                                  // 마지막 두 항목이거나 아래 공간이 부족하면 위로 열기
+                                  const shouldOpenUp =
+                                    isLastTwo || spaceBelow < dropdownHeight;
+
+                                  if (shouldOpenUp) {
+                                    container.classList.add('menu-open-up');
+                                  } else {
+                                    container.classList.remove('menu-open-up');
+                                  }
+
+                                  setOpenMenuId(
+                                    openMenuId === member.id ? null : member.id
+                                  );
+                                }}
+                              >
+                                ⋯
+                              </button>
+                              {openMenuId === member.id && (
+                                <div className="action-menu-dropdown">
+                                  <button
+                                    className="action-menu-item"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startInlineEdit(member);
+                                      setOpenMenuId(null);
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    className="action-menu-item action-menu-item-danger"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(member.id);
+                                      setOpenMenuId(null);
+                                    }}
+                                    disabled={deletingMemberId !== null}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
