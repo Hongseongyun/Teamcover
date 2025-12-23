@@ -931,7 +931,7 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--toss-white);
   border: 1px solid var(--toss-gray-300);
   border-top: none;
   border-radius: 0 0 var(--toss-radius) var(--toss-radius);
@@ -949,6 +949,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
   border-bottom: 1px solid var(--toss-gray-100);
+  color: var(--toss-gray-900);
 }
 
 .autocomplete-item:last-child {
@@ -958,6 +959,23 @@
 .autocomplete-item:hover {
   background-color: var(--toss-primary-light);
   color: var(--toss-primary);
+}
+
+/* 다크모드 스타일 */
+[data-theme='dark'] .autocomplete-dropdown {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .autocomplete-item {
+  color: rgba(226, 232, 240, 0.9);
+  border-bottom-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-theme='dark'] .autocomplete-item:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: rgba(191, 219, 254, 0.95);
 }
 
 .member-search-input {
@@ -2450,6 +2468,15 @@
     padding: 0.4em 0.65em;
     flex: 0 0 auto;
     min-width: 50px;
+  }
+}
+
+/* 450px 이하에서 '님의 스코어 통계' 텍스트 크기 축소 */
+@media (max-width: 450px) {
+  .member-header h4 {
+    font-size: 0.7rem;
+    line-height: 1.2;
+    white-space: nowrap;
   }
 }
 
