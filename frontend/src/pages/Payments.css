@@ -233,6 +233,20 @@
   background-color: var(--toss-gray-50);
 }
 
+/* 더보기 버튼이 있는 셀 가운데 정렬 유지 */
+.payments-table td[colspan] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-width: 100%;
+  text-align: center;
+}
+
+.payments-table td[colspan] .btn-more {
+  margin: 0 auto;
+}
+
 .payment-type {
   padding: 0.25rem 0.75rem;
   border-radius: var(--toss-radius);
@@ -514,6 +528,18 @@
   justify-content: center;
   padding: 1rem 0;
   margin-top: 0.5rem;
+}
+
+/* 장부관리 테이블의 더보기 버튼 컨테이너 */
+.payments-table + .show-more-btn-container,
+.payments-table .show-more-btn-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  width: 100%;
+  margin-top: 0;
+  min-width: 700px;
 }
 
 /* 뷰 모드 전환 */
@@ -1416,6 +1442,64 @@
     padding: 0.4rem 0.8rem !important;
     font-size: 0.8rem !important;
   }
+
+  /* 장부관리 테이블: 768px 이하에서 글씨 크기 축소 및 스크롤 활성화 */
+  .payments-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .payments-table table {
+    min-width: 600px;
+  }
+
+  .payments-table th,
+  .payments-table td {
+    padding: 0.3rem 0.35rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 버튼이 있는 셀은 flex 레이아웃 적용 */
+  .payments-table td:last-child {
+    display: flex !important;
+    gap: 0.2rem;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+
+  .payments-table .btn-sm {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.6rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    min-width: auto;
+  }
+
+  .payments-table input[type='text'],
+  .payments-table input[type='number'],
+  .payments-table input[type='date'],
+  .payments-table select {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  /* 인라인 액션 버튼 컨테이너 */
+  .payments-table .inline-actions {
+    display: flex;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+
+  /* 더보기 버튼 컨테이너: 테이블과 동일한 최소 너비 */
+  .payments-table .show-more-btn-container {
+    min-width: 600px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1852,6 +1936,78 @@
 @media (max-width: 850px) {
   .balance-top {
     grid-template-columns: 1fr;
+  }
+
+  /* 장부관리 테이블: 글씨 크기 축소 및 스크롤 활성화 */
+  .payments-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .payments-table table {
+    min-width: 650px;
+  }
+
+  .payments-table th,
+  .payments-table td {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 버튼이 있는 셀은 flex 레이아웃 적용 */
+  .payments-table td:last-child {
+    display: flex !important;
+    gap: 0.3rem;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+  }
+
+  .payments-table .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    min-width: auto;
+  }
+
+  .payments-table input[type='text'],
+  .payments-table input[type='number'],
+  .payments-table input[type='date'],
+  .payments-table select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* 인라인 액션 버튼 컨테이너 */
+  .payments-table .inline-actions {
+    display: flex;
+    gap: 0.3rem;
+    white-space: nowrap;
+  }
+
+  /* 더보기 버튼이 있는 셀 가운데 정렬 유지 */
+  .payments-table td[colspan] {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-width: 650px;
+    padding: 1rem;
+  }
+
+  .payments-table td[colspan] .btn-more {
+    margin: 0 auto;
+  }
+
+  /* 더보기 버튼 컨테이너: 테이블과 동일한 최소 너비 */
+  .payments-table .show-more-btn-container {
+    min-width: 650px;
   }
 }
 

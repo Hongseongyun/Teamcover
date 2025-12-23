@@ -2053,35 +2053,86 @@ const Payments = () => {
                               </tr>
                             );
                           })}
-                          {hasMore && (
-                            <tr>
-                              <td
-                                colSpan="7"
-                                style={{ textAlign: 'center', padding: '1rem' }}
-                              >
-                                <button
-                                  type="button"
-                                  className="btn-more"
-                                  onClick={() =>
-                                    setDisplayedLedgerCount(
-                                      displayedLedgerCount + 10
-                                    )
-                                  }
-                                >
-                                  더보기 (
-                                  {finalLedgerItems.length -
-                                    displayedLedgerCount}
-                                  개 더)
-                                </button>
-                              </td>
-                            </tr>
-                          )}
                         </>
                       );
                     })()
                   )}
                 </tbody>
               </table>
+              {(() => {
+                // 더보기 버튼을 위한 로직
+                const processedLedgerItems = [];
+                const hiddenLedgerIds = new Set();
+                const paymentsByPaymentId = {};
+                payments
+                  .filter((p) => p.is_paid && !p.is_exempt)
+                  .forEach((payment) => {
+                    paymentsByPaymentId[payment.id] = payment;
+                  });
+                const monthlyLedgerItems = ledgerItems.filter(
+                  (item) =>
+                    item.payment_id &&
+                    item.source === 'monthly' &&
+                    item.entry_type === 'credit'
+                );
+                const otherLedgerItems = ledgerItems.filter(
+                  (item) =>
+                    !item.payment_id ||
+                    item.source !== 'monthly' ||
+                    item.entry_type === 'credit'
+                );
+                const prepayLedgerItems = [];
+                const regularLedgerItems = [];
+                monthlyLedgerItems.forEach((ledgerItem) => {
+                  const payment =
+                    paymentsByPaymentId[ledgerItem.payment_id];
+                  if (!payment) return;
+                  if (payment.note?.includes('개월 선납')) {
+                    prepayLedgerItems.push(ledgerItem);
+                  } else {
+                    regularLedgerItems.push({ ledgerItem, payment });
+                  }
+                });
+                processedLedgerItems.push(...prepayLedgerItems);
+                regularLedgerItems.forEach(({ ledgerItem }) => {
+                  processedLedgerItems.push(ledgerItem);
+                });
+                let finalLedgerItems = [
+                  ...processedLedgerItems,
+                  ...otherLedgerItems,
+                ].filter((item) => !hiddenLedgerIds.has(item.id));
+                finalLedgerItems = finalLedgerItems.filter((item) => {
+                  if (!item.event_date) return false;
+                  return item.event_date >= '2024-10-31';
+                });
+                if (selectedLedgerMonth) {
+                  finalLedgerItems = finalLedgerItems.filter((item) => {
+                    if (!item.event_date) return false;
+                    const date = new Date(item.event_date);
+                    const monthKey = `${date.getFullYear()}-${String(
+                      date.getMonth() + 1
+                    ).padStart(2, '0')}`;
+                    return monthKey === selectedLedgerMonth;
+                  });
+                }
+                finalLedgerItems.sort((a, b) =>
+                  b.event_date.localeCompare(a.event_date)
+                );
+                const hasMore = finalLedgerItems.length > displayedLedgerCount;
+                return hasMore ? (
+                  <div className="show-more-btn-container">
+                    <button
+                      type="button"
+                      className="btn-more"
+                      onClick={() =>
+                        setDisplayedLedgerCount(displayedLedgerCount + 10)
+                      }
+                    >
+                      더보기 ({finalLedgerItems.length - displayedLedgerCount}개 더)
+                    </button>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
         </div>
@@ -3209,30 +3260,6 @@ const Payments = () => {
                                 )}
                               </tr>
                             ))}
-                            {hasMore && (
-                              <tr>
-                                <td
-                                  colSpan={isAdmin ? 7 : 6}
-                                  style={{
-                                    textAlign: 'center',
-                                    padding: '1rem',
-                                  }}
-                                >
-                                  <button
-                                    className="btn-more"
-                                    onClick={() =>
-                                      setDisplayedPaymentCount(
-                                        (prev) => prev + 10
-                                      )
-                                    }
-                                  >
-                                    더보기 (
-                                    {totalPayments - displayedPaymentCount}개
-                                    더)
-                                  </button>
-                                </td>
-                              </tr>
-                            )}
                           </>
                         )}
                       </>
@@ -3240,6 +3267,92 @@ const Payments = () => {
                   })()}
                 </tbody>
               </table>
+              {(() => {
+                // 더보기 버튼을 위한 로직
+                let filteredPayments = payments.filter(
+                  (p) => !p.is_exempt && p.is_paid
+                );
+                const processedPayments = [];
+                const hiddenPaymentIds = new Set();
+                const monthlyPayments = filteredPayments.filter(
+                  (p) => p.payment_type === 'monthly'
+                );
+                const otherPayments = filteredPayments.filter(
+                  (p) => p.payment_type !== 'monthly'
+                );
+                const paymentsByMember = {};
+                monthlyPayments.forEach((payment) => {
+                  const key = `${payment.member_id}-${payment.member_name}`;
+                  if (!paymentsByMember[key]) {
+                    paymentsByMember[key] = [];
+                  }
+                  paymentsByMember[key].push(payment);
+                });
+                Object.keys(paymentsByMember).forEach((key) => {
+                  const memberPayments = paymentsByMember[key];
+                  memberPayments.sort((a, b) => {
+                    const dateA = new Date(a.payment_date);
+                    const dateB = new Date(b.payment_date);
+                    return dateA - dateB;
+                  });
+                  let consecutiveMonths = [];
+                  for (let i = 0; i < memberPayments.length; i++) {
+                    const current = memberPayments[i];
+                    const currentDate = new Date(current.payment_date);
+                    if (consecutiveMonths.length === 0) {
+                      consecutiveMonths.push(current);
+                    } else {
+                      const lastDate = new Date(
+                        consecutiveMonths[consecutiveMonths.length - 1]
+                          .payment_date
+                      );
+                      const monthsDiff =
+                        (currentDate.getFullYear() - lastDate.getFullYear()) *
+                          12 +
+                        (currentDate.getMonth() - lastDate.getMonth());
+                      if (monthsDiff === 1) {
+                        consecutiveMonths.push(current);
+                      } else {
+                        if (consecutiveMonths.length > 1) {
+                          hiddenPaymentIds.add(
+                            consecutiveMonths[0].id
+                          );
+                        }
+                        processedPayments.push(...consecutiveMonths);
+                        consecutiveMonths = [current];
+                      }
+                    }
+                  }
+                  if (consecutiveMonths.length > 1) {
+                    hiddenPaymentIds.add(consecutiveMonths[0].id);
+                  }
+                  processedPayments.push(...consecutiveMonths);
+                });
+                let finalPayments = [
+                  ...processedPayments,
+                  ...otherPayments,
+                ].filter((p) => !hiddenPaymentIds.has(p.id));
+                finalPayments.sort((a, b) => {
+                  const dateA = new Date(a.payment_date);
+                  const dateB = new Date(b.payment_date);
+                  return dateB - dateA;
+                });
+                const totalPayments = finalPayments.length;
+                const hasMore = totalPayments > displayedPaymentCount;
+                return hasMore ? (
+                  <div className="show-more-btn-container">
+                    <button
+                      type="button"
+                      className="btn-more"
+                      onClick={() =>
+                        setDisplayedPaymentCount((prev) => prev + 10)
+                      }
+                    >
+                      더보기 ({totalPayments - displayedPaymentCount}개 더)
+                    </button>
+                  </div>
+                ) : null;
+              })()}
             </div>
           </div>
           {/* 목록 형식 뷰 종료 */}
