@@ -3262,10 +3262,11 @@ const TeamAssignment = () => {
                       <div className="player-average">{playerAverage} 에버</div>
                     </div>
                     <button
-                      className="btn btn-sm btn-danger"
+                      className="player-delete-btn"
                       onClick={() => handleDeletePlayer(playerName)}
+                      title="삭제"
                     >
-                      삭제
+                      ×
                     </button>
                   </div>
                 );

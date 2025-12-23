@@ -1129,6 +1129,44 @@
   color: var(--toss-gray-600);
 }
 
+/* 선수 삭제 버튼 - 간단한 기호 버튼 */
+.player-delete-btn {
+  background: none;
+  border: none;
+  color: var(--toss-danger);
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-delete-btn:hover {
+  background-color: var(--toss-danger-light);
+  color: var(--toss-danger-dark);
+  transform: scale(1.1);
+}
+
+.player-delete-btn:active {
+  transform: scale(0.95);
+}
+
+[data-theme='dark'] .player-delete-btn {
+  color: #f87171;
+}
+
+[data-theme='dark'] .player-delete-btn:hover {
+  background-color: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+}
+
 .no-players {
   text-align: center;
   padding: 3rem;
