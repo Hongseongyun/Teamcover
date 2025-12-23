@@ -776,6 +776,16 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.monthly-calendar-table th.member-col {
+  position: sticky !important;
+  left: 0 !important;
+  top: 0 !important;
+  z-index: 16 !important;
+  background-color: var(--toss-gray-50) !important;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .member-col {
@@ -785,7 +795,26 @@
   position: sticky;
   left: 0;
   z-index: 15;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 회원명 컬럼 배경색 - 일반 모드 */
+.monthly-calendar-table td.member-name {
+  background-color: var(--surface-card) !important;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 14 !important;
+}
+
+/* hover 시 회원명 컬럼 배경색도 변경 (hover 효과를 최상단에 적용 - 일반 모드) */
+.monthly-calendar-table tr:hover td.member-name {
+  background-color: var(--toss-gray-50) !important;
+}
+
+/* 다크 모드 hover 시 회원명 컬럼 배경색도 변경 (hover 효과를 최상단에 적용) */
+[data-theme='dark'] .monthly-calendar-table tr:hover td.member-name {
+  background-color: var(--toss-gray-50) !important;
 }
 
 .month-col {
@@ -801,11 +830,11 @@
 .member-name {
   font-weight: 500;
   color: var(--toss-gray-900);
-  position: sticky;
-  left: 0;
-  z-index: 10;
-  background-color: var(--toss-white);
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 14 !important;
+  background-color: var(--surface-card) !important;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
 .payment-status {
@@ -1426,18 +1455,30 @@
     width: 50px !important;
     min-width: 50px !important;
     padding: 0.5rem 0.15rem !important;
-    background-color: var(--toss-white) !important;
+    background-color: var(--surface-card) !important;
   }
 
   .member-col {
     position: sticky;
     left: 0;
-    background: var(--toss-white);
+    background: var(--surface-card);
     z-index: 15;
   }
 
   .monthly-calendar-table th.member-col {
-    z-index: 15;
+    position: sticky !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 16 !important;
+    background-color: var(--toss-gray-50) !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .monthly-calendar-table td.member-name {
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 14 !important;
   }
 
   .month-col {
@@ -1452,9 +1493,31 @@
     max-width: 60px;
   }
 
-  [data-theme='dark'] .monthly-calendar-table th.member-col,
+  [data-theme='dark'] .monthly-calendar-table th.member-col {
+    position: sticky !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 16 !important;
+    background-color: var(--toss-gray-50) !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  }
+
   [data-theme='dark'] .monthly-calendar-table td.member-name {
-    background-color: rgba(15, 23, 42, 0.95) !important;
+    background-color: var(--surface-card) !important;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.3) !important;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 14 !important;
+  }
+
+  /* hover 시 회원명 컬럼 배경색도 변경 (hover 효과를 최상단에 적용 - 일반 모드) */
+  .monthly-calendar-table tr:hover td.member-name {
+    background-color: var(--toss-gray-50) !important;
+  }
+
+  /* 다크 모드 hover 시 회원명 컬럼 배경색도 변경 (hover 효과를 최상단에 적용) */
+  [data-theme='dark'] .monthly-calendar-table tr:hover td.member-name {
+    background-color: var(--toss-gray-50) !important;
   }
 
   .filter-section {
