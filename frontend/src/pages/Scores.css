@@ -3649,6 +3649,11 @@
   vertical-align: middle;
 }
 
+/* 더보기 버튼 위의 마지막 행 border 제거 */
+.averages-table-container table:last-of-type tbody tr:last-child td {
+  border-bottom: none;
+}
+
 /* 다크모드에서 테이블 선 더 잘 보이도록 */
 [data-theme='dark'] .averages-table-new th {
   border-bottom: 2px solid rgba(148, 163, 184, 0.4);
@@ -3735,8 +3740,8 @@
   display: flex;
   justify-content: center;
   padding: 1rem;
-  background: var(--toss-gray-50);
-  border-top: 1px solid var(--toss-gray-200);
+
+  border-top: none;
   min-width: 500px;
 }
 
