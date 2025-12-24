@@ -984,6 +984,46 @@
   z-index: 1;
 }
 
+/* 드롭다운이 열려있는 행은 z-index를 높게 설정하여 hover 효과에 가려지지 않도록 */
+/* menu-open 클래스를 가진 행 (JavaScript에서 추가) */
+.user-management .users-table tbody tr.menu-open {
+  z-index: 10001 !important;
+  position: relative;
+}
+
+.user-management .users-table tbody tr.menu-open:hover {
+  z-index: 10001 !important;
+}
+
+/* 드롭다운이 열려있을 때 actions-cell의 z-index도 높이기 */
+.user-management .users-table tbody tr.menu-open .actions-cell {
+  z-index: 10002 !important;
+  position: relative;
+}
+
+/* 드롭다운이 열려있을 때 action-menu-container의 z-index도 높이기 */
+.user-management .users-table tbody tr.menu-open .action-menu-container {
+  z-index: 10003 !important;
+}
+
+/* :has() 선택자도 지원 (최신 브라우저용, fallback) */
+.user-management .users-table tbody tr:has(.action-menu-dropdown) {
+  z-index: 10001 !important;
+}
+
+.user-management .users-table tbody tr:has(.action-menu-dropdown):hover {
+  z-index: 10001 !important;
+}
+
+.user-management .users-table tbody tr:has(.action-menu-dropdown) .actions-cell {
+  z-index: 10002 !important;
+  position: relative;
+}
+
+.user-management .users-table tbody tr:has(.action-menu-dropdown) .action-menu-container {
+  z-index: 10003 !important;
+}
+
 /* 테이블 자체는 overflow를 제어하되, actions-cell은 visible */
 .user-management .users-table {
   overflow: visible;

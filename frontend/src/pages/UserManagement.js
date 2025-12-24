@@ -512,8 +512,12 @@ const UserManagement = () => {
                         user.clubs?.find((c) => c.id === club.id) || {};
                       const clubRole = membership.role || 'member';
 
+                      const isMenuOpen = openUserMenuId === `${user.id}-${club.id}`;
                       return (
-                        <tr key={`${club.id}-${user.id}`}>
+                        <tr 
+                          key={`${club.id}-${user.id}`}
+                          className={isMenuOpen ? 'menu-open' : ''}
+                        >
                           <td className="user-name-cell">
                             <div className="user-name-content">
                               <div className="user-avatar">
@@ -680,8 +684,13 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {superAdminsNoClub.map((user) => (
-                  <tr key={user.id}>
+                {superAdminsNoClub.map((user) => {
+                  const isMenuOpen = openUserMenuId === user.id;
+                  return (
+                  <tr 
+                    key={user.id}
+                    className={isMenuOpen ? 'menu-open' : ''}
+                  >
                     <td className="user-name-cell">
                       <div className="user-name-content">
                         <div className="user-avatar">
@@ -793,7 +802,8 @@ const UserManagement = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -824,8 +834,12 @@ const UserManagement = () => {
               <tbody>
                 {noClubUsers.map((user, index) => {
                   const isLastTwo = index >= noClubUsers.length - 2;
+                  const isMenuOpen = openUserMenuId === user.id;
                   return (
-                    <tr key={user.id}>
+                    <tr 
+                      key={user.id}
+                      className={isMenuOpen ? 'menu-open' : ''}
+                    >
                       <td className="user-name-cell">
                         <div className="user-name-content">
                           <div className="user-avatar">
