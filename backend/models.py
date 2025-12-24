@@ -539,6 +539,7 @@ class InquiryReplyComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     inquiry_id = db.Column(db.Integer, db.ForeignKey('inquiries.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('inquiry_reply_comments.id'), nullable=True)  # 대댓글용
     content = db.Column(db.Text, nullable=False)  # 댓글 내용
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -546,21 +547,56 @@ class InquiryReplyComment(db.Model):
     # 관계
     inquiry = db.relationship('Inquiry', backref=db.backref('reply_comments', lazy=True, cascade='all, delete-orphan'))
     user = db.relationship('User', backref=db.backref('inquiry_reply_comments', lazy=True))
+    parent = db.relationship('InquiryReplyComment', remote_side=[id], backref=db.backref('replies', lazy=True))
+    likes = db.relationship('InquiryReplyCommentLike', backref='comment', lazy=True, cascade='all, delete-orphan')
     
-    def to_dict(self):
+    def to_dict(self, current_user_id=None):
         """프론트용 딕셔너리 변환"""
+        is_liked = False
+        if current_user_id:
+            is_liked = any(like.user_id == current_user_id for like in self.likes)
+        
         return {
             'id': self.id,
             'inquiry_id': self.inquiry_id,
             'user_id': self.user_id,
+            'parent_id': self.parent_id,
             'user_name': self.user.name if self.user else None,
+            'author_name': self.user.name if self.user else None,  # 게시판과 호환성을 위해 추가
             'content': self.content,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+            'like_count': len(self.likes),
+            'is_liked': is_liked,
+            'replies': [reply.to_dict(current_user_id) for reply in self.replies] if self.replies else []
         }
     
     def __repr__(self):
         return f'<InquiryReplyComment {self.id} on inquiry {self.inquiry_id}>'
+
+
+class InquiryReplyCommentLike(db.Model):
+    """문의 답변 댓글 좋아요 모델"""
+    __tablename__ = 'inquiry_reply_comment_likes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('inquiry_reply_comments.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('inquiry_reply_comment_likes', lazy=True))
+    
+    # 중복 좋아요 방지
+    __table_args__ = (db.UniqueConstraint('comment_id', 'user_id', name='unique_inquiry_comment_user_like'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'comment_id': self.comment_id,
+            'user_id': self.user_id,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
+        }
 
 class AppSetting(db.Model):
     """앱 설정 모델 (전역 설정)"""

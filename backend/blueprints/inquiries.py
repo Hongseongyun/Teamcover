@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from models import db, User, Inquiry, ClubMember, InquiryReplyComment
+from models import db, User, Inquiry, ClubMember, InquiryReplyComment, InquiryReplyCommentLike
 from utils.club_helpers import get_current_club_id, check_club_permission, require_club_membership
 
 # 문의하기 Blueprint
@@ -633,7 +633,7 @@ def delete_inquiry_reply(inquiry_id):
 @inquiries_bp.route('/<int:inquiry_id>/reply/comments', methods=['GET'])
 @jwt_required()
 def get_reply_comments(inquiry_id):
-    """답변 댓글 목록 조회"""
+    """답변 댓글 목록 조회 (답글 포함)"""
     try:
         user = get_current_user()
         if not user:
@@ -650,11 +650,15 @@ def get_reply_comments(inquiry_id):
                 'comments': []
             })
         
-        comments = InquiryReplyComment.query.filter_by(inquiry_id=inquiry_id).order_by(InquiryReplyComment.created_at.asc()).all()
+        # parent_id가 None인 댓글만 조회 (답글이 아닌 댓글만)
+        comments = InquiryReplyComment.query.filter_by(
+            inquiry_id=inquiry_id,
+            parent_id=None
+        ).order_by(InquiryReplyComment.created_at.asc()).all()
         
         return jsonify({
             'success': True,
-            'comments': [comment.to_dict() for comment in comments]
+            'comments': [comment.to_dict(user.id) for comment in comments]
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'댓글 목록 조회 실패: {str(e)}'}), 500
@@ -663,7 +667,7 @@ def get_reply_comments(inquiry_id):
 @inquiries_bp.route('/<int:inquiry_id>/reply/comments', methods=['POST'])
 @jwt_required()
 def create_reply_comment(inquiry_id):
-    """답변 댓글 작성"""
+    """답변 댓글 작성 (답글 지원)"""
     try:
         user = get_current_user()
         if not user:
@@ -679,6 +683,7 @@ def create_reply_comment(inquiry_id):
         
         data = request.get_json()
         content = data.get('content', '').strip()
+        parent_id = data.get('parent_id', None)  # 답글인 경우 부모 댓글 ID
         
         if not content:
             return jsonify({'success': False, 'message': '댓글 내용을 입력해주세요.'}), 400
@@ -686,10 +691,19 @@ def create_reply_comment(inquiry_id):
         if len(content) > 500:
             return jsonify({'success': False, 'message': '댓글은 500자 이내로 입력해주세요.'}), 400
         
+        # parent_id가 있는 경우 (답글), 부모 댓글이 존재하는지 확인
+        if parent_id:
+            parent_comment = InquiryReplyComment.query.get(parent_id)
+            if not parent_comment:
+                return jsonify({'success': False, 'message': '부모 댓글을 찾을 수 없습니다.'}), 404
+            if parent_comment.inquiry_id != inquiry_id:
+                return jsonify({'success': False, 'message': '잘못된 부모 댓글입니다.'}), 400
+        
         # 댓글 생성
         comment = InquiryReplyComment(
             inquiry_id=inquiry_id,
             user_id=user.id,
+            parent_id=parent_id,
             content=content
         )
         
@@ -699,7 +713,7 @@ def create_reply_comment(inquiry_id):
         return jsonify({
             'success': True,
             'message': '댓글이 등록되었습니다.',
-            'comment': comment.to_dict()
+            'comment': comment.to_dict(user.id)
         }), 201
     except Exception as e:
         db.session.rollback()
@@ -741,7 +755,7 @@ def update_reply_comment(inquiry_id, comment_id):
         return jsonify({
             'success': True,
             'message': '댓글이 수정되었습니다.',
-            'comment': comment.to_dict()
+            'comment': comment.to_dict(user.id)
         })
     except Exception as e:
         db.session.rollback()
@@ -751,7 +765,11 @@ def update_reply_comment(inquiry_id, comment_id):
 @inquiries_bp.route('/<int:inquiry_id>/reply/comments/<int:comment_id>', methods=['DELETE'])
 @jwt_required()
 def delete_reply_comment(inquiry_id, comment_id):
-    """답변 댓글 삭제"""
+    """답변 댓글 삭제
+    - 작성자: 자신이 작성한 댓글 삭제 가능
+    - 슈퍼관리자: 모든 댓글 삭제 가능
+    - 클럽 운영진: 해당 클럽의 문의 댓글 삭제 가능
+    """
     try:
         user = get_current_user()
         if not user:
@@ -761,9 +779,39 @@ def delete_reply_comment(inquiry_id, comment_id):
         if not comment:
             return jsonify({'success': False, 'message': '댓글을 찾을 수 없습니다.'}), 404
         
-        # 자신이 작성한 댓글만 삭제 가능
-        if comment.user_id != user.id:
-            return jsonify({'success': False, 'message': '댓글 삭제 권한이 없습니다.'}), 403
+        if comment.inquiry_id != inquiry_id:
+            return jsonify({'success': False, 'message': '잘못된 댓글입니다.'}), 400
+        
+        inquiry = Inquiry.query.get(inquiry_id)
+        if not inquiry:
+            return jsonify({'success': False, 'message': '문의를 찾을 수 없습니다.'}), 404
+        
+        # 슈퍼관리자는 모든 댓글 삭제 가능
+        if user.role == 'super_admin':
+            pass  # 권한 확인 통과
+        # 작성자는 자신이 작성한 댓글만 삭제 가능
+        elif comment.user_id == user.id:
+            pass  # 권한 확인 통과
+        # 클럽 운영진은 해당 클럽의 문의 댓글만 삭제 가능
+        else:
+            if not inquiry.club_id:
+                return jsonify({'success': False, 'message': '클럽이 지정되지 않은 문의입니다.'}), 400
+            
+            club_id = get_current_club_id()
+            if not club_id:
+                return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+            
+            # 해당 클럽 운영진 권한 확인
+            has_permission, result = check_club_permission(user.id, club_id, 'admin')
+            if not has_permission:
+                return jsonify({
+                    'success': False, 
+                    'message': '댓글 삭제 권한이 없습니다. 작성자이거나 클럽 운영진 권한이 필요합니다.'
+                }), 403
+            
+            # 해당 클럽의 문의인지 확인
+            if inquiry.club_id != club_id:
+                return jsonify({'success': False, 'message': '다른 클럽의 문의 댓글은 삭제할 수 없습니다.'}), 403
         
         db.session.delete(comment)
         db.session.commit()
@@ -775,4 +823,55 @@ def delete_reply_comment(inquiry_id, comment_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'댓글 삭제 실패: {str(e)}'}), 500
+
+# 답변 댓글 좋아요 토글
+@inquiries_bp.route('/<int:inquiry_id>/reply/comments/<int:comment_id>/like', methods=['POST'])
+@jwt_required()
+def toggle_reply_comment_like(inquiry_id, comment_id):
+    """답변 댓글 좋아요 토글"""
+    try:
+        user = get_current_user()
+        if not user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        comment = InquiryReplyComment.query.get(comment_id)
+        if not comment:
+            return jsonify({'success': False, 'message': '댓글을 찾을 수 없습니다.'}), 404
+        
+        if comment.inquiry_id != inquiry_id:
+            return jsonify({'success': False, 'message': '잘못된 댓글입니다.'}), 400
+        
+        # 기존 좋아요 확인
+        existing_like = InquiryReplyCommentLike.query.filter_by(
+            comment_id=comment_id,
+            user_id=user.id
+        ).first()
+        
+        if existing_like:
+            # 좋아요 취소
+            db.session.delete(existing_like)
+            action = 'unliked'
+        else:
+            # 좋아요 추가
+            new_like = InquiryReplyCommentLike(
+                comment_id=comment_id,
+                user_id=user.id
+            )
+            db.session.add(new_like)
+            action = 'liked'
+        
+        db.session.commit()
+        
+        # 업데이트된 댓글 정보 반환
+        comment = InquiryReplyComment.query.get(comment_id)
+        
+        return jsonify({
+            'success': True,
+            'action': action,
+            'like_count': len(comment.likes),
+            'comment': comment.to_dict(user.id)
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'좋아요 처리 실패: {str(e)}'}), 500
 

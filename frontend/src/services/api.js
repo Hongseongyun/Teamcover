@@ -316,6 +316,8 @@ export const inquiryAPI = {
     api.put(`/api/inquiries/${inquiryId}/reply/comments/${commentId}`, data),
   deleteReplyComment: (inquiryId, commentId) =>
     api.delete(`/api/inquiries/${inquiryId}/reply/comments/${commentId}`),
+  toggleReplyCommentLike: (inquiryId, commentId) =>
+    api.post(`/api/inquiries/${inquiryId}/reply/comments/${commentId}/like`),
   // Unread inquiry count (for admins and super admins)
   getUnreadCount: () => api.get('/api/inquiries/unread-count'),
 };
