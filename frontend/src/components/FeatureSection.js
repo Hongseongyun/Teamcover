@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import './FeatureSection.css';
 
 const FeatureSection = ({
@@ -13,8 +11,6 @@ const FeatureSection = ({
   ctaText = '지금 시작하기',
   ctaPath = '/login',
 }) => {
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const sectionRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -44,14 +40,6 @@ const FeatureSection = ({
       observer.unobserve(currentSection);
     };
   }, []);
-
-  const handleCTA = () => {
-    if (isAuthenticated) {
-      navigate('/');
-    } else {
-      navigate(ctaPath);
-    }
-  };
 
   return (
     <section
@@ -89,20 +77,6 @@ const FeatureSection = ({
                   </li>
                 ))}
               </ul>
-            )}
-
-            {!isAuthenticated && (
-              <button
-                className="feature-cta"
-                onClick={handleCTA}
-                style={{
-                  opacity: isVisible ? 1 : 0,
-                  transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
-                  transition: `opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s`,
-                }}
-              >
-                {ctaText}
-              </button>
             )}
           </div>
 

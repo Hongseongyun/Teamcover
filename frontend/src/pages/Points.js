@@ -583,12 +583,7 @@ const Points = () => {
         display: true,
       },
       title: {
-        display: true,
-        text: '월별 포인트 결과 현황',
-        font: {
-          size: 16,
-          weight: 'bold',
-        },
+        display: false,
       },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -1124,63 +1119,67 @@ const Points = () => {
           {/* 월별 통계 */}
           {Object.keys(stats.monthlyStats).length > 0 && (
             <div className="monthly-stats">
-              <h3>월별 포인트 현황</h3>
+              <div className="section-card">
+                <h3 className="section-title">월별 포인트 현황</h3>
 
-              {/* 그래프 섹션 */}
-              <div className="monthly-chart-section">
-                <div className="chart-container">
-                  <Line data={prepareChartData()} options={chartOptions} />
+                {/* 그래프 섹션 */}
+                <div className="monthly-chart-section">
+                  <div className="chart-container">
+                    <Line data={prepareChartData()} options={chartOptions} />
+                  </div>
                 </div>
-              </div>
 
-              {/* 카드 섹션 */}
-              <div className="monthly-stats-grid">
-                {Object.entries(stats.monthlyStats)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .slice(-8)
-                  .map(([month, data]) => (
-                    <div key={month} className="monthly-stat-card">
-                      <h4>{month}</h4>
-                      <div className="monthly-stat-content">
-                        <div className="stat-item">
-                          <span className="stat-label">적립:</span>
-                          <span className="stat-value positive">
-                            +{formatNumber(data.earned)}
-                          </span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">사용:</span>
-                          <span className="stat-value negative">
-                            -{formatNumber(data.used)}
-                          </span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">결과:</span>
-                          <span
-                            className={`stat-value ${
-                              data.earned - data.used >= 0
-                                ? 'positive'
-                                : 'negative'
-                            }`}
-                          >
-                            {data.earned - data.used >= 0 ? '+' : ''}
-                            {formatNumber(data.earned - data.used)}
-                          </span>
-                        </div>
-                        <div className="stat-item">
-                          <span className="stat-label">잔여:</span>
-                          <span
-                            className={`stat-value ${
-                              (data.balance || 0) >= 0 ? 'positive' : 'negative'
-                            }`}
-                          >
-                            {(data.balance || 0) >= 0 ? '+' : ''}
-                            {formatNumber(data.balance || 0)}
-                          </span>
+                {/* 카드 섹션 */}
+                <div className="monthly-stats-grid">
+                  {Object.entries(stats.monthlyStats)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .slice(-8)
+                    .map(([month, data]) => (
+                      <div key={month} className="monthly-stat-card">
+                        <h4>{month}</h4>
+                        <div className="monthly-stat-content">
+                          <div className="stat-item">
+                            <span className="stat-label">적립:</span>
+                            <span className="stat-value positive">
+                              +{formatNumber(data.earned)}
+                            </span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">사용:</span>
+                            <span className="stat-value negative">
+                              -{formatNumber(data.used)}
+                            </span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">결과:</span>
+                            <span
+                              className={`stat-value ${
+                                data.earned - data.used >= 0
+                                  ? 'positive'
+                                  : 'negative'
+                              }`}
+                            >
+                              {data.earned - data.used >= 0 ? '+' : ''}
+                              {formatNumber(data.earned - data.used)}
+                            </span>
+                          </div>
+                          <div className="stat-item">
+                            <span className="stat-label">잔여:</span>
+                            <span
+                              className={`stat-value ${
+                                (data.balance || 0) >= 0
+                                  ? 'positive'
+                                  : 'negative'
+                              }`}
+                            >
+                              {(data.balance || 0) >= 0 ? '+' : ''}
+                              {formatNumber(data.balance || 0)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
             </div>
           )}

@@ -194,6 +194,18 @@ const Scores = () => {
   const [averagesLoading, setAveragesLoading] = useState(false);
   const [showAllAverages, setShowAllAverages] = useState(false);
 
+  // 화면 크기 추적 (600px 이하 감지)
+  const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth <= 600);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth <= 600);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // 개인별 검색 상태
   const [searchMember, setSearchMember] = useState('');
   const [memberStats, setMemberStats] = useState(null);
@@ -1532,12 +1544,12 @@ const Scores = () => {
                                   .map((score) => score.average_score),
                                 borderColor: '#3b82f6',
                                 backgroundColor: 'transparent',
-                                borderWidth: 3,
-                                pointRadius: 6,
-                                pointHoverRadius: 8,
+                                borderWidth: isSmallScreen ? 1.5 : 3,
+                                pointRadius: isSmallScreen ? 3 : 6,
+                                pointHoverRadius: isSmallScreen ? 4 : 8,
                                 pointBackgroundColor: '#3b82f6',
                                 pointBorderColor: '#ffffff',
-                                pointBorderWidth: 2,
+                                pointBorderWidth: isSmallScreen ? 1 : 2,
                                 fill: false,
                                 tension: 0.4,
                               },

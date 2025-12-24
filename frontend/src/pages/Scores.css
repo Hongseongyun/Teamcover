@@ -3106,6 +3106,7 @@
 .scores-table th:nth-child(8),
 .scores-table td:nth-child(8) {
   min-width: 80px;
+  text-align: center;
 }
 
 .scores-table th:last-child,
