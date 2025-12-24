@@ -62,7 +62,7 @@ const Inquiry = () => {
     };
   }, [openInquiryMenuId, openReplyMenuId, openCommentMenuId]);
 
-  // 드롭다운이 열릴 때 위치 재계산
+  // 드롭다운이 항상 아래로 열리도록 설정
   useEffect(() => {
     if (openInquiryMenuId || openCommentMenuId) {
       const menuId = openInquiryMenuId || openCommentMenuId;
@@ -72,35 +72,8 @@ const Inquiry = () => {
             `.action-menu-container[data-item-id="${menuId}"]`
           );
           if (container) {
-            const button = container.querySelector('.btn-menu-toggle');
-            const dropdown = container.querySelector('.action-menu-dropdown');
-
-            if (button && dropdown) {
-              const buttonRect = button.getBoundingClientRect();
-              const dropdownRect = dropdown.getBoundingClientRect();
-              const viewportHeight = window.innerHeight;
-
-              const spaceBelow = viewportHeight - buttonRect.bottom;
-              const dropdownHeight = dropdownRect.height + 10;
-
-              // 마지막 두 항목인지 확인
-              const parentList = container.closest('.inquiry-list, .inquiry-comments-list');
-              if (parentList) {
-                const allContainers = parentList.querySelectorAll(
-                  '.action-menu-container[data-item-id]'
-                );
-                const currentIndex = Array.from(allContainers).findIndex(
-                  (c) => c.getAttribute('data-item-id') === String(menuId)
-                );
-                const isLastTwo = currentIndex >= allContainers.length - 2;
-
-                if (isLastTwo || spaceBelow < dropdownHeight) {
-                  container.classList.add('menu-open-up');
-                } else {
-                  container.classList.remove('menu-open-up');
-                }
-              }
-            }
+            // 항상 아래로 열리도록 menu-open-up 클래스 제거
+            container.classList.remove('menu-open-up');
           }
         });
       });
@@ -547,7 +520,7 @@ const Inquiry = () => {
                       data-item-id="reply"
                     >
                       <button
-                        className="btn btn-sm btn-menu-toggle"
+                        className={`btn btn-sm btn-menu-toggle ${openReplyMenuId === 'reply' ? 'menu-active' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenReplyMenuId(
@@ -555,7 +528,11 @@ const Inquiry = () => {
                           );
                         }}
                       >
-                        ⋯
+                        <span className="menu-dots">
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                        </span>
                       </button>
                       {openReplyMenuId === 'reply' && (
                         <div className="action-menu-dropdown">
@@ -594,8 +571,7 @@ const Inquiry = () => {
                   {/* 댓글 목록 */}
                   {replyComments.length > 0 && (
                     <div className="inquiry-comments-list">
-                      {replyComments.map((comment, index) => {
-                        const isLastTwo = index >= replyComments.length - 2;
+                      {replyComments.map((comment) => {
                         return (
                         <div key={comment.id} className="inquiry-comment-item">
                           <div className="inquiry-comment-header">
@@ -645,31 +621,18 @@ const Inquiry = () => {
                               {comment.user_id === user?.id && (
                                 <div className="inquiry-comment-actions">
                                   <div
-                                    className={`action-menu-container ${
-                                      isLastTwo ? 'menu-open-up' : ''
-                                    }`}
+                                    className="action-menu-container"
                                     data-item-id={comment.id}
                                   >
                                     <button
-                                      className="btn btn-sm btn-menu-toggle"
+                                      className={`btn btn-sm btn-menu-toggle ${openCommentMenuId === comment.id ? 'menu-active' : ''}`}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        const button = e.currentTarget;
-                                        const container = button.closest(
+                                        const container = e.currentTarget.closest(
                                           '.action-menu-container'
                                         );
-                                        const rect = button.getBoundingClientRect();
-                                        const viewportHeight = window.innerHeight;
-                                        const dropdownHeight = 100;
-                                        const spaceBelow =
-                                          viewportHeight - rect.bottom;
-
-                                        const shouldOpenUp =
-                                          isLastTwo || spaceBelow < dropdownHeight;
-
-                                        if (shouldOpenUp) {
-                                          container.classList.add('menu-open-up');
-                                        } else {
+                                        // 항상 아래로 열리도록 menu-open-up 클래스 제거
+                                        if (container) {
                                           container.classList.remove('menu-open-up');
                                         }
 
@@ -680,7 +643,11 @@ const Inquiry = () => {
                                         );
                                       }}
                                     >
-                                      ⋯
+                                      <span className="menu-dots">
+                                        <span className="menu-dot"></span>
+                                        <span className="menu-dot"></span>
+                                        <span className="menu-dot"></span>
+                                      </span>
                                     </button>
                                     {openCommentMenuId === comment.id && (
                                       <div className="action-menu-dropdown">
@@ -826,19 +793,23 @@ const Inquiry = () => {
                   className="action-menu-container"
                   data-item-id={selectedInquiry.id}
                 >
-                  <button
-                    className="btn btn-sm btn-menu-toggle"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenInquiryMenuId(
-                        openInquiryMenuId === selectedInquiry.id
-                          ? null
-                          : selectedInquiry.id
-                      );
-                    }}
-                  >
-                    ⋯
-                  </button>
+                      <button
+                        className={`btn btn-sm btn-menu-toggle ${openInquiryMenuId === selectedInquiry.id ? 'menu-active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenInquiryMenuId(
+                            openInquiryMenuId === selectedInquiry.id
+                              ? null
+                              : selectedInquiry.id
+                          );
+                        }}
+                      >
+                        <span className="menu-dots">
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                        </span>
+                      </button>
                   {openInquiryMenuId === selectedInquiry.id && (
                     <div className="action-menu-dropdown">
                       {selectedInquiry.user_id === user?.id && !selectedInquiry.reply && (
@@ -963,7 +934,7 @@ const Inquiry = () => {
             className="inquiry-create-button"
             onClick={handleCreateInquiry}
           >
-            문의 작성
+            <span>문의 작성</span>
           </button>
         </div>
         {error && <div className="inquiry-error">{error}</div>}
@@ -974,7 +945,7 @@ const Inquiry = () => {
               className="inquiry-create-button"
               onClick={handleCreateInquiry}
             >
-              첫 문의 작성하기
+              <span>첫 문의 작성하기</span>
             </button>
           </div>
         ) : isSuperAdmin && inquiriesByClub ? (
@@ -984,8 +955,7 @@ const Inquiry = () => {
                 <div key={clubName} className="inquiry-club-section">
                   <h2 className="inquiry-club-title">{clubName}</h2>
                   <div className="inquiry-list">
-                    {clubInquiries.map((inquiry, index) => {
-                      const isLastTwo = index >= clubInquiries.length - 2;
+                    {clubInquiries.map((inquiry) => {
                       return (
                       <div
                         key={inquiry.id}
@@ -993,22 +963,84 @@ const Inquiry = () => {
                         onClick={() => handleViewInquiry(inquiry.id)}
                       >
                         <div className="inquiry-item-header">
-                          <h3>{inquiry.title}</h3>
-                          <div className="inquiry-item-badges">
-                            {inquiry.is_private && (
-                              <span className="inquiry-private-badge">
-                                비공개
-                              </span>
-                            )}
-                            {inquiry.reply && (
-                              <span className="inquiry-replied-badge">
-                                답변완료
-                              </span>
-                            )}
+                          <div className="inquiry-item-title-wrapper">
+                            <h3>{inquiry.title}</h3>
                             {!inquiry.reply && (
                               <span className="inquiry-pending-badge">
                                 답변대기
                               </span>
+                            )}
+                          </div>
+                          <div className="inquiry-item-header-right">
+                            <div className="inquiry-item-badges">
+                              {inquiry.is_private && (
+                                <span className="inquiry-private-badge">
+                                  비공개
+                                </span>
+                              )}
+                              {inquiry.reply && (
+                                <span className="inquiry-replied-badge">
+                                  답변완료
+                                </span>
+                              )}
+                            </div>
+                            {/* 설정 버튼: 작성자 또는 운영진/슈퍼관리자 */}
+                            {((inquiry.user_id === user?.id && !inquiry.reply) ||
+                              (inquiry.user_id === user?.id || 
+                                (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin')))) && (
+                              <div className="inquiry-item-actions">
+                                <div
+                                  className="action-menu-container"
+                                  data-item-id={inquiry.id}
+                                >
+                                  <button
+                                    className={`btn btn-sm btn-menu-toggle ${openInquiryMenuId === inquiry.id ? 'menu-active' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setOpenInquiryMenuId(
+                                        openInquiryMenuId === inquiry.id
+                                          ? null
+                                          : inquiry.id
+                                      );
+                                    }}
+                                  >
+                                    <span className="menu-dots">
+                                      <span className="menu-dot"></span>
+                                      <span className="menu-dot"></span>
+                                      <span className="menu-dot"></span>
+                                    </span>
+                                  </button>
+                                  {openInquiryMenuId === inquiry.id && (
+                                    <div className="action-menu-dropdown">
+                                      {inquiry.user_id === user?.id && !inquiry.reply && (
+                                        <button
+                                          className="action-menu-item"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditInquiry(inquiry);
+                                            setOpenInquiryMenuId(null);
+                                          }}
+                                        >
+                                          수정
+                                        </button>
+                                      )}
+                                      {(inquiry.user_id === user?.id || 
+                                        (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
+                                        <button
+                                          className="action-menu-item action-menu-item-danger"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteInquiry(inquiry.id);
+                                            setOpenInquiryMenuId(null);
+                                          }}
+                                        >
+                                          삭제
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1026,60 +1058,6 @@ const Inquiry = () => {
                               {formatDate(inquiry.created_at)}
                             </span>
                           </div>
-                          {/* 수정 버튼: 작성자만 (답변이 없을 때만) */}
-                          {((inquiry.user_id === user?.id && !inquiry.reply) ||
-                            (inquiry.user_id === user?.id || 
-                              (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin')))) && (
-                            <div className="inquiry-item-actions">
-                              <div
-                                className="action-menu-container"
-                                data-item-id={inquiry.id}
-                              >
-                                <button
-                                  className="btn btn-sm btn-menu-toggle"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenInquiryMenuId(
-                                      openInquiryMenuId === inquiry.id
-                                        ? null
-                                        : inquiry.id
-                                    );
-                                  }}
-                                >
-                                  ⋯
-                                </button>
-                                {openInquiryMenuId === inquiry.id && (
-                                  <div className="action-menu-dropdown">
-                                    {inquiry.user_id === user?.id && !inquiry.reply && (
-                                      <button
-                                        className="action-menu-item"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditInquiry(inquiry);
-                                          setOpenInquiryMenuId(null);
-                                        }}
-                                      >
-                                        수정
-                                      </button>
-                                    )}
-                                    {(inquiry.user_id === user?.id || 
-                                      (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
-                                      <button
-                                        className="action-menu-item action-menu-item-danger"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleDeleteInquiry(inquiry.id);
-                                          setOpenInquiryMenuId(null);
-                                        }}
-                                      >
-                                        삭제
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
                       );
@@ -1091,8 +1069,7 @@ const Inquiry = () => {
           </div>
         ) : (
           <div className="inquiry-list">
-            {inquiries.map((inquiry, index) => {
-              const isLastTwo = index >= inquiries.length - 2;
+            {inquiries.map((inquiry) => {
               return (
               <div
                 key={inquiry.id}
@@ -1100,16 +1077,78 @@ const Inquiry = () => {
                 onClick={() => handleViewInquiry(inquiry.id)}
               >
                 <div className="inquiry-item-header">
-                  <h3>{inquiry.title}</h3>
-                  <div className="inquiry-item-badges">
-                    {inquiry.is_private && (
-                      <span className="inquiry-private-badge">비공개</span>
-                    )}
-                    {inquiry.reply && (
-                      <span className="inquiry-replied-badge">답변완료</span>
-                    )}
+                  <div className="inquiry-item-title-wrapper">
+                    <h3>{inquiry.title}</h3>
                     {!inquiry.reply && (
                       <span className="inquiry-pending-badge">답변대기</span>
+                    )}
+                  </div>
+                  <div className="inquiry-item-header-right">
+                    <div className="inquiry-item-badges">
+                      {inquiry.is_private && (
+                        <span className="inquiry-private-badge">비공개</span>
+                      )}
+                      {inquiry.reply && (
+                        <span className="inquiry-replied-badge">답변완료</span>
+                      )}
+                    </div>
+                    {/* 설정 버튼: 작성자 또는 운영진/슈퍼관리자 */}
+                    {((inquiry.user_id === user?.id && !inquiry.reply) ||
+                      (inquiry.user_id === user?.id || 
+                        (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin')))) && (
+                      <div className="inquiry-item-actions">
+                        <div
+                          className="action-menu-container"
+                          data-item-id={inquiry.id}
+                        >
+                          <button
+                            className={`btn btn-sm btn-menu-toggle ${openInquiryMenuId === inquiry.id ? 'menu-active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenInquiryMenuId(
+                                openInquiryMenuId === inquiry.id
+                                  ? null
+                                  : inquiry.id
+                              );
+                            }}
+                          >
+                            <span className="menu-dots">
+                              <span className="menu-dot"></span>
+                              <span className="menu-dot"></span>
+                              <span className="menu-dot"></span>
+                            </span>
+                          </button>
+                          {openInquiryMenuId === inquiry.id && (
+                            <div className="action-menu-dropdown">
+                              {inquiry.user_id === user?.id && !inquiry.reply && (
+                                <button
+                                  className="action-menu-item"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditInquiry(inquiry);
+                                    setOpenInquiryMenuId(null);
+                                  }}
+                                >
+                                  수정
+                                </button>
+                              )}
+                              {(inquiry.user_id === user?.id || 
+                                (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
+                                <button
+                                  className="action-menu-item action-menu-item-danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteInquiry(inquiry.id);
+                                    setOpenInquiryMenuId(null);
+                                  }}
+                                >
+                                  삭제
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1127,36 +1166,6 @@ const Inquiry = () => {
                       {formatDate(inquiry.created_at)}
                     </span>
                   </div>
-                  {/* 수정 버튼: 작성자만 (답변이 없을 때만) */}
-                  {inquiry.user_id === user?.id && !inquiry.reply && (
-                    <div className="inquiry-item-actions">
-                      <button
-                        className="inquiry-edit-button-small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditInquiry(inquiry);
-                        }}
-                      >
-                        수정
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* 삭제 버튼: 작성자 또는 운영진/슈퍼관리자 (단, 슈퍼관리자가 작성한 문의는 슈퍼관리자만 삭제 가능) */}
-                  {(inquiry.user_id === user?.id || 
-                    (canReply && (user?.role === 'super_admin' || inquiry.user_role !== 'super_admin'))) && (
-                    <div className="inquiry-item-actions">
-                      <button
-                        className="inquiry-delete-button-small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteInquiry(inquiry.id);
-                        }}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  )}
                 </div>
                         </div>
                         );

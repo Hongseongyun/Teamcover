@@ -32,21 +32,58 @@
 .inquiry-create-button,
 .inquiry-back-button {
   padding: 0.75rem 1.5rem;
-  background: var(--toss-primary, #3182f6);
-  color: white;
-  border: none;
+  background: transparent;
+  color: var(--toss-primary, #3182f6);
+  border: 1px solid var(--toss-primary, #3182f6);
   border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.inquiry-create-button::before,
+.inquiry-back-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--toss-primary, #3182f6);
+  transition: left 0.3s ease;
+  z-index: 0;
+}
+
+.inquiry-create-button span,
+.inquiry-back-button span {
+  position: relative;
+  z-index: 1;
+  color: var(--toss-primary, #3182f6);
+  transition: color 0.3s ease;
+}
+
+.inquiry-create-button:hover span,
+.inquiry-back-button:hover span {
+  color: white;
+}
+
+.inquiry-create-button:hover::before,
+.inquiry-back-button:hover::before {
+  left: 0;
 }
 
 .inquiry-create-button:hover,
 .inquiry-back-button:hover {
-  background: var(--toss-primary-dark, #2563eb);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+}
+
+.inquiry-create-button:active,
+.inquiry-back-button:active {
+  transform: translateY(0);
 }
 
 .inquiry-loading,
@@ -140,12 +177,24 @@
   margin-bottom: 0.75rem;
 }
 
+.inquiry-item-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
 .inquiry-item-header h3 {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--color-text, #333);
   margin: 0;
-  flex: 1;
+}
+
+.inquiry-item-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .inquiry-item-badges {
@@ -179,6 +228,7 @@
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .inquiry-item-content {
@@ -891,6 +941,32 @@
 
 [data-theme='dark'] .inquiry-cancel-button-small:hover {
   background: var(--color-border, #4b5563);
+}
+
+/* 문의 작성 버튼 다크모드 */
+[data-theme='dark'] .inquiry-create-button,
+[data-theme='dark'] .inquiry-back-button {
+  border-color: var(--toss-primary, #3b82f6);
+  color: var(--toss-primary, #3b82f6);
+}
+
+[data-theme='dark'] .inquiry-create-button span,
+[data-theme='dark'] .inquiry-back-button span {
+  color: var(--toss-primary, #3b82f6);
+}
+
+[data-theme='dark'] .inquiry-create-button::before,
+[data-theme='dark'] .inquiry-back-button::before {
+  background: var(--toss-primary, #3b82f6);
+}
+
+[data-theme='dark'] .inquiry-create-button:hover span,
+[data-theme='dark'] .inquiry-back-button:hover span {
+  color: white;
+}
+
+[data-theme='dark'] .inquiry-item-title-wrapper h3 {
+  color: var(--color-text, #f3f4f6);
 }
 
 /* 비밀번호 입력 폼 */
