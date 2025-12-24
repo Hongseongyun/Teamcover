@@ -3,6 +3,7 @@ import { postAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
 import './PostDetail.css';
+import '../pages/Members.css'; // action-menu 스타일 사용
 
 const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [repliesExpanded, setRepliesExpanded] = useState({}); // 각 댓글의 답글 펼침/접기 상태
+  const [openPostMenuId, setOpenPostMenuId] = useState(null); // 게시글 메뉴 열림 상태
 
   const { isAdmin: clubIsAdmin } = useClub();
   const isSuperAdmin = user?.role === 'super_admin';
@@ -26,6 +28,26 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
     fetchPost();
     fetchComments();
   }, [postId]);
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        openPostMenuId &&
+        !event.target.closest('.action-menu-container')
+      ) {
+        setOpenPostMenuId(null);
+      }
+    };
+
+    if (openPostMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openPostMenuId]);
 
   const fetchPost = async () => {
     try {
@@ -232,15 +254,47 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
                 (user?.role === 'super_admin' ||
                   post.author_role !== 'super_admin'))) && (
               <div className="post-detail-actions">
-                <button onClick={() => onEdit(post)} className="btn-edit">
-                  수정
-                </button>
-                <button
-                  onClick={() => onDelete(post.id)}
-                  className="btn-delete"
-                >
-                  삭제
-                </button>
+                <div className="action-menu-container">
+                  <button
+                    className="btn btn-sm btn-menu-toggle"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenPostMenuId(
+                        openPostMenuId === post.id ? null : post.id
+                      );
+                    }}
+                  >
+                    <span className="menu-dots">
+                      <span className="menu-dot"></span>
+                      <span className="menu-dot"></span>
+                      <span className="menu-dot"></span>
+                    </span>
+                  </button>
+                  {openPostMenuId === post.id && (
+                    <div className="action-menu-dropdown">
+                      <button
+                        className="action-menu-item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(post);
+                          setOpenPostMenuId(null);
+                        }}
+                      >
+                        수정
+                      </button>
+                      <button
+                        className="action-menu-item action-menu-item-danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(post.id);
+                          setOpenPostMenuId(null);
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

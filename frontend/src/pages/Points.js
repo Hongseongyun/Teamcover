@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import './Points.css';
 import './Members.css'; // action-menu 스타일 사용
@@ -1529,11 +1529,12 @@ const Points = () => {
                             <td className="col-actions">
                               <button
                                 type="button"
-                                className="btn btn-sm btn-danger"
+                                className="btn-delete-row"
                                 onClick={() => removePointRow(row.id)}
                                 disabled={pointRows.length === 1 || submitting}
+                                title="행 삭제"
                               >
-                                삭제
+                                <Trash2 size={16} />
                               </button>
                             </td>
                           </tr>
