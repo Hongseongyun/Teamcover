@@ -772,7 +772,7 @@ def approve_join_request(request_id):
 @clubs_bp.route('/join-requests/<int:request_id>/reject', methods=['POST'])
 @jwt_required()
 def reject_join_request(request_id):
-    """클럽 가입 요청 거부"""
+    """클럽 가입 요청 거부 (사용자와 멤버십 모두 삭제)"""
     try:
         user_id = int(get_jwt_identity())
         current_user = User.query.get(user_id)
@@ -786,17 +786,31 @@ def reject_join_request(request_id):
         if membership.status != 'pending':
             return jsonify({'success': False, 'message': '승인 대기 중인 요청이 아닙니다.'}), 400
         
-        # 거부 처리
-        membership.status = 'rejected'
-        membership.approved_at = datetime.utcnow()
-        membership.approved_by = user_id
+        # 승인 요청 상태는 가입한 상태가 아니므로, 거부 시 사용자와 멤버십 모두 삭제
+        request_user_id = membership.user_id
+        request_user = User.query.get(request_user_id)
+        
+        # 해당 사용자의 모든 클럽 멤버십 확인 (승인된 것이 있는지)
+        all_memberships = ClubMember.query.filter_by(user_id=request_user_id).all()
+        approved_memberships = [m for m in all_memberships if m.status == 'approved']
+        
+        # 승인된 멤버십이 없으면 사용자 삭제 (승인 요청만 있었던 경우)
+        if not approved_memberships:
+            # 모든 멤버십 삭제
+            for m in all_memberships:
+                db.session.delete(m)
+            # 사용자 삭제
+            if request_user:
+                db.session.delete(request_user)
+        else:
+            # 승인된 멤버십이 있으면 해당 멤버십만 삭제
+            db.session.delete(membership)
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': '클럽 가입 요청이 거부되었습니다.',
-            'membership': membership.to_dict()
+            'message': '클럽 가입 요청이 거부되었습니다.'
         })
     except Exception as e:
         db.session.rollback()

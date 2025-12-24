@@ -153,7 +153,17 @@ export const AuthProvider = ({ children }) => {
         try {
           const response = await authAPI.getCurrentUser();
           if (response.data.success) {
-            setUser(response.data.user);
+            const userData = response.data.user;
+            setUser(userData);
+            
+            // 슈퍼관리자가 아니고, 승인된 클럽이 없는 경우 승인 대기 상태 확인
+            // alert는 제거하고 조용히 로그아웃 처리 (구글 로그인 콜백에서 모달로 처리)
+            if (userData.role !== 'super_admin' && (!userData.clubs || userData.clubs.length === 0)) {
+              // 승인 대기 중인 사용자는 로그아웃 처리
+              await logout();
+              return;
+            }
+            
             // FCM 토큰 등록
             registerFCMToken();
           } else {

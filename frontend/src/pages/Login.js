@@ -28,7 +28,7 @@ const Login = () => {
   const [availableClubs, setAvailableClubs] = useState([]);
   const [loadingClubs, setLoadingClubs] = useState(false);
 
-  const { login, register, isAuthenticated, logoutOtherDevices } = useAuth();
+  const { login, register, isAuthenticated, logoutOtherDevices, logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -322,6 +322,7 @@ const Login = () => {
           setShowActiveSessionModal(true);
         } else {
           // 로그인 성공 시 항상 랜딩 페이지로 이동
+          // 승인 대기 상태는 구글 로그인 콜백에서 모달로 처리하므로 여기서는 확인하지 않음
           navigate('/', { replace: true });
         }
       } else {

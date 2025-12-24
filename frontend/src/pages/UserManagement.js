@@ -290,25 +290,31 @@ const UserManagement = () => {
       // 슈퍼관리자는 항상 별도 섹션에 표시
       if (user.role === 'super_admin') {
         superAdmins.push(user);
-      } else {
-        // 일반 사용자만 클럽별로 그룹화
-        if (!user.clubs || user.clubs.length === 0) {
-          noClubUsers.push(user);
         } else {
-          user.clubs.forEach((club) => {
-            if (!clubGroups[club.id]) {
-              clubGroups[club.id] = {
-                club: club,
-                users: [],
-              };
-            }
-            // 중복 방지: 이미 추가된 사용자인지 확인
-            if (!clubGroups[club.id].users.find((u) => u.id === user.id)) {
-              clubGroups[club.id].users.push(user);
-            }
-          });
+          // 일반 사용자만 클럽별로 그룹화
+          // 백엔드에서 이미 승인된 멤버십(status='approved')만 반환하지만,
+          // 안전을 위해 프론트엔드에서도 확인
+          const approvedClubs = (user.clubs || []).filter(
+            (club) => !club.status || club.status === 'approved'
+          );
+          
+          if (approvedClubs.length === 0) {
+            noClubUsers.push(user);
+          } else {
+            approvedClubs.forEach((club) => {
+              if (!clubGroups[club.id]) {
+                clubGroups[club.id] = {
+                  club: club,
+                  users: [],
+                };
+              }
+              // 중복 방지: 이미 추가된 사용자인지 확인
+              if (!clubGroups[club.id].users.find((u) => u.id === user.id)) {
+                clubGroups[club.id].users.push(user);
+              }
+            });
+          }
         }
-      }
     });
 
     return { clubGroups, noClubUsers, superAdminsNoClub: superAdmins };
@@ -850,6 +856,9 @@ const UserManagement = () => {
                       </td>
                       <td className="user-email-cell">
                         <span className="user-email-text">{user.email}</span>
+                      </td>
+                      <td className="clubs-cell">
+                        <span className="no-clubs">-</span>
                       </td>
                       <td className="role-cell">
                         <select

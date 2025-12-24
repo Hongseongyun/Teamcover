@@ -229,10 +229,30 @@ def login():
         
         print(f"[LOGIN] User {user.id} ({email}): Updated active_token from {old_active_token[:8] if old_active_token else 'None'}... to {jti[:8]}...")
         
+        # 승인된 클럽 멤버십 정보 추가
+        from models import ClubMember, Club
+        club_memberships = ClubMember.query.filter_by(
+            user_id=user.id,
+            status='approved'
+        ).all()
+        clubs_info = []
+        for membership in club_memberships:
+            club = Club.query.get(membership.club_id)
+            if club:
+                clubs_info.append({
+                    'id': club.id,
+                    'name': club.name,
+                    'role': membership.role,
+                    'status': membership.status
+                })
+        
+        user_dict = user.to_dict()
+        user_dict['clubs'] = clubs_info
+        
         return jsonify({
             'success': True,
             'message': '로그인되었습니다.',
-            'user': user.to_dict(),
+            'user': user_dict,
             'access_token': access_token,
             'has_active_session': has_active_session  # 다른 기기에서 로그인되어 있는지 여부
         })
@@ -588,10 +608,34 @@ def google_callback():
         
         # 모든 사용자에 대해 클럽 가입 여부 확인 (새 사용자든 기존 사용자든)
         from models import ClubMember
-        has_club = ClubMember.query.filter_by(user_id=user.id).first() is not None
+        all_memberships = ClubMember.query.filter_by(user_id=user.id).all()
+        approved_memberships = [m for m in all_memberships if m.status == 'approved']
+        pending_memberships = [m for m in all_memberships if m.status == 'pending']
+        has_approved_club = len(approved_memberships) > 0
+        
+        # 승인 대기 중인 사용자는 승인 대기 메시지 반환
+        # pending 멤버십이 있고 승인된 멤버십이 없는 경우
+        if len(pending_memberships) > 0 and not has_approved_club:
+            # pending 멤버십이 최근에 생성된 것인지 확인 (5분 이내)
+            # 첫 회원가입 시 클럽 선택 직후에는 승인 대기 메시지를 반환하지 않음
+            recent_pending = any(
+                (datetime.utcnow() - m.requested_at).total_seconds() < 300 
+                for m in pending_memberships 
+                if m.requested_at
+            )
+            
+            # 첫 회원가입이 아닌 경우(재로그인)에는 항상 승인 대기 메시지 반환
+            # 첫 회원가입 시(recent_pending이 True이고 is_new_user인 경우)에는 클럽 선택 모달을 표시하기 위해 여기서 반환하지 않음
+            if not (recent_pending and is_new_user):
+                return jsonify({
+                    'success': True,  # success를 True로 변경하여 모달 표시 가능하도록
+                    'message': '아직 클럽 가입 승인이 완료되지 않았습니다. 승인 후 다시 로그인해주세요.',
+                    'pending_approval': True
+                })
         
         # 클럽에 가입하지 않은 경우 클럽 선택 필요
-        if not has_club:
+        # (pending 멤버십이 없거나, 첫 회원가입인 경우에만)
+        if not has_approved_club:
             # 새 사용자인 경우 사용자 정보는 이미 commit되었으므로 바로 반환
             if is_new_user:
                 return jsonify({
@@ -744,9 +788,29 @@ def get_current_user():
         if not user:
             return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'})
         
+        user_dict = user.to_dict()
+        
+        # 승인된 클럽 멤버십 정보 추가
+        from models import ClubMember, Club
+        club_memberships = ClubMember.query.filter_by(
+            user_id=user.id,
+            status='approved'
+        ).all()
+        clubs_info = []
+        for membership in club_memberships:
+            club = Club.query.get(membership.club_id)
+            if club:
+                clubs_info.append({
+                    'id': club.id,
+                    'name': club.name,
+                    'role': membership.role,
+                    'status': membership.status
+                })
+        user_dict['clubs'] = clubs_info
+        
         return jsonify({
             'success': True,
-            'user': user.to_dict()
+            'user': user_dict
         })
         
     except Exception as e:
@@ -768,17 +832,27 @@ def get_users():
         users = User.query.all()
         users_data = []
         for user in users:
+            # 모든 멤버십 조회 (승인된 것과 대기 중인 것 모두)
+            all_memberships = ClubMember.query.filter_by(user_id=user.id).all()
+            approved_memberships = [m for m in all_memberships if m.status == 'approved']
+            pending_memberships = [m for m in all_memberships if m.status == 'pending']
+            
+            # 승인 요청 상태(pending)만 있고 승인된 멤버십이 없는 사용자는 제외
+            # (승인 요청 상태는 가입한 상태가 아니므로)
+            if len(pending_memberships) > 0 and len(approved_memberships) == 0:
+                continue  # 이 사용자는 목록에서 제외
+            
             user_dict = user.to_dict()
-            # 사용자가 속한 클럽 정보 가져오기
-            club_memberships = ClubMember.query.filter_by(user_id=user.id).all()
+            # 승인된 클럽 정보만 추가
             clubs_info = []
-            for membership in club_memberships:
+            for membership in approved_memberships:
                 club = Club.query.get(membership.club_id)
                 if club:
                     clubs_info.append({
                         'id': club.id,
                         'name': club.name,
-                        'role': membership.role
+                        'role': membership.role,
+                        'status': membership.status
                     })
             user_dict['clubs'] = clubs_info
             users_data.append(user_dict)

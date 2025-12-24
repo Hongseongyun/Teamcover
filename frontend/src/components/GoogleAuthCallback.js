@@ -164,6 +164,12 @@ const GoogleAuthCallback = () => {
             setShowConfirmModal(true);
             setStatus('확인 대기 중...');
             isProcessing = false; // 확인 모달 표시 시 플래그 리셋
+          } 
+          // 승인 대기 중인 경우 - 승인 대기 모달 표시
+          else if (data.pending_approval) {
+            isProcessing = false; // 플래그 리셋
+            setStatus('승인 대기 중...');
+            setShowApprovalPendingModal(true);
           } else {
             // 활성 세션이 없으면 바로 로그인 처리
             if (!data.user || !data.access_token) {
