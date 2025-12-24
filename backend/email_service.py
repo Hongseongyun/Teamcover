@@ -98,7 +98,34 @@ def send_verification_email_with_debug(email, name, password, role='user', club_
         
         # SendGrid API 방식 시도
         debug_info['steps'].append("SendGrid API 방식 시도")
-        return send_via_sendgrid_api(email, name, password, role, debug_info, club_id)
+        sendgrid_result = send_via_sendgrid_api(email, name, password, role, debug_info, club_id)
+        
+        # SendGrid 성공 시 반환
+        if sendgrid_result['success']:
+            return sendgrid_result
+        
+        # SendGrid 실패 시 Brevo API로 fallback (도메인 인증 불필요)
+        debug_info['steps'].append("SendGrid 실패, Brevo API로 fallback 시도")
+        print("⚠️ SendGrid 실패, Brevo API로 전환합니다...")
+        brevo_result = send_via_brevo_api(email, name, password, role, debug_info, club_id)
+        
+        # Brevo 성공 시 반환
+        if brevo_result['success']:
+            return brevo_result
+        
+        # Brevo 실패 시 Resend API로 fallback (도메인 인증 필요)
+        debug_info['steps'].append("Brevo 실패, Resend API로 fallback 시도")
+        print("⚠️ Brevo 실패, Resend API로 전환합니다...")
+        resend_result = send_via_resend_api(email, name, password, role, debug_info, club_id)
+        
+        # Resend 성공 시 반환
+        if resend_result['success']:
+            return resend_result
+        
+        # Resend도 실패 시 Gmail SMTP로 fallback (Railway에서는 작동하지 않을 수 있음)
+        debug_info['steps'].append("Resend 실패, Gmail SMTP로 fallback 시도")
+        print("⚠️ Resend 실패, Gmail SMTP로 전환합니다...")
+        return send_via_smtp(email, name, password, role, debug_info, club_id)
         
     except Exception as e:
         print(f"❌ 이메일 발송 실패: {e}")
@@ -210,6 +237,252 @@ def send_via_sendgrid_api(email, name, password, role, debug_info, club_id=None)
             'success': False,
             'debug_info': debug_info
         }
+
+def send_via_brevo_api(email, name, password, role, debug_info, club_id=None):
+    """Brevo (Sendinblue) API를 사용한 이메일 발송 (무료: 일 300건, 월 9,000건, 도메인 인증 불필요)"""
+    try:
+        import requests
+        
+        debug_info['steps'].append("Brevo API 요청 준비")
+        
+        # 인증 토큰 생성
+        token = generate_verification_token(email, name, password, role, club_id)
+        verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
+        debug_info['verification_url'] = verification_url
+        
+        # Brevo API 키 (환경 변수에서 가져오기)
+        api_key = os.getenv('BREVO_API_KEY')
+        if not api_key:
+            debug_info['steps'].append("Brevo API 키가 설정되지 않음")
+            return {
+                'success': False,
+                'debug_info': debug_info
+            }
+        
+        url = "https://api.brevo.com/v3/smtp/email"
+        
+        headers = {
+            "api-key": api_key,
+            "Content-Type": "application/json"
+        }
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                <h2 style="color: #007bff; margin-bottom: 20px;">이메일 인증이 필요합니다</h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                    안녕하세요 <strong>{name}</strong>님!<br>
+                    Teamcover 회원가입을 완료하려면 아래 버튼을 클릭하여 이메일을 인증해주세요.
+                </p>
+                
+                <a href="{verification_url}" 
+                   style="display: inline-block; background-color: #007bff; color: white; 
+                          padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                          font-size: 16px; font-weight: bold; margin-bottom: 20px;">
+                    이메일 인증하기
+                </a>
+                
+                <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                    이 링크는 1시간 후에 만료됩니다.<br>
+                    만약 버튼이 작동하지 않는다면 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br>
+                    <a href="{verification_url}" style="color: #007bff; word-break: break-all;">{verification_url}</a>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="font-size: 12px; color: #999;">
+                    이 이메일은 Teamcover 시스템에서 자동으로 발송되었습니다.<br>
+                    만약 회원가입을 하지 않으셨다면 이 이메일을 무시하셔도 됩니다.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Brevo는 sender 정보가 필요함 (무료 티어는 등록된 이메일 사용)
+        sender_email = os.getenv('BREVO_SENDER_EMAIL', 'noreply@teamcover.com')
+        sender_name = os.getenv('BREVO_SENDER_NAME', 'Teamcover')
+        
+        print(f"📧 Brevo 발신자: {sender_name} <{sender_email}>")
+        print(f"📧 Brevo 수신자: {name} <{email}>")
+        
+        data = {
+            "sender": {
+                "name": sender_name,
+                "email": sender_email
+            },
+            "to": [
+                {
+                    "email": email,
+                    "name": name
+                }
+            ],
+            "subject": "Teamcover 이메일 인증",
+            "htmlContent": html_content
+        }
+        
+        debug_info['steps'].append(f"Brevo API 요청 전송 (발신자: {sender_email}, 수신자: {email})")
+        response = requests.post(url, headers=headers, json=data)
+        
+        # 응답 상세 로깅
+        print(f"📨 Brevo API 응답 상태 코드: {response.status_code}")
+        print(f"📨 Brevo API 응답 내용: {response.text}")
+        
+        if response.status_code == 201:
+            response_data = response.json() if response.text else {}
+            message_id = response_data.get('messageId', 'N/A')
+            debug_info['steps'].append(f"Brevo API 요청 성공 (Message ID: {message_id})")
+            print(f"✅ Brevo API 이메일 발송 성공! (Message ID: {message_id})")
+            print(f"💡 Brevo 대시보드에서 발송 상태를 확인하세요: https://app.brevo.com/statistics/email")
+            
+            # 발신자 이메일이 검증되지 않았을 수 있음
+            if not sender_email or sender_email == 'noreply@teamcover.com':
+                print(f"⚠️ 주의: 발신자 이메일이 Brevo 계정에 등록되지 않았을 수 있습니다.")
+                print(f"⚠️ Brevo 대시보드 > Senders & IP > Verified Senders에서 이메일을 등록하세요.")
+            
+            return {
+                'success': True,
+                'debug_info': debug_info,
+                'message_id': message_id
+            }
+        else:
+            debug_info['steps'].append(f"Brevo API 오류: {response.status_code}")
+            error_text = response.text
+            print(f"❌ Brevo API 오류: {response.status_code} - {error_text}")
+            
+            # 일반적인 오류 메시지 파싱
+            try:
+                error_data = response.json()
+                error_message = error_data.get('message', error_text)
+                print(f"❌ 오류 메시지: {error_message}")
+            except:
+                pass
+            
+            return {
+                'success': False,
+                'debug_info': debug_info
+            }
+            
+    except Exception as e:
+        debug_info['steps'].append(f"Brevo API 오류: {str(e)}")
+        print(f"❌ Brevo API 오류: {e}")
+        return {
+            'success': False,
+            'debug_info': debug_info
+        }
+
+def send_via_resend_api(email, name, password, role, debug_info, club_id=None):
+    """Resend API를 사용한 이메일 발송 (무료: 월 3,000건)"""
+    try:
+        import requests
+        
+        debug_info['steps'].append("Resend API 요청 준비")
+        
+        # 인증 토큰 생성
+        token = generate_verification_token(email, name, password, role, club_id)
+        verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
+        debug_info['verification_url'] = verification_url
+        
+        # Resend API 키 (환경 변수에서 가져오기, 없으면 MAIL_PASSWORD 사용)
+        api_key = os.getenv('RESEND_API_KEY') or current_app.config.get('MAIL_PASSWORD')
+        if not api_key:
+            debug_info['steps'].append("Resend API 키가 설정되지 않음")
+            return {
+                'success': False,
+                'debug_info': debug_info
+            }
+        
+        url = "https://api.resend.com/emails"
+        
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                <h2 style="color: #007bff; margin-bottom: 20px;">이메일 인증이 필요합니다</h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                    안녕하세요 <strong>{name}</strong>님!<br>
+                    Teamcover 회원가입을 완료하려면 아래 버튼을 클릭하여 이메일을 인증해주세요.
+                </p>
+                
+                <a href="{verification_url}" 
+                   style="display: inline-block; background-color: #007bff; color: white; 
+                          padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                          font-size: 16px; font-weight: bold; margin-bottom: 20px;">
+                    이메일 인증하기
+                </a>
+                
+                <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                    이 링크는 1시간 후에 만료됩니다.<br>
+                    만약 버튼이 작동하지 않는다면 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br>
+                    <a href="{verification_url}" style="color: #007bff; word-break: break-all;">{verification_url}</a>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="font-size: 12px; color: #999;">
+                    이 이메일은 Teamcover 시스템에서 자동으로 발송되었습니다.<br>
+                    만약 회원가입을 하지 않으셨다면 이 이메일을 무시하셔도 됩니다.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        data = {
+            "from": "Teamcover <onboarding@resend.dev>",  # Resend 무료 티어는 onboarding@resend.dev 사용
+            "to": [email],
+            "subject": "Teamcover 이메일 인증",
+            "html": html_content
+        }
+        
+        debug_info['steps'].append("Resend API 요청 전송")
+        response = requests.post(url, headers=headers, json=data)
+        
+        if response.status_code == 200:
+            debug_info['steps'].append("Resend API 요청 성공")
+            print(f"✅ Resend API 이메일 발송 성공!")
+            return {
+                'success': True,
+                'debug_info': debug_info
+            }
+        else:
+            debug_info['steps'].append(f"Resend API 오류: {response.status_code}")
+            print(f"❌ Resend API 오류: {response.status_code} - {response.text}")
+            return {
+                'success': False,
+                'debug_info': debug_info
+            }
+            
+    except Exception as e:
+        debug_info['steps'].append(f"Resend API 오류: {str(e)}")
+        print(f"❌ Resend API 오류: {e}")
+        return {
+            'success': False,
+            'debug_info': debug_info
+        }
+
+def send_via_smtp(email, name, password, role, debug_info, club_id=None):
+    """Gmail SMTP를 사용한 이메일 발송 (SendGrid 실패 시 fallback)"""
+    try:
+        from flask_mail import Message
+        
+        debug_info['steps'].append("Gmail SMTP 방식 시도")
+        
+        # 인증 토큰 생성
+        token = generate_verification_token(email, name, password, role, club_id)
+        verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
+        debug_info['verification_url'] = verification_url
+        
+        # 이메일 내용
+        subject = "Teamcover 이메일 인증"
         html_body = f"""
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -284,6 +557,100 @@ def send_via_sendgrid_api(email, name, password, role, debug_info, club_id=None)
             'traceback': traceback.format_exc()
         }
         debug_info['steps'].append(f"오류 발생: {str(e)}")
+        
+        return {
+            'success': False,
+            'debug_info': debug_info
+        }
+
+def send_via_smtp(email, name, password, role, debug_info, club_id=None):
+    """Gmail SMTP를 사용한 이메일 발송 (SendGrid 실패 시 fallback)"""
+    try:
+        from flask_mail import Message
+        
+        debug_info['steps'].append("Gmail SMTP 방식 시도")
+        
+        # 인증 토큰 생성
+        token = generate_verification_token(email, name, password, role, club_id)
+        verification_url = f"{current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')}/verify-email?token={token}"
+        debug_info['verification_url'] = verification_url
+        
+        # 이메일 내용
+        subject = "Teamcover 이메일 인증"
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: #333; margin-bottom: 20px;">🎳 Teamcover</h1>
+                <h2 style="color: #007bff; margin-bottom: 20px;">이메일 인증이 필요합니다</h2>
+                
+                <p style="font-size: 16px; color: #666; margin-bottom: 30px;">
+                    안녕하세요 <strong>{name}</strong>님!<br>
+                    Teamcover 회원가입을 완료하려면 아래 버튼을 클릭하여 이메일을 인증해주세요.
+                </p>
+                
+                <a href="{verification_url}" 
+                   style="display: inline-block; background-color: #007bff; color: white; 
+                          padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                          font-size: 16px; font-weight: bold; margin-bottom: 20px;">
+                    이메일 인증하기
+                </a>
+                
+                <p style="font-size: 14px; color: #999; margin-top: 30px;">
+                    이 링크는 1시간 후에 만료됩니다.<br>
+                    만약 버튼이 작동하지 않는다면 아래 링크를 복사하여 브라우저에 붙여넣으세요:<br>
+                    <a href="{verification_url}" style="color: #007bff; word-break: break-all;">{verification_url}</a>
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                <p style="font-size: 12px; color: #999;">
+                    이 이메일은 Teamcover 시스템에서 자동으로 발송되었습니다.<br>
+                    만약 회원가입을 하지 않으셨다면 이 이메일을 무시하셔도 됩니다.
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # 이메일 발송
+        debug_info['steps'].append("이메일 메시지 생성 중")
+        print(f"이메일 메시지 생성 중...")
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html_body
+        )
+        print(f"이메일 메시지 생성 완료")
+        debug_info['steps'].append("이메일 메시지 생성 완료")
+        
+        debug_info['steps'].append("SMTP 서버 연결 시도 중")
+        print(f"SMTP 서버 연결 시도 중...")
+        print(f"MAIL_SERVER: {current_app.config.get('MAIL_SERVER')}")
+        print(f"MAIL_PORT: {current_app.config.get('MAIL_PORT')}")
+        print(f"MAIL_USERNAME: {current_app.config.get('MAIL_USERNAME')}")
+        print(f"MAIL_PASSWORD: {'SET' if current_app.config.get('MAIL_PASSWORD') else 'NOT_SET'}")
+        
+        mail.send(msg)
+        print(f"✅ Gmail SMTP 이메일 발송 성공!")
+        debug_info['steps'].append("이메일 발송 성공")
+        
+        return {
+            'success': True,
+            'debug_info': debug_info
+        }
+        
+    except Exception as e:
+        print(f"❌ Gmail SMTP 이메일 발송 실패: {e}")
+        print(f"오류 타입: {type(e)}")
+        import traceback
+        print(f"상세 오류: {traceback.format_exc()}")
+        
+        debug_info['error'] = {
+            'message': str(e),
+            'type': str(type(e)),
+            'traceback': traceback.format_exc()
+        }
+        debug_info['steps'].append(f"Gmail SMTP 오류 발생: {str(e)}")
         
         return {
             'success': False,

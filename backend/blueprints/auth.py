@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, session
+from flask import Blueprint, request, jsonify, make_response, session, redirect
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from datetime import datetime, timedelta
@@ -983,9 +983,19 @@ def delete_user(user_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': f'사용자 삭제 중 오류가 발생했습니다: {str(e)}'})
 
-@auth_bp.route('/verify-email', methods=['POST'])
+@auth_bp.route('/verify-email', methods=['GET', 'POST'])
 def verify_email():
     """이메일 인증 처리"""
+    # GET 요청인 경우 프론트엔드로 리다이렉트
+    if request.method == 'GET':
+        token = request.args.get('token')
+        frontend_url = current_app.config.get('FRONTEND_BASE_URL', 'http://localhost:3000')
+        if token:
+            return redirect(f'{frontend_url}/verify-email?token={token}')
+        else:
+            return redirect(f'{frontend_url}/verify-email')
+    
+    # POST 요청인 경우 기존 로직 실행
     try:
         data = request.get_json()
         token = data.get('token')
