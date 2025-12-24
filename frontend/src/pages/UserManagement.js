@@ -610,36 +610,13 @@ const UserManagement = () => {
                               </span>
                             ) : (
                               <div
-                                className={`action-menu-container ${
-                                  isLastTwo ? 'menu-open-up' : ''
-                                }`}
+                                className="action-menu-container"
                                 data-item-id={`${user.id}-${club.id}`}
                               >
                                 <button
                                   className="btn btn-sm btn-menu-toggle"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    const button = e.currentTarget;
-                                    const container = button.closest(
-                                      '.action-menu-container'
-                                    );
-                                    const rect = button.getBoundingClientRect();
-                                    const viewportHeight = window.innerHeight;
-                                    const dropdownHeight = 100;
-                                    const spaceBelow =
-                                      viewportHeight - rect.bottom;
-
-                                    const shouldOpenUp =
-                                      isLastTwo || spaceBelow < dropdownHeight;
-
-                                    if (shouldOpenUp) {
-                                      container.classList.add('menu-open-up');
-                                    } else {
-                                      container.classList.remove(
-                                        'menu-open-up'
-                                      );
-                                    }
-
                                     setOpenUserMenuId(
                                       openUserMenuId === `${user.id}-${club.id}`
                                         ? null

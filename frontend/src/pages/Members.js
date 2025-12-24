@@ -210,6 +210,12 @@ const Members = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openMenuId && !event.target.closest('.action-menu-container')) {
+        // 모든 menu-active 클래스 제거
+        document
+          .querySelectorAll('.action-menu-container.menu-active')
+          .forEach((container) => {
+            container.classList.remove('menu-active');
+          });
         setOpenMenuId(null);
       }
     };
@@ -219,6 +225,13 @@ const Members = () => {
       return () => {
         document.removeEventListener('click', handleClickOutside);
       };
+    } else {
+      // 메뉴가 닫힐 때 모든 menu-active 클래스 제거
+      document
+        .querySelectorAll('.action-menu-container.menu-active')
+        .forEach((container) => {
+          container.classList.remove('menu-active');
+        });
     }
   }, [openMenuId]);
 
@@ -951,7 +964,7 @@ const Members = () => {
                     {sortField === 'join_date' &&
                       (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th>작업</th>
+                  <th>설정</th>
                 </tr>
               </thead>
               <tbody>
@@ -1158,12 +1171,23 @@ const Members = () => {
                                     container.classList.remove('menu-open-up');
                                   }
 
+                                  // 활성 상태 클래스 추가/제거
+                                  if (openMenuId === member.id) {
+                                    container.classList.remove('menu-active');
+                                  } else {
+                                    container.classList.add('menu-active');
+                                  }
+
                                   setOpenMenuId(
                                     openMenuId === member.id ? null : member.id
                                   );
                                 }}
                               >
-                                ⋯
+                                <span className="menu-dots">
+                                  <span className="menu-dot"></span>
+                                  <span className="menu-dot"></span>
+                                  <span className="menu-dot"></span>
+                                </span>
                               </button>
                               {openMenuId === member.id && (
                                 <div className="action-menu-dropdown">

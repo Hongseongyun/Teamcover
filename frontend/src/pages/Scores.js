@@ -1665,9 +1665,27 @@ const Scores = () => {
                           {memberStats.allScores.map((score, index) => (
                             <tr key={index}>
                               <td>{score.game_date}</td>
-                              <td className={score.score1 >= 200 ? 'score-high' : ''}>{score.score1}</td>
-                              <td className={score.score2 >= 200 ? 'score-high' : ''}>{score.score2}</td>
-                              <td className={score.score3 >= 200 ? 'score-high' : ''}>{score.score3}</td>
+                              <td
+                                className={
+                                  score.score1 >= 200 ? 'score-high' : ''
+                                }
+                              >
+                                {score.score1}
+                              </td>
+                              <td
+                                className={
+                                  score.score2 >= 200 ? 'score-high' : ''
+                                }
+                              >
+                                {score.score2}
+                              </td>
+                              <td
+                                className={
+                                  score.score3 >= 200 ? 'score-high' : ''
+                                }
+                              >
+                                {score.score3}
+                              </td>
                               <td>
                                 {score.score1 + score.score2 + score.score3}
                               </td>
@@ -1972,7 +1990,7 @@ const Scores = () => {
                         <th>총점</th>
                         <th>평균</th>
                         <th>비고</th>
-                        <th>작업</th>
+                        <th>설정</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2293,7 +2311,7 @@ const Scores = () => {
                             <th>2G</th>
                             <th>3G</th>
                             <th>비고</th>
-                            <th>작업</th>
+                            <th>설정</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2746,9 +2764,27 @@ const Scores = () => {
                                 <td className="member-name-col">
                                   {score.member_name}
                                 </td>
-                                <td className={score.score1 >= 200 ? 'score-high' : ''}>{score.score1}</td>
-                                <td className={score.score2 >= 200 ? 'score-high' : ''}>{score.score2}</td>
-                                <td className={score.score3 >= 200 ? 'score-high' : ''}>{score.score3}</td>
+                                <td
+                                  className={
+                                    score.score1 >= 200 ? 'score-high' : ''
+                                  }
+                                >
+                                  {score.score1}
+                                </td>
+                                <td
+                                  className={
+                                    score.score2 >= 200 ? 'score-high' : ''
+                                  }
+                                >
+                                  {score.score2}
+                                </td>
+                                <td
+                                  className={
+                                    score.score3 >= 200 ? 'score-high' : ''
+                                  }
+                                >
+                                  {score.score3}
+                                </td>
                                 <td>
                                   {score.score1 + score.score2 + score.score3}
                                 </td>
@@ -2811,7 +2847,11 @@ const Scores = () => {
                                           );
                                         }}
                                       >
-                                        ⋯
+                                        <span className="menu-dots">
+                                          <span className="menu-dot"></span>
+                                          <span className="menu-dot"></span>
+                                          <span className="menu-dot"></span>
+                                        </span>
                                       </button>
                                       {openScoreMenuId === score.id && (
                                         <div className="action-menu-dropdown">
@@ -3049,7 +3089,7 @@ const Scores = () => {
                           <th>총점</th>
                           <th>평균</th>
                           <th>비고</th>
-                          {isAdmin && <th>작업</th>}
+                          {isAdmin && <th>설정</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -3206,9 +3246,27 @@ const Scores = () => {
                                     <td className="member-name-col">
                                       {score.member_name}
                                     </td>
-                                    <td className={score.score1 >= 200 ? 'score-high' : ''}>{score.score1}</td>
-                                    <td className={score.score2 >= 200 ? 'score-high' : ''}>{score.score2}</td>
-                                    <td className={score.score3 >= 200 ? 'score-high' : ''}>{score.score3}</td>
+                                    <td
+                                      className={
+                                        score.score1 >= 200 ? 'score-high' : ''
+                                      }
+                                    >
+                                      {score.score1}
+                                    </td>
+                                    <td
+                                      className={
+                                        score.score2 >= 200 ? 'score-high' : ''
+                                      }
+                                    >
+                                      {score.score2}
+                                    </td>
+                                    <td
+                                      className={
+                                        score.score3 >= 200 ? 'score-high' : ''
+                                      }
+                                    >
+                                      {score.score3}
+                                    </td>
                                     <td>
                                       {score.score1 +
                                         score.score2 +
@@ -3275,7 +3333,11 @@ const Scores = () => {
                                               );
                                             }}
                                           >
-                                            ⋯
+                                            <span className="menu-dots">
+                                              <span className="menu-dot"></span>
+                                              <span className="menu-dot"></span>
+                                              <span className="menu-dot"></span>
+                                            </span>
                                           </button>
                                           {openScoreMenuId === score.id && (
                                             <div className="action-menu-dropdown">

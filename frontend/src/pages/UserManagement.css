@@ -223,7 +223,7 @@
   background: white;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 0;
   border: 1px solid var(--border-color);
 }
@@ -255,6 +255,10 @@
   vertical-align: middle;
 }
 
+.users-table th:first-child {
+  text-align: left !important;
+}
+
 [data-theme='dark'] .users-table th {
   background: rgba(30, 41, 59, 0.8);
   color: rgba(226, 232, 240, 0.95);
@@ -267,11 +271,20 @@
   vertical-align: middle;
   height: 60px; /* 모든 셀의 높이를 일정하게 설정 */
   overflow: hidden; /* 내용이 넘치면 숨김 */
+}
+
+/* 이름 셀을 제외한 나머지 셀은 중앙 정렬 */
+.users-table td:not(.user-name-cell) {
   text-align: center;
 }
 
 [data-theme='dark'] .users-table td {
   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.users-table tbody tr {
+  overflow: visible;
+  position: relative;
 }
 
 .users-table tbody tr:hover {
@@ -283,14 +296,15 @@
 }
 
 /* 이름 셀 스타일 */
-.user-name-cell {
+.users-table td.user-name-cell {
   width: 20%;
+  text-align: left;
 }
 
 .user-name-content {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.75rem;
   height: 100%;
 }
@@ -479,9 +493,12 @@
 }
 
 /* 작업 셀 스타일 */
-.actions-cell {
+.users-table .actions-cell {
   width: 13%;
   text-align: center;
+  overflow: visible !important;
+  position: relative;
+  z-index: 1000;
 }
 
 .role-select {
@@ -603,9 +620,7 @@
   color: rgba(203, 213, 225, 0.75);
 }
 
-.actions-cell {
-  text-align: center;
-}
+/* actions-cell은 위에서 이미 정의됨 */
 
 .current-user-badge {
   background: #dbeafe;
@@ -945,4 +960,31 @@
 
 .reject-btn:active {
   transform: translateY(0);
+}
+
+/* 드롭다운이 표에 가려지지 않도록 z-index 높이기 */
+.user-management .action-menu-container {
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+.user-management .action-menu-dropdown {
+  z-index: 10000 !important;
+  position: absolute !important;
+  display: block !important;
+}
+
+/* 테이블 행이 드롭다운을 가리지 않도록 */
+.user-management .users-table tbody tr {
+  position: relative;
+  z-index: 1;
+}
+
+.user-management .users-table tbody tr:hover {
+  z-index: 1;
+}
+
+/* 테이블 자체는 overflow를 제어하되, actions-cell은 visible */
+.user-management .users-table {
+  overflow: visible;
 }

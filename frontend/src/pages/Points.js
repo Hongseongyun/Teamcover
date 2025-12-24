@@ -270,10 +270,7 @@ const Points = () => {
   // 외부 클릭 시 메뉴 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        !event.target.closest('.action-menu-container') &&
-        openPointMenuId
-      ) {
+      if (!event.target.closest('.action-menu-container') && openPointMenuId) {
         setOpenPointMenuId(null);
       }
     };
@@ -309,7 +306,8 @@ const Points = () => {
                 '.points-table .action-menu-container[data-item-id]'
               );
               const currentIndex = Array.from(allContainers).findIndex(
-                (c) => c.getAttribute('data-item-id') === String(openPointMenuId)
+                (c) =>
+                  c.getAttribute('data-item-id') === String(openPointMenuId)
               );
               const isLastTwo = currentIndex >= allContainers.length - 2;
 
@@ -1332,7 +1330,7 @@ const Points = () => {
                           <th className="col-amount">금액</th>
                           <th className="col-reason">사유</th>
                           <th className="col-note">비고</th>
-                          <th className="col-actions">작업</th>
+                          <th className="col-actions">설정</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2182,246 +2180,253 @@ const Points = () => {
                     <th>사유</th>
                     <th>잔여 포인트</th>
                     <th>메모</th>
-                    <th>작업</th>
+                    <th>설정</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayPoints.map((point, index) => {
                     const isLastTwo = index >= displayPoints.length - 2;
                     return (
-                    <tr
-                      key={point.id}
-                      className={editingId === point.id ? 'editing' : ''}
-                      ref={editingId === point.id ? editingRowRef : null}
-                    >
-                      <td>
-                        {editingId === point.id ? (
-                          <input
-                            type="date"
-                            value={formData.point_date}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                point_date: e.target.value,
-                              })
-                            }
-                            className="inline-input"
-                          />
-                        ) : (
-                          point.point_date || point.created_at
-                        )}
-                      </td>
-                      <td>
-                        {editingId === point.id ? (
-                          <select
-                            value={formData.member_name}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                member_name: e.target.value,
-                              })
-                            }
-                            className="inline-select"
-                          >
-                            <option value="">회원 선택</option>
-                            {members.map((member) => (
-                              <option key={member.id} value={member.name}>
-                                {member.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          point.member_name
-                        )}
-                      </td>
-                      <td>
-                        {editingId === point.id ? (
-                          <select
-                            value={formData.point_type}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                point_type: e.target.value,
-                              })
-                            }
-                            className="inline-select"
-                          >
-                            <option value="">유형 선택</option>
-                            <option value="적립">적립</option>
-                            <option value="사용">사용</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={`point-type ${
-                              (parseInt(point.amount) || 0) >= 0
-                                ? 'positive'
-                                : 'negative'
-                            }`}
-                          >
-                            {(parseInt(point.amount) || 0) >= 0
-                              ? '적립'
-                              : '사용'}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {editingId === point.id ? (
-                          <input
-                            type="number"
-                            value={formData.amount}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                amount: e.target.value,
-                              })
-                            }
-                            className="inline-input"
-                            step="500"
-                          />
-                        ) : (
-                          <span
-                            className={
-                              (parseInt(point.amount) || 0) >= 0
-                                ? 'positive'
-                                : 'negative'
-                            }
-                          >
-                            {formatNumber(point.amount)}P
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {editingId === point.id ? (
-                          <select
-                            value={formData.reason}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                reason: e.target.value,
-                              })
-                            }
-                            className="inline-select"
-                          >
-                            <option value="">사유 선택</option>
-                            {reasonOptions.map((reason) => (
-                              <option key={reason.name} value={reason.name}>
-                                {reason.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          point.reason || '-'
-                        )}
-                      </td>
-                      <td className="balance-cell">
-                        {formatNumber(
-                          calculateRemainingPoints(
-                            points,
-                            point.member_name,
+                      <tr
+                        key={point.id}
+                        className={editingId === point.id ? 'editing' : ''}
+                        ref={editingId === point.id ? editingRowRef : null}
+                      >
+                        <td>
+                          {editingId === point.id ? (
+                            <input
+                              type="date"
+                              value={formData.point_date}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  point_date: e.target.value,
+                                })
+                              }
+                              className="inline-input"
+                            />
+                          ) : (
                             point.point_date || point.created_at
-                          )
-                        )}
-                        P
-                      </td>
-                      <td>
-                        {editingId === point.id ? (
-                          <input
-                            type="text"
-                            value={formData.note}
-                            onChange={(e) =>
-                              setFormData({ ...formData, note: e.target.value })
-                            }
-                            className="inline-input"
-                            placeholder="메모"
-                          />
-                        ) : (
-                          point.note || '-'
-                        )}
-                      </td>
-                      <td className="inline-actions">
-                        {editingId === point.id ? (
-                          <>
-                            <button
-                              className="btn btn-sm btn-primary"
-                              onClick={saveInlineEdit}
+                          )}
+                        </td>
+                        <td>
+                          {editingId === point.id ? (
+                            <select
+                              value={formData.member_name}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  member_name: e.target.value,
+                                })
+                              }
+                              className="inline-select"
                             >
-                              완료
-                            </button>
-                            <button
-                              className="btn btn-sm btn-secondary"
-                              onClick={cancelInlineEdit}
+                              <option value="">회원 선택</option>
+                              {members.map((member) => (
+                                <option key={member.id} value={member.name}>
+                                  {member.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            point.member_name
+                          )}
+                        </td>
+                        <td>
+                          {editingId === point.id ? (
+                            <select
+                              value={formData.point_type}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  point_type: e.target.value,
+                                })
+                              }
+                              className="inline-select"
                             >
-                              취소
-                            </button>
-                          </>
-                        ) : (
-                          <div
-                            className={`action-menu-container ${
-                              isLastTwo ? 'menu-open-up' : ''
-                            }`}
-                            data-item-id={point.id}
-                          >
-                            <button
-                              className="btn btn-sm btn-menu-toggle"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const button = e.currentTarget;
-                                const container = button.closest(
-                                  '.action-menu-container'
-                                );
-                                const rect = button.getBoundingClientRect();
-                                const viewportHeight = window.innerHeight;
-                                const dropdownHeight = 100;
-                                const spaceBelow =
-                                  viewportHeight - rect.bottom;
-
-                                const shouldOpenUp =
-                                  isLastTwo || spaceBelow < dropdownHeight;
-
-                                if (shouldOpenUp) {
-                                  container.classList.add('menu-open-up');
-                                } else {
-                                  container.classList.remove('menu-open-up');
-                                }
-
-                                setOpenPointMenuId(
-                                  openPointMenuId === point.id
-                                    ? null
-                                    : point.id
-                                );
-                              }}
+                              <option value="">유형 선택</option>
+                              <option value="적립">적립</option>
+                              <option value="사용">사용</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={`point-type ${
+                                (parseInt(point.amount) || 0) >= 0
+                                  ? 'positive'
+                                  : 'negative'
+                              }`}
                             >
-                              ⋯
-                            </button>
-                            {openPointMenuId === point.id && (
-                              <div className="action-menu-dropdown">
-                                <button
-                                  className="action-menu-item"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    startInlineEdit(point);
-                                    setOpenPointMenuId(null);
-                                  }}
-                                >
-                                  수정
-                                </button>
-                                <button
-                                  className="action-menu-item action-menu-item-danger"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(point.id);
-                                    setOpenPointMenuId(null);
-                                  }}
-                                  disabled={deletingPointId !== null}
-                                >
-                                  삭제
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
+                              {(parseInt(point.amount) || 0) >= 0
+                                ? '적립'
+                                : '사용'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {editingId === point.id ? (
+                            <input
+                              type="number"
+                              value={formData.amount}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  amount: e.target.value,
+                                })
+                              }
+                              className="inline-input"
+                              step="500"
+                            />
+                          ) : (
+                            <span
+                              className={
+                                (parseInt(point.amount) || 0) >= 0
+                                  ? 'positive'
+                                  : 'negative'
+                              }
+                            >
+                              {formatNumber(point.amount)}P
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {editingId === point.id ? (
+                            <select
+                              value={formData.reason}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  reason: e.target.value,
+                                })
+                              }
+                              className="inline-select"
+                            >
+                              <option value="">사유 선택</option>
+                              {reasonOptions.map((reason) => (
+                                <option key={reason.name} value={reason.name}>
+                                  {reason.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            point.reason || '-'
+                          )}
+                        </td>
+                        <td className="balance-cell">
+                          {formatNumber(
+                            calculateRemainingPoints(
+                              points,
+                              point.member_name,
+                              point.point_date || point.created_at
+                            )
+                          )}
+                          P
+                        </td>
+                        <td>
+                          {editingId === point.id ? (
+                            <input
+                              type="text"
+                              value={formData.note}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  note: e.target.value,
+                                })
+                              }
+                              className="inline-input"
+                              placeholder="메모"
+                            />
+                          ) : (
+                            point.note || '-'
+                          )}
+                        </td>
+                        <td className="inline-actions">
+                          {editingId === point.id ? (
+                            <>
+                              <button
+                                className="btn btn-sm btn-primary"
+                                onClick={saveInlineEdit}
+                              >
+                                완료
+                              </button>
+                              <button
+                                className="btn btn-sm btn-secondary"
+                                onClick={cancelInlineEdit}
+                              >
+                                취소
+                              </button>
+                            </>
+                          ) : (
+                            <div
+                              className={`action-menu-container ${
+                                isLastTwo ? 'menu-open-up' : ''
+                              }`}
+                              data-item-id={point.id}
+                            >
+                              <button
+                                className="btn btn-sm btn-menu-toggle"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const button = e.currentTarget;
+                                  const container = button.closest(
+                                    '.action-menu-container'
+                                  );
+                                  const rect = button.getBoundingClientRect();
+                                  const viewportHeight = window.innerHeight;
+                                  const dropdownHeight = 100;
+                                  const spaceBelow =
+                                    viewportHeight - rect.bottom;
+
+                                  const shouldOpenUp =
+                                    isLastTwo || spaceBelow < dropdownHeight;
+
+                                  if (shouldOpenUp) {
+                                    container.classList.add('menu-open-up');
+                                  } else {
+                                    container.classList.remove('menu-open-up');
+                                  }
+
+                                  setOpenPointMenuId(
+                                    openPointMenuId === point.id
+                                      ? null
+                                      : point.id
+                                  );
+                                }}
+                              >
+                                <span className="menu-dots">
+                                  <span className="menu-dot"></span>
+                                  <span className="menu-dot"></span>
+                                  <span className="menu-dot"></span>
+                                </span>
+                              </button>
+                              {openPointMenuId === point.id && (
+                                <div className="action-menu-dropdown">
+                                  <button
+                                    className="action-menu-item"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startInlineEdit(point);
+                                      setOpenPointMenuId(null);
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    className="action-menu-item action-menu-item-danger"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(point.id);
+                                      setOpenPointMenuId(null);
+                                    }}
+                                    disabled={deletingPointId !== null}
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
                 </tbody>
