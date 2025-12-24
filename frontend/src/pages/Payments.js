@@ -2448,7 +2448,11 @@ const Payments = () => {
                                           );
                                         }}
                                       >
-                                        ⋯
+                                        <span className="menu-dots">
+                                          <span className="menu-dot"></span>
+                                          <span className="menu-dot"></span>
+                                          <span className="menu-dot"></span>
+                                        </span>
                                       </button>
                                       {openLedgerMenuId === item.id && (
                                         <div className="action-menu-dropdown">
@@ -3431,7 +3435,7 @@ const Payments = () => {
                     <th>금액</th>
                     <th>납입 여부</th>
                     <th>비고</th>
-                    {isAdmin && <th>작업</th>}
+                    {isAdmin && <th>설정</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -3739,7 +3743,11 @@ const Payments = () => {
                                               );
                                             }}
                                           >
-                                            ⋯
+                                            <span className="menu-dots">
+                                              <span className="menu-dot"></span>
+                                              <span className="menu-dot"></span>
+                                              <span className="menu-dot"></span>
+                                            </span>
                                           </button>
                                           {openPaymentMenuId === payment.id && (
                                             <div className="action-menu-dropdown">
@@ -3987,7 +3995,7 @@ const Payments = () => {
                       <tr>
                         <th>이름</th>
                         <th>납입 여부</th>
-                        <th>작업</th>
+                        <th>설정</th>
                       </tr>
                     </thead>
                     <tbody>
