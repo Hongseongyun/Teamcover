@@ -795,7 +795,7 @@
 /* 회원 카드 - 선택 상태별 스타일 */
 .member-card {
   background: var(--toss-white);
-  border: 2px solid var(--toss-gray-200);
+  border: 1px solid var(--toss-gray-200);
   border-radius: var(--toss-radius);
   padding: 0.625rem;
   cursor: pointer;
@@ -825,7 +825,7 @@
     rgba(30, 41, 59, 0.96) 0%,
     rgba(15, 23, 42, 0.92) 100%
   );
-  border-color: rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 [data-theme='dark'] .member-card.unselected {
@@ -834,7 +834,7 @@
     rgba(30, 41, 59, 0.96) 0%,
     rgba(15, 23, 42, 0.92) 100%
   );
-  border-color: rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
 [data-theme='dark'] .member-card.unselected:hover {

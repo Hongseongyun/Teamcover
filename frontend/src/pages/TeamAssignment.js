@@ -3161,13 +3161,6 @@ const TeamAssignment = () => {
                         )}
                       </div>
                     </div>
-                    <div className="selection-indicator">
-                      {isMemberInPlayerList(member.name)
-                        ? '✓'
-                        : isSelected
-                        ? '✓'
-                        : '＋'}
-                    </div>
                   </div>
                 );
               })}
