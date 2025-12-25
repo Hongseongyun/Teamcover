@@ -824,12 +824,278 @@
   white-space: nowrap;
 }
 
+/* 페이지 상단 버튼 스타일 (문의하기 페이지 스타일 적용) */
+.page-header .header-actions .btn.btn-primary,
+.page-header .header-actions .btn.btn-secondary,
+.page-header .header-actions .btn.btn-success,
+.page-header .header-actions .btn.btn-info {
+  padding: 0.75rem 1.5rem !important;
+  background: transparent !important;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header .header-actions .btn.btn-primary {
+  color: var(--toss-primary) !important;
+  border: 1px solid var(--toss-primary) !important;
+  position: relative;
+  z-index: 1;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--toss-primary);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.page-header .header-actions .btn.btn-primary > * {
+  position: relative;
+  z-index: 2;
+  color: inherit !important;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-primary:hover::before {
+  left: 0;
+}
+
+.page-header .header-actions .btn.btn-primary:hover {
+  background: transparent !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.page-header .header-actions .btn.btn-primary:hover,
+.page-header .header-actions .btn.btn-primary:hover * {
+  color: white !important;
+}
+
+.page-header .header-actions .btn.btn-primary:active {
+  transform: translateY(0);
+}
+
+.page-header .header-actions .btn.btn-secondary {
+  color: var(--toss-gray-500) !important;
+  border: 1px solid var(--toss-gray-500) !important;
+  position: relative;
+  z-index: 1;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--toss-gray-500);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.page-header .header-actions .btn.btn-secondary > * {
+  position: relative;
+  z-index: 2;
+  color: inherit !important;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-secondary:hover::before {
+  left: 0;
+}
+
+.page-header .header-actions .btn.btn-secondary:hover {
+  background: transparent !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.page-header .header-actions .btn.btn-secondary:hover,
+.page-header .header-actions .btn.btn-secondary:hover * {
+  color: white !important;
+}
+
+.page-header .header-actions .btn.btn-secondary:active {
+  transform: translateY(0);
+}
+
+.page-header .header-actions .btn.btn-success {
+  color: var(--toss-success) !important;
+  border: 1px solid var(--toss-success) !important;
+  position: relative;
+  z-index: 1;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-success::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--toss-success);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.page-header .header-actions .btn.btn-success > * {
+  position: relative;
+  z-index: 2;
+  color: inherit !important;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-success:hover::before {
+  left: 0;
+}
+
+.page-header .header-actions .btn.btn-success:hover {
+  background: transparent !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.page-header .header-actions .btn.btn-success:hover,
+.page-header .header-actions .btn.btn-success:hover * {
+  color: white !important;
+}
+
+.page-header .header-actions .btn.btn-success:active {
+  transform: translateY(0);
+}
+
+.page-header .header-actions .btn.btn-info {
+  color: var(--toss-info) !important;
+  border: 1px solid var(--toss-info) !important;
+  position: relative;
+  z-index: 1;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--toss-info);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.page-header .header-actions .btn.btn-info > * {
+  position: relative;
+  z-index: 2;
+  color: inherit !important;
+  transition: color 0.3s ease;
+}
+
+.page-header .header-actions .btn.btn-info:hover::before {
+  left: 0;
+}
+
+.page-header .header-actions .btn.btn-info:hover {
+  background: transparent !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.page-header .header-actions .btn.btn-info:hover,
+.page-header .header-actions .btn.btn-info:hover * {
+  color: white !important;
+}
+
+.page-header .header-actions .btn.btn-info:active {
+  transform: translateY(0);
+}
+
+/* 다크모드 */
+[data-theme='dark'] .page-header .header-actions .btn.btn-primary {
+  border-color: var(--toss-primary) !important;
+  color: var(--toss-primary) !important;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-primary::before {
+  background: var(--toss-primary);
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-primary:hover,
+[data-theme='dark'] .page-header .header-actions .btn.btn-primary:hover * {
+  color: white !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-secondary {
+  border-color: var(--toss-gray-500) !important;
+  color: var(--toss-gray-500) !important;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-secondary::before {
+  background: var(--toss-gray-500);
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-secondary:hover,
+[data-theme='dark'] .page-header .header-actions .btn.btn-secondary:hover * {
+  color: white !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-success {
+  border-color: var(--toss-success) !important;
+  color: var(--toss-success) !important;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-success::before {
+  background: var(--toss-success);
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-success:hover,
+[data-theme='dark'] .page-header .header-actions .btn.btn-success:hover * {
+  color: white !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-info {
+  border-color: var(--toss-info) !important;
+  color: var(--toss-info) !important;
+  background: transparent !important;
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-info::before {
+  background: var(--toss-info);
+}
+
+[data-theme='dark'] .page-header .header-actions .btn.btn-info:hover,
+[data-theme='dark'] .page-header .header-actions .btn.btn-info:hover * {
+  color: white !important;
+}
+
+/* 기존 버튼 스타일 (다른 곳에서 사용) */
 .btn-primary {
   background-color: var(--toss-primary);
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(.page-header .header-actions .btn-primary) {
   background-color: var(--toss-primary-dark);
 }
 
@@ -838,7 +1104,7 @@
   color: white;
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(.page-header .header-actions .btn-secondary) {
   background-color: var(--toss-gray-600);
 }
 
@@ -1653,4 +1919,151 @@
 .checkbox-label input[type='checkbox'] {
   width: auto;
   margin: 0 0.75rem 0 0;
+}
+
+/* 섹션 버튼 통일 스타일 - 전체 삭제 버튼 스타일 기준 */
+.section-actions .btn,
+.section-header .btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: white;
+}
+
+.section-actions .btn:disabled,
+.section-header .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.section-actions .btn-primary,
+.section-header .btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.section-actions .btn-primary:hover:not(:disabled),
+.section-header .btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.section-actions .btn-secondary,
+.section-header .btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.section-actions .btn-secondary:hover:not(:disabled),
+.section-header .btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.section-actions .btn-success,
+.section-header .btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+.section-actions .btn-success:hover:not(:disabled),
+.section-header .btn-success:hover:not(:disabled) {
+  background-color: var(--toss-success-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.section-actions .btn-info,
+.section-header .btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+.section-actions .btn-info:hover:not(:disabled),
+.section-header .btn-info:hover:not(:disabled) {
+  background-color: var(--toss-info-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+.section-actions .btn-danger,
+.section-header .btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.section-actions .btn-danger:hover:not(:disabled),
+.section-header .btn-danger:hover:not(:disabled) {
+  background-color: var(--toss-danger-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* 다크모드 */
+[data-theme='dark'] .section-actions .btn-primary,
+[data-theme='dark'] .section-header .btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-primary:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-secondary,
+[data-theme='dark'] .section-header .btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-secondary:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-600);
+}
+
+[data-theme='dark'] .section-actions .btn-success,
+[data-theme='dark'] .section-header .btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-success:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-success:hover:not(:disabled) {
+  background-color: var(--toss-success-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-info,
+[data-theme='dark'] .section-header .btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-info:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-info:hover:not(:disabled) {
+  background-color: var(--toss-info-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-danger,
+[data-theme='dark'] .section-header .btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-danger:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-danger:hover:not(:disabled) {
+  background-color: var(--toss-danger-dark);
 }

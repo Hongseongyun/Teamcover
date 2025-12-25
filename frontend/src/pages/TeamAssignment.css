@@ -532,13 +532,13 @@
 }
 
 /* number input 스피너 제거 */
-.guest-modal .form-input[type="number"]::-webkit-inner-spin-button,
-.guest-modal .form-input[type="number"]::-webkit-outer-spin-button {
+.guest-modal .form-input[type='number']::-webkit-inner-spin-button,
+.guest-modal .form-input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.guest-modal .form-input[type="number"] {
+.guest-modal .form-input[type='number'] {
   -moz-appearance: textfield;
 }
 
@@ -2321,4 +2321,151 @@ html {
 .balance-analysis .balance-status {
   flex: 1;
   min-width: 250px;
+}
+
+/* 섹션 버튼 통일 스타일 - 전체 삭제 버튼 스타일 기준 */
+.section-actions .btn,
+.section-header .btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--toss-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: white;
+}
+
+.section-actions .btn:disabled,
+.section-header .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.section-actions .btn-primary,
+.section-header .btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+.section-actions .btn-primary:hover:not(:disabled),
+.section-header .btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.section-actions .btn-secondary,
+.section-header .btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+.section-actions .btn-secondary:hover:not(:disabled),
+.section-header .btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+.section-actions .btn-success,
+.section-header .btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+.section-actions .btn-success:hover:not(:disabled),
+.section-header .btn-success:hover:not(:disabled) {
+  background-color: var(--toss-success-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.section-actions .btn-info,
+.section-header .btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+.section-actions .btn-info:hover:not(:disabled),
+.section-header .btn-info:hover:not(:disabled) {
+  background-color: var(--toss-info-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+.section-actions .btn-danger,
+.section-header .btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+.section-actions .btn-danger:hover:not(:disabled),
+.section-header .btn-danger:hover:not(:disabled) {
+  background-color: var(--toss-danger-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* 다크모드 */
+[data-theme='dark'] .section-actions .btn-primary,
+[data-theme='dark'] .section-header .btn-primary {
+  background-color: var(--toss-primary);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-primary:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-primary:hover:not(:disabled) {
+  background-color: var(--toss-primary-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-secondary,
+[data-theme='dark'] .section-header .btn-secondary {
+  background-color: var(--toss-gray-500);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-secondary:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-600);
+}
+
+[data-theme='dark'] .section-actions .btn-success,
+[data-theme='dark'] .section-header .btn-success {
+  background-color: var(--toss-success);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-success:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-success:hover:not(:disabled) {
+  background-color: var(--toss-success-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-info,
+[data-theme='dark'] .section-header .btn-info {
+  background-color: var(--toss-info);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-info:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-info:hover:not(:disabled) {
+  background-color: var(--toss-info-dark);
+}
+
+[data-theme='dark'] .section-actions .btn-danger,
+[data-theme='dark'] .section-header .btn-danger {
+  background-color: var(--toss-danger);
+  color: white;
+}
+
+[data-theme='dark'] .section-actions .btn-danger:hover:not(:disabled),
+[data-theme='dark'] .section-header .btn-danger:hover:not(:disabled) {
+  background-color: var(--toss-danger-dark);
 }

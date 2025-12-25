@@ -345,12 +345,13 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 
-[data-theme='dark'] .btn-primary {
+/* 게시판 및 페이지 헤더 버튼 제외 - 더 구체적인 선택자 사용 */
+[data-theme='dark'] .btn-primary:not(.board-header .header-actions .btn):not(.page-header .header-actions .btn) {
   background: var(--primary-color);
   color: #fff;
 }
 
-[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+[data-theme='dark'] .btn-primary:hover:not(:disabled):not(.board-header .header-actions .btn):not(.page-header .header-actions .btn) {
   background: var(--primary-color-hover);
 }
 

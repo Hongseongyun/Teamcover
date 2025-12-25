@@ -144,9 +144,11 @@ const Board = () => {
     <div className="board-container">
       <div className="board-header">
         <h1>게시판</h1>
-        <button onClick={handleCreatePost} className="btn-primary">
-          글쓰기
-        </button>
+        <div className="header-actions">
+          <button onClick={handleCreatePost} className="btn btn-primary">
+            글쓰기
+          </button>
+        </div>
       </div>
 
       <div className="board-tabs">
