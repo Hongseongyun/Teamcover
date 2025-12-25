@@ -17,8 +17,13 @@
 
 /* 개인정보 보호 */
 .privacy-text {
-  color: #fefefe;
+  color: #000000;
   white-space: nowrap;
+}
+
+/* 다크모드에서는 흰색 유지 */
+[data-theme='dark'] .privacy-text {
+  color: #fefefe;
 }
 
 .privacy-lock-btn {
