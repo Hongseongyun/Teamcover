@@ -1223,6 +1223,71 @@
   min-width: 80px;
 }
 
+/* 검색 버튼 아이콘 스타일 */
+.search-row .btn-icon-only {
+  padding: 0.5rem !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  background-color: transparent !important;
+  margin-top: 0 !important;
+  align-self: flex-start !important;
+  flex-shrink: 0 !important;
+  vertical-align: top !important;
+  white-space: nowrap !important;
+}
+
+.search-row .btn-icon-only svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transition: transform 0.3s ease-in-out;
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.search-row .btn-icon-only svg path,
+.search-row .btn-icon-only svg circle,
+.search-row .btn-icon-only svg line,
+.search-row .btn-icon-only svg polyline,
+.search-row .btn-icon-only svg polygon {
+  stroke: #000000 !important;
+  color: #000000 !important;
+}
+
+/* 검색 버튼 호버 시 아이콘 확대 효과 */
+.search-row .btn-icon-only:hover:not(:disabled) {
+  background-color: transparent !important;
+}
+
+.search-row .btn-icon-only:hover:not(:disabled) svg {
+  transform: scale(1.2);
+}
+
+/* 다크모드: 아이콘 색상 흰색 */
+[data-theme='dark'] .search-row .btn-icon-only {
+  color: white !important;
+}
+
+[data-theme='dark'] .search-row .btn-icon-only svg {
+  color: white !important;
+  stroke: white !important;
+}
+
+[data-theme='dark'] .search-row .btn-icon-only svg path,
+[data-theme='dark'] .search-row .btn-icon-only svg circle,
+[data-theme='dark'] .search-row .btn-icon-only svg line,
+[data-theme='dark'] .search-row .btn-icon-only svg polyline,
+[data-theme='dark'] .search-row .btn-icon-only svg polygon {
+  stroke: white !important;
+  color: white !important;
+}
+
 /* 자동완성 드롭다운 */
 .autocomplete-wrapper {
   position: relative;

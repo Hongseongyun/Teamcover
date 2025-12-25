@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
-import { Trash2, Plus, RotateCcw } from 'lucide-react';
+import { Trash2, Plus, RotateCcw, Search } from 'lucide-react';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
 import LoadingModal from '../components/LoadingModal';
@@ -1449,11 +1449,12 @@ const Scores = () => {
                   )}
                 </div>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-icon-only"
                   onClick={handleMemberSearch}
                   disabled={!searchMember.trim()}
+                  title="검색"
                 >
-                  검색
+                  <Search size={18} />
                 </button>
               </div>
             </div>

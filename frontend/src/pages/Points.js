@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import './Points.css';
 import './Members.css'; // action-menu 스타일 사용
@@ -1927,11 +1927,12 @@ const Points = () => {
                   )}
                 </div>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-icon-only"
                   onClick={handleMemberSearch}
                   disabled={!searchMember.trim()}
+                  title="검색"
                 >
-                  검색
+                  <Search size={18} />
                 </button>
               </div>
             </div>
