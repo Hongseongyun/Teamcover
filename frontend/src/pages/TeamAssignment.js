@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teamAPI, memberAPI } from '../services/api';
+import { RotateCcw } from 'lucide-react';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -3102,11 +3103,12 @@ const TeamAssignment = () => {
                         : `전체 추가 (${searchResults.length}명)`}
                     </button>
                     <button
-                      className="btn btn-secondary btn-sm"
+                      className="btn btn-secondary btn-sm btn-icon-only"
                       onClick={() => setSearchResults([])}
                       disabled={searchResults.length === 0 || isLoading}
+                      title="목록 초기화"
                     >
-                      목록 초기화
+                      <RotateCcw size={16} />
                     </button>
                   </div>
                 </div>
@@ -3239,11 +3241,12 @@ const TeamAssignment = () => {
                   : `선택된 회원 추가 (${selectedMembers.length}명)`}
               </button>
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-icon-only"
                 onClick={clearSelectedMembers}
                 disabled={selectedMembers.length === 0}
+                title="선택 초기화"
               >
-                선택 초기화
+                <RotateCcw size={18} />
               </button>
             </div>
 
