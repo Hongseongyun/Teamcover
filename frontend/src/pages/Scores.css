@@ -2562,6 +2562,23 @@
     margin: 0 !important;
   }
 
+  /* 아이콘 버튼 스타일 */
+  .section-header .btn-icon-only {
+    padding: 0.5rem;
+    min-width: auto !important;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    line-height: 1;
+  }
+
+  .section-header .btn-icon-only.btn-sm {
+    padding: 0.4rem;
+    min-width: auto !important;
+  }
+
   /* 더보기 버튼 스타일은 Payments.css에서 통일 관리 */
 
   /* 날짜 네비게이션 버튼 모바일 최적화 */
@@ -4948,6 +4965,77 @@
   background-color: var(--toss-primary-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* 아이콘 버튼 스타일 - section-header 내부 */
+.section-header .btn-icon-only {
+  padding: 0.75rem;
+  min-width: auto !important;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  line-height: 1;
+  background-color: transparent !important;
+  color: #000000; /* 라이트모드: 아이콘을 검은색으로 */
+}
+
+.section-header .btn-icon-only.btn-sm {
+  padding: 0.5rem;
+  min-width: auto !important;
+}
+
+/* 라이트모드: 아이콘 색상 검은색 */
+.section-header .btn-icon-only svg {
+  color: #000000;
+  stroke: #000000;
+}
+
+.section-header .btn-icon-only svg path,
+.section-header .btn-icon-only svg circle,
+.section-header .btn-icon-only svg line,
+.section-header .btn-icon-only svg polyline,
+.section-header .btn-icon-only svg polygon {
+  stroke: #000000;
+  color: #000000;
+}
+
+/* 아이콘 버튼 호버 시 배경 제거, 아이콘 회전 효과 */
+.section-header .btn-icon-only.btn-primary:hover:not(:disabled) {
+  background-color: transparent !important;
+}
+
+.section-header .btn-icon-only:hover:not(:disabled) svg {
+  animation: rotate360 0.6s ease-in-out;
+}
+
+@keyframes rotate360 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 다크모드: 아이콘 색상 흰색 */
+[data-theme='dark'] .section-header .btn-icon-only {
+  color: white;
+}
+
+[data-theme='dark'] .section-header .btn-icon-only svg {
+  color: white;
+  stroke: white;
+}
+
+[data-theme='dark'] .section-header .btn-icon-only svg path,
+[data-theme='dark'] .section-header .btn-icon-only svg circle,
+[data-theme='dark'] .section-header .btn-icon-only svg line,
+[data-theme='dark'] .section-header .btn-icon-only svg polyline,
+[data-theme='dark'] .section-header .btn-icon-only svg polygon {
+  stroke: white;
+  color: white;
 }
 
 .section-actions .btn-secondary,

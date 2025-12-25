@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
-import { Trash2, Plus } from 'lucide-react';
+import { Trash2, Plus, RotateCcw } from 'lucide-react';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
 import LoadingModal from '../components/LoadingModal';
@@ -1232,17 +1232,15 @@ const Scores = () => {
               <div className="section-header">
                 <h3 className="section-title">회원별 평균 순위</h3>
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm btn-icon-only"
                   onClick={refreshMemberAverages}
                   disabled={averagesLoading}
+                  title="새로고침"
                 >
                   {averagesLoading ? (
-                    <>
-                      <span className="loading-spinner"></span>
-                      로딩 중...
-                    </>
+                    <span className="loading-spinner"></span>
                   ) : (
-                    '새로고침'
+                    <RotateCcw size={18} />
                   )}
                 </button>
               </div>
