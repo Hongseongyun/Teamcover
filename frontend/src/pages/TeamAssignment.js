@@ -82,6 +82,10 @@ const TeamAssignment = () => {
     average: '',
     gender: '',
   });
+  const [guestErrors, setGuestErrors] = useState({
+    name: '',
+    average: '',
+  });
 
   // 팀 구성 가능 여부 계산
   const isTeamFormationPossible = () => {
@@ -793,6 +797,10 @@ const TeamAssignment = () => {
       average: '',
       gender: '',
     });
+    setGuestErrors({
+      name: '',
+      average: '',
+    });
   };
 
   // 게스트 데이터 입력 핸들러
@@ -801,12 +809,61 @@ const TeamAssignment = () => {
       ...prev,
       [field]: value,
     }));
+
+    // 검증 로직
+    if (field === 'name') {
+      // 한글, 영어, 공백만 허용
+      const namePattern = /^[가-힣a-zA-Z\s]*$/;
+      if (value && !namePattern.test(value)) {
+        setGuestErrors((prev) => ({
+          ...prev,
+          name: '한글과 영어만 입력 가능합니다.',
+        }));
+      } else {
+        setGuestErrors((prev) => ({
+          ...prev,
+          name: '',
+        }));
+      }
+    } else if (field === 'average') {
+      // 빈 문자열이면 에러 없음
+      if (!value) {
+        setGuestErrors((prev) => ({
+          ...prev,
+          average: '',
+        }));
+      } else {
+        // 숫자인지 확인
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
+          setGuestErrors((prev) => ({
+            ...prev,
+            average: '0~300 사이의 숫자를 입력하세요.',
+          }));
+        } else if (numValue < 0 || numValue > 300) {
+          setGuestErrors((prev) => ({
+            ...prev,
+            average: '0~300 사이의 숫자를 입력하세요.',
+          }));
+        } else {
+          setGuestErrors((prev) => ({
+            ...prev,
+            average: '',
+          }));
+        }
+      }
+    }
   };
 
   // 게스트 추가 완료
   const handleAddGuest = async () => {
     if (!guestData.name.trim() || !guestData.average || !guestData.gender) {
       alert('모든 필드를 입력해주세요.');
+      return;
+    }
+
+    // 검증 에러가 있으면 추가 불가
+    if (guestErrors.name || guestErrors.average) {
       return;
     }
 
@@ -3468,10 +3525,17 @@ const TeamAssignment = () => {
           <div className="modal-content guest-modal">
             <div className="modal-header">
               <h3>게스트 추가</h3>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={handleCloseGuestModal}
+              >
+                ×
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>이름 *</label>
+                <label>이름</label>
                 <input
                   type="text"
                   placeholder="게스트 이름을 입력하세요"
@@ -3479,11 +3543,14 @@ const TeamAssignment = () => {
                   onChange={(e) =>
                     handleGuestDataChange('name', e.target.value)
                   }
-                  className="form-input"
+                  className={`form-input ${guestErrors.name ? 'error' : ''}`}
                 />
+                {guestErrors.name && (
+                  <div className="error-message">{guestErrors.name}</div>
+                )}
               </div>
               <div className="form-group">
-                <label>평균 점수 *</label>
+                <label>평균 점수</label>
                 <input
                   type="number"
                   min="0"
@@ -3493,22 +3560,30 @@ const TeamAssignment = () => {
                   onChange={(e) =>
                     handleGuestDataChange('average', e.target.value)
                   }
-                  className="form-input"
+                  className={`form-input ${guestErrors.average ? 'error' : ''}`}
                 />
+                {guestErrors.average && (
+                  <div className="error-message">{guestErrors.average}</div>
+                )}
               </div>
               <div className="form-group">
-                <label>성별 *</label>
-                <select
-                  value={guestData.gender}
-                  onChange={(e) =>
-                    handleGuestDataChange('gender', e.target.value)
-                  }
-                  className="form-select"
-                >
-                  <option value="">성별을 선택하세요</option>
-                  <option value="남">남</option>
-                  <option value="여">여</option>
-                </select>
+                <label>성별</label>
+                <div className="gender-options">
+                  <button
+                    type="button"
+                    className={`gender-option ${guestData.gender === '남' ? 'active' : ''}`}
+                    onClick={() => handleGuestDataChange('gender', '남')}
+                  >
+                    남
+                  </button>
+                  <button
+                    type="button"
+                    className={`gender-option ${guestData.gender === '여' ? 'active' : ''}`}
+                    onClick={() => handleGuestDataChange('gender', '여')}
+                  >
+                    여
+                  </button>
+                </div>
               </div>
             </div>
             <div className="modal-footer">
@@ -3518,16 +3593,12 @@ const TeamAssignment = () => {
                 disabled={
                   !guestData.name.trim() ||
                   !guestData.average ||
-                  !guestData.gender
+                  !guestData.gender ||
+                  guestErrors.name ||
+                  guestErrors.average
                 }
               >
                 추가하기
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={handleCloseGuestModal}
-              >
-                취소
               </button>
             </div>
           </div>

@@ -313,6 +313,7 @@
 
 .modal-header {
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .modal-header h3 {
@@ -344,6 +345,17 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+/* 게스트 모달 버튼 스타일 통일 */
+.guest-modal .modal-footer .btn {
+  height: 42px;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 @keyframes fadeIn {
@@ -500,6 +512,7 @@
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: var(--toss-gray-700);
+  text-align: left;
 }
 
 [data-theme='dark'] .guest-modal .form-group label {
@@ -516,6 +529,125 @@
   transition: border-color 0.2s ease;
   background-color: var(--surface-card);
   color: var(--color-text);
+}
+
+/* number input 스피너 제거 */
+.guest-modal .form-input[type="number"]::-webkit-inner-spin-button,
+.guest-modal .form-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.guest-modal .form-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* 게스트 모달 에러 메시지 */
+.guest-modal .error-message {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+[data-theme='dark'] .guest-modal .error-message {
+  color: #f87171;
+}
+
+/* 게스트 모달 에러 상태 입력란 */
+.guest-modal .form-input.error {
+  border-color: #dc3545;
+}
+
+[data-theme='dark'] .guest-modal .form-input.error {
+  border-color: #f87171;
+}
+
+/* 게스트 모달 성별 선택 옵션 */
+.guest-modal .gender-options {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.guest-modal .gender-option {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--toss-gray-300);
+  border-radius: var(--toss-radius);
+  background-color: var(--surface-card);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.guest-modal .gender-option:hover {
+  border-color: var(--toss-primary);
+  background-color: var(--toss-primary-light);
+}
+
+.guest-modal .gender-option.active {
+  background-color: var(--toss-primary);
+  color: white;
+  border-color: var(--toss-primary);
+}
+
+[data-theme='dark'] .guest-modal .gender-option {
+  border-color: rgba(148, 163, 184, 0.35);
+  background-color: rgba(30, 41, 59, 0.85);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+[data-theme='dark'] .guest-modal .gender-option:hover {
+  border-color: var(--toss-primary);
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme='dark'] .guest-modal .gender-option.active {
+  background-color: var(--toss-primary);
+  color: white;
+  border-color: var(--toss-primary);
+}
+
+/* 게스트 모달 닫기 버튼 */
+.guest-modal .modal-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.guest-modal .modal-close-button:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+[data-theme='dark'] .guest-modal .modal-close-button {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .guest-modal .modal-close-button:hover {
+  background-color: rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
+}
+
+/* 게스트 모달 푸터 - 추가하기 버튼만 오른쪽 정렬 */
+.guest-modal .modal-footer {
+  justify-content: flex-end;
 }
 
 [data-theme='dark'] .guest-modal .form-input,
