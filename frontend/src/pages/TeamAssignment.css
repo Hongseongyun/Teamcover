@@ -68,8 +68,30 @@
   height: 40px;
   box-sizing: border-box;
   min-width: 80px; /* 검색 버튼 가로 길이 설정 */
+  position: relative;
+  overflow: hidden;
 }
 
+/* 검색 버튼에 유리질감 효과 */
+.search-input-group .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.search-input-group .btn:hover:not(:disabled)::before {
+  left: 100%;
+}
 
 .search-group .search-input {
   width: 250px;
@@ -143,7 +165,6 @@
     width: 200px; /* 2/3 줄임 (250px -> 200px) */
     height: 32px; /* 768px 이하: 32px */
   }
-
 
   .btn {
     padding: 0.75rem 1rem;
@@ -765,6 +786,34 @@
   align-items: center;
 }
 
+/* 검색 결과 액션 버튼에 유리질감 효과 */
+.team-assignment-page .search-results-actions .btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.team-assignment-page .search-results-actions .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.team-assignment-page
+  .search-results-actions
+  .btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
 .team-assignment-page .search-results h5 {
   margin: 0;
   color: var(--toss-gray-900);
@@ -921,6 +970,29 @@
   min-width: 150px;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* bulk-actions-bottom 버튼에 유리질감 효과 */
+.bulk-actions-bottom .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.bulk-actions-bottom .btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 /* 회원 그리드 */
@@ -1596,15 +1668,51 @@
   padding: 0.75rem;
 }
 
+/* 아이콘 버튼 기본 배경 제거 */
+.btn-icon-only.btn-secondary {
+  background-color: transparent !important;
+}
+
+/* 라이트 모드: 호버 시 기본 배경색 적용 (아이콘 색상은 유지) */
+.btn-icon-only.btn-secondary:hover:not(:disabled),
+.btn.btn-icon-only.btn-secondary:hover:not(:disabled),
+.bulk-actions-bottom .btn-icon-only.btn-secondary:hover:not(:disabled),
+.search-results-actions .btn-icon-only.btn-secondary:hover:not(:disabled),
+.team-assignment-page .btn-icon-only.btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-500) !important; /* 현재 기본 배경색 */
+}
+
+/* 다크 모드: 아이콘 버튼 기본 배경 제거 */
+[data-theme='dark'] .btn-icon-only.btn-secondary {
+  background-color: transparent !important;
+}
+
+/* 다크 모드: 호버 시 기본 배경색 적용 (아이콘 색상은 유지) */
+[data-theme='dark'] .btn-icon-only.btn-secondary:hover:not(:disabled),
+[data-theme='dark'] .btn.btn-icon-only.btn-secondary:hover:not(:disabled),
+[data-theme='dark']
+  .bulk-actions-bottom
+  .btn-icon-only.btn-secondary:hover:not(:disabled),
+[data-theme='dark']
+  .search-results-actions
+  .btn-icon-only.btn-secondary:hover:not(:disabled),
+[data-theme='dark']
+  .team-assignment-page
+  .btn-icon-only.btn-secondary:hover:not(:disabled) {
+  background-color: var(--toss-gray-500) !important; /* 현재 기본 배경색 */
+}
+
 /* CSS 변수 정의 */
 :root {
   --toss-white: #ffffff;
   --toss-gray-50: #f9fafb;
   --toss-gray-200: #e5e7eb;
   --toss-gray-300: #d1d5db;
+  --toss-gray-400: #9ca3af;
   --toss-gray-500: #6b7280;
   --toss-gray-600: #4b5563;
   --toss-gray-700: #374151;
+  --toss-gray-800: #1f2937;
   --toss-gray-900: #111827;
   --toss-primary: #3b82f6;
   --toss-primary-dark: #2563eb;
