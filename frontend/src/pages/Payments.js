@@ -1120,12 +1120,12 @@ const Payments = () => {
       // 현재 확인하는 월이 1월~12월 범위 안인지 확인
       if (currentMonthNum >= 1 && currentMonthNum <= 12) {
         // 같은 연도의 모든 선납 납입 확인 (payment_date를 기준으로 찾음)
+        // 면제 상태인 선납도 포함해야 하므로 !p.is_exempt 조건 제거
         const prepayPayments = payments.filter(
           (p) =>
             p.member_id === memberId &&
             p.payment_type === paymentType &&
-            p.is_paid &&
-            !p.is_exempt &&
+            (p.is_paid || p.is_exempt) &&
             p.note?.includes('개월 선납') &&
             p.payment_date?.startsWith(`${year}-`)
         );
