@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { scoreAPI, sheetsAPI, memberAPI, ocrAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
+import { Trash2, Plus } from 'lucide-react';
 import './Scores.css';
 import './Members.css'; // Members 페이지의 티어 스타일을 사용하기 위해 import
 import LoadingModal from '../components/LoadingModal';
@@ -123,22 +124,50 @@ const Scores = () => {
     },
   ]);
 
+  // 행 추가 모달 상태
+  const [showAddRowModal, setShowAddRowModal] = useState(false);
+  const [rowCountInput, setRowCountInput] = useState('1');
+
   // 표 형식 보조 함수들 (포인트와 동일한 동작)
-  const addScoreRow = () => {
+  const handleOpenAddRowModal = () => {
+    setRowCountInput('1');
+    setShowAddRowModal(true);
+  };
+
+  const handleCloseAddRowModal = () => {
+    setShowAddRowModal(false);
+    setRowCountInput('1');
+  };
+
+  const handleAddRows = () => {
+    const count = parseInt(rowCountInput, 10);
+    
+    // 유효성 검사
+    if (isNaN(count) || count < 1) {
+      alert('1 이상의 숫자를 입력해주세요.');
+      return;
+    }
+    
+    // 최대 개수 제한 (예: 100개)
+    if (count > 100) {
+      alert('한 번에 최대 100개까지 추가할 수 있습니다.');
+      return;
+    }
+    
     setFormEntries((prev) => {
       const firstDate = prev.length > 0 ? prev[0].game_date : '';
-      return [
-        ...prev,
-        {
-          member_name: '',
-          game_date: firstDate,
-          score1: '',
-          score2: '',
-          score3: '',
-          note: '',
-        },
-      ];
+      const newRows = Array.from({ length: count }, () => ({
+        member_name: '',
+        game_date: firstDate,
+        score1: '',
+        score2: '',
+        score3: '',
+        note: '',
+      }));
+      return [...prev, ...newRows];
     });
+    
+    handleCloseAddRowModal();
   };
 
   const removeScoreRow = (indexToRemove) => {
@@ -2440,16 +2469,18 @@ const Scores = () => {
                                   disabled={submitting}
                                 />
                               </td>
-                              <td>
+                              <td className="settings-cell">
                                 <button
                                   type="button"
-                                  className="btn btn-sm btn-danger"
+                                  className="delete-icon-btn"
                                   onClick={() => removeScoreRow(index)}
                                   disabled={
                                     formEntries.length === 1 || submitting
                                   }
+                                  aria-label="행 삭제"
+                                  title="행 삭제"
                                 >
-                                  삭제
+                                  <Trash2 size={18} />
                                 </button>
                               </td>
                             </tr>
@@ -2461,16 +2492,70 @@ const Scores = () => {
                       <button
                         type="button"
                         className="add-row-btn"
-                        onClick={addScoreRow}
+                        onClick={handleOpenAddRowModal}
                         disabled={submitting}
                         aria-label="행 추가"
                         title="행 추가"
                       >
-                        +
+                        <Plus size={20} />
                       </button>
                     </div>
                   </>
                 )}
+
+                {/* 행 추가 모달 */}
+                {showAddRowModal && (
+                  <div className="modal-overlay" onClick={handleCloseAddRowModal}>
+                    <div className="modal-content add-row-modal" onClick={(e) => e.stopPropagation()}>
+                      <div className="modal-header">
+                        <h3>행 추가</h3>
+                        <button
+                          type="button"
+                          className="modal-close-button"
+                          onClick={handleCloseAddRowModal}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="modal-body">
+                        <div className="form-group">
+                          <label>추가할 행의 개수</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={rowCountInput}
+                            onChange={(e) => setRowCountInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (rowCountInput && parseInt(rowCountInput, 10) >= 1 && parseInt(rowCountInput, 10) <= 100) {
+                                  handleAddRows();
+                                }
+                              }
+                            }}
+                            placeholder="1"
+                            className="form-input"
+                            autoFocus
+                          />
+                          <small style={{ color: 'var(--toss-gray-600)', fontSize: '0.875rem', marginTop: '0.5rem', display: 'block' }}>
+                            1~100 사이의 숫자를 입력하세요
+                          </small>
+                        </div>
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          className="btn btn-primary"
+                          onClick={handleAddRows}
+                          disabled={!rowCountInput || parseInt(rowCountInput, 10) < 1 || parseInt(rowCountInput, 10) > 100}
+                        >
+                          추가하기
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-actions">
                   <button
                     type="submit"
