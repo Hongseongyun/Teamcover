@@ -59,13 +59,17 @@
 .search-input-group {
   display: flex;
   gap: 0.5rem;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
 }
 
-.guest-add-btn {
-  margin-left: auto;
+/* 검색 버튼을 입력창과 동일한 높이로 설정 (768px 이상: 40px) */
+.search-input-group .btn {
+  height: 40px;
+  box-sizing: border-box;
+  min-width: 80px; /* 검색 버튼 가로 길이 설정 */
 }
+
 
 .search-group .search-input {
   width: 250px;
@@ -100,7 +104,7 @@
   flex-direction: column;
 }
 
-/* 검색 입력란 - 높이 통일 */
+/* 검색 입력란 - 높이 통일 (768px 이상: 40px) */
 .search-input-row .search-input {
   width: 100%;
   box-sizing: border-box;
@@ -111,7 +115,7 @@
   font-size: 1rem;
 }
 
-/* 검색 입력란 스타일 */
+/* 검색 입력란 스타일 (768px 이상: 40px) */
 .search-input {
   width: 100%;
   box-sizing: border-box;
@@ -137,16 +141,19 @@
 
   .search-group .search-input {
     width: 200px; /* 2/3 줄임 (250px -> 200px) */
+    height: 32px; /* 768px 이하: 32px */
   }
 
-  .guest-add-btn {
-    margin-left: 0;
-    margin-top: 0.5rem;
-  }
 
   .btn {
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
+  }
+
+  /* 검색 버튼 높이 (768px 이하: 32px) */
+  .search-input-group .btn {
+    height: 32px;
+    min-width: 70px; /* 작은 화면에서 가로 길이 조정 */
   }
 
   .btn-sm {
@@ -694,7 +701,7 @@
     width: 160px; /* 메시지가 다 보이도록 늘림 */
     font-size: 0.85rem;
     padding: 0.4rem 0.5rem;
-    height: 32px;
+    height: 32px; /* 430px 이하: 32px */
     box-sizing: border-box;
   }
 
@@ -707,13 +714,13 @@
   .search-input-group .btn {
     padding: 0.2rem 0.4rem;
     font-size: 0.7rem;
-    height: 32px;
+    height: 32px; /* 430px 이하: 32px */
+    min-width: 60px; /* 작은 화면에서 가로 길이 조정 */
     white-space: nowrap;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    min-width: auto;
     width: auto;
   }
 
@@ -2341,6 +2348,8 @@ html {
   white-space: nowrap;
   flex-shrink: 0;
   color: white;
+  position: relative;
+  overflow: hidden;
 }
 
 .section-actions .btn:disabled,
@@ -2412,6 +2421,29 @@ html {
   background-color: var(--toss-danger-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* 흰색이 지나가는 유리질감 효과 */
+.section-actions .btn::before,
+.section-header .btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.section-actions .btn:hover:not(:disabled)::before,
+.section-header .btn:hover:not(:disabled)::before {
+  left: 100%;
 }
 
 /* 다크모드 */

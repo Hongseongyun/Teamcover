@@ -2985,7 +2985,17 @@ const TeamAssignment = () => {
         )}
 
         <div className="section-card">
-          <h3 className="section-title">선수 추가</h3>
+          <div className="section-header">
+            <h3 className="section-title">선수 추가</h3>
+            <div className="section-actions">
+              <button
+                className="btn btn-success"
+                onClick={handleOpenGuestModal}
+              >
+                게스트 추가
+              </button>
+            </div>
+          </div>
 
           {/* 회원 검색 */}
           <div className="search-section">
@@ -3074,12 +3084,6 @@ const TeamAssignment = () => {
                   )}
                 </div>
               </div>
-              <button
-                className="btn btn-secondary guest-add-btn"
-                onClick={handleOpenGuestModal}
-              >
-                게스트 추가
-              </button>
             </div>
 
             {/* 검색 결과 - 검색 입력란 바로 아래 표시 */}
