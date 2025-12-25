@@ -3112,10 +3112,15 @@ const Payments = () => {
               <div className="game-payment-header">
                 <h3 className="section-title">게임비 납입 관리</h3>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-sm btn-menu-toggle"
                   onClick={openGamePaymentModal}
+                  title="설정"
                 >
-                  추가하기
+                  <span className="menu-dots">
+                    <span className="menu-dot"></span>
+                    <span className="menu-dot"></span>
+                    <span className="menu-dot"></span>
+                  </span>
                 </button>
               </div>
 
