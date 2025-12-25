@@ -609,7 +609,7 @@
 /* 닫기 버튼 실제 컨테이너 대상 축소 및 자동폭 */
 .form-actions .btn {
   min-width: 80px !important;
-  font-size: 0.8rem;
+  font-size: 1rem;
   padding: 0.6em 1.1em;
 }
 

@@ -1945,6 +1945,18 @@ div.action-menu-dropdown,
   margin-bottom: 1rem;
 }
 
+/* 게임비 입력란 증감 스피너 제거 */
+.game-amount-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.game-amount-input::-webkit-inner-spin-button,
+.game-amount-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .added-members-list {
   margin-top: 1.5rem;
   padding-top: 1.5rem;

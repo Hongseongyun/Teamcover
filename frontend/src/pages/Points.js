@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Plus, Trash2, Search } from 'lucide-react';
+import { Plus, Trash2, Search, MoreVertical } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import './Points.css';
 import './Members.css'; // action-menu 스타일 사용
@@ -1295,25 +1295,26 @@ const Points = () => {
       {isAdmin && showAddForm && (
         <div className="form-section">
           <div className="section-card">
-            <h3 className="section-title">
-              {editingPoint ? '포인트 수정' : '포인트 등록'}
-            </h3>
+            <div className="section-title-header">
+              <h3 className="section-title">
+                {editingPoint ? '포인트 수정' : '포인트 등록'}
+              </h3>
+              {!editingPoint && (
+                <button
+                  type="button"
+                  className="btn btn-icon-only settings-btn-icon"
+                  onClick={openReasonSettings}
+                  disabled={submitting}
+                  title="포인트 설정"
+                >
+                  <MoreVertical size={20} />
+                </button>
+              )}
+            </div>
 
             {!editingPoint ? (
               // 표 형식 포인트 등록
               <div className="table-form-container">
-                <div className="table-form-header">
-                  <div className="header-buttons">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm settings-btn"
-                      onClick={openReasonSettings}
-                      disabled={submitting}
-                    >
-                      포인트 설정
-                    </button>
-                  </div>
-                </div>
 
                 <form
                   onSubmit={handleSubmit}
@@ -1842,21 +1843,7 @@ const Points = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={resetReasonSettings}
-              >
-                기본값 복원
-              </button>
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setShowReasonSettings(false)}
-                >
-                  취소
-                </button>
                 <button
                   type="button"
                   className="btn btn-primary"

@@ -3905,7 +3905,7 @@ const Payments = () => {
             <div className="modal-body">
               {/* 날짜 선택 */}
               <div className="form-group">
-                <label>게임 날짜 *</label>
+                <label>게임 날짜</label>
                 <input
                   type="date"
                   value={gamePaymentDate}
@@ -3916,7 +3916,7 @@ const Payments = () => {
 
               {/* 게임 종류 선택 */}
               <div className="form-group">
-                <label>게임 종류 *</label>
+                <label>게임 종류</label>
                 <select
                   value={gameType}
                   onChange={(e) => setGameType(e.target.value)}
@@ -3930,12 +3930,12 @@ const Payments = () => {
 
               {/* 게임비 입력 */}
               <div className="form-group">
-                <label>게임비 (원) *</label>
+                <label>게임비 (원)</label>
                 <input
                   type="number"
                   value={gameAmount}
                   onChange={(e) => setGameAmount(parseInt(e.target.value) || 0)}
-                  className="form-control"
+                  className="form-control game-amount-input"
                   min="0"
                   disabled={submitting}
                 />
