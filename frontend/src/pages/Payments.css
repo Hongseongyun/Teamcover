@@ -748,7 +748,7 @@
 
 .monthly-calendar-table table {
   width: 100%;
-  min-width: 1080px; /* 회원 열(120px) + 12개월(80px * 12 = 960px) = 1080px 최소 너비 보장 */
+  min-width: 1000px; /* 회원 열(100px) + 12개월(80px * 12 = 960px) = 1060px 최소 너비 보장 */
   table-layout: auto; /* 칸 크기 유지를 위해 auto로 변경 */
   border-collapse: collapse;
 }
@@ -763,10 +763,22 @@
   text-overflow: ellipsis;
 }
 
+/* 다크모드에서 월회비 납입 현황 표의 선 더 잘 보이도록 */
+[data-theme='dark'] .monthly-calendar-table th,
+[data-theme='dark'] .monthly-calendar-table td {
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+[data-theme='dark'] .monthly-calendar-table th {
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
 /* 첫 번째(회원) 열은 고정 너비로, 나머지 12개월은 균등 분배 */
 .monthly-calendar-table th.member-col,
 .monthly-calendar-table td.member-name {
-  width: 120px;
+  width: 100px;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .monthly-calendar-table th {
@@ -789,7 +801,7 @@
 }
 
 .member-col {
-  min-width: 120px;
+  min-width: 100px;
   font-weight: 600;
   background-color: var(--toss-gray-50);
   position: sticky;
