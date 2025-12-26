@@ -32,7 +32,10 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 0; /* 탭과의 간격 제거 */
+  background: var(--color-bg);
+  padding: 10px 30px;
+  border-radius: 8px 8px 0 0; /* 상단 모서리만 둥글게 */
 }
 
 .board-content-header .header-actions {
@@ -186,8 +189,16 @@
   gap: 8px;
   margin-bottom: 30px;
   padding-bottom: 2px;
+  padding-left: 8px; /* 왼쪽 탭의 왼쪽에 간격 추가 */
+  padding-right: 8px; /* 오른쪽 탭의 오른쪽에 간격 추가 */
+  background: var(--color-bg); /* 탭 양쪽 공간의 배경색 */
   border-bottom: 2px solid var(--border-color); /* 선택 안 된 탭들의 밑줄을 하나로 연결 */
   position: relative;
+}
+
+.board-tabs .tab-button {
+  flex: 1; /* 모든 탭이 동일한 너비를 갖도록 */
+  text-align: center; /* 텍스트 중앙 정렬 */
 }
 
 .tab-button {
@@ -225,6 +236,7 @@ button.tab-button.active {
   font-weight: 600 !important;
   z-index: 2; /* 선택된 탭이 위에 오도록 z-index 증가 */
   position: relative; /* z-index가 작동하도록 position 추가 */
+  flex: 1 !important; /* 선택된 탭도 동일한 너비 유지 */
   border-top: 2px solid var(--border-color) !important; /* 위쪽 선 */
   border-left: 2px solid var(--border-color) !important; /* 왼쪽 선 */
   border-right: 2px solid var(--border-color) !important; /* 오른쪽 선 */
