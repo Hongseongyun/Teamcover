@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teamAPI, memberAPI } from '../services/api';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Trash2, Save, MoreVertical } from 'lucide-react';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -42,6 +42,13 @@ const TeamAssignment = () => {
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [filteredAutocomplete, setFilteredAutocomplete] = useState([]);
 
+  // 저장된 팀 구성 결과 (최대 3개)
+  const [savedTeamConfigs, setSavedTeamConfigs] = useState([]);
+  const [selectedSavedConfigIndex, setSelectedSavedConfigIndex] = useState(0);
+
+  // 선수 목록 설정 메뉴 상태
+  const [showPlayersMenu, setShowPlayersMenu] = useState(false);
+
   // 선수 목록 섹션 ref
   const playersSectionRef = useRef(null);
 
@@ -78,6 +85,26 @@ const TeamAssignment = () => {
       };
     }
   }, [showScoreInputModal, showGuestModal]);
+
+  // 외부 클릭 시 선수 목록 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        !event.target.closest(
+          '.action-menu-container[data-item-id="players-settings"]'
+        ) &&
+        showPlayersMenu
+      ) {
+        setShowPlayersMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showPlayersMenu]);
+
   const [guestData, setGuestData] = useState({
     name: '',
     average: '',
@@ -1169,6 +1196,70 @@ const TeamAssignment = () => {
       setIsBalancing(false);
     }
   };
+
+  // 팀 구성 결과 저장 함수
+  const saveTeamConfig = () => {
+    if (teams.length === 0) {
+      alert('저장할 팀 구성이 없습니다.');
+      return;
+    }
+
+    const newConfig = {
+      id: Date.now(),
+      teams: JSON.parse(JSON.stringify(teams)), // 깊은 복사
+      balancingResult: balancingResult,
+      savedAt: new Date().toLocaleString('ko-KR'),
+    };
+
+    // 빈 자리(삭제된 자리)가 있는지 확인
+    const emptyIndex = savedTeamConfigs.findIndex((config) => config === null);
+
+    if (emptyIndex !== -1) {
+      // 빈 자리가 있으면 그 자리에 채우기
+      const updated = [...savedTeamConfigs];
+      updated[emptyIndex] = newConfig;
+      setSavedTeamConfigs(updated);
+      setSelectedSavedConfigIndex(emptyIndex);
+    } else if (savedTeamConfigs.length < 3) {
+      // 빈 자리가 없고 3개 미만이면 추가
+      setSavedTeamConfigs([...savedTeamConfigs, newConfig]);
+      setSelectedSavedConfigIndex(savedTeamConfigs.length); // 새로 저장된 것을 선택
+    } else {
+      // 3개가 모두 차있으면 가장 오래된 것을 제거하고 새로 추가
+      const updated = [...savedTeamConfigs.slice(1), newConfig];
+      setSavedTeamConfigs(updated);
+      setSelectedSavedConfigIndex(2); // 마지막 인덱스 선택
+    }
+
+    const savedCount = savedTeamConfigs.filter((c) => c !== null).length;
+    const newCount = emptyIndex !== -1 ? savedCount : savedCount + 1;
+    alert(`팀 구성이 저장되었습니다. (${newCount}/3)`);
+  };
+
+  // 저장된 팀 구성 삭제 함수
+  const deleteSavedTeamConfig = (index) => {
+    if (!savedTeamConfigs[index]) return;
+
+    if (window.confirm(`저장 ${index + 1}을 삭제하시겠습니까?`)) {
+      const updated = [...savedTeamConfigs];
+      updated[index] = null; // null로 표시하여 빈 자리로 만듦
+      setSavedTeamConfigs(updated);
+
+      // 삭제된 탭이 현재 선택된 탭이면 다른 탭으로 이동
+      if (selectedSavedConfigIndex === index) {
+        // 다른 저장된 결과 찾기
+        const nextIndex = updated.findIndex((config) => config !== null);
+        if (nextIndex !== -1) {
+          setSelectedSavedConfigIndex(nextIndex);
+        } else {
+          // 모든 저장된 결과가 삭제되었으면 첫 번째 인덱스로 (null이지만)
+          setSelectedSavedConfigIndex(0);
+        }
+      }
+    }
+  };
+
+  // 저장된 팀 구성 불러오기 (더 이상 사용 안 함, 비교용으로만 표시)
 
   // 여성 회원 분포 검증 함수
   const validateFemaleDistribution = (teams, allPlayers) => {
@@ -3273,13 +3364,36 @@ const TeamAssignment = () => {
           <div className="section-header">
             <h3 className="section-title">선수 목록 ({players.length}명)</h3>
             <div className="section-actions">
-              <button
-                className="btn btn-danger"
-                onClick={handleClearPlayers}
-                disabled={players.length === 0}
+              <div
+                className="action-menu-container"
+                data-item-id="players-settings"
               >
-                전체 삭제
-              </button>
+                <button
+                  className="btn btn-icon-only players-settings-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPlayersMenu(!showPlayersMenu);
+                  }}
+                  title="설정"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                {showPlayersMenu && (
+                  <div className="action-menu-dropdown">
+                    <button
+                      className="action-menu-item action-menu-item-danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPlayersMenu(false);
+                        handleClearPlayers();
+                      }}
+                      disabled={players.length === 0}
+                    >
+                      전체 삭제
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -3406,65 +3520,184 @@ const TeamAssignment = () => {
           {/* 팀 결과 */}
           {teams.length > 0 && (
             <div className="teams-result">
-              <h4>팀 구성 결과</h4>
-
-              {/* 밸런싱 결과 메시지 */}
-              {balancingResult && (
-                <div className="balancing-result-message">
-                  {balancingResult}
-                </div>
-              )}
-
-              <div className="teams-grid">
-                {teams
-                  .slice()
-                  .sort((a, b) => a.team_number - b.team_number)
-                  .map((team, index) => (
-                    <div
-                      key={index}
-                      className="team-card"
-                      data-team-number={team.team_number}
+              {/* 현재 결과 */}
+              <div className="current-result-section">
+                <div className="teams-result-header">
+                  <h4>현재 결과</h4>
+                  <div className="team-config-actions">
+                    <button
+                      className="btn btn-icon-only save-icon-btn"
+                      onClick={saveTeamConfig}
+                      title={(() => {
+                        const emptyIndex = savedTeamConfigs.findIndex(
+                          (c) => c === null
+                        );
+                        const saveIndex =
+                          emptyIndex !== -1
+                            ? emptyIndex + 1
+                            : savedTeamConfigs.length + 1;
+                        return `현재 결과를 저장${saveIndex} 에 저장`;
+                      })()}
                     >
-                      <div className="team-header">
-                        <h5>팀 {team.team_number}</h5>
-                        <div className="team-stats">
-                          <span>총 에버: {team.total_average}</span>
-                          <span>
-                            평균: {team.average_per_player.toFixed(1)}
-                          </span>
+                      <Save size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 밸런싱 결과 메시지 */}
+                {balancingResult && (
+                  <div className="balancing-result-message">
+                    {balancingResult}
+                  </div>
+                )}
+
+                <div className="teams-grid">
+                  {teams
+                    .slice()
+                    .sort((a, b) => a.team_number - b.team_number)
+                    .map((team, index) => (
+                      <div
+                        key={index}
+                        className="team-card"
+                        data-team-number={team.team_number}
+                      >
+                        <div className="team-header">
+                          <h5>팀 {team.team_number}</h5>
+                          <div className="team-stats">
+                            <span>총 에버: {team.total_average}</span>
+                            <span>
+                              평균: {team.average_per_player.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="team-players">
+                          {team.players
+                            .slice()
+                            .sort((a, b) => b.average - a.average)
+                            .map((player, pIndex) => (
+                              <div
+                                key={pIndex}
+                                className={`team-player ${
+                                  selectedPlayer &&
+                                  selectedPlayer.playerId ===
+                                    `${team.team_number}-${player.name}-${player.average}`
+                                    ? 'selected'
+                                    : ''
+                                }`}
+                                onClick={() =>
+                                  handlePlayerClick(player, team.team_number)
+                                }
+                              >
+                                <span className="player-name">
+                                  {player.name}
+                                </span>
+                                <span className="player-average">
+                                  {player.average}
+                                </span>
+                                <span className="player-gender">
+                                  {player.gender || '-'}
+                                </span>
+                              </div>
+                            ))}
                         </div>
                       </div>
-                      <div className="team-players">
-                        {team.players
+                    ))}
+                </div>
+              </div>
+
+              {/* 저장된 결과들 */}
+              {savedTeamConfigs.length > 0 && (
+                <div className="saved-results-section">
+                  <h4 className="saved-results-title">저장된 결과</h4>
+
+                  {/* 저장된 결과 탭 */}
+                  <div className="saved-configs-tabs">
+                    {savedTeamConfigs.map((config, index) => {
+                      if (config === null) {
+                        return (
+                          <button
+                            key={`empty-${index}`}
+                            className="tab-button empty-tab"
+                            disabled
+                          >
+                            저장 {index + 1} (비어있음)
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          key={config.id}
+                          className={`tab-button ${
+                            selectedSavedConfigIndex === index ? 'active' : ''
+                          }`}
+                          onClick={() => setSelectedSavedConfigIndex(index)}
+                        >
+                          저장 {index + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* 선택된 저장된 결과 표시 */}
+                  {savedTeamConfigs[selectedSavedConfigIndex] && (
+                    <div className="saved-config-item">
+                      <div className="saved-config-header">
+                        <div className="saved-config-header-right">
+                          <button
+                            className="btn btn-icon-only delete-icon-btn"
+                            onClick={() =>
+                              deleteSavedTeamConfig(selectedSavedConfigIndex)
+                            }
+                            title="삭제"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="teams-grid">
+                        {savedTeamConfigs[selectedSavedConfigIndex].teams
                           .slice()
-                          .sort((a, b) => b.average - a.average)
-                          .map((player, pIndex) => (
+                          .sort((a, b) => a.team_number - b.team_number)
+                          .map((team, teamIndex) => (
                             <div
-                              key={pIndex}
-                              className={`team-player ${
-                                selectedPlayer &&
-                                selectedPlayer.playerId ===
-                                  `${team.team_number}-${player.name}-${player.average}`
-                                  ? 'selected'
-                                  : ''
-                              }`}
-                              onClick={() =>
-                                handlePlayerClick(player, team.team_number)
-                              }
+                              key={teamIndex}
+                              className="team-card"
+                              data-team-number={team.team_number}
                             >
-                              <span className="player-name">{player.name}</span>
-                              <span className="player-average">
-                                {player.average}
-                              </span>
-                              <span className="player-gender">
-                                {player.gender || '-'}
-                              </span>
+                              <div className="team-header">
+                                <h5>팀 {team.team_number}</h5>
+                                <div className="team-stats">
+                                  <span>총 에버: {team.total_average}</span>
+                                  <span>
+                                    평균: {team.average_per_player.toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="team-players">
+                                {team.players
+                                  .slice()
+                                  .sort((a, b) => b.average - a.average)
+                                  .map((player, pIndex) => (
+                                    <div key={pIndex} className="team-player">
+                                      <span className="player-name">
+                                        {player.name}
+                                      </span>
+                                      <span className="player-average">
+                                        {player.average}
+                                      </span>
+                                      <span className="player-gender">
+                                        {player.gender || '-'}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </div>
                             </div>
                           ))}
                       </div>
                     </div>
-                  ))}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -3578,14 +3811,18 @@ const TeamAssignment = () => {
                 <div className="gender-options">
                   <button
                     type="button"
-                    className={`gender-option ${guestData.gender === '남' ? 'active' : ''}`}
+                    className={`gender-option ${
+                      guestData.gender === '남' ? 'active' : ''
+                    }`}
                     onClick={() => handleGuestDataChange('gender', '남')}
                   >
                     남
                   </button>
                   <button
                     type="button"
-                    className={`gender-option ${guestData.gender === '여' ? 'active' : ''}`}
+                    className={`gender-option ${
+                      guestData.gender === '여' ? 'active' : ''
+                    }`}
                     onClick={() => handleGuestDataChange('gender', '여')}
                   >
                     여

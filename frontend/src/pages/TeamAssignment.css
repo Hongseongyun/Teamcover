@@ -963,7 +963,6 @@
   justify-content: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--toss-gray-200);
 }
 
 .bulk-actions-bottom .btn {
@@ -1409,9 +1408,210 @@
   border-top: 1px solid var(--toss-gray-200);
 }
 
-.teams-result h4 {
+.teams-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.teams-result-header h4 {
+  margin: 0;
+  color: var(--toss-gray-900);
+  font-size: 1.25rem;
+}
+
+.team-config-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* 저장 아이콘 버튼 */
+.save-icon-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--toss-gray-600);
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.save-icon-btn:hover {
+  color: var(--toss-success);
+  background: transparent !important;
+}
+
+.save-icon-btn:active {
+  color: var(--toss-success);
+}
+
+[data-theme='dark'] .save-icon-btn {
+  color: rgba(226, 232, 240, 0.7);
+}
+
+[data-theme='dark'] .save-icon-btn:hover {
+  color: var(--toss-success);
+}
+
+/* 삭제 아이콘 버튼 */
+.delete-icon-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--toss-gray-600);
+  padding: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.delete-icon-btn:hover {
+  color: var(--toss-danger);
+  background: transparent !important;
+}
+
+.delete-icon-btn:active {
+  color: var(--toss-danger);
+}
+
+[data-theme='dark'] .delete-icon-btn {
+  color: rgba(226, 232, 240, 0.7);
+}
+
+[data-theme='dark'] .delete-icon-btn:hover {
+  color: var(--toss-danger);
+}
+
+.saved-configs-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--toss-gray-200);
+  padding-bottom: 0.5rem;
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--toss-gray-600);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--toss-radius-sm) var(--toss-radius-sm) 0 0;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab-button:hover {
+  color: var(--toss-primary);
+  background: var(--toss-gray-50);
+}
+
+.tab-button.active {
+  color: var(--toss-primary);
+  font-weight: 600;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--toss-primary);
+}
+
+[data-theme='dark'] .tab-button {
+  color: rgba(226, 232, 240, 0.7);
+}
+
+[data-theme='dark'] .tab-button:hover {
+  color: var(--toss-primary);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+[data-theme='dark'] .tab-button.active {
+  color: var(--toss-primary);
+}
+
+[data-theme='dark'] .saved-configs-tabs {
+  border-bottom-color: rgba(148, 163, 184, 0.3);
+}
+
+.tab-button.empty-tab {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--toss-gray-400);
+}
+
+.tab-button.empty-tab:hover {
+  background: transparent;
+  color: var(--toss-gray-400);
+}
+
+[data-theme='dark'] .tab-button.empty-tab {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+[data-theme='dark'] .tab-button.empty-tab:hover {
+  color: rgba(148, 163, 184, 0.4);
+  background: transparent;
+}
+
+/* 현재 결과 섹션 */
+.current-result-section {
+  margin-bottom: 1.5rem;
+}
+
+/* 저장된 결과 섹션 */
+.saved-results-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.saved-results-title {
   margin-bottom: 1.5rem;
   color: var(--toss-gray-900);
+  font-size: 1.25rem;
+}
+
+[data-theme='dark'] .saved-results-title {
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.saved-config-item {
+  margin-top: 1rem;
+}
+
+.saved-config-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.saved-config-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.saved-config-header h5 {
+  margin: 0;
+  color: var(--toss-primary);
+  font-size: 1.1rem;
+}
+
+.saved-config-time {
+  font-size: 0.75rem;
+  color: var(--toss-gray-500);
+}
+
+[data-theme='dark'] .saved-config-time {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.saved-config-message {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
 }
 
 /* 밸런싱 결과 메시지 */
@@ -1478,13 +1678,15 @@
   box-shadow: var(--toss-shadow);
 }
 
+[data-theme='dark'] .team-card {
+  border-color: rgba(83, 87, 90, 0.5);
+}
+
 .team-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--toss-gray-200);
 }
 
 .team-header h5 {
@@ -2461,9 +2663,62 @@ html {
   min-width: 250px;
 }
 
+/* 선수 목록 설정 버튼 */
+.players-settings-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--toss-gray-600);
+  padding: 0.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: none !important;
+  transform: none !important;
+}
+
+.players-settings-btn::before {
+  display: none !important;
+  content: none !important;
+}
+
+.players-settings-btn:hover {
+  background: transparent !important;
+  color: var(--toss-gray-600);
+  transform: none !important;
+  transition: none !important;
+}
+
+.players-settings-btn:hover::before {
+  display: none !important;
+  content: none !important;
+}
+
+.players-settings-btn svg {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.players-settings-btn:hover svg {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+[data-theme='dark'] .players-settings-btn {
+  color: rgba(226, 232, 240, 0.7);
+  transition: none !important;
+  transform: none !important;
+}
+
+[data-theme='dark'] .players-settings-btn:hover {
+  color: rgba(226, 232, 240, 0.7);
+  transform: none !important;
+  transition: none !important;
+}
+
 /* 섹션 버튼 통일 스타일 - 전체 삭제 버튼 스타일 기준 */
-.section-actions .btn,
-.section-header .btn {
+.section-actions .btn:not(.players-settings-btn),
+.section-header .btn:not(.players-settings-btn) {
   padding: 0.75rem 1.5rem;
   border: none;
   border-radius: var(--toss-radius);
@@ -2575,6 +2830,16 @@ html {
 .section-actions .btn:hover:not(:disabled)::before,
 .section-header .btn:hover:not(:disabled)::before {
   left: 100%;
+}
+
+.section-actions .players-settings-btn::before,
+.section-header .players-settings-btn::before {
+  display: none !important;
+}
+
+.section-actions .players-settings-btn:hover::before,
+.section-header .players-settings-btn:hover::before {
+  display: none !important;
 }
 
 /* 다크모드 */
