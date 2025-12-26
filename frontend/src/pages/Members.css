@@ -675,6 +675,55 @@
   border-bottom: 1px solid rgba(148, 163, 184, 0.4);
 }
 
+/* 인라인 편집 완료/취소 버튼 스타일 */
+.btn-inline-complete,
+.btn-inline-cancel {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  color: #666;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.btn-inline-complete:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.btn-inline-cancel:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.btn-inline-complete svg,
+.btn-inline-cancel svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-theme='dark'] .btn-inline-complete,
+[data-theme='dark'] .btn-inline-cancel {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .btn-inline-complete:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+[data-theme='dark'] .btn-inline-cancel:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 /* td가 inline-actions일 때는 flex로 변경하고 내부 콘텐츠 중앙 정렬 */
 .members-table tbody tr td.inline-actions {
   display: flex !important;

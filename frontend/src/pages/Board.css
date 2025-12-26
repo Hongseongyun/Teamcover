@@ -5,9 +5,6 @@
 }
 
 .board-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
 }
 
@@ -18,13 +15,34 @@
   font-weight: 700;
 }
 
-.board-header .header-actions {
+/* 게시판 콘텐츠 섹션 */
+.board-content-section {
+  background: var(--surface-card, #ffffff);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+[data-theme='dark'] .board-content-section {
+  background: var(--surface-card, rgba(15, 23, 42, 0.98));
+  border-color: var(--border-color, rgba(148, 163, 184, 0.2));
+}
+
+.board-content-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.board-content-header .header-actions {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
 /* 페이지 상단 버튼 스타일 (문의하기 페이지 스타일 적용) */
+.board-content-header .header-actions .btn.btn-primary,
 .board-header .header-actions .btn.btn-primary {
   padding: 0.75rem 1.5rem !important;
   background: transparent !important;
@@ -40,6 +58,7 @@
   z-index: 1;
 }
 
+.board-content-header .header-actions .btn.btn-primary::before,
 .board-header .header-actions .btn.btn-primary::before {
   content: '';
   position: absolute;
@@ -52,6 +71,7 @@
   z-index: -1;
 }
 
+.board-content-header .header-actions .btn.btn-primary > *,
 .board-header .header-actions .btn.btn-primary > * {
   position: relative;
   z-index: 2;
@@ -59,10 +79,12 @@
   transition: color 0.3s ease;
 }
 
+.board-content-header .header-actions .btn.btn-primary:hover::before,
 .board-header .header-actions .btn.btn-primary:hover::before {
   left: 0;
 }
 
+.board-content-header .header-actions .btn.btn-primary:hover,
 .board-header .header-actions .btn.btn-primary:hover {
   background: transparent !important;
   color: white !important;
@@ -70,16 +92,25 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.board-content-header .header-actions .btn.btn-primary:hover,
+.board-content-header .header-actions .btn.btn-primary:hover *,
 .board-header .header-actions .btn.btn-primary:hover,
 .board-header .header-actions .btn.btn-primary:hover * {
   color: white !important;
 }
 
+.board-content-header .header-actions .btn.btn-primary:active,
 .board-header .header-actions .btn.btn-primary:active {
   transform: translateY(0);
 }
 
 /* 다크모드 - MyPage.css의 전역 스타일보다 우선순위 높이기 */
+[data-theme='dark'] .board-content-header .header-actions .btn.btn-primary,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  button.btn.btn-primary,
+[data-theme='dark'] .board-content-header .header-actions .btn-primary.btn,
 [data-theme='dark'] .board-header .header-actions .btn.btn-primary,
 [data-theme='dark'] .board-header .header-actions button.btn.btn-primary,
 [data-theme='dark'] .board-header .header-actions .btn-primary.btn {
@@ -88,6 +119,18 @@
   background: transparent !important;
 }
 
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn.btn-primary::before,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  button.btn.btn-primary::before,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn-primary.btn::before,
 [data-theme='dark'] .board-header .header-actions .btn.btn-primary::before,
 [data-theme='dark']
   .board-header
@@ -97,6 +140,33 @@
   background: var(--toss-primary);
 }
 
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn.btn-primary:hover,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn.btn-primary:hover
+  *,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  button.btn.btn-primary:hover,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  button.btn.btn-primary:hover
+  *,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn-primary.btn:hover,
+[data-theme='dark']
+  .board-content-header
+  .header-actions
+  .btn-primary.btn:hover
+  *,
 [data-theme='dark'] .board-header .header-actions .btn.btn-primary:hover,
 [data-theme='dark'] .board-header .header-actions .btn.btn-primary:hover *,
 [data-theme='dark'] .board-header .header-actions button.btn.btn-primary:hover,
@@ -116,34 +186,105 @@
   gap: 8px;
   margin-bottom: 30px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color); /* 선택 안 된 탭들의 밑줄을 하나로 연결 */
+  position: relative;
 }
 
 .tab-button {
   padding: 10px 20px;
   border: none;
   border-radius: 8px 8px 0 0;
-  background: transparent;
+  background: var(--color-bg); /* 페이지 배경색과 동일하게 */
   color: var(--color-text-muted);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
-  border-bottom: 2px solid transparent;
   margin-bottom: -2px;
+  border-bottom: none; /* 선택 안 된 탭의 개별 밑줄 제거 (board-tabs의 border-bottom 사용) */
+  border-top: none; /* 위쪽 선 없음 */
+  border-left: none; /* 왼쪽 선 없음 */
+  border-right: none; /* 오른쪽 선 없음 */
 }
 
 .tab-button:hover {
   color: var(--color-text);
-  background: var(--surface-hover);
+  background: var(--color-bg); /* hover 시에도 페이지 배경색 유지 */
 }
 
-.tab-button.active {
-  color: #007bff;
-  background: transparent;
-  border-bottom-color: #007bff;
-  font-weight: 600;
+/* Login.css의 스타일을 덮어쓰기 위해 더 구체적이고 높은 특이성을 가진 선택자 사용 */
+.board-container .board-tabs button.tab-button.active,
+.board-tabs button.tab-button.active,
+button.tab-button.active {
+  color: #007bff !important;
+  background: var(
+    --surface-card,
+    #ffffff
+  ) !important; /* 배경색으로 board-tabs의 border-bottom을 가림 */
+  font-weight: 600 !important;
+  z-index: 2; /* 선택된 탭이 위에 오도록 z-index 증가 */
+  position: relative; /* z-index가 작동하도록 position 추가 */
+  border-top: 2px solid var(--border-color) !important; /* 위쪽 선 */
+  border-left: 2px solid var(--border-color) !important; /* 왼쪽 선 */
+  border-right: 2px solid var(--border-color) !important; /* 오른쪽 선 */
+  border-bottom: none !important; /* 아래쪽 선 제거 */
+  border-bottom-color: transparent !important;
+  border-bottom-width: 0 !important;
+  border-bottom-style: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  margin-bottom: calc(
+    -16px - 2px
+  ); /* board-tabs의 padding-bottom + border-bottom 위치까지 내려가도록 */
+}
+
+/* 가상 요소로 그려지는 밑줄 제거 (before만) */
+.board-container .board-tabs button.tab-button.active::before,
+.board-tabs button.tab-button.active::before,
+button.tab-button.active::before {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  border-bottom: none !important;
+}
+
+/* 선택된 탭의 좌우 선을 border-bottom까지 연장 */
+.board-container .board-tabs button.tab-button.active::after,
+.board-tabs button.tab-button.active::after,
+button.tab-button.active::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute;
+  bottom: 0px; /* board-tabs의 border-bottom 위치에 딱 맞게 */
+  left: -2px; /* 좌측 선과 맞추기 */
+  right: -2px; /* 우측 선과 맞추기 */
+  height: 2px; /* border 두께만큼만 */
+  background: var(--surface-card, #ffffff); /* 배경색으로 선을 가림 */
+  z-index: 3; /* 선 위에 표시 */
+  border-left: 2px solid var(--border-color); /* 좌측 선 연장 */
+  border-right: 2px solid var(--border-color); /* 우측 선 연장 */
+}
+
+[data-theme='dark'] .tab-button.active {
+  background: var(
+    --surface-card,
+    rgba(15, 23, 42, 0.98)
+  ) !important; /* 다크모드에서도 배경색으로 선을 가림 */
+}
+
+[data-theme='dark']
+  .board-container
+  .board-tabs
+  button.tab-button.active::after,
+[data-theme='dark'] .board-tabs button.tab-button.active::after,
+[data-theme='dark'] button.tab-button.active::after {
+  background: var(
+    --surface-card,
+    rgba(15, 23, 42, 0.98)
+  ) !important; /* 다크모드 배경색 */
+  border-left-color: var(--border-color) !important;
+  border-right-color: var(--border-color) !important;
 }
 
 @media (max-width: 768px) {
@@ -245,6 +386,10 @@
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+}
+
+[data-theme='dark'] .post-item {
+  background: rgba(15, 23, 42, 0.8); /* 다크모드에서 더 진한 배경색 */
 }
 
 .post-item:hover {

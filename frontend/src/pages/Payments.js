@@ -2155,12 +2155,31 @@ const Payments = () => {
                   }}
                 >
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-add-icon"
                     type="submit"
                     disabled={ledgerLoading || ledgerSaving}
                     style={{ marginTop: '1.75rem' }}
+                    title={ledgerSaving ? '저장 중...' : '추가'}
                   >
-                    {ledgerSaving ? '저장 중...' : '추가'}
+                    {ledgerSaving ? (
+                      '저장 중...'
+                    ) : (
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M10 4V16M4 10H16"
+                          stroke="white"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
                   </button>
                 </div>
               </div>
@@ -3895,10 +3914,11 @@ const Payments = () => {
             <div className="modal-header">
               <h3>게임비 납입 관리</h3>
               <button
-                className="btn btn-sm btn-secondary"
+                type="button"
+                className="modal-close-button"
                 onClick={closeGamePaymentModal}
               >
-                ✕
+                ×
               </button>
             </div>
 
@@ -4052,13 +4072,6 @@ const Payments = () => {
             </div>
 
             <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={closeGamePaymentModal}
-                disabled={submitting}
-              >
-                취소
-              </button>
               <button
                 className="btn btn-primary"
                 onClick={saveGamePayments}

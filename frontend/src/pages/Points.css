@@ -849,8 +849,8 @@
 
 .points-table th:nth-child(8),
 .points-table td:nth-child(8) {
-  min-width: 60px; /* 설정: 150px -> 60px (아이콘만 표시하므로 최소화) */
-  width: 60px;
+  min-width: 80px; /* 설정: 인라인 편집 버튼이 짤리지 않도록 최소 너비 보장 */
+  width: auto; /* 자동 너비로 변경하여 내용에 맞게 조정 */
 }
 
 .point-type {
@@ -1361,6 +1361,55 @@
   background-color: #fff;
 }
 
+/* 인라인 편집 완료/취소 버튼 스타일 */
+.btn-inline-complete,
+.btn-inline-cancel {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  color: #666;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.btn-inline-complete:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.btn-inline-cancel:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.btn-inline-complete svg,
+.btn-inline-cancel svg {
+  width: 20px;
+  height: 20px;
+}
+
+[data-theme='dark'] .btn-inline-complete,
+[data-theme='dark'] .btn-inline-cancel {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .btn-inline-complete:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+[data-theme='dark'] .btn-inline-cancel:hover {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 /* 인라인 액션 버튼 */
 .inline-actions {
   display: flex;
@@ -1368,6 +1417,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  min-width: 80px; /* 완료/취소 버튼이 짤리지 않도록 최소 너비 보장 */
 }
 
 .points-table td.inline-actions {

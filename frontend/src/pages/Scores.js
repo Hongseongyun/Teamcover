@@ -95,6 +95,7 @@ const Scores = () => {
   const [editingScore, setEditingScore] = useState(null);
   // 행 인라인 편집 상태
   const [inlineEditingId, setInlineEditingId] = useState(null);
+  const [savingInlineEdit, setSavingInlineEdit] = useState(false); // 인라인 편집 저장 중 로딩 상태
   const [inlineEditData, setInlineEditData] = useState({
     member_name: '',
     game_date: '',
@@ -1066,6 +1067,8 @@ const Scores = () => {
   // 인라인 편집 저장
   const saveInlineEdit = async (scoreId) => {
     try {
+      setSavingInlineEdit(true); // 로딩 시작
+      
       await scoreAPI.updateScore(scoreId, {
         ...inlineEditData,
         score1: parseInt(inlineEditData.score1) || 0,
@@ -1109,7 +1112,10 @@ const Scores = () => {
       // 평균 순위도 새로고침
       loadMemberAverages();
       cancelInlineEdit();
+      
+      setSavingInlineEdit(false); // 로딩 종료
     } catch (error) {
+      setSavingInlineEdit(false); // 로딩 종료
       alert('수정에 실패했습니다.');
     }
   };
@@ -2828,16 +2834,46 @@ const Scores = () => {
                                 </td>
                                 <td className="inline-actions">
                                   <button
-                                    className="btn btn-sm btn-primary"
+                                    className="btn-inline-complete"
                                     onClick={() => saveInlineEdit(score.id)}
+                                    title="완료"
                                   >
-                                    완료
+                                    <svg
+                                      width="20"
+                                      height="20"
+                                      viewBox="0 0 20 20"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M16.667 5L7.5 14.167 3.333 10"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
                                   </button>
                                   <button
-                                    className="btn btn-sm btn-secondary"
+                                    className="btn-inline-cancel"
                                     onClick={cancelInlineEdit}
+                                    title="취소"
                                   >
-                                    취소
+                                    <svg
+                                      width="20"
+                                      height="20"
+                                      viewBox="0 0 20 20"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M5 5L15 15M15 5L5 15"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
                                   </button>
                                 </td>
                               </>
@@ -3310,16 +3346,46 @@ const Scores = () => {
                                     </td>
                                     <td className="inline-actions">
                                       <button
-                                        className="btn btn-sm btn-primary"
+                                        className="btn-inline-complete"
                                         onClick={() => saveInlineEdit(score.id)}
+                                        title="완료"
                                       >
-                                        완료
+                                        <svg
+                                          width="20"
+                                          height="20"
+                                          viewBox="0 0 20 20"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                          <path
+                                            d="M16.667 5L7.5 14.167 3.333 10"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
                                       </button>
                                       <button
-                                        className="btn btn-sm btn-secondary"
+                                        className="btn-inline-cancel"
                                         onClick={cancelInlineEdit}
+                                        title="취소"
                                       >
-                                        취소
+                                        <svg
+                                          width="20"
+                                          height="20"
+                                          viewBox="0 0 20 20"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                          <path
+                                            d="M5 5L15 15M15 5L5 15"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
                                       </button>
                                     </td>
                                   </>
@@ -3483,6 +3549,10 @@ const Scores = () => {
       </div>
 
       <LoadingModal isOpen={submitting} message="스코어 저장 중..." />
+      <LoadingModal
+        isOpen={savingInlineEdit}
+        message="설정변경중.."
+      />
       <LoadingModal
         isOpen={Boolean(deletingScoreId || deletingSelected)}
         message={

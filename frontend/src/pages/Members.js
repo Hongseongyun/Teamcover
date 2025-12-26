@@ -93,6 +93,7 @@ const Members = () => {
     is_staff: false,
     join_date: '',
   });
+  const [savingInlineEdit, setSavingInlineEdit] = useState(false); // 인라인 편집 저장 중 로딩 상태
   const [openMenuId, setOpenMenuId] = useState(null); // 열려있는 메뉴 ID
 
   // 구글시트 가져오기 관련 상태
@@ -622,6 +623,8 @@ const Members = () => {
   // 인라인 편집 저장
   const saveInlineEdit = async (memberId) => {
     try {
+      setSavingInlineEdit(true); // 로딩 시작
+      
       // 잠금 상태이거나 마스킹 값이면 해당 필드는 전송하지 않도록 정제
       const payload = { ...inlineEditData };
       if (!privacyUnlocked || (payload.phone && payload.phone.includes('*'))) {
@@ -635,6 +638,7 @@ const Members = () => {
 
       if (response.data && !response.data.success) {
         alert(response.data.message || '회원 수정에 실패했습니다.');
+        setSavingInlineEdit(false); // 로딩 종료
         return;
       }
 
@@ -669,7 +673,10 @@ const Members = () => {
 
       // 데이터베이스와 동기화를 위해 다시 로드
       loadMembers();
+      
+      setSavingInlineEdit(false); // 로딩 종료
     } catch (error) {
+      setSavingInlineEdit(false); // 로딩 종료
       if (error.code === 'ERR_NETWORK') {
         alert(
           '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
@@ -1075,16 +1082,46 @@ const Members = () => {
                           </td>
                           <td className="inline-actions">
                             <button
-                              className="btn btn-sm btn-primary"
+                              className="btn-inline-complete"
                               onClick={() => saveInlineEdit(member.id)}
+                              title="완료"
                             >
-                              완료
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M16.667 5L7.5 14.167 3.333 10"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
                             </button>
                             <button
-                              className="btn btn-sm btn-secondary"
+                              className="btn-inline-cancel"
                               onClick={cancelInlineEdit}
+                              title="취소"
                             >
-                              취소
+                              <svg
+                                width="20"
+                                height="20"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M5 5L15 15M15 5L5 15"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
                             </button>
                           </td>
                         </>
@@ -1317,6 +1354,10 @@ const Members = () => {
       <LoadingModal
         isOpen={Boolean(deletingMemberId)}
         message="회원 삭제 중..."
+      />
+      <LoadingModal
+        isOpen={savingInlineEdit}
+        message="설정변경중.."
       />
     </div>
   );

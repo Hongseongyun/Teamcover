@@ -185,6 +185,25 @@
   min-height: calc(0.75rem * 2 + 1.5rem + 2px); /* 최소 높이 보장 */
 }
 
+/* 장부관리 섹션의 추가 버튼 아이콘 스타일 */
+.btn-add-icon {
+  width: calc(0.75rem * 2 + 1.5rem + 2px); /* 입력란과 동일한 높이 */
+  height: calc(0.75rem * 2 + 1.5rem + 2px);
+  min-width: calc(0.75rem * 2 + 1.5rem + 2px);
+  min-height: calc(0.75rem * 2 + 1.5rem + 2px);
+  padding: 0 !important;
+  border-radius: var(--toss-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add-icon svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
@@ -1807,6 +1826,7 @@ div.action-menu-dropdown,
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
 }
 
 .modal-header h3 {
@@ -1955,6 +1975,47 @@ div.action-menu-dropdown,
 
 .game-payment-modal .form-group {
   margin-bottom: 1rem;
+}
+
+/* 게임비 납입 관리 모달의 라벨 왼쪽 정렬 */
+.game-payment-modal .form-group label {
+  text-align: left;
+  display: block;
+}
+
+/* 게임비 납입 관리 모달 닫기 버튼 */
+.game-payment-modal .modal-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.game-payment-modal .modal-close-button:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+[data-theme='dark'] .game-payment-modal .modal-close-button {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .game-payment-modal .modal-close-button:hover {
+  background-color: rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
 }
 
 /* 게임비 입력란 증감 스피너 제거 */
