@@ -835,8 +835,7 @@
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s ease;
-  /* 제거 버튼과 추가 버튼 간격을 위한 여백 */
-  padding-right: 3.5rem;
+  position: relative;
 }
 
 .search-result-card:hover {
@@ -853,11 +852,12 @@
 .search-result-card .member-name {
   font-weight: 600;
   color: var(--toss-gray-900);
+  display: flex;
+  align-items: center;
 }
 
-.search-result-card .member-gender {
-  font-size: 0.875rem;
-  color: var(--toss-gray-600);
+[data-theme='dark'] .search-result-card .member-name {
+  color: rgba(226, 232, 240, 0.95);
 }
 
 .search-result-card .average-info {
@@ -2200,8 +2200,9 @@ html {
 
 .autocomplete-member-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .autocomplete-name {
@@ -2220,10 +2221,32 @@ html {
   width: fit-content;
 }
 
-.autocomplete-indicator {
-  font-size: 0.75rem;
-  color: var(--toss-blue-600);
-  font-weight: 500;
+/* 자동완성 다크모드 스타일 */
+[data-theme='dark'] .autocomplete-list {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .autocomplete-item {
+  border-bottom-color: rgba(148, 163, 184, 0.15);
+}
+
+[data-theme='dark'] .autocomplete-item:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme='dark'] .autocomplete-item:active {
+  background-color: rgba(59, 130, 246, 0.25);
+}
+
+[data-theme='dark'] .autocomplete-name {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+[data-theme='dark'] .autocomplete-gender {
+  color: rgba(226, 232, 240, 0.8);
+  background-color: rgba(148, 163, 184, 0.2);
 }
 
 /* 검색 입력란 컨테이너를 상대 위치로 설정 */
@@ -2233,63 +2256,78 @@ html {
 
 /* 자동완성 항목 비활성화 상태는 더 이상 사용하지 않음 */
 
-/* 검색 결과 카드 제거 버튼 */
+/* 검색 결과 카드 제거 버튼 - 선수 목록과 동일한 스타일 */
 .search-result-card {
   position: relative;
 }
 
-.remove-member-btn {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 24px;
-  height: 24px;
-  border: 2px solid #ef4444;
-  background: #ef4444;
-  color: white;
-  border-radius: 50%;
+.search-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-result-add-btn {
+  background: none;
+  border: none;
+  color: var(--toss-success);
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1;
   cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  font-weight: bold;
-  line-height: 1;
-  transition: all 0.2s ease;
-  z-index: 10;
-  opacity: 1;
-  visibility: visible;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  /* 정확한 중앙 정렬을 위한 추가 설정 */
-  padding: 0;
-  margin: 0;
-  text-align: center;
-  vertical-align: middle;
 }
 
-/* 제거 버튼이 항상 보이도록 강제 */
-.search-result-card:hover .remove-member-btn,
-.search-result-card .remove-member-btn {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-.remove-member-btn:hover {
-  background: #dc2626;
-  border-color: #dc2626;
+.search-result-add-btn:hover:not(:disabled) {
+  background-color: var(--toss-success-light);
+  color: var(--toss-success-dark);
   transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.remove-member-btn:active {
+.search-result-add-btn:active:not(:disabled) {
   transform: scale(0.95);
 }
 
-.remove-member-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
-  background: #dc2626;
-  border-color: #dc2626;
+.search-result-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-result-add-btn svg {
+  color: var(--toss-success);
+  stroke-width: 3;
+}
+
+.search-result-add-btn:hover:not(:disabled) svg {
+  color: var(--toss-success-dark);
+}
+
+[data-theme='dark'] .search-result-add-btn {
+  color: #4ade80;
+}
+
+[data-theme='dark'] .search-result-add-btn:hover:not(:disabled) {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #86efac;
+}
+
+[data-theme='dark'] .search-result-add-btn svg {
+  color: #4ade80;
+}
+
+[data-theme='dark'] .search-result-add-btn:hover:not(:disabled) svg {
+  color: #86efac;
+}
+
+.search-result-card .player-delete-btn {
+  position: static;
 }
 
 /* 팀 구성 결과 정렬 정보 */
@@ -2711,6 +2749,64 @@ html {
 }
 
 [data-theme='dark'] .players-settings-btn:hover {
+  color: rgba(226, 232, 240, 0.7);
+  transform: none !important;
+  transition: none !important;
+}
+
+/* 검색 아이콘 버튼 */
+.search-icon-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--toss-gray-600);
+  padding: 0.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: none !important;
+  transform: none !important;
+}
+
+.search-icon-btn::before {
+  display: none !important;
+  content: none !important;
+}
+
+.search-icon-btn:hover {
+  background: transparent !important;
+  color: var(--toss-gray-600);
+  transform: none !important;
+  transition: none !important;
+}
+
+.search-icon-btn:hover::before {
+  display: none !important;
+  content: none !important;
+}
+
+.search-icon-btn svg {
+  transition: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+.search-icon-btn:hover svg {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+.search-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme='dark'] .search-icon-btn {
+  color: rgba(226, 232, 240, 0.7);
+  transition: none !important;
+  transform: none !important;
+}
+
+[data-theme='dark'] .search-icon-btn:hover {
   color: rgba(226, 232, 240, 0.7);
   transform: none !important;
   transition: none !important;

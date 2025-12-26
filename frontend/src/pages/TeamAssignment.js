@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teamAPI, memberAPI } from '../services/api';
-import { RotateCcw, Trash2, Save, MoreVertical } from 'lucide-react';
+import { RotateCcw, Trash2, Save, MoreVertical, Search, Check } from 'lucide-react';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -10,6 +10,8 @@ const TeamAssignment = () => {
   const [teams, setTeams] = useState([]);
   // 평균 점수 캐시 (이름 -> average)
   const [memberAverageMap, setMemberAverageMap] = useState(new Map());
+  // 회원별 게임 수 정보 (이름 -> score_count)
+  const [memberGameCountMap, setMemberGameCountMap] = useState(new Map());
 
   const [teamConfig, setTeamConfig] = useState({
     team_count: 3,
@@ -48,6 +50,8 @@ const TeamAssignment = () => {
 
   // 선수 목록 설정 메뉴 상태
   const [showPlayersMenu, setShowPlayersMenu] = useState(false);
+  // 선수 추가 섹션 설정 메뉴 상태
+  const [showPlayerInputMenu, setShowPlayerInputMenu] = useState(false);
 
   // 선수 목록 섹션 ref
   const playersSectionRef = useRef(null);
@@ -97,13 +101,21 @@ const TeamAssignment = () => {
       ) {
         setShowPlayersMenu(false);
       }
+      if (
+        !event.target.closest(
+          '.action-menu-container[data-item-id="player-input-settings"]'
+        ) &&
+        showPlayerInputMenu
+      ) {
+        setShowPlayerInputMenu(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showPlayersMenu]);
+  }, [showPlayersMenu, showPlayerInputMenu]);
 
   const [guestData, setGuestData] = useState({
     name: '',
@@ -186,14 +198,28 @@ const TeamAssignment = () => {
           }
         });
         // 일괄 평균 조회로 맵 보강 (가능 시)
+        const gameCountMap = new Map();
         try {
           const avgRes = await memberAPI.getAllMembersAverages();
-          if (avgRes?.data?.success && Array.isArray(avgRes.data.averages)) {
-            avgRes.data.averages.forEach((a) => {
+          if (avgRes?.data?.success) {
+            // 응답 형식 확인 (averages 배열 또는 members 배열)
+            const averagesData = Array.isArray(avgRes.data.averages) 
+              ? avgRes.data.averages 
+              : Array.isArray(avgRes.data.members) 
+              ? avgRes.data.members 
+              : [];
+            
+            averagesData.forEach((a) => {
               const name = a.member_name || a.name;
               const avg = a.average_score ?? a.average;
+              const scoreCount = a.score_count || 0;
+              
               if (name && avg !== null && avg !== undefined) {
                 baseMap.set(name, Math.round(avg));
+              }
+              
+              if (name && scoreCount > 0) {
+                gameCountMap.set(name, scoreCount);
               }
             });
           }
@@ -201,6 +227,7 @@ const TeamAssignment = () => {
           // 무시: 네트워크 실패 시 members만으로 사용
         }
         setMemberAverageMap(baseMap);
+        setMemberGameCountMap(gameCountMap);
       }
     } catch (error) {
       // 에러 처리
@@ -214,10 +241,13 @@ const TeamAssignment = () => {
       const member = members.find((m) => m.name === memberName);
 
       if (member && member.average_score) {
+        // 게임 수 정보 가져오기 (저장된 맵에서 조회)
+        const gameCount = memberGameCountMap.get(memberName) || 1;
+        
         // 회원 데이터의 평균 점수 사용
         setCalculatedAverageInfo({
           period: '정기전 에버',
-          gameCount: 1,
+          gameCount: gameCount,
           isCalculated: true,
           memberName: memberName,
         });
@@ -332,6 +362,9 @@ const TeamAssignment = () => {
         average: average,
         gender: member.gender || '',
       });
+
+      // 에버 정보 표시를 위한 계산
+      await calculateAverageFromScores(member.name);
 
       // 해당 회원을 검색 결과에서 제거
       setSearchResults((prevResults) =>
@@ -3080,12 +3113,32 @@ const TeamAssignment = () => {
           <div className="section-header">
             <h3 className="section-title">선수 추가</h3>
             <div className="section-actions">
-              <button
-                className="btn btn-success"
-                onClick={handleOpenGuestModal}
-              >
-                게스트 추가
-              </button>
+              <div className="action-menu-container" data-item-id="player-input-settings">
+                <button
+                  className="btn btn-icon-only players-settings-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPlayerInputMenu(!showPlayerInputMenu);
+                  }}
+                  title="설정"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                {showPlayerInputMenu && (
+                  <div className="action-menu-dropdown">
+                    <button
+                      className="action-menu-item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPlayerInputMenu(false);
+                        handleOpenGuestModal();
+                      }}
+                    >
+                      게스트 추가
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -3133,17 +3186,15 @@ const TeamAssignment = () => {
                       className="search-input"
                     />
                     <button
-                      className="btn btn-primary"
+                      className="btn btn-icon-only search-icon-btn"
                       onClick={handleSearchAndAdd}
                       disabled={isLoading && loadingType === '회원 검색'}
+                      title="검색"
                     >
                       {isLoading && loadingType === '회원 검색' ? (
-                        <>
-                          <div className="spinner"></div>
-                          검색 중...
-                        </>
+                        <div className="loading-spinner"></div>
                       ) : (
-                        '검색'
+                        <Search size={18} />
                       )}
                     </button>
                   </div>
@@ -3167,9 +3218,6 @@ const TeamAssignment = () => {
                               {member.gender || '미지정'}
                             </span>
                           </div>
-                          <span className="autocomplete-indicator">
-                            클릭하여 검색 결과에 추가
-                          </span>
                         </div>
                       ))}
                     </div>
@@ -3211,23 +3259,22 @@ const TeamAssignment = () => {
                         isDuplicatePlayer(member.name) ? 'duplicate' : ''
                       }`}
                     >
-                      {/* 제거 버튼 */}
-                      <button
-                        className="remove-member-btn"
-                        onClick={() => {
-                          setSearchResults((prev) =>
-                            prev.filter((result) => result.id !== member.id)
-                          );
-                        }}
-                        title="검색 결과에서 제거"
-                      >
-                        ×
-                      </button>
-
                       <div className="member-info">
-                        <div className="member-name">{member.name}</div>
-                        <div className="member-gender">
-                          {member.gender || '미지정'}
+                        <div className="member-name">
+                          {member.name}
+                          {member.gender && (
+                            <span
+                              className={`gender-badge ${
+                                member.gender === '남'
+                                  ? 'male'
+                                  : member.gender === '여'
+                                  ? 'female'
+                                  : ''
+                              }`}
+                            >
+                              {member.gender}
+                            </span>
+                          )}
                         </div>
                         {calculatedAverageInfo.isCalculated &&
                           calculatedAverageInfo.memberName === member.name && (
@@ -3239,17 +3286,39 @@ const TeamAssignment = () => {
                             </div>
                           )}
                       </div>
-                      <button
-                        className="btn btn-sm btn-success"
-                        onClick={() => handleAddSingleMember(member)}
-                        disabled={isLoading || isDuplicatePlayer(member.name)}
-                      >
-                        {isLoading && loadingType === '개별 추가'
-                          ? '추가 중...'
-                          : isDuplicatePlayer(member.name)
-                          ? '이미 추가됨'
-                          : '추가'}
-                      </button>
+                      <div className="search-result-actions">
+                        {/* 추가 버튼 */}
+                        <button
+                          className="search-result-add-btn"
+                          onClick={() => handleAddSingleMember(member)}
+                          disabled={isLoading || isDuplicatePlayer(member.name)}
+                          title={
+                            isLoading && loadingType === '개별 추가'
+                              ? '추가 중...'
+                              : isDuplicatePlayer(member.name)
+                              ? '이미 추가됨'
+                              : '추가'
+                          }
+                        >
+                          {isLoading && loadingType === '개별 추가' ? (
+                            <div className="loading-spinner"></div>
+                          ) : (
+                            <Check size={18} />
+                          )}
+                        </button>
+                        {/* 제거 버튼 */}
+                        <button
+                          className="player-delete-btn"
+                          onClick={() => {
+                            setSearchResults((prev) =>
+                              prev.filter((result) => result.id !== member.id)
+                            );
+                          }}
+                          title="검색 결과에서 제거"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
