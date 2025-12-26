@@ -32,10 +32,20 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 0; /* 탭과의 간격 제거 */
-  background: var(--color-bg);
+  margin-bottom: 10px; /* 탭과의 간격 추가 */
   padding: 10px 30px;
   border-radius: 8px 8px 0 0; /* 상단 모서리만 둥글게 */
+  position: relative;
+}
+
+.board-content-header::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: var(--color-bg);
 }
 
 .board-content-header .header-actions {

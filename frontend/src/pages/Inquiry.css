@@ -7,26 +7,46 @@
 .inquiry-container {
   max-width: 900px;
   margin: 0 auto;
-  background: var(--color-surface, #ffffff);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
 }
 
 .inquiry-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--color-border, #e0e0e0);
+  margin-bottom: 20px;
 }
 
 .inquiry-header h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  color: var(--color-text, #333);
   margin: 0;
+  color: var(--color-text, #333);
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* 문의하기 콘텐츠 섹션 */
+.inquiry-content-section {
+  background: var(--surface-card, #ffffff);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+[data-theme='dark'] .inquiry-content-section {
+  background: var(--surface-card, rgba(15, 23, 42, 0.98));
+  border-color: var(--border-color, rgba(148, 163, 184, 0.2));
+}
+
+.inquiry-content-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 30px;
+  border-radius: 8px 8px 0 0;
+}
+
+.inquiry-content-header .header-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .inquiry-create-button,
@@ -681,11 +701,6 @@
 /* 다크모드 스타일 */
 [data-theme='dark'] .inquiry-page {
   background: var(--color-bg, #111827);
-}
-
-[data-theme='dark'] .inquiry-container {
-  background: var(--surface-card, #1f2937);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme='dark'] .inquiry-header h1 {

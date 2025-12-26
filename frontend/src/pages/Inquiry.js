@@ -1216,14 +1216,19 @@ const Inquiry = () => {
       <div className="inquiry-container">
         <div className="inquiry-header">
           <h1>문의하기</h1>
-          <button
-            className="inquiry-create-button"
-            onClick={handleCreateInquiry}
-          >
-            <span>문의 작성</span>
-          </button>
         </div>
-        {error && <div className="inquiry-error">{error}</div>}
+        <div className="inquiry-content-section">
+          <div className="inquiry-content-header">
+            <div className="header-actions">
+              <button
+                className="inquiry-create-button"
+                onClick={handleCreateInquiry}
+              >
+                <span>문의 작성</span>
+              </button>
+            </div>
+          </div>
+          {error && <div className="inquiry-error">{error}</div>}
         {inquiries.length === 0 ? (
           <div className="inquiry-empty">
             <p>등록된 문의가 없습니다.</p>
@@ -1458,6 +1463,7 @@ const Inquiry = () => {
                       })}
                     </div>
                   )}
+        </div>
       </div>
     </div>
   );
