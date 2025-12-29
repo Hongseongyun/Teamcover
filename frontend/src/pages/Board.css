@@ -33,9 +33,10 @@
   justify-content: flex-end;
   align-items: center;
   margin-bottom: 10px; /* 탭과의 간격 추가 */
-  padding: 10px 30px;
+  padding: 10px 30px 20px 30px; /* 상단 패딩 감소하여 위로 올림 */
   border-radius: 8px 8px 0 0; /* 상단 모서리만 둥글게 */
   position: relative;
+  min-height: 60px; /* 최소 높이 설정 */
 }
 
 .board-content-header::after {

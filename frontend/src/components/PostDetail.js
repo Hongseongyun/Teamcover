@@ -32,10 +32,7 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
   // 외부 클릭 시 메뉴 닫기
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        openPostMenuId &&
-        !event.target.closest('.action-menu-container')
-      ) {
+      if (openPostMenuId && !event.target.closest('.action-menu-container')) {
         setOpenPostMenuId(null);
       }
     };
@@ -225,7 +222,7 @@ const PostDetail = ({ postId, onBack, onEdit, onDelete }) => {
           {error || '게시글을 찾을 수 없습니다.'}
         </div>
         <button onClick={onBack} className="btn-back">
-          목록으로
+          ← 목록으로
         </button>
       </div>
     );
