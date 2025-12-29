@@ -4,6 +4,7 @@ import { useClub } from '../contexts/ClubContext';
 import { inquiryAPI } from '../services/api';
 import './Inquiry.css';
 import './Members.css'; // action-menu 스타일 사용
+import '../components/PostDetail.css'; // 게시판 상세보기 스타일 사용
 
 const Inquiry = () => {
   const { user } = useAuth();
@@ -566,32 +567,26 @@ const Inquiry = () => {
 
   if (selectedInquiry) {
     return (
-      <div className="inquiry-page">
-        <div className="inquiry-container">
-          <div className="inquiry-header">
-            <h1>문의하기</h1>
-            <button
-              className="inquiry-back-button"
-              onClick={() => setSelectedInquiry(null)}
-            >
-              ← 목록으로
-            </button>
-          </div>
-          <div className="inquiry-detail">
-            <div className="inquiry-detail-header">
-              <div className="inquiry-detail-header-left">
-                <div className="inquiry-detail-title-wrapper">
-                  <h2>{selectedInquiry.title}</h2>
-                  {selectedInquiry.is_private && (
-                    <span className="inquiry-private-badge">비공개</span>
-                  )}
-                </div>
-                <div className="inquiry-detail-meta">
-                  <span className="inquiry-date">
-                    {formatDate(selectedInquiry.created_at)}
-                  </span>
-                </div>
-              </div>
+      <div className="post-detail-container">
+        <button onClick={() => setSelectedInquiry(null)} className="btn-back">
+          ← 목록으로
+        </button>
+
+        <article className="post-detail">
+          <div className="post-detail-header">
+            <div className="post-detail-meta">
+              {selectedInquiry.is_private && (
+                <span className="post-type inquiry-private">비공개</span>
+              )}
+              <h1 className="post-detail-title">{selectedInquiry.title}</h1>
+            </div>
+            <div className="post-detail-info">
+              <span className="post-author">
+                {selectedInquiry.user_name || '알 수 없음'}
+              </span>
+              <span className="post-date">
+                {formatDate(selectedInquiry.created_at)}
+              </span>
               {/* 문의 작성자가 자신의 문의를 볼 때만 수정/삭제 버튼 표시 */}
               {((selectedInquiry.user_id === user?.id &&
                 !selectedInquiry.reply) ||
@@ -599,7 +594,7 @@ const Inquiry = () => {
                 (canReply &&
                   (user?.role === 'super_admin' ||
                     selectedInquiry.user_role !== 'super_admin'))) && (
-                <div className="inquiry-detail-actions">
+                <div className="post-detail-actions">
                   <div
                     className="action-menu-container"
                     data-item-id={selectedInquiry.id}
@@ -662,501 +657,481 @@ const Inquiry = () => {
                 </div>
               )}
             </div>
-            <div className="inquiry-detail-content">
-              {selectedInquiry.content}
-            </div>
+          </div>
 
-            {/* 답변 섹션 - 수정 모드가 아닐 때만 표시 */}
-            {selectedInquiry.reply && !editingReply && (
-              <div className="inquiry-reply-section">
-                <div className="inquiry-reply-header">
-                  <div className="inquiry-reply-header-left">
-                    <h3>답변</h3>
-                    {selectedInquiry.replier_name && (
-                      <span className="inquiry-reply-meta">
-                        {selectedInquiry.replier_name}
-                        {selectedInquiry.replied_at &&
-                          ` · ${formatDate(selectedInquiry.replied_at)}`}
-                      </span>
-                    )}
-                  </div>
-                  {canReply && (
-                    <div className="inquiry-reply-actions">
-                      <div
-                        className="action-menu-container"
-                        data-item-id="reply"
-                      >
-                        <button
-                          className={`btn btn-sm btn-menu-toggle ${
-                            openReplyMenuId === 'reply' ? 'menu-active' : ''
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenReplyMenuId(
-                              openReplyMenuId === 'reply' ? null : 'reply'
-                            );
-                          }}
-                        >
-                          <span className="menu-dots">
-                            <span className="menu-dot"></span>
-                            <span className="menu-dot"></span>
-                            <span className="menu-dot"></span>
-                          </span>
-                        </button>
-                        {openReplyMenuId === 'reply' && (
-                          <div className="action-menu-dropdown">
-                            <button
-                              className="action-menu-item"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditReply();
-                                setOpenReplyMenuId(null);
-                              }}
-                            >
-                              수정
-                            </button>
-                            <button
-                              className="action-menu-item action-menu-item-danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteReply();
-                                setOpenReplyMenuId(null);
-                              }}
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+          <div className="post-detail-content">
+            <div className="post-text">{selectedInquiry.content}</div>
+          </div>
+
+          {/* 답변 섹션 - 수정 모드가 아닐 때만 표시 */}
+          {selectedInquiry.reply && !editingReply && (
+            <div className="inquiry-reply-section">
+              <div className="inquiry-reply-header">
+                <div className="inquiry-reply-header-left">
+                  <h3>답변</h3>
+                  {selectedInquiry.replier_name && (
+                    <span className="inquiry-reply-meta">
+                      {selectedInquiry.replier_name}
+                      {selectedInquiry.replied_at &&
+                        ` · ${formatDate(selectedInquiry.replied_at)}`}
+                    </span>
                   )}
                 </div>
-                <div className="inquiry-reply-content">
-                  {selectedInquiry.reply}
-                </div>
-
-                {/* 답변 댓글 섹션 */}
-                <div className="inquiry-reply-comments-section">
-                  <div className="inquiry-comments-title-wrapper">
-                    <h4 className="inquiry-comments-title">
-                      댓글 ({replyComments.length})
-                    </h4>
+                {canReply && (
+                  <div className="inquiry-reply-actions">
+                    <div className="action-menu-container" data-item-id="reply">
+                      <button
+                        className={`btn btn-sm btn-menu-toggle ${
+                          openReplyMenuId === 'reply' ? 'menu-active' : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenReplyMenuId(
+                            openReplyMenuId === 'reply' ? null : 'reply'
+                          );
+                        }}
+                      >
+                        <span className="menu-dots">
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                          <span className="menu-dot"></span>
+                        </span>
+                      </button>
+                      {openReplyMenuId === 'reply' && (
+                        <div className="action-menu-dropdown">
+                          <button
+                            className="action-menu-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditReply();
+                              setOpenReplyMenuId(null);
+                            }}
+                          >
+                            수정
+                          </button>
+                          <button
+                            className="action-menu-item action-menu-item-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteReply();
+                              setOpenReplyMenuId(null);
+                            }}
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                )}
+              </div>
+              <div className="inquiry-reply-content">
+                {selectedInquiry.reply}
+              </div>
 
-                  {/* 댓글 목록 */}
+              {/* 답변 댓글 섹션 */}
+              <section className="comments-section">
+                <h2 className="comments-title">
+                  댓글 ({replyComments.length})
+                </h2>
+
+                {/* 댓글 작성 폼 */}
+                <form onSubmit={handleCommentSubmit} className="comment-form">
+                  <textarea
+                    value={commentContent}
+                    onChange={(e) => setCommentContent(e.target.value)}
+                    placeholder={
+                      user
+                        ? '댓글을 입력하세요...'
+                        : '댓글을 남기려면 로그인이 필요합니다.'
+                    }
+                    className="comment-input"
+                    rows={3}
+                    disabled={!user}
+                    maxLength={500}
+                  />
+                  <div className="comment-input-footer">
+                    <span className="comment-char-count">
+                      {commentContent.length}/500
+                    </span>
+                    <button
+                      type="submit"
+                      className="comment-submit-btn"
+                      disabled={!commentContent.trim() || !user}
+                    >
+                      <svg
+                        className="send-icon"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{ transform: 'rotate(180deg)' }}
+                      >
+                        <path
+                          d="M2 8L14 2L10 8L14 14L2 8Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </form>
+
+                {/* 댓글 목록 */}
+                <div className="comments-list">
                   {replyComments.length === 0 ? (
                     <div className="no-comments">댓글이 없습니다.</div>
                   ) : (
-                    <div className="inquiry-comments-list">
-                      {replyComments.map((comment) => {
-                        const replyCount = comment.replies
-                          ? comment.replies.length
-                          : 0;
-                        const isExpanded = repliesExpanded[comment.id] === true;
+                    replyComments.map((comment) => {
+                      const replyCount = comment.replies
+                        ? comment.replies.length
+                        : 0;
+                      const isExpanded = repliesExpanded[comment.id] === true;
 
-                        return (
-                          <div
-                            key={comment.id}
-                            className={`inquiry-comment-item ${
-                              isBestComment(comment) ? 'best-comment' : ''
-                            }`}
-                          >
-                            {isBestComment(comment) && (
-                              <span className="best-badge">BEST</span>
-                            )}
-                            <div className="inquiry-comment-header">
-                              <div className="inquiry-comment-header-left">
-                                <span className="inquiry-comment-author">
-                                  {comment.user_name}
-                                </span>
-                                <span className="inquiry-comment-date">
-                                  {formatDate(comment.created_at)}
-                                </span>
+                      return (
+                        <div
+                          key={comment.id}
+                          className={`comment-item ${
+                            isBestComment(comment) ? 'best-comment' : ''
+                          }`}
+                        >
+                          {isBestComment(comment) && (
+                            <span className="best-badge">BEST</span>
+                          )}
+                          <div className="comment-header">
+                            <span className="comment-author">
+                              {comment.user_name}
+                            </span>
+                            <span className="comment-date">
+                              {formatDate(comment.created_at)}
+                            </span>
+                          </div>
+                          {editingCommentId === comment.id ? (
+                            <form
+                              onSubmit={handleCommentSubmit}
+                              className="inquiry-comment-edit-form"
+                            >
+                              <textarea
+                                value={commentContent}
+                                onChange={(e) =>
+                                  setCommentContent(e.target.value)
+                                }
+                                maxLength={500}
+                                required
+                                rows={3}
+                                className="inquiry-comment-edit-textarea"
+                              />
+                              <div className="inquiry-comment-edit-actions">
+                                <button
+                                  type="button"
+                                  className="inquiry-cancel-button-small"
+                                  onClick={handleCancelComment}
+                                >
+                                  취소
+                                </button>
+                                <button
+                                  type="submit"
+                                  className="inquiry-submit-button-small"
+                                >
+                                  수정
+                                </button>
                               </div>
-                              {(comment.user_id === user?.id || canReply) && (
-                                <div className="action-menu-container">
-                                  <button
-                                    className={`btn btn-sm btn-menu-toggle ${
-                                      openCommentMenuId === comment.id
-                                        ? 'menu-active'
-                                        : ''
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const container = e.currentTarget.closest(
-                                        '.action-menu-container'
-                                      );
-                                      if (container) {
-                                        container.classList.remove(
-                                          'menu-open-up'
-                                        );
-                                      }
-                                      setOpenCommentMenuId(
-                                        openCommentMenuId === comment.id
-                                          ? null
-                                          : comment.id
-                                      );
-                                    }}
-                                  >
-                                    <span className="menu-dots">
-                                      <span className="menu-dot"></span>
-                                      <span className="menu-dot"></span>
-                                      <span className="menu-dot"></span>
-                                    </span>
-                                  </button>
-                                  {openCommentMenuId === comment.id && (
-                                    <div className="action-menu-dropdown">
-                                      {comment.user_id === user?.id && (
-                                        <button
-                                          className="action-menu-item"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleEditComment(comment);
-                                            setOpenCommentMenuId(null);
-                                          }}
-                                        >
-                                          수정
-                                        </button>
-                                      )}
-                                      {(comment.user_id === user?.id ||
-                                        canReply) && (
-                                        <button
-                                          className="action-menu-item action-menu-item-danger"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteComment(comment.id);
-                                            setOpenCommentMenuId(null);
-                                          }}
-                                        >
-                                          삭제
-                                        </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            {editingCommentId === comment.id ? (
-                              <form
-                                onSubmit={handleCommentSubmit}
-                                className="inquiry-comment-edit-form"
-                              >
-                                <textarea
-                                  value={commentContent}
-                                  onChange={(e) =>
-                                    setCommentContent(e.target.value)
-                                  }
-                                  maxLength={500}
-                                  required
-                                  rows={3}
-                                  className="inquiry-comment-edit-textarea"
-                                />
-                                <div className="inquiry-comment-edit-actions">
-                                  <button
-                                    type="button"
-                                    className="inquiry-cancel-button-small"
-                                    onClick={handleCancelComment}
-                                  >
-                                    취소
-                                  </button>
-                                  <button
-                                    type="submit"
-                                    className="inquiry-submit-button-small"
-                                  >
-                                    수정
-                                  </button>
-                                </div>
-                              </form>
-                            ) : (
-                              <>
-                                <div className="inquiry-comment-content">
-                                  {comment.content}
-                                </div>
-                                <div className="inquiry-comment-actions">
-                                  <button
-                                    onClick={() => {
-                                      toggleReplies(comment.id);
-                                    }}
-                                    className="comment-reply-btn"
-                                  >
-                                    답글 {replyCount > 0 && replyCount}
-                                  </button>
+                            </form>
+                          ) : (
+                            <>
+                              <div className="comment-content">
+                                {comment.content}
+                              </div>
+                              <div className="comment-actions">
+                                <button
+                                  onClick={() => {
+                                    toggleReplies(comment.id);
+                                  }}
+                                  className="comment-reply-btn"
+                                >
+                                  답글 {replyCount > 0 && replyCount}
+                                </button>
+                                <button
+                                  onClick={() => handleCommentLike(comment.id)}
+                                  className={`comment-like-btn ${
+                                    comment.is_liked ? 'liked' : ''
+                                  }`}
+                                >
+                                  👍 {comment.like_count || 0}
+                                </button>
+                                {(comment.user_id === user?.id || canReply) && (
                                   <button
                                     onClick={() =>
-                                      handleCommentLike(comment.id)
+                                      handleDeleteComment(comment.id)
                                     }
-                                    className={`comment-like-btn ${
-                                      comment.is_liked ? 'liked' : ''
-                                    }`}
+                                    className="comment-delete-btn"
                                   >
-                                    👍 {comment.like_count || 0}
+                                    삭제
                                   </button>
-                                </div>
+                                )}
+                              </div>
 
-                                {/* 대댓글 목록 및 입력창 */}
-                                {isExpanded && (
-                                  <div className="replies-section">
-                                    <div className="replies-content">
-                                      {/* 대댓글 목록 */}
-                                      {comment.replies &&
-                                        comment.replies.length > 0 && (
-                                          <div className="replies-list">
-                                            {comment.replies.map((reply) => (
-                                              <div
-                                                key={reply.id}
-                                                className="reply-item"
-                                              >
-                                                <span className="reply-item-indicator">
-                                                  ㄴ
-                                                </span>
-                                                <div className="reply-item-content">
-                                                  <div className="reply-header">
-                                                    <div className="reply-header-left">
-                                                      <span className="reply-author">
-                                                        {reply.user_name ||
-                                                          reply.author_name}
-                                                      </span>
-                                                      <span className="reply-date">
-                                                        {formatDate(
-                                                          reply.created_at
-                                                        )}
-                                                      </span>
-                                                    </div>
-                                                    {(reply.user_id ===
-                                                      user?.id ||
-                                                      canReply) && (
-                                                      <div className="action-menu-container">
-                                                        <button
-                                                          className={`btn btn-sm btn-menu-toggle ${
-                                                            openReplyCommentMenuId ===
-                                                            reply.id
-                                                              ? 'menu-active'
-                                                              : ''
-                                                          }`}
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const container =
-                                                              e.currentTarget.closest(
-                                                                '.action-menu-container'
-                                                              );
-                                                            if (container) {
-                                                              container.classList.remove(
-                                                                'menu-open-up'
-                                                              );
-                                                            }
-                                                            setOpenReplyCommentMenuId(
-                                                              openReplyCommentMenuId ===
-                                                                reply.id
-                                                                ? null
-                                                                : reply.id
-                                                            );
-                                                          }}
-                                                        >
-                                                          <span className="menu-dots">
-                                                            <span className="menu-dot"></span>
-                                                            <span className="menu-dot"></span>
-                                                            <span className="menu-dot"></span>
-                                                          </span>
-                                                        </button>
-                                                        {openReplyCommentMenuId ===
-                                                          reply.id && (
-                                                          <div className="action-menu-dropdown">
-                                                            {(reply.user_id ===
-                                                              user?.id ||
-                                                              canReply) && (
-                                                              <button
-                                                                className="action-menu-item action-menu-item-danger"
-                                                                onClick={(
-                                                                  e
-                                                                ) => {
-                                                                  e.stopPropagation();
-                                                                  handleDeleteComment(
-                                                                    reply.id
-                                                                  );
-                                                                  setOpenReplyCommentMenuId(
-                                                                    null
-                                                                  );
-                                                                }}
-                                                              >
-                                                                삭제
-                                                              </button>
-                                                            )}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                    )}
+                              {/* 대댓글 목록 및 입력창 */}
+                              {isExpanded && (
+                                <div className="replies-section">
+                                  <div className="replies-content">
+                                    {/* 대댓글 목록 */}
+                                    {comment.replies &&
+                                      comment.replies.length > 0 && (
+                                        <div className="replies-list">
+                                          {comment.replies.map((reply) => (
+                                            <div
+                                              key={reply.id}
+                                              className="reply-item"
+                                            >
+                                              <span className="reply-item-indicator">
+                                                ㄴ
+                                              </span>
+                                              <div className="reply-item-content">
+                                                <div className="reply-header">
+                                                  <div className="reply-header-left">
+                                                    <span className="reply-author">
+                                                      {reply.user_name ||
+                                                        reply.author_name}
+                                                    </span>
+                                                    <span className="reply-date">
+                                                      {formatDate(
+                                                        reply.created_at
+                                                      )}
+                                                    </span>
                                                   </div>
-                                                  <div className="reply-content">
-                                                    {reply.content}
-                                                  </div>
-                                                  <div className="reply-actions">
-                                                    <button
-                                                      onClick={() =>
-                                                        handleCommentLike(
+                                                  {(reply.user_id ===
+                                                    user?.id ||
+                                                    canReply) && (
+                                                    <div className="action-menu-container">
+                                                      <button
+                                                        className={`btn btn-sm btn-menu-toggle ${
+                                                          openReplyCommentMenuId ===
                                                           reply.id
-                                                        )
-                                                      }
-                                                      className={`comment-like-btn ${
-                                                        reply.is_liked
-                                                          ? 'liked'
-                                                          : ''
-                                                      }`}
-                                                    >
-                                                      👍 {reply.like_count || 0}
-                                                    </button>
-                                                  </div>
+                                                            ? 'menu-active'
+                                                            : ''
+                                                        }`}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          const container =
+                                                            e.currentTarget.closest(
+                                                              '.action-menu-container'
+                                                            );
+                                                          if (container) {
+                                                            container.classList.remove(
+                                                              'menu-open-up'
+                                                            );
+                                                          }
+                                                          setOpenReplyCommentMenuId(
+                                                            openReplyCommentMenuId ===
+                                                              reply.id
+                                                              ? null
+                                                              : reply.id
+                                                          );
+                                                        }}
+                                                      >
+                                                        <span className="menu-dots">
+                                                          <span className="menu-dot"></span>
+                                                          <span className="menu-dot"></span>
+                                                          <span className="menu-dot"></span>
+                                                        </span>
+                                                      </button>
+                                                      {openReplyCommentMenuId ===
+                                                        reply.id && (
+                                                        <div className="action-menu-dropdown">
+                                                          {(reply.user_id ===
+                                                            user?.id ||
+                                                            canReply) && (
+                                                            <button
+                                                              className="action-menu-item action-menu-item-danger"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteComment(
+                                                                  reply.id
+                                                                );
+                                                                setOpenReplyCommentMenuId(
+                                                                  null
+                                                                );
+                                                              }}
+                                                            >
+                                                              삭제
+                                                            </button>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                <div className="reply-content">
+                                                  {reply.content}
+                                                </div>
+                                                <div className="reply-actions">
+                                                  <button
+                                                    onClick={() =>
+                                                      handleCommentLike(
+                                                        reply.id
+                                                      )
+                                                    }
+                                                    className={`comment-like-btn ${
+                                                      reply.is_liked
+                                                        ? 'liked'
+                                                        : ''
+                                                    }`}
+                                                  >
+                                                    👍 {reply.like_count || 0}
+                                                  </button>
                                                 </div>
                                               </div>
-                                            ))}
-                                          </div>
-                                        )}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
 
-                                      {/* 대댓글 작성 폼 */}
-                                      <div className="reply-form">
-                                        <span className="reply-item-indicator">
-                                          ㄴ
-                                        </span>
-                                        <div className="reply-form-wrapper">
-                                          <div className="reply-input-wrapper">
-                                            <textarea
-                                              value={replyToCommentContent}
-                                              onChange={(e) =>
-                                                setReplyToCommentContent(
-                                                  e.target.value
+                                    {/* 대댓글 작성 폼 */}
+                                    <div className="reply-form">
+                                      <span className="reply-item-indicator">
+                                        ㄴ
+                                      </span>
+                                      <div className="reply-form-wrapper">
+                                        <div className="reply-input-wrapper">
+                                          <textarea
+                                            value={replyToCommentContent}
+                                            onChange={(e) =>
+                                              setReplyToCommentContent(
+                                                e.target.value
+                                              )
+                                            }
+                                            placeholder="답글을 입력하세요..."
+                                            className="reply-input"
+                                            rows={2}
+                                            maxLength={500}
+                                          />
+                                          <div className="reply-input-footer">
+                                            <span className="reply-char-count">
+                                              {replyToCommentContent.length}
+                                              /500
+                                            </span>
+                                            <button
+                                              onClick={() =>
+                                                handleReplyToCommentSubmit(
+                                                  comment.id
                                                 )
                                               }
-                                              placeholder="답글을 입력하세요..."
-                                              className="reply-input"
-                                              rows={2}
-                                              maxLength={500}
-                                            />
-                                            <div className="reply-input-footer">
-                                              <span className="reply-char-count">
-                                                {replyToCommentContent.length}
-                                                /500
-                                              </span>
-                                              <button
-                                                onClick={() =>
-                                                  handleReplyToCommentSubmit(
-                                                    comment.id
-                                                  )
-                                                }
-                                                className="reply-submit-icon-btn"
-                                                disabled={
-                                                  !replyToCommentContent.trim()
-                                                }
+                                              className="reply-submit-icon-btn"
+                                              disabled={
+                                                !replyToCommentContent.trim()
+                                              }
+                                            >
+                                              <svg
+                                                className="send-icon"
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 16 16"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                style={{
+                                                  transform: 'rotate(180deg)',
+                                                }}
                                               >
-                                                <svg
-                                                  className="send-icon"
-                                                  width="16"
-                                                  height="16"
-                                                  viewBox="0 0 16 16"
-                                                  fill="none"
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  style={{
-                                                    transform: 'rotate(180deg)',
-                                                  }}
-                                                >
-                                                  <path
-                                                    d="M2 8L14 2L10 8L14 14L2 8Z"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.5"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                  />
-                                                </svg>
-                                              </button>
-                                            </div>
+                                                <path
+                                                  d="M2 8L14 2L10 8L14 14L2 8Z"
+                                                  stroke="currentColor"
+                                                  strokeWidth="1.5"
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                />
+                                              </svg>
+                                            </button>
                                           </div>
                                         </div>
                                       </div>
-
-                                      {/* 답글 접기 버튼 */}
-                                      <button
-                                        onClick={() =>
-                                          toggleReplies(comment.id)
-                                        }
-                                        className="reply-collapse-btn"
-                                      >
-                                        답글 접기 ∧
-                                      </button>
                                     </div>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
 
-                  {/* 댓글 작성 폼 */}
-                  <form
-                    onSubmit={handleCommentSubmit}
-                    className="inquiry-comment-form"
-                  >
+                                    {/* 답글 접기 버튼 */}
+                                    <button
+                                      onClick={() => toggleReplies(comment.id)}
+                                      className="reply-collapse-btn"
+                                    >
+                                      답글 접기 ∧
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* 답변 작성 폼 - 운영진/슈퍼관리자는 답변이 없을 때만 자동 표시 */}
+          {canReply &&
+            showReplyForm &&
+            !selectedInquiry.reply &&
+            !editingReply && (
+              <div className="inquiry-reply-form-section">
+                <h3>답변 작성</h3>
+                <form onSubmit={handleReplySubmit}>
+                  <div className="inquiry-form-group inquiry-form-group-with-button">
                     <textarea
-                      value={commentContent}
-                      onChange={(e) => setCommentContent(e.target.value)}
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
                       maxLength={500}
                       required
-                      rows={3}
-                      placeholder="댓글을 입력하세요..."
-                      className="inquiry-comment-textarea"
+                      rows={6}
+                      placeholder="답변 내용을 입력하세요 (500자 이내)"
+                      className="inquiry-reply-textarea"
                     />
-                    <div className="comment-input-footer">
-                      <span className="comment-char-count">
-                        {commentContent.length}/500
-                      </span>
+                    <div className="inquiry-form-group-footer">
+                      <div className="inquiry-char-count">
+                        {replyContent.length}/500
+                      </div>
                       <button
                         type="submit"
-                        className="comment-submit-btn"
-                        disabled={!commentContent.trim()}
+                        className="inquiry-submit-button-inline"
                       >
-                        <svg
-                          className="send-icon"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                          style={{ transform: 'rotate(180deg)' }}
-                        >
-                          <path
-                            d="M2 8L14 2L10 8L14 14L2 8Z"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
+                        등록하기
                       </button>
                     </div>
-                  </form>
-                </div>
+                  </div>
+                </form>
               </div>
             )}
 
-            {/* 답변 작성 폼 - 운영진/슈퍼관리자는 답변이 없을 때만 자동 표시 */}
-            {canReply &&
-              showReplyForm &&
-              !selectedInquiry.reply &&
-              !editingReply && (
-                <div className="inquiry-reply-form-section">
-                  <h3>답변 작성</h3>
-                  <form onSubmit={handleReplySubmit}>
-                    <div className="inquiry-form-group inquiry-form-group-with-button">
-                      <textarea
-                        value={replyContent}
-                        onChange={(e) => setReplyContent(e.target.value)}
-                        maxLength={500}
-                        required
-                        rows={6}
-                        placeholder="답변 내용을 입력하세요 (500자 이내)"
-                        className="inquiry-reply-textarea"
-                      />
-                      <div className="inquiry-form-group-footer">
+          {/* 답변 수정 폼 - 수정 버튼을 누르면 표시 */}
+          {canReply &&
+            showReplyForm &&
+            editingReply &&
+            selectedInquiry.reply && (
+              <div className="inquiry-reply-form-section">
+                <h3>답변 수정</h3>
+                <form onSubmit={handleReplySubmit}>
+                  <div className="inquiry-form-group inquiry-form-group-with-button">
+                    <textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      maxLength={500}
+                      required
+                      rows={6}
+                      placeholder="답변 내용을 입력하세요 (500자 이내)"
+                      className="inquiry-reply-textarea"
+                    />
+                    <div className="inquiry-form-group-footer">
+                      <button
+                        type="button"
+                        className="inquiry-cancel-button-small"
+                        onClick={handleCancelReplyEdit}
+                      >
+                        취소
+                      </button>
+                      <div className="inquiry-form-group-footer-right">
                         <div className="inquiry-char-count">
                           {replyContent.length}/500
                         </div>
@@ -1164,58 +1139,15 @@ const Inquiry = () => {
                           type="submit"
                           className="inquiry-submit-button-inline"
                         >
-                          등록하기
+                          수정
                         </button>
                       </div>
                     </div>
-                  </form>
-                </div>
-              )}
-
-            {/* 답변 수정 폼 - 수정 버튼을 누르면 표시 */}
-            {canReply &&
-              showReplyForm &&
-              editingReply &&
-              selectedInquiry.reply && (
-                <div className="inquiry-reply-form-section">
-                  <h3>답변 수정</h3>
-                  <form onSubmit={handleReplySubmit}>
-                    <div className="inquiry-form-group inquiry-form-group-with-button">
-                      <textarea
-                        value={replyContent}
-                        onChange={(e) => setReplyContent(e.target.value)}
-                        maxLength={500}
-                        required
-                        rows={6}
-                        placeholder="답변 내용을 입력하세요 (500자 이내)"
-                        className="inquiry-reply-textarea"
-                      />
-                      <div className="inquiry-form-group-footer">
-                        <button
-                          type="button"
-                          className="inquiry-cancel-button-small"
-                          onClick={handleCancelReplyEdit}
-                        >
-                          취소
-                        </button>
-                        <div className="inquiry-form-group-footer-right">
-                          <div className="inquiry-char-count">
-                            {replyContent.length}/500
-                          </div>
-                          <button
-                            type="submit"
-                            className="inquiry-submit-button-inline"
-                          >
-                            수정
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              )}
-          </div>
-        </div>
+                  </div>
+                </form>
+              </div>
+            )}
+        </article>
       </div>
     );
   }

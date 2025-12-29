@@ -12,6 +12,9 @@
 
 .inquiry-header {
   margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .inquiry-header h1 {
@@ -19,6 +22,11 @@
   color: var(--color-text, #333);
   font-size: 2rem;
   font-weight: 700;
+}
+
+/* 상세보기에서 버튼만 있을 때 오른쪽 정렬 */
+.inquiry-header-detail {
+  justify-content: flex-end;
 }
 
 /* 문의하기 콘텐츠 섹션 */
@@ -427,6 +435,16 @@
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+/* 게시판 형식 스타일 */
+.post-type.inquiry-private {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: #f59e0b;
+  color: white;
 }
 
 /* 답변 작성 폼 */
