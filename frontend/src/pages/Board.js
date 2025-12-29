@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
@@ -45,12 +45,13 @@ const Board = () => {
 
       if (response.data.success) {
         // 공지사항을 상단에 고정 (프론트엔드에서도 정렬)
+        // 정렬 최적화: Date 객체 생성 최소화
         const sortedPosts = [...response.data.posts].sort((a, b) => {
           // 공지사항을 먼저
           if (a.post_type === 'notice' && b.post_type !== 'notice') return -1;
           if (a.post_type !== 'notice' && b.post_type === 'notice') return 1;
-          // 같은 타입이면 최신순
-          return new Date(b.created_at) - new Date(a.created_at);
+          // 같은 타입이면 최신순 (문자열 비교로 최적화)
+          return b.created_at.localeCompare(a.created_at);
         });
         setPosts(sortedPosts);
         setPagination(response.data.pagination);
@@ -65,17 +66,18 @@ const Board = () => {
     }
   };
 
-  // 슈퍼관리자인 경우 클럽별로 게시글 분류
-  const postsByClub = isSuperAdmin
-    ? posts.reduce((acc, post) => {
-        const clubName = post.club_name || '클럽 미지정';
-        if (!acc[clubName]) {
-          acc[clubName] = [];
-        }
-        acc[clubName].push(post);
-        return acc;
-      }, {})
-    : null;
+  // 슈퍼관리자인 경우 클럽별로 게시글 분류 (메모이제이션)
+  const postsByClub = useMemo(() => {
+    if (!isSuperAdmin) return null;
+    return posts.reduce((acc, post) => {
+      const clubName = post.club_name || '클럽 미지정';
+      if (!acc[clubName]) {
+        acc[clubName] = [];
+      }
+      acc[clubName].push(post);
+      return acc;
+    }, {});
+  }, [isSuperAdmin, posts]);
 
   const handleCreatePost = () => {
     setEditingPost(null);

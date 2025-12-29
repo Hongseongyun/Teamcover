@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
 import { inquiryAPI } from '../services/api';
@@ -524,6 +524,19 @@ const Inquiry = () => {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
+  // 슈퍼관리자인 경우 클럽별로 문의 분류 (메모이제이션) - early return 전에 선언
+  const inquiriesByClub = useMemo(() => {
+    if (!isSuperAdmin) return null;
+    return inquiries.reduce((acc, inquiry) => {
+      const clubName = inquiry.club_name || '클럽 미지정';
+      if (!acc[clubName]) {
+        acc[clubName] = [];
+      }
+      acc[clubName].push(inquiry);
+      return acc;
+    }, {});
+  }, [isSuperAdmin, inquiries]);
+
   // 권한 확인 (슈퍼관리자도 접근 가능)
   if (
     !user ||
@@ -552,18 +565,6 @@ const Inquiry = () => {
       </div>
     );
   }
-
-  // 슈퍼관리자인 경우 클럽별로 문의 분류
-  const inquiriesByClub = isSuperAdmin
-    ? inquiries.reduce((acc, inquiry) => {
-        const clubName = inquiry.club_name || '클럽 미지정';
-        if (!acc[clubName]) {
-          acc[clubName] = [];
-        }
-        acc[clubName].push(inquiry);
-        return acc;
-      }, {})
-    : null;
 
   if (selectedInquiry) {
     return (

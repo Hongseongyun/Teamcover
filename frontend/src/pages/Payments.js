@@ -275,8 +275,8 @@ const Payments = () => {
     }
   }, [openPaymentMenuId]);
 
-  // 장부 데이터를 기반으로 잔액 및 그래프 계산
-  const calculateBalanceAndChart = useCallback(async () => {
+  // 캐시된 잔액 및 그래프 데이터 로드
+  const loadBalanceCache = useCallback(async () => {
     // Teamcover가 아닌 클럽은 잔액을 0으로 설정하고 그래프도 비움
     if (!currentClub || currentClub.name !== 'Teamcover') {
       setBalanceSeries({
@@ -291,216 +291,50 @@ const Payments = () => {
       return;
     }
 
-    if (!ledgerItems || ledgerItems.length === 0) {
-      setBalanceSeries({
-        labels: [],
-        data: [],
-        paymentBalances: [],
-        credits: [],
-        debits: [],
-        pointBalances: [],
-      });
-      setCurrentBalance(0);
-      return;
-    }
-
-    // 포인트 데이터 가져오기
-    let points = [];
-    let members = [];
     try {
-      const [pointsResponse, membersResponse] = await Promise.all([
-        pointAPI.getPoints(),
-        memberAPI.getMembers(),
-      ]);
-
-      if (pointsResponse.data.success && membersResponse.data.success) {
-        points = pointsResponse.data.points;
-        members = membersResponse.data.members;
-      }
-    } catch (error) {
-      console.error('포인트 데이터 로드 실패:', error);
-    }
-
-    // 탈퇴되지 않은 회원 목록 생성
-    const activeMemberNames = new Set(
-      members
-        .filter((member) => !member.is_deleted)
-        .map((member) => member.name)
-    );
-
-    // 장부 항목을 날짜순으로 정렬
-    const sortedItems = [...ledgerItems].sort((a, b) => {
-      const dateA = new Date(a.event_date);
-      const dateB = new Date(b.event_date);
-      return dateA - dateB;
-    });
-
-    // 월별로 그룹화하여 처리
-    const monthlyData = {};
-    sortedItems.forEach((item) => {
-      const date = new Date(item.event_date);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = { credit: 0, debit: 0 };
-      }
-
-      if (item.entry_type === 'credit') {
-        monthlyData[monthKey].credit += parseInt(item.amount) || 0;
-      } else if (item.entry_type === 'debit') {
-        monthlyData[monthKey].debit += parseInt(item.amount) || 0;
-      }
-    });
-
-    // 포인트 데이터를 날짜순으로 정렬하여 월별 누적 잔액 계산
-    const sortedPoints = points
-      .filter((point) => activeMemberNames.has(point.member_name))
-      .sort((a, b) => {
-        const dateA = new Date(a.point_date || a.created_at);
-        const dateB = new Date(b.point_date || b.created_at);
-        return dateA - dateB;
-      });
-
-    // 월별 포인트 변화량 계산
-    const monthlyPointData = {};
-    sortedPoints.forEach((point) => {
-      const date = new Date(point.point_date || point.created_at);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-
-      if (!monthlyPointData[monthKey]) {
-        monthlyPointData[monthKey] = 0;
-      }
-      monthlyPointData[monthKey] += parseInt(point.amount) || 0;
-    });
-
-    // 그래프 시작 월의 시작 잔액 계산
-    const allDataMonths = Object.keys(monthlyData).sort();
-    const firstMonth = allDataMonths.length > 0 ? allDataMonths[0] : null;
-
-    if (!firstMonth) {
-      setBalanceSeries({
-        labels: [],
-        data: [],
-        paymentBalances: [],
-        credits: [],
-        debits: [],
-        pointBalances: [],
-      });
-      setCurrentBalance(0);
-      return;
-    }
-
-    const firstMonthItems = sortedItems.filter((item) => {
-      const date = new Date(item.event_date);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-      return monthKey === firstMonth;
-    });
-
-    // 첫 달의 첫 항목이 "수기"이고 "잔여 회비"인 경우, 그 금액을 시작 잔액으로 사용
-    let initialBalance = 0;
-    if (firstMonthItems.length > 0) {
-      const firstItem = firstMonthItems[0];
-      if (
-        firstItem.source === '수기' &&
-        (firstItem.note === '잔여 회비' || firstItem.note?.includes('잔여'))
-      ) {
-        initialBalance = parseInt(firstItem.amount) || 0;
-        if (firstItem.entry_type === 'credit') {
-          monthlyData[firstMonth].credit -= initialBalance;
-        } else if (firstItem.entry_type === 'debit') {
-          monthlyData[firstMonth].debit -= initialBalance;
+      const response = await paymentAPI.getFundBalanceCache();
+      if (response.data.success) {
+        const { current_balance, balance_series } = response.data;
+        
+        // 캐시된 데이터가 있으면 사용
+        if (balance_series && Object.keys(balance_series).length > 0) {
+          setBalanceSeries({
+            labels: balance_series.labels || [],
+            data: balance_series.data || balance_series.paymentBalances || [],
+            paymentBalances: balance_series.paymentBalances || [],
+            credits: balance_series.credits || [],
+            debits: balance_series.debits || [],
+            pointBalances: balance_series.pointBalances || [],
+          });
+          setCurrentBalance(current_balance || 0);
+        } else {
+          // 캐시가 없으면 빈 데이터 설정
+          setBalanceSeries({
+            labels: [],
+            data: [],
+            paymentBalances: [],
+            credits: [],
+            debits: [],
+            pointBalances: [],
+          });
+          setCurrentBalance(0);
         }
       }
+    } catch (error) {
+      console.error('잔액 캐시 로드 실패:', error);
+      console.error('에러 상세:', error.response?.data || error.message);
+      // 오류 발생 시 빈 데이터 설정
+      setBalanceSeries({
+        labels: [],
+        data: [],
+        paymentBalances: [],
+        credits: [],
+        debits: [],
+        pointBalances: [],
+      });
+      setCurrentBalance(0);
     }
-
-    // 그래프 데이터 생성
-    const labels = [];
-    const totalBalances = []; // 총 잔액 (회비 + 포인트)
-    const paymentBalances = []; // 회비 잔액 (총 잔액 - 포인트 잔액)
-    const credits = []; // 적립
-    const debits = []; // 소비
-    const pointBalances = []; // 포인트 잔액
-    let runningBalance = initialBalance;
-
-    // 모든 월을 합쳐서 정렬 (회비와 포인트 모두 포함)
-    const allMonths = new Set([
-      ...Object.keys(monthlyData),
-      ...Object.keys(monthlyPointData),
-    ]);
-    const sortedMonths = Array.from(allMonths).sort();
-
-    // 11월부터 시작 (10월 제외)
-    const startMonth = '2025-11';
-    const monthsToDisplay = sortedMonths.filter((month) => month >= startMonth);
-
-    // 10월의 잔액을 계산하여 초기 잔액에 포함
-    const octoberMonth = '2025-10';
-    if (sortedMonths.includes(octoberMonth)) {
-      const octoberData = monthlyData[octoberMonth] || { credit: 0, debit: 0 };
-      const octoberNetChange = octoberData.credit - octoberData.debit;
-      runningBalance += octoberNetChange;
-    }
-
-    monthsToDisplay.forEach((monthKey) => {
-      const monthData = monthlyData[monthKey] || { credit: 0, debit: 0 };
-      const netChange = monthData.credit - monthData.debit;
-
-      runningBalance += netChange;
-
-      // 해당 달의 마지막 날짜까지의 포인트 누적 잔액 계산
-      const [year, month] = monthKey.split('-');
-      const lastDayOfMonth = new Date(
-        parseInt(year),
-        parseInt(month),
-        0
-      ).getDate();
-      const monthEndDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        lastDayOfMonth,
-        23,
-        59,
-        59
-      );
-
-      // 해당 달의 마지막 날짜까지의 포인트 누적 잔액 계산
-      // 10월 말까지의 포인트를 포함한 상태에서 계산
-      const pointBalanceForMonth = sortedPoints
-        .filter((point) => activeMemberNames.has(point.member_name))
-        .filter((point) => {
-          const pointDate = new Date(point.point_date || point.created_at);
-          return pointDate <= monthEndDate;
-        })
-        .reduce((sum, point) => sum + (parseInt(point.amount) || 0), 0);
-
-      labels.push(monthKey);
-      totalBalances.push(runningBalance); // 회비 잔액만 (변경 전 방식)
-      paymentBalances.push(runningBalance); // 회비 잔액만
-      credits.push(monthData.credit);
-      debits.push(monthData.debit);
-      pointBalances.push(pointBalanceForMonth);
-    });
-
-    setBalanceSeries({
-      labels,
-      data: totalBalances,
-      paymentBalances,
-      credits,
-      debits,
-      pointBalances,
-    });
-
-    // 현재 잔액 계산 (회비 잔액만, 포인트 제외)
-    const finalBalance =
-      currentClub && currentClub.name === 'Teamcover' ? runningBalance : 0;
-    setCurrentBalance(finalBalance);
-  }, [ledgerItems, currentClub]);
+  }, [currentClub]);
 
   // 장부 로드
   const loadFundLedger = useCallback(async () => {
@@ -520,22 +354,12 @@ const Payments = () => {
     }
   }, []);
 
-  // 장부 데이터가 변경되면 잔액 및 그래프 재계산
+  // 캐시된 잔액 및 그래프 데이터 로드
   useEffect(() => {
-    if (ledgerItems.length > 0) {
-      calculateBalanceAndChart();
-    } else {
-      setBalanceSeries({
-        labels: [],
-        data: [],
-        paymentBalances: [],
-        credits: [],
-        debits: [],
-        pointBalances: [],
-      });
-      setCurrentBalance(0);
+    if (currentClub) {
+      loadBalanceCache();
     }
-  }, [ledgerItems, calculateBalanceAndChart]);
+  }, [currentClub, loadBalanceCache]);
 
   const handleLedgerSubmit = async (e) => {
     e.preventDefault();
@@ -567,6 +391,8 @@ const Payments = () => {
       // 새 항목 추가 후 목록 초기화
       setDisplayedLedgerCount(10);
       await loadFundLedger();
+      // 캐시 재로드 (백엔드에서 자동 계산됨)
+      await loadBalanceCache();
     } catch (e) {
       console.error('장부 저장 오류:', e);
       const errorMessage =
@@ -1002,6 +828,8 @@ const Payments = () => {
         note: '',
       });
       await loadFundLedger();
+      // 캐시 재로드 (백엔드에서 자동 계산됨)
+      await loadBalanceCache();
     } catch (error) {
       alert(error.response?.data?.message || '장부 항목 수정에 실패했습니다.');
     } finally {
@@ -1018,6 +846,8 @@ const Payments = () => {
       setLedgerDeletingId(ledgerId);
       await paymentAPI.deleteFundLedger(ledgerId);
       await loadFundLedger();
+      // 캐시 재로드 (백엔드에서 자동 계산됨)
+      await loadBalanceCache();
     } catch (error) {
       alert(error.response?.data?.message || '장부 항목 삭제에 실패했습니다.');
     } finally {

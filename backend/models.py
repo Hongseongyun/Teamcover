@@ -648,6 +648,22 @@ class FundLedger(db.Model):
     def __repr__(self):
         return f'<FundLedger {self.entry_type} {self.amount} {self.source}>'
 
+
+class FundBalanceCache(db.Model):
+    """회비 잔액 및 그래프 데이터 캐시"""
+    __tablename__ = 'fund_balance_cache'
+
+    id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True, unique=True)
+    current_balance = db.Column(db.BigInteger, nullable=False, default=0)
+    balance_series = db.Column(db.JSON, nullable=False, default={})
+    last_calculated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<FundBalanceCache club_id={self.club_id} balance={self.current_balance}>'
+
 class Payment(db.Model):
     """납입 관리 모델"""
     __tablename__ = 'payments'

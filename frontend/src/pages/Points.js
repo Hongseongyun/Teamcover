@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
@@ -325,7 +325,10 @@ const Points = () => {
   }, [openPointMenuId, points]);
 
   // 회원별 잔여 포인트의 합으로 잔여 포인트 재계산 (더 정확함)
-  const memberBalances = calculateMemberBalances();
+  // 회원별 잔여 포인트 계산 결과 메모이제이션
+  const memberBalances = useMemo(() => {
+    return calculateMemberBalances();
+  }, [calculateMemberBalances]);
   const actualTotalBalance = memberBalances.reduce(
     (sum, member) => sum + member.balance,
     0

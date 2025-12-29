@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify, make_response
 from datetime import datetime, timedelta
-from models import db, Member, Payment, User, Point, AppSetting, FundLedger, FundState
+from models import db, Member, Payment, User, Point, AppSetting, FundLedger, FundState, FundBalanceCache
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from utils.club_helpers import get_current_club_id, require_club_membership, check_club_permission
+import json
 
 # 납입 관리 Blueprint
 payments_bp = Blueprint('payments', __name__, url_prefix='/api/payments')
@@ -531,6 +533,195 @@ def get_payment_stats():
         return jsonify({'success': False, 'message': f'납입 통계 조회 중 오류가 발생했습니다: {str(e)}'})
 
 
+# 내부 유틸: 회비 잔액 및 그래프 계산
+def _calculate_fund_balance_and_chart(club_id):
+    """회비 잔액 및 그래프 데이터를 계산하여 캐시에 저장"""
+    try:
+        # Teamcover가 아닌 클럽은 계산하지 않음
+        from models import Club
+        club = Club.query.get(club_id)
+        if not club or club.name != 'Teamcover':
+            return
+
+        # 장부 항목 조회
+        ledger_items = FundLedger.query.filter_by(club_id=club_id).order_by(FundLedger.event_date.asc()).all()
+        
+        if not ledger_items:
+            # 빈 데이터로 캐시 저장
+            cache = FundBalanceCache.query.filter_by(club_id=club_id).first()
+            if cache:
+                cache.current_balance = 0
+                cache.balance_series = {}
+                cache.last_calculated_at = datetime.utcnow()
+            else:
+                cache = FundBalanceCache(
+                    club_id=club_id,
+                    current_balance=0,
+                    balance_series={},
+                    last_calculated_at=datetime.utcnow()
+                )
+                db.session.add(cache)
+            db.session.commit()
+            return
+
+        # 포인트 데이터 조회
+        points = Point.query.filter_by(club_id=club_id).order_by(Point.point_date.asc(), Point.created_at.asc()).all()
+        
+        # 탈퇴되지 않은 회원 목록
+        active_members = Member.query.filter_by(club_id=club_id, is_deleted=False).all()
+        active_member_names = {member.name for member in active_members}
+
+        # 장부 항목 월별 그룹화
+        monthly_data = {}
+        for item in ledger_items:
+            month_key = item.month
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {'credit': 0, 'debit': 0}
+            
+            if item.entry_type == 'credit':
+                monthly_data[month_key]['credit'] += int(item.amount) or 0
+            elif item.entry_type == 'debit':
+                monthly_data[month_key]['debit'] += int(item.amount) or 0
+
+        # 포인트 데이터 월별 그룹화
+        monthly_point_data = {}
+        for point in points:
+            # member_id로 회원 이름 확인
+            member = Member.query.get(point.member_id) if point.member_id else None
+            if not member or member.name not in active_member_names:
+                continue
+            
+            point_date = point.point_date or point.created_at
+            if isinstance(point_date, str):
+                point_date = datetime.strptime(point_date, '%Y-%m-%d').date()
+            elif isinstance(point_date, datetime):
+                point_date = point_date.date()
+            
+            month_key = point_date.strftime('%Y-%m')
+            if month_key not in monthly_point_data:
+                monthly_point_data[month_key] = 0
+            monthly_point_data[month_key] += int(point.amount) or 0
+
+        # 그래프 시작 월 계산
+        all_data_months = sorted(set(list(monthly_data.keys()) + list(monthly_point_data.keys())))
+        if not all_data_months:
+            cache = FundBalanceCache.query.filter_by(club_id=club_id).first()
+            if cache:
+                cache.current_balance = 0
+                cache.balance_series = {}
+                cache.last_calculated_at = datetime.utcnow()
+            else:
+                cache = FundBalanceCache(
+                    club_id=club_id,
+                    current_balance=0,
+                    balance_series={},
+                    last_calculated_at=datetime.utcnow()
+                )
+                db.session.add(cache)
+            db.session.commit()
+            return
+
+        first_month = all_data_months[0]
+        first_month_items = [item for item in ledger_items if item.month == first_month]
+
+        # 초기 잔액 계산
+        initial_balance = 0
+        if first_month_items:
+            first_item = first_month_items[0]
+            if first_item.source == 'manual' and first_item.note and ('잔여 회비' in first_item.note or '잔여' in first_item.note):
+                initial_balance = int(first_item.amount) or 0
+                if first_item.entry_type == 'credit':
+                    monthly_data[first_month]['credit'] -= initial_balance
+                elif first_item.entry_type == 'debit':
+                    monthly_data[first_month]['debit'] -= initial_balance
+
+        # 그래프 데이터 생성
+        labels = []
+        payment_balances = []
+        credits = []
+        debits = []
+        point_balances = []
+        running_balance = initial_balance
+
+        # 11월부터 시작 (10월 제외)
+        start_month = '2025-11'
+        months_to_display = [m for m in all_data_months if m >= start_month]
+
+        # 10월의 잔액을 계산하여 초기 잔액에 포함
+        october_month = '2025-10'
+        if october_month in all_data_months:
+            october_data = monthly_data.get(october_month, {'credit': 0, 'debit': 0})
+            october_net_change = october_data['credit'] - october_data['debit']
+            running_balance += october_net_change
+
+        # 각 월별 데이터 계산
+        for month_key in months_to_display:
+            month_data = monthly_data.get(month_key, {'credit': 0, 'debit': 0})
+            net_change = month_data['credit'] - month_data['debit']
+            running_balance += net_change
+
+            # 해당 달의 마지막 날짜까지의 포인트 누적 잔액 계산
+            year, month = map(int, month_key.split('-'))
+            from calendar import monthrange
+            last_day = monthrange(year, month)[1]
+            month_end_date = datetime(year, month, last_day, 23, 59, 59)
+
+            # 포인트 누적 계산
+            point_balance_for_month = 0
+            for point in points:
+                # member_id로 회원 이름 확인
+                member = Member.query.get(point.member_id) if point.member_id else None
+                if not member or member.name not in active_member_names:
+                    continue
+                
+                point_date = point.point_date or point.created_at
+                if isinstance(point_date, str):
+                    point_date = datetime.strptime(point_date, '%Y-%m-%d')
+                elif isinstance(point_date, datetime):
+                    pass
+                else:
+                    continue
+                
+                if point_date <= month_end_date:
+                    point_balance_for_month += int(point.amount) or 0
+
+            labels.append(month_key)
+            payment_balances.append(running_balance)
+            credits.append(month_data['credit'])
+            debits.append(month_data['debit'])
+            point_balances.append(point_balance_for_month)
+
+        # 캐시 저장 또는 업데이트
+        balance_series = {
+            'labels': labels,
+            'data': payment_balances,
+            'paymentBalances': payment_balances,
+            'credits': credits,
+            'debits': debits,
+            'pointBalances': point_balances
+        }
+
+        cache = FundBalanceCache.query.filter_by(club_id=club_id).first()
+        if cache:
+            cache.current_balance = running_balance
+            cache.balance_series = balance_series
+            cache.last_calculated_at = datetime.utcnow()
+        else:
+            cache = FundBalanceCache(
+                club_id=club_id,
+                current_balance=running_balance,
+                balance_series=balance_series,
+                last_calculated_at=datetime.utcnow()
+            )
+            db.session.add(cache)
+        
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f'잔액 계산 오류: {str(e)}')
+        # 오류가 발생해도 기존 동작에 영향을 주지 않도록 함
+
+
 # 내부 유틸: 결제-장부 동기화
 def _sync_payment_to_ledger(payment: Payment):
     """결제 레코드를 장부에 반영/삭제한다."""
@@ -570,6 +761,12 @@ def _sync_payment_to_ledger(payment: Payment):
     entry.entry_type = 'credit' if payment.payment_type in ('monthly', 'game') else 'debit'
     entry.note = payment.note
     db.session.commit()
+    
+    # 잔액 캐시 재계산
+    try:
+        _calculate_fund_balance_and_chart(payment.club_id)
+    except Exception:
+        pass  # 캐시 계산 실패가 전체 동작에 영향을 주지 않도록
 
 
 # 장부 API: 조회/수기 추가(관리자)
@@ -702,6 +899,13 @@ def fund_ledger_endpoint():
         )
         db.session.add(entry)
         db.session.commit()
+        
+        # 잔액 캐시 재계산
+        try:
+            _calculate_fund_balance_and_chart(club_id)
+        except Exception:
+            pass  # 캐시 계산 실패가 전체 동작에 영향을 주지 않도록
+        
         return jsonify({'success': True, 'item': {
             'id': entry.id,
             'event_date': entry.event_date.strftime('%Y-%m-%d'),
@@ -752,8 +956,16 @@ def manage_fund_ledger_item(ledger_id):
             return jsonify({'success': False, 'message': '다른 클럽의 장부 항목은 수정/삭제할 수 없습니다.'}), 403
 
         if request.method == 'DELETE':
+            club_id_for_cache = entry.club_id
             db.session.delete(entry)
             db.session.commit()
+            
+            # 잔액 캐시 재계산
+            try:
+                _calculate_fund_balance_and_chart(club_id_for_cache)
+            except Exception:
+                pass  # 캐시 계산 실패가 전체 동작에 영향을 주지 않도록
+            
             return jsonify({'success': True, 'message': '장부 항목이 삭제되었습니다.'})
 
         data = request.get_json() or {}
@@ -788,6 +1000,13 @@ def manage_fund_ledger_item(ledger_id):
             entry.source = data['source']
 
         db.session.commit()
+        
+        # 잔액 캐시 재계산
+        try:
+            _calculate_fund_balance_and_chart(entry.club_id)
+        except Exception:
+            pass  # 캐시 계산 실패가 전체 동작에 영향을 주지 않도록
+        
         return jsonify({
             'success': True,
             'item': {
@@ -886,4 +1105,74 @@ def payment_balance():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'잔액 설정 처리 중 오류: {str(e)}'})
+
+
+@payments_bp.route('/fund/balance-cache', methods=['GET'])
+@jwt_required(optional=True)
+def get_fund_balance_cache():
+    """회비 잔액 및 그래프 데이터 캐시 조회 API"""
+    try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        user_id = get_jwt_identity()
+        current_user = User.query.get(int(user_id)) if user_id else None
+        if not current_user:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'})
+        
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 캐시 조회
+        cache = FundBalanceCache.query.filter_by(club_id=club_id).first()
+        
+        if cache:
+            return jsonify({
+                'success': True,
+                'current_balance': cache.current_balance,
+                'balance_series': cache.balance_series or {},
+                'last_calculated_at': cache.last_calculated_at.isoformat() if cache.last_calculated_at else None
+            })
+        else:
+            # 캐시가 없으면 계산하여 생성
+            try:
+                _calculate_fund_balance_and_chart(club_id)
+                cache = FundBalanceCache.query.filter_by(club_id=club_id).first()
+                if cache:
+                    return jsonify({
+                        'success': True,
+                        'current_balance': cache.current_balance,
+                        'balance_series': cache.balance_series or {},
+                        'last_calculated_at': cache.last_calculated_at.isoformat() if cache.last_calculated_at else None
+                    })
+            except Exception as calc_error:
+                print(f'캐시 계산 오류: {str(calc_error)}')
+            
+            # 계산 실패 시 빈 데이터 반환
+            return jsonify({
+                'success': True,
+                'current_balance': 0,
+                'balance_series': {
+                    'labels': [],
+                    'data': [],
+                    'paymentBalances': [],
+                    'credits': [],
+                    'debits': [],
+                    'pointBalances': []
+                },
+                'last_calculated_at': None
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'잔액 캐시 조회 중 오류가 발생했습니다: {str(e)}'})
 

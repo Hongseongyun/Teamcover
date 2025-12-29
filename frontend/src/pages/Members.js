@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
@@ -120,8 +120,9 @@ const Members = () => {
     }
   };
 
-  // 정렬된 회원 목록
-  const sortedMembers = [...members].sort((a, b) => {
+  // 정렬된 회원 목록 (메모이제이션)
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
     let valueA, valueB;
 
     switch (sortField) {
@@ -181,7 +182,8 @@ const Members = () => {
     if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
     if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
     return 0;
-  });
+    });
+  }, [members, sortField, sortOrder]);
 
   useEffect(() => {
     // 클럽이 선택될 때까지 대기 (슈퍼관리자는 클럽 선택 없이도 접근 가능)

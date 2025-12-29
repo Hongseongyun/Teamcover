@@ -218,6 +218,7 @@ export const paymentAPI = {
   updateFundLedger: (id, data) =>
     api.put(`/api/payments/fund/ledger/${id}`, data),
   deleteFundLedger: (id) => api.delete(`/api/payments/fund/ledger/${id}`),
+  getFundBalanceCache: () => api.get('/api/payments/fund/balance-cache'),
 };
 
 // 메시지 / 채팅 API
