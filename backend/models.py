@@ -664,6 +664,27 @@ class FundBalanceCache(db.Model):
     def __repr__(self):
         return f'<FundBalanceCache club_id={self.club_id} balance={self.current_balance}>'
 
+
+class FundBalanceSnapshot(db.Model):
+    """회비 및 포인트 월별 스냅샷"""
+    __tablename__ = 'fund_balance_snapshot'
+
+    id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)
+    month = db.Column(db.String(7), nullable=False)  # 'YYYY-MM' 형식
+    fund_balance = db.Column(db.BigInteger, nullable=False, default=0)  # 회비 잔액
+    point_balance = db.Column(db.BigInteger, nullable=False, default=0)  # 포인트 잔액
+    credit = db.Column(db.BigInteger, nullable=False, default=0)  # 적립
+    debit = db.Column(db.BigInteger, nullable=False, default=0)  # 소비
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 클럽별, 월별 유일성 보장
+    __table_args__ = (db.UniqueConstraint('club_id', 'month', name='unique_club_month_snapshot'),)
+
+    def __repr__(self):
+        return f'<FundBalanceSnapshot club_id={self.club_id} month={self.month} fund={self.fund_balance} point={self.point_balance}>'
+
 class Payment(db.Model):
     """납입 관리 모델"""
     __tablename__ = 'payments'

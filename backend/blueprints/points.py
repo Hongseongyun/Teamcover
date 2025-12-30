@@ -3,6 +3,7 @@ from datetime import datetime
 from models import db, Member, Point, Club
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from utils.club_helpers import get_current_club_id, require_club_membership
+from utils.fund_snapshot import update_current_month_snapshot
 
 # 포인트 관리 Blueprint
 points_bp = Blueprint('points', __name__, url_prefix='/api/points')
@@ -186,6 +187,12 @@ def add_point():
         db.session.add(new_point)
         db.session.commit()
         
+        # 현재 월 스냅샷 업데이트
+        try:
+            update_current_month_snapshot(club_id)
+        except Exception:
+            pass  # 스냅샷 업데이트 실패가 전체 동작에 영향을 주지 않도록
+        
         return jsonify({
             'success': True, 
             'message': f'{member_name}의 포인트가 등록되었습니다.',
@@ -242,6 +249,12 @@ def delete_point(point_id):
         
         db.session.delete(point)
         db.session.commit()
+        
+        # 현재 월 스냅샷 업데이트
+        try:
+            update_current_month_snapshot(club_id)
+        except Exception:
+            pass  # 스냅샷 업데이트 실패가 전체 동작에 영향을 주지 않도록
         
         return jsonify({
             'success': True, 
@@ -361,6 +374,12 @@ def add_points_batch():
         
         db.session.commit()
         
+        # 현재 월 스냅샷 업데이트
+        try:
+            update_current_month_snapshot(club_id)
+        except Exception:
+            pass  # 스냅샷 업데이트 실패가 전체 동작에 영향을 주지 않도록
+        
         return jsonify({
             'success': True,
             'message': f'{len(created_points)}명의 포인트가 등록되었습니다.',
@@ -453,6 +472,12 @@ def update_point(point_id):
         point.note = data.get('note', '').strip() if data.get('note') else ''
         
         db.session.commit()
+        
+        # 현재 월 스냅샷 업데이트
+        try:
+            update_current_month_snapshot(club_id)
+        except Exception:
+            pass  # 스냅샷 업데이트 실패가 전체 동작에 영향을 주지 않도록
         
         return jsonify({
             'success': True,

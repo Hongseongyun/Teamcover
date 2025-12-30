@@ -292,7 +292,8 @@ const Payments = () => {
     }
   }, [openPaymentMenuId]);
 
-  // 포인트 잔액 계산 함수 (포인트 페이지와 동일한 로직: 탈퇴된 회원 제외)
+  // 포인트 잔액 계산 함수 (더 이상 사용하지 않음 - 스냅샷에서 가져옴)
+  // eslint-disable-next-line no-unused-vars
   const loadTotalPointBalance = useCallback(async (labels = null) => {
     try {
       const [pointsResponse, membersResponse] = await Promise.all([
@@ -356,7 +357,7 @@ const Payments = () => {
     }
   }, []);
 
-  // 캐시된 잔액 및 그래프 데이터 로드
+  // 스냅샷에서 잔액 및 그래프 데이터 로드 (fund_balance_snapshot 테이블에서 조회)
   const loadBalanceCache = useCallback(async () => {
     // Teamcover가 아닌 클럽은 잔액을 0으로 설정하고 그래프도 비움
     if (!currentClub || currentClub.name !== 'Teamcover') {
@@ -369,6 +370,7 @@ const Payments = () => {
         pointBalances: [],
       });
       setCurrentBalance(0);
+      setTotalPointBalance(0);
       return;
     }
 
@@ -385,14 +387,24 @@ const Payments = () => {
             paymentBalances: balance_series.paymentBalances || [],
             credits: balance_series.credits || [],
             debits: balance_series.debits || [],
-            pointBalances: balance_series.pointBalances || [],
+            pointBalances: balance_series.pointBalances || [], // 스냅샷에서 계산된 값 사용
           };
           setBalanceSeries(newBalanceSeries);
           setCurrentBalance(current_balance || 0);
 
-          // 포인트 잔액 계산 (월별 포인트 잔액을 프론트엔드에서 계산)
-          if (newBalanceSeries.labels && newBalanceSeries.labels.length > 0) {
-            loadTotalPointBalance(newBalanceSeries.labels);
+          // 포인트 잔액은 fund_balance_snapshot에서 가져온 값 사용 (별도 계산 불필요)
+          // 총 포인트 잔액은 마지막 월의 포인트 잔액으로 설정
+          if (
+            newBalanceSeries.pointBalances &&
+            newBalanceSeries.pointBalances.length > 0
+          ) {
+            const lastPointBalance =
+              newBalanceSeries.pointBalances[
+                newBalanceSeries.pointBalances.length - 1
+              ];
+            setTotalPointBalance(lastPointBalance || 0);
+          } else {
+            setTotalPointBalance(0);
           }
         } else {
           // 캐시가 없으면 빈 데이터 설정
@@ -405,6 +417,7 @@ const Payments = () => {
             pointBalances: [],
           });
           setCurrentBalance(0);
+          setTotalPointBalance(0);
         }
       }
     } catch (error) {
@@ -420,8 +433,9 @@ const Payments = () => {
         pointBalances: [],
       });
       setCurrentBalance(0);
+      setTotalPointBalance(0);
     }
-  }, [currentClub, loadTotalPointBalance]);
+  }, [currentClub]);
 
   // 장부 로드
   const loadFundLedger = useCallback(async () => {
@@ -490,10 +504,9 @@ const Payments = () => {
     }
   };
 
-  // 장부 데이터 초기 로드 (잔액/그래프는 장부 데이터 기반으로 계산)
+  // 장부 데이터 초기 로드 (잔액/그래프는 스냅샷에서 가져옴)
   useEffect(() => {
     loadFundLedger();
-    // loadTotalPointBalance는 loadBalanceCache에서 호출됨
   }, [loadFundLedger]);
 
   const loadMembers = async () => {
