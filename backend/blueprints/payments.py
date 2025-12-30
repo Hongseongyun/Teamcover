@@ -24,6 +24,17 @@ def get_point_date_for_payment(payment):
     else:
         return payment.payment_date
 
+# 월회비 금액 가져오기 헬퍼 함수
+def get_monthly_fee_amount():
+    """설정된 월회비 금액을 가져옵니다. 기본값은 5000원입니다."""
+    try:
+        monthly_fee = AppSetting.query.filter_by(setting_key='monthly_fee_amount').first()
+        if monthly_fee and monthly_fee.setting_value:
+            return int(monthly_fee.setting_value)
+    except Exception:
+        pass
+    return 5000  # 기본값
+
 @payments_bp.before_request
 def handle_preflight():
     if request.method == "OPTIONS":
@@ -193,8 +204,8 @@ def add_payment():
                 and new_payment.paid_with_points is True
             )
             if should_create_point:
-                # 월회비는 5000원, 정기전은 실제 금액
-                point_amount = 5000 if new_payment.payment_type == 'monthly' else abs(new_payment.amount)
+                # 월회비는 설정된 금액, 정기전은 실제 금액
+                point_amount = get_monthly_fee_amount() if new_payment.payment_type == 'monthly' else abs(new_payment.amount)
                 point_reason = '월회비' if new_payment.payment_type == 'monthly' else '정기전 게임비'
                 
                 # 포인트 차감 날짜 계산
@@ -327,8 +338,8 @@ def update_payment(payment_id):
 
             if should_have_point and linked_point is None:
                 # 새로 생성
-                # 월회비는 5000원, 정기전은 실제 금액
-                point_amount = 5000 if payment.payment_type == 'monthly' else abs(payment.amount)
+                # 월회비는 설정된 금액, 정기전은 실제 금액
+                point_amount = get_monthly_fee_amount() if payment.payment_type == 'monthly' else abs(payment.amount)
                 point_reason = '월회비' if payment.payment_type == 'monthly' else '정기전 게임비'
                 
                 # 포인트 차감 날짜 계산
@@ -351,8 +362,8 @@ def update_payment(payment_id):
                 db.session.commit()
             elif linked_point is not None:
                 # 포인트는 유지되지만 금액/날짜가 바뀐 경우 동기화
-                # 월회비는 5000원, 정기전은 실제 금액
-                expected_amount = 5000 if payment.payment_type == 'monthly' else abs(payment.amount)
+                # 월회비는 설정된 금액, 정기전은 실제 금액
+                expected_amount = get_monthly_fee_amount() if payment.payment_type == 'monthly' else abs(payment.amount)
                 
                 # 포인트 차감 날짜 계산
                 expected_point_date = get_point_date_for_payment(payment)
@@ -1041,15 +1052,22 @@ def payment_balance():
         if request.method == 'GET':
             bal = AppSetting.query.filter_by(setting_key='fund_balance').first()
             start = AppSetting.query.filter_by(setting_key='fund_start_month').first()
+            monthly_fee = AppSetting.query.filter_by(setting_key='monthly_fee_amount').first()
             balance_value = None
             try:
                 balance_value = int(bal.setting_value) if bal and bal.setting_value is not None else None
             except Exception:
                 balance_value = None
+            monthly_fee_value = None
+            try:
+                monthly_fee_value = int(monthly_fee.setting_value) if monthly_fee and monthly_fee.setting_value is not None else 5000
+            except Exception:
+                monthly_fee_value = 5000
             return jsonify({
                 'success': True,
                 'balance': balance_value,
                 'start_month': start.setting_value if start else None,
+                'monthly_fee_amount': monthly_fee_value,
             })
 
         # PUT - 관리자만
@@ -1080,6 +1098,7 @@ def payment_balance():
         data = request.get_json() or {}
         balance = data.get('balance')
         start_month = data.get('start_month')
+        monthly_fee_amount = data.get('monthly_fee_amount')
 
         if balance is not None:
             try:
@@ -1107,6 +1126,21 @@ def payment_balance():
             else:
                 st.setting_value = start_month
                 st.updated_by = current_user.id
+
+        if monthly_fee_amount is not None:
+            try:
+                monthly_fee_amount = int(monthly_fee_amount)
+                if monthly_fee_amount <= 0:
+                    return jsonify({'success': False, 'message': '월회비 금액은 0보다 커야 합니다.'})
+            except Exception:
+                return jsonify({'success': False, 'message': 'monthly_fee_amount는 숫자여야 합니다.'})
+            mf = AppSetting.query.filter_by(setting_key='monthly_fee_amount').first()
+            if not mf:
+                mf = AppSetting(setting_key='monthly_fee_amount', setting_value=str(monthly_fee_amount), updated_by=current_user.id)
+                db.session.add(mf)
+            else:
+                mf.setting_value = str(monthly_fee_amount)
+                mf.updated_by = current_user.id
 
         db.session.commit()
         return jsonify({'success': True})

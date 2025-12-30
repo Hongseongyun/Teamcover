@@ -2648,3 +2648,14 @@ div.action-menu-dropdown,
     gap: 0.5rem;
   }
 }
+
+/* 월회비 설정 모달 - 숫자 입력 스피너 제거 */
+.modal-body input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.modal-body input[type='number']::-webkit-inner-spin-button,
+.modal-body input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

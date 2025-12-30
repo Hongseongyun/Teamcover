@@ -88,6 +88,9 @@ const Payments = () => {
   const [prepayMonths, setPrepayMonths] = useState(1);
   const [prepayStatus, setPrepayStatus] = useState('paid');
   const [showPrepayModal, setShowPrepayModal] = useState(false);
+  const [showMonthlyFeeSettingsModal, setShowMonthlyFeeSettingsModal] =
+    useState(false);
+  const [monthlyFeeInput, setMonthlyFeeInput] = useState('5000');
 
   // 모달이 열릴 때 배경 스크롤 막기
   useEffect(() => {
@@ -115,6 +118,7 @@ const Payments = () => {
   const [currentBalance, setCurrentBalance] = useState(0);
   const [totalPointBalance, setTotalPointBalance] = useState(0);
   const [startMonth] = useState(null);
+  const [monthlyFeeAmount, setMonthlyFeeAmount] = useState(5000); // 월회비 금액 (기본값 5000원)
   const [balanceSeries, setBalanceSeries] = useState({
     labels: [],
     data: [],
@@ -167,11 +171,24 @@ const Payments = () => {
     }
   }, []);
 
+  // 월회비 금액 로드
+  const loadMonthlyFeeAmount = useCallback(async () => {
+    try {
+      const response = await paymentAPI.getBalance();
+      if (response.data.success && response.data.monthly_fee_amount) {
+        setMonthlyFeeAmount(response.data.monthly_fee_amount);
+      }
+    } catch (error) {
+      console.error('월회비 금액 로드 실패:', error);
+    }
+  }, []);
+
   // 데이터 초기 로드
   useEffect(() => {
     loadPayments();
     loadMembers();
-  }, [loadPayments]);
+    loadMonthlyFeeAmount();
+  }, [loadPayments, loadMonthlyFeeAmount]);
 
   // 외부 클릭 시 메뉴 닫기
   useEffect(() => {
@@ -1018,7 +1035,7 @@ const Payments = () => {
                 ...prepayPayment,
                 month: month,
                 payment_date: `${month}-01`,
-                amount: 5000, // 각 월별로 5000원 표시
+                amount: monthlyFeeAmount, // 각 월별로 설정된 금액 표시
               };
             }
           }
@@ -1047,11 +1064,12 @@ const Payments = () => {
     memberId,
     startMonth,
     monthsCount,
-    amountPerMonth = 5000,
+    amountPerMonth = null,
     status = 'paid'
   ) => {
     let monthCursor = startMonth;
     const toAdd = [];
+    const feeAmount = amountPerMonth || monthlyFeeAmount; // 설정된 금액 사용
 
     // 모든 선납에 그룹 ID 생성 (통합 저장용)
     const prepayGroupId = `prepay_${memberId}_${startMonth}_${monthsCount}_${Date.now()}`;
@@ -1070,14 +1088,14 @@ const Payments = () => {
         const isExempt = status === 'exempt';
         const paidWithPoints = status === 'point';
 
-        // 월별 납입 현황에서는 항상 정상 금액으로 표시 (5000원)
+        // 월별 납입 현황에서는 항상 정상 금액으로 표시
         // 저장 시에만 1월 할인을 적용
         toAdd.push({
           id: tempId,
           member_id: memberId,
           month: monthCursor,
           payment_type: 'monthly',
-          amount: amountPerMonth, // 표시용으로는 항상 정상 금액
+          amount: feeAmount, // 설정된 금액 사용
           is_paid: isPaid,
           is_exempt: isExempt,
           paid_with_points: paidWithPoints,
@@ -1505,6 +1523,7 @@ const Payments = () => {
               months: [],
               is_paid: tempPayment.is_paid,
               is_exempt: tempPayment.is_exempt || false,
+              paid_with_points: tempPayment.paid_with_points || false,
             };
           }
           prepayGroups[groupId].months.push(tempPayment.month);
@@ -1523,8 +1542,8 @@ const Payments = () => {
 
         // 1월에 12개월 선납인 경우만 할인 적용, 나머지는 총합
         const totalAmount = isJanuary12Months
-          ? monthsCount * 5000 - 5000 // 할인 적용
-          : monthsCount * 5000; // 할인 없음
+          ? monthsCount * monthlyFeeAmount - monthlyFeeAmount // 할인 적용
+          : monthsCount * monthlyFeeAmount; // 할인 없음
 
         // 첫 번째 월의 payment_date 사용
         const paymentDate = `${firstMonth}-01`;
@@ -2651,7 +2670,36 @@ const Payments = () => {
           </div>
 
           <div className="section-card">
-            <h3 className="section-title">월회비 납입 현황</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 className="section-title" style={{ margin: 0 }}>
+                월회비 납입 현황
+              </h3>
+              {isAdmin && (
+                <div className="action-menu-container">
+                  <button
+                    className="btn btn-sm btn-menu-toggle"
+                    onClick={() => {
+                      setMonthlyFeeInput(monthlyFeeAmount.toString());
+                      setShowMonthlyFeeSettingsModal(true);
+                    }}
+                    title="월회비 설정"
+                  >
+                    <span className="menu-dots">
+                      <span className="menu-dot"></span>
+                      <span className="menu-dot"></span>
+                      <span className="menu-dot"></span>
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="monthly-calendar-table">
               <table>
                 <thead>
@@ -2901,7 +2949,7 @@ const Payments = () => {
                                             member.id,
                                             month,
                                             'monthly',
-                                            5000
+                                            monthlyFeeAmount
                                           )
                                         }
                                         disabled={submitting}
@@ -4071,7 +4119,7 @@ const Payments = () => {
                       prepayTarget.memberId,
                       prepayTarget.month,
                       prepayMonths,
-                      5000,
+                      monthlyFeeAmount,
                       prepayStatus
                     );
                   }
@@ -4079,6 +4127,77 @@ const Payments = () => {
                 disabled={submitting}
               >
                 {submitting ? '추가 중...' : '추가'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 월회비 설정 모달 */}
+      {showMonthlyFeeSettingsModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowMonthlyFeeSettingsModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>월회비 설정</h3>
+              <button
+                className="btn btn-close"
+                onClick={() => setShowMonthlyFeeSettingsModal(false)}
+                style={{ fontSize: '24px', lineHeight: '1' }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label style={{ textAlign: 'left', display: 'block' }}>
+                  월회비 금액 (원)
+                </label>
+                <input
+                  type="number"
+                  value={monthlyFeeInput}
+                  onChange={(e) => setMonthlyFeeInput(e.target.value)}
+                  className="form-control"
+                  min="1"
+                  placeholder={monthlyFeeAmount.toString()}
+                  style={{
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'textfield',
+                  }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  const amount = parseInt(monthlyFeeInput);
+                  if (isNaN(amount) || amount <= 0) {
+                    alert('올바른 금액을 입력해주세요.');
+                    return;
+                  }
+                  setSubmitting(true);
+                  try {
+                    await paymentAPI.updateBalance({
+                      monthly_fee_amount: amount,
+                    });
+                    setMonthlyFeeAmount(amount);
+                    setShowMonthlyFeeSettingsModal(false);
+                    alert('월회비 금액이 저장되었습니다.');
+                  } catch (error) {
+                    alert(
+                      error.response?.data?.message ||
+                        '월회비 금액 저장에 실패했습니다.'
+                    );
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                disabled={submitting}
+              >
+                {submitting ? '저장 중...' : '저장'}
               </button>
             </div>
           </div>
