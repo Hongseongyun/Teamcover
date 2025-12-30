@@ -92,9 +92,9 @@ const Payments = () => {
     useState(false);
   const [monthlyFeeInput, setMonthlyFeeInput] = useState('5000');
 
-  // 모달이 열릴 때 배경 스크롤 막기
+  // 모달이 열릴 때 배경 스크롤 막기 (선불금 모달만 적용)
   useEffect(() => {
-    if (showGamePaymentModal || showPrepayModal) {
+    if (showPrepayModal) {
       // 현재 스크롤 위치 저장
       const scrollY = window.scrollY;
       // body 스타일 적용
@@ -112,7 +112,7 @@ const Payments = () => {
         window.scrollTo(0, scrollY);
       };
     }
-  }, [showGamePaymentModal, showPrepayModal]);
+  }, [showPrepayModal]);
 
   // 상단 대시보드: 잔액 및 그래프
   const [currentBalance, setCurrentBalance] = useState(0);
