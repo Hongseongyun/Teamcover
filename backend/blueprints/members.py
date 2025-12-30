@@ -4,7 +4,7 @@ from models import db, Member, Score, User, AppSetting
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
 from sqlalchemy import text
-from utils.club_helpers import get_current_club_id, require_club_membership
+from utils.club_helpers import get_current_club_id, require_club_membership, check_club_permission
 
 # 회원 관리 Blueprint
 members_bp = Blueprint('members', __name__, url_prefix='/api/members')
@@ -121,7 +121,22 @@ def get_members():
             is_deleted=False
         ).order_by(Member.name.asc()).all()
         
-        members_data = [member.to_dict(hide_privacy=hide_privacy) for member in members]
+        members_data = []
+        for member in members:
+            member_dict = member.to_dict(hide_privacy=hide_privacy)
+            # 재가입 여부 계산: created_at과 updated_at이 크게 차이나면 재가입으로 간주
+            # (삭제 후 재등록 시 updated_at이 최근에 갱신되지만 created_at은 원래 값 유지)
+            if member.created_at and member.updated_at:
+                time_diff = (member.updated_at - member.created_at).total_seconds()
+                # created_at과 updated_at이 1일 이상 차이나면 재가입으로 간주
+                # (일반적인 수정은 몇 분 내에 이루어지지만, 재가입은 시간이 지난 후)
+                if time_diff > 86400:  # 1일 = 86400초
+                    member_dict['is_rejoined'] = True
+                else:
+                    member_dict['is_rejoined'] = False
+            else:
+                member_dict['is_rejoined'] = False
+            members_data.append(member_dict)
         
         # 안전망: hide_privacy=True일 때 강제 마스킹 적용
         if hide_privacy:
@@ -202,7 +217,7 @@ def add_member():
         if not club_id:
             return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
         
-        # 클럽별 중복 확인
+        # 클럽별 중복 확인 (활성 회원)
         existing_member = Member.query.filter_by(name=name, club_id=club_id, is_deleted=False).first()
         if existing_member:
             return jsonify({'success': False, 'message': '이미 등록된 회원입니다.'})
@@ -231,27 +246,65 @@ def add_member():
         if (is_system_admin or is_club_admin):
             is_staff = data.get('is_staff', False)
         
-        new_member = Member(
-            name=name,
-            phone=data.get('phone', '').strip(),
-            gender=data.get('gender', '').strip(),
-            level=data.get('level', '').strip(),  # 레거시 호환성
-            tier=data.get('tier', '').strip(),
-            email=data.get('email', '').strip(),
-            note=data.get('note', '').strip(),
-            is_staff=is_staff,
-            club_id=club_id
-        )
+        # 동일한 이름 + 전화번호인 삭제된 회원 확인 (재가입 처리)
+        phone = data.get('phone', '').strip()
+        is_rejoined = False
+        deleted_member = None
         
-        db.session.add(new_member)
-        db.session.commit()
+        if phone:  # 전화번호가 있는 경우만 재가입 확인
+            deleted_member = Member.query.filter_by(
+                name=name,
+                phone=phone,
+                club_id=club_id,
+                is_deleted=True
+            ).first()
         
-        result = {
-            'success': True, 
-            'message': f'{name} 회원이 등록되었습니다.',
-            'member': new_member.to_dict()
-        }
-        return jsonify(result)
+        if deleted_member:
+            # 기존 삭제된 회원 복구
+            is_rejoined = True
+            deleted_member.is_deleted = False
+            deleted_member.phone = phone
+            deleted_member.gender = data.get('gender', '').strip()
+            deleted_member.level = data.get('level', '').strip()  # 레거시 호환성
+            deleted_member.tier = data.get('tier', '').strip()
+            deleted_member.email = data.get('email', '').strip()
+            deleted_member.note = data.get('note', '').strip()
+            deleted_member.is_staff = is_staff
+            deleted_member.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            
+            result = {
+                'success': True, 
+                'message': f'{name} 회원이 재가입되었습니다.',
+                'member': deleted_member.to_dict(),
+                'is_rejoined': True
+            }
+            return jsonify(result)
+        else:
+            # 새 회원 등록
+            new_member = Member(
+                name=name,
+                phone=phone,
+                gender=data.get('gender', '').strip(),
+                level=data.get('level', '').strip(),  # 레거시 호환성
+                tier=data.get('tier', '').strip(),
+                email=data.get('email', '').strip(),
+                note=data.get('note', '').strip(),
+                is_staff=is_staff,
+                club_id=club_id
+            )
+            
+            db.session.add(new_member)
+            db.session.commit()
+            
+            result = {
+                'success': True, 
+                'message': f'{name} 회원이 등록되었습니다.',
+                'member': new_member.to_dict(),
+                'is_rejoined': False
+            }
+            return jsonify(result)
         
     except Exception as e:
         db.session.rollback()
@@ -369,10 +422,46 @@ def update_member(member_id):
 
 @members_bp.route('/<int:member_id>/', methods=['DELETE'])
 @members_bp.route('/<int:member_id>', methods=['DELETE'])
+@jwt_required()
 def delete_member(member_id):
     """회원 삭제 API (Soft Delete)"""
     try:
+        # 클럽 필터링
+        club_id = get_current_club_id()
+        if not club_id:
+            return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+        
+        # 현재 사용자 확인
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        current_user = User.query.get(int(user_id))
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 401
+        
+        # 권한 확인 (admin/super_admin만 삭제 가능)
+        is_system_admin = current_user.role in ['super_admin', 'admin']
+        is_club_admin = False
+        
+        if not is_system_admin:
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+            else:
+                return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
+        
+        # 회원 조회
         member = Member.query.get_or_404(member_id)
+        
+        # 삭제하려는 회원이 현재 클럽에 속하는지 확인
+        if member.club_id != club_id:
+            return jsonify({'success': False, 'message': '다른 클럽의 회원은 삭제할 수 없습니다.'}), 403
+        
+        # 이미 삭제된 회원인지 확인
+        if member.is_deleted:
+            return jsonify({'success': False, 'message': '이미 삭제된 회원입니다.'}), 400
+        
         member_name = member.name
         
         # Soft Delete: 실제로 삭제하지 않고 is_deleted 플래그만 설정

@@ -452,6 +452,7 @@ const Members = () => {
     try {
       if (editingMember) {
         await memberAPI.updateMember(editingMember.id, formData);
+        alert('회원 정보가 수정되었습니다.');
       } else {
         const response = await memberAPI.addMember(formData);
 
@@ -460,11 +461,14 @@ const Members = () => {
           setSubmitting(false); // 로딩 종료
           return;
         }
-      }
 
-      alert(
-        editingMember ? '회원 정보가 수정되었습니다.' : '회원이 추가되었습니다.'
-      );
+        // 재가입 여부에 따라 메시지 표시
+        if (response.data && response.data.is_rejoined) {
+          alert(response.data.message || '회원이 재가입되었습니다.');
+        } else {
+          alert(response.data?.message || '회원이 추가되었습니다.');
+        }
+      }
 
       setShowAddForm(false);
       setEditingMember(null);
@@ -1129,7 +1133,25 @@ const Members = () => {
                         </>
                       ) : (
                         <>
-                          <td>{member.name}</td>
+                          <td>
+                            {member.name}
+                            {member.is_rejoined && (
+                              <span
+                                style={{
+                                  marginLeft: '6px',
+                                  padding: '2px 6px',
+                                  backgroundColor: '#10b981',
+                                  color: 'white',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500',
+                                }}
+                                title="재가입 회원"
+                              >
+                                재가입
+                              </span>
+                            )}
+                          </td>
                           <td className="privacy-cell-wrapper">
                             <span className="privacy-text">
                               {maskPhone(member.phone)}
