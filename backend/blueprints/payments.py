@@ -600,7 +600,11 @@ def _calculate_fund_balance_and_chart(club_id):
             month_key = point_date.strftime('%Y-%m')
             if month_key not in monthly_point_data:
                 monthly_point_data[month_key] = 0
-            monthly_point_data[month_key] += int(point.amount) or 0
+            # 포인트 유형에 따라 잔액 계산: 적립/보너스는 더하고, 사용은 뺌
+            if point.point_type in ['적립', '보너스']:
+                monthly_point_data[month_key] += int(point.amount) or 0
+            else:
+                monthly_point_data[month_key] -= int(point.amount) or 0
 
         # 그래프 시작 월 계산
         all_data_months = sorted(set(list(monthly_data.keys()) + list(monthly_point_data.keys())))
@@ -683,7 +687,11 @@ def _calculate_fund_balance_and_chart(club_id):
                     continue
                 
                 if point_date <= month_end_date:
-                    point_balance_for_month += int(point.amount) or 0
+                    # 포인트 유형에 따라 잔액 계산: 적립/보너스는 더하고, 사용은 뺌
+                    if point.point_type in ['적립', '보너스']:
+                        point_balance_for_month += int(point.amount) or 0
+                    else:
+                        point_balance_for_month -= int(point.amount) or 0
 
             labels.append(month_key)
             payment_balances.append(running_balance)

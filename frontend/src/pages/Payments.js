@@ -275,6 +275,70 @@ const Payments = () => {
     }
   }, [openPaymentMenuId]);
 
+  // 포인트 잔액 계산 함수 (포인트 페이지와 동일한 로직: 탈퇴된 회원 제외)
+  const loadTotalPointBalance = useCallback(async (labels = null) => {
+    try {
+      const [pointsResponse, membersResponse] = await Promise.all([
+        pointAPI.getPoints(),
+        memberAPI.getMembers(),
+      ]);
+
+      if (pointsResponse.data.success && membersResponse.data.success) {
+        const points = pointsResponse.data.points;
+        const members = membersResponse.data.members;
+
+        // 탈퇴되지 않은 회원 목록 생성 (is_deleted가 false인 회원만)
+        const activeMemberNames = new Set(
+          members
+            .filter((member) => !member.is_deleted)
+            .map((member) => member.name)
+        );
+
+        // 탈퇴된 회원의 포인트를 제외하고 잔액 계산
+        const activePoints = points.filter((point) =>
+          activeMemberNames.has(point.member_name)
+        );
+
+        const totalBalance = activePoints.reduce((sum, point) => {
+          return sum + (parseInt(point.amount) || 0);
+        }, 0);
+
+        setTotalPointBalance(totalBalance);
+
+        // 월별 포인트 잔액 계산 (그래프용)
+        const monthLabels = labels;
+        if (monthLabels && monthLabels.length > 0) {
+          const monthlyPointBalances = monthLabels.map((monthKey) => {
+            // 해당 월의 마지막 날짜까지의 포인트 누적 잔액 계산
+            const [year, month] = monthKey.split('-').map(Number);
+            const monthEndDate = new Date(year, month, 0, 23, 59, 59);
+
+            let pointBalanceForMonth = 0;
+            activePoints.forEach((point) => {
+              const pointDate = point.point_date || point.created_at;
+              if (!pointDate) return;
+
+              const pointDateObj = new Date(pointDate);
+              if (pointDateObj <= monthEndDate) {
+                pointBalanceForMonth += parseInt(point.amount) || 0;
+              }
+            });
+
+            return pointBalanceForMonth;
+          });
+
+          // balanceSeries의 pointBalances 업데이트
+          setBalanceSeries((prev) => ({
+            ...prev,
+            pointBalances: monthlyPointBalances,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('포인트 잔액 로드 실패:', error);
+    }
+  }, []);
+
   // 캐시된 잔액 및 그래프 데이터 로드
   const loadBalanceCache = useCallback(async () => {
     // Teamcover가 아닌 클럽은 잔액을 0으로 설정하고 그래프도 비움
@@ -295,18 +359,24 @@ const Payments = () => {
       const response = await paymentAPI.getFundBalanceCache();
       if (response.data.success) {
         const { current_balance, balance_series } = response.data;
-        
+
         // 캐시된 데이터가 있으면 사용
         if (balance_series && Object.keys(balance_series).length > 0) {
-          setBalanceSeries({
+          const newBalanceSeries = {
             labels: balance_series.labels || [],
             data: balance_series.data || balance_series.paymentBalances || [],
             paymentBalances: balance_series.paymentBalances || [],
             credits: balance_series.credits || [],
             debits: balance_series.debits || [],
             pointBalances: balance_series.pointBalances || [],
-          });
+          };
+          setBalanceSeries(newBalanceSeries);
           setCurrentBalance(current_balance || 0);
+
+          // 포인트 잔액 계산 (월별 포인트 잔액을 프론트엔드에서 계산)
+          if (newBalanceSeries.labels && newBalanceSeries.labels.length > 0) {
+            loadTotalPointBalance(newBalanceSeries.labels);
+          }
         } else {
           // 캐시가 없으면 빈 데이터 설정
           setBalanceSeries({
@@ -334,7 +404,7 @@ const Payments = () => {
       });
       setCurrentBalance(0);
     }
-  }, [currentClub]);
+  }, [currentClub, loadTotalPointBalance]);
 
   // 장부 로드
   const loadFundLedger = useCallback(async () => {
@@ -403,44 +473,11 @@ const Payments = () => {
     }
   };
 
-  // 포인트 잔액 계산 함수 (포인트 페이지와 동일한 로직: 탈퇴된 회원 제외)
-  const loadTotalPointBalance = useCallback(async () => {
-    try {
-      const [pointsResponse, membersResponse] = await Promise.all([
-        pointAPI.getPoints(),
-        memberAPI.getMembers(),
-      ]);
-
-      if (pointsResponse.data.success && membersResponse.data.success) {
-        const points = pointsResponse.data.points;
-        const members = membersResponse.data.members;
-
-        // 탈퇴되지 않은 회원 목록 생성 (is_deleted가 false인 회원만)
-        const activeMemberNames = new Set(
-          members
-            .filter((member) => !member.is_deleted)
-            .map((member) => member.name)
-        );
-
-        // 탈퇴된 회원의 포인트를 제외하고 잔액 계산
-        const totalBalance = points
-          .filter((point) => activeMemberNames.has(point.member_name))
-          .reduce((sum, point) => {
-            return sum + (parseInt(point.amount) || 0);
-          }, 0);
-
-        setTotalPointBalance(totalBalance);
-      }
-    } catch (error) {
-      console.error('포인트 잔액 로드 실패:', error);
-    }
-  }, []);
-
   // 장부 데이터 초기 로드 (잔액/그래프는 장부 데이터 기반으로 계산)
   useEffect(() => {
     loadFundLedger();
-    loadTotalPointBalance();
-  }, [loadFundLedger, loadTotalPointBalance]);
+    // loadTotalPointBalance는 loadBalanceCache에서 호출됨
+  }, [loadFundLedger]);
 
   const loadMembers = async () => {
     try {
