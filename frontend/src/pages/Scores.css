@@ -1625,16 +1625,23 @@
   min-width: 50px;
 }
 
+/* nav-btn은 date-navigation button 스타일을 오버라이드 */
+.date-navigation .nav-btn {
+  padding: 0 !important;
+}
+
 /* 네비게이션 버튼 스타일 */
 .nav-btn {
-  padding: clamp(0.4rem, 0.3rem + 0.5vw, 0.75rem) !important;
+  padding: 0 !important;
   min-width: clamp(40px, 8vw, 60px) !important;
-  height: clamp(40px, 8vw, 60px);
+  width: clamp(40px, 8vw, 60px) !important;
+  height: clamp(40px, 8vw, 60px) !important;
   border-radius: 50% !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .nav-btn:hover:not(:disabled) {
@@ -1642,9 +1649,35 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.nav-btn:hover:not(:disabled) svg {
+  transform: none !important;
+}
+
 .nav-btn svg {
-  width: clamp(16px, 3vw, 24px);
-  height: clamp(16px, 3vw, 24px);
+  width: clamp(16px, 3vw, 24px) !important;
+  height: clamp(16px, 3vw, 24px) !important;
+  display: block !important;
+  margin: 0 auto !important;
+  flex-shrink: 0;
+}
+
+/* 768px 이상일 때 네비게이션 버튼 아이콘 중앙 정렬 강화 */
+@media (min-width: 768px) {
+  .nav-btn {
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .nav-btn svg {
+    margin: 0 auto !important;
+    display: block !important;
+    flex-shrink: 0;
+    position: static !important;
+    transform: none !important;
+  }
 }
 
 .current-date-info {
