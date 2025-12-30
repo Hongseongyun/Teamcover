@@ -114,6 +114,28 @@ const Payments = () => {
     }
   }, [showPrepayModal]);
 
+  // 납입 추가 폼이 열릴 때 스크롤 위치 유지
+  useEffect(() => {
+    if (showAddForm) {
+      // 현재 스크롤 위치 저장
+      const scrollY = window.scrollY;
+      // body 스타일 적용
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // 폼이 닫힐 때 스크롤 복원
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showAddForm]);
+
   // 상단 대시보드: 잔액 및 그래프
   const [currentBalance, setCurrentBalance] = useState(0);
   const [totalPointBalance, setTotalPointBalance] = useState(0);
