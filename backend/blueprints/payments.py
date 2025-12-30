@@ -728,6 +728,23 @@ def _calculate_fund_balance_and_chart(club_id):
                 )
                 db.session.add(snapshot)
 
+        # 장부 항목이 없는 월의 스냅샷 정리 (2025-11 이후의 월만)
+        # all_data_months에 없는 월 중에서 스냅샷이 존재하는 경우 삭제
+        if all_data_months:
+            # 처리된 월 목록 (장부 항목이나 포인트가 있는 월)
+            processed_months = set(all_data_months)
+            
+            # 기존 스냅샷 중에서 처리된 월 목록에 없는 스냅샷 찾기
+            all_snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).all()
+            for snapshot in all_snapshots:
+                # 2025-11 이후의 월만 확인 (이전 월은 유지)
+                if snapshot.month >= start_month and snapshot.month not in processed_months:
+                    # 해당 월에 장부 항목도 없고 포인트도 없는 경우 스냅샷 삭제
+                    month_has_ledger = snapshot.month in monthly_data
+                    month_has_points = snapshot.month in monthly_point_data
+                    if not month_has_ledger and not month_has_points:
+                        db.session.delete(snapshot)
+
         # fund_balance_cache는 더 이상 사용하지 않음 (fund_balance_snapshot만 사용)
         db.session.commit()
     except Exception as e:
@@ -1183,16 +1200,14 @@ def get_fund_balance_cache():
             else:
                 return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
-        # 스냅샷에서 월별 데이터 조회
-        snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).order_by(FundBalanceSnapshot.month.asc()).all()
+        # 페이지 새로고침 시 항상 장부 기반으로 스냅샷 재계산
+        try:
+            _calculate_fund_balance_and_chart(club_id)
+        except Exception as calc_error:
+            print(f'스냅샷 계산 오류: {str(calc_error)}')
         
-        if not snapshots:
-            # 스냅샷이 없으면 계산하여 생성
-            try:
-                _calculate_fund_balance_and_chart(club_id)
-                snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).order_by(FundBalanceSnapshot.month.asc()).all()
-            except Exception as calc_error:
-                print(f'스냅샷 계산 오류: {str(calc_error)}')
+        # 재계산된 스냅샷 조회
+        snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).order_by(FundBalanceSnapshot.month.asc()).all()
         
         # 그래프 데이터 구성
         labels = []
