@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teamAPI, memberAPI } from '../services/api';
-import { RotateCcw, Trash2, Save, MoreVertical, Search, Check } from 'lucide-react';
+import {
+  RotateCcw,
+  Trash2,
+  Save,
+  MoreVertical,
+  Search,
+  Check,
+} from 'lucide-react';
+import { ScoreInputModal, GuestModal } from './TeamAssignment/modals';
 import './TeamAssignment.css';
 
 const TeamAssignment = () => {
@@ -203,21 +211,21 @@ const TeamAssignment = () => {
           const avgRes = await memberAPI.getAllMembersAverages();
           if (avgRes?.data?.success) {
             // 응답 형식 확인 (averages 배열 또는 members 배열)
-            const averagesData = Array.isArray(avgRes.data.averages) 
-              ? avgRes.data.averages 
-              : Array.isArray(avgRes.data.members) 
-              ? avgRes.data.members 
+            const averagesData = Array.isArray(avgRes.data.averages)
+              ? avgRes.data.averages
+              : Array.isArray(avgRes.data.members)
+              ? avgRes.data.members
               : [];
-            
+
             averagesData.forEach((a) => {
               const name = a.member_name || a.name;
               const avg = a.average_score ?? a.average;
               const scoreCount = a.score_count || 0;
-              
+
               if (name && avg !== null && avg !== undefined) {
                 baseMap.set(name, Math.round(avg));
               }
-              
+
               if (name && scoreCount > 0) {
                 gameCountMap.set(name, scoreCount);
               }
@@ -243,7 +251,7 @@ const TeamAssignment = () => {
       if (member && member.average_score) {
         // 게임 수 정보 가져오기 (저장된 맵에서 조회)
         const gameCount = memberGameCountMap.get(memberName) || 1;
-        
+
         // 회원 데이터의 평균 점수 사용
         setCalculatedAverageInfo({
           period: '정기전 에버',
@@ -3113,7 +3121,10 @@ const TeamAssignment = () => {
           <div className="section-header">
             <h3 className="section-title">선수 추가</h3>
             <div className="section-actions">
-              <div className="action-menu-container" data-item-id="player-input-settings">
+              <div
+                className="action-menu-container"
+                data-item-id="player-input-settings"
+              >
                 <button
                   className="btn btn-icon-only players-settings-btn"
                   onClick={(e) => {
@@ -3773,150 +3784,26 @@ const TeamAssignment = () => {
       </div>
 
       {/* 점수 입력 모달 */}
-      {showScoreInputModal && (
-        <div className="modal-overlay">
-          <div className="modal-content score-input-modal">
-            <div className="modal-header">
-              <h3>점수 입력</h3>
-              <p>다음 회원들의 평균 점수를 입력해주세요.</p>
-            </div>
-            <div className="modal-body">
-              {pendingMembers.map((member) => (
-                <div key={member.id} className="score-input-row">
-                  <div className="member-info">
-                    <span className="member-name">{member.name}</span>
-                    <span className="member-gender">
-                      ({member.gender || '미지정'})
-                    </span>
-                  </div>
-                  <div className="score-input-group">
-                    <input
-                      type="number"
-                      min="0"
-                      max="300"
-                      placeholder="평균 점수"
-                      value={memberScores[member.name] || ''}
-                      onChange={(e) =>
-                        handleScoreInput(member.name, e.target.value)
-                      }
-                      className="score-input"
-                    />
-                    <span className="score-unit">점</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={handleScoreInputCancel}
-              >
-                취소
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleScoreInputComplete}
-                disabled={pendingMembers.some(
-                  (member) =>
-                    !memberScores[member.name] || memberScores[member.name] <= 0
-                )}
-              >
-                추가하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 점수 입력 모달 */}
+      <ScoreInputModal
+        isOpen={showScoreInputModal}
+        onClose={handleScoreInputCancel}
+        pendingMembers={pendingMembers}
+        memberScores={memberScores}
+        onScoreInput={handleScoreInput}
+        onCancel={handleScoreInputCancel}
+        onComplete={handleScoreInputComplete}
+      />
 
       {/* 게스트 추가 모달 */}
-      {showGuestModal && (
-        <div className="modal-overlay">
-          <div className="modal-content guest-modal">
-            <div className="modal-header">
-              <h3>게스트 추가</h3>
-              <button
-                type="button"
-                className="modal-close-button"
-                onClick={handleCloseGuestModal}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>이름</label>
-                <input
-                  type="text"
-                  placeholder="게스트 이름을 입력하세요"
-                  value={guestData.name}
-                  onChange={(e) =>
-                    handleGuestDataChange('name', e.target.value)
-                  }
-                  className={`form-input ${guestErrors.name ? 'error' : ''}`}
-                />
-                {guestErrors.name && (
-                  <div className="error-message">{guestErrors.name}</div>
-                )}
-              </div>
-              <div className="form-group">
-                <label>평균 점수</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="300"
-                  placeholder="평균 점수를 입력하세요"
-                  value={guestData.average}
-                  onChange={(e) =>
-                    handleGuestDataChange('average', e.target.value)
-                  }
-                  className={`form-input ${guestErrors.average ? 'error' : ''}`}
-                />
-                {guestErrors.average && (
-                  <div className="error-message">{guestErrors.average}</div>
-                )}
-              </div>
-              <div className="form-group">
-                <label>성별</label>
-                <div className="gender-options">
-                  <button
-                    type="button"
-                    className={`gender-option ${
-                      guestData.gender === '남' ? 'active' : ''
-                    }`}
-                    onClick={() => handleGuestDataChange('gender', '남')}
-                  >
-                    남
-                  </button>
-                  <button
-                    type="button"
-                    className={`gender-option ${
-                      guestData.gender === '여' ? 'active' : ''
-                    }`}
-                    onClick={() => handleGuestDataChange('gender', '여')}
-                  >
-                    여
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-primary"
-                onClick={handleAddGuest}
-                disabled={
-                  !guestData.name.trim() ||
-                  !guestData.average ||
-                  !guestData.gender ||
-                  guestErrors.name ||
-                  guestErrors.average
-                }
-              >
-                추가하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GuestModal
+        isOpen={showGuestModal}
+        onClose={handleCloseGuestModal}
+        guestData={guestData}
+        guestErrors={guestErrors}
+        onDataChange={handleGuestDataChange}
+        onSubmit={handleAddGuest}
+      />
     </div>
   );
 };

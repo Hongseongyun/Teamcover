@@ -13,7 +13,12 @@ import {
 import { paymentAPI, memberAPI, pointAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
-import LoadingModal from '../components/LoadingModal';
+import { LoadingModal } from '../components/common/Modal';
+import {
+  GamePaymentModal,
+  PrepayModal,
+  MonthlyFeeSettingsModal,
+} from './Payments/modals';
 import './Payments.css';
 import './Members.css'; // action-menu 스타일 사용
 
@@ -90,7 +95,6 @@ const Payments = () => {
   const [showPrepayModal, setShowPrepayModal] = useState(false);
   const [showMonthlyFeeSettingsModal, setShowMonthlyFeeSettingsModal] =
     useState(false);
-  const [monthlyFeeInput, setMonthlyFeeInput] = useState('5000');
 
   // 모달이 열릴 때 배경 스크롤 막기 (선불금 모달만 적용)
   useEffect(() => {
@@ -2721,7 +2725,6 @@ const Payments = () => {
                   <button
                     className="btn btn-sm btn-menu-toggle"
                     onClick={() => {
-                      setMonthlyFeeInput(monthlyFeeAmount.toString());
                       setShowMonthlyFeeSettingsModal(true);
                     }}
                     title="월회비 설정"
@@ -3858,386 +3861,69 @@ const Payments = () => {
       )}
 
       {/* 정기전 게임비 모달 */}
-      {showGamePaymentModal && (
-        <div className="modal-overlay">
-          <div className="modal-content game-payment-modal">
-            <div className="modal-header">
-              <h3>게임비 납입 관리</h3>
-              <button
-                type="button"
-                className="modal-close-button"
-                onClick={closeGamePaymentModal}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {/* 날짜 선택 */}
-              <div className="form-group">
-                <label>게임 날짜</label>
-                <input
-                  type="date"
-                  value={gamePaymentDate}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="form-control"
-                />
-              </div>
-
-              {/* 게임 종류 선택 */}
-              <div className="form-group">
-                <label>게임 종류</label>
-                <select
-                  value={gameType}
-                  onChange={(e) => setGameType(e.target.value)}
-                  className="form-control"
-                  disabled={submitting}
-                >
-                  <option value="regular">정기전</option>
-                  <option value="event">이벤트전</option>
-                </select>
-              </div>
-
-              {/* 게임비 입력 */}
-              <div className="form-group">
-                <label>게임비 (원)</label>
-                <input
-                  type="number"
-                  value={gameAmount}
-                  onChange={(e) => setGameAmount(parseInt(e.target.value) || 0)}
-                  className="form-control game-amount-input"
-                  min="0"
-                  disabled={submitting}
-                />
-              </div>
-
-              {/* 회원 검색 및 추가 */}
-              <div className="form-group">
-                <label>회원 검색</label>
-                <div className="search-member-wrapper">
-                  <input
-                    type="text"
-                    value={memberSearchQuery}
-                    onChange={(e) => handleSearchMembers(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && availableMembers.length > 0) {
-                        e.preventDefault();
-                        // 첫 번째 결과 자동 추가
-                        const firstMember = availableMembers[0];
-                        const isAdded = gamePaymentMembers.find(
-                          (m) => m.member_id === firstMember.id
-                        );
-                        if (!isAdded) {
-                          addMemberToGamePayment(firstMember);
-                        }
-                      }
-                    }}
-                    placeholder="회원 이름을 입력하세요"
-                    className="form-control"
-                  />
-                  {memberSearchQuery && availableMembers.length > 0 && (
-                    <div className="search-results">
-                      <ul className="member-list">
-                        {availableMembers.map((member) => {
-                          const isAdded = gamePaymentMembers.find(
-                            (m) => m.member_id === member.id
-                          );
-                          return (
-                            <li
-                              key={member.id}
-                              className={`member-item ${
-                                isAdded ? 'added' : ''
-                              }`}
-                              onClick={() =>
-                                !isAdded && addMemberToGamePayment(member)
-                              }
-                            >
-                              <span>{member.name}</span>
-                              {isAdded && <span className="badge">추가됨</span>}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 추가된 회원 목록 */}
-              {gamePaymentMembers.length > 0 && (
-                <div className="added-members-list">
-                  <h4>참가 회원 ({gamePaymentMembers.length}명)</h4>
-                  <table className="game-payment-table">
-                    <thead>
-                      <tr>
-                        <th>이름</th>
-                        <th>납입 여부</th>
-                        <th>설정</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {gamePaymentMembers.map((memberPayment) => (
-                        <tr key={memberPayment.member_id}>
-                          <td>{memberPayment.member_name}</td>
-                          <td>
-                            <button
-                              className={`btn btn-sm ${
-                                memberPayment.paid_with_points
-                                  ? 'btn-info'
-                                  : memberPayment.is_paid
-                                  ? 'btn-success'
-                                  : 'btn-outline-danger'
-                              }`}
-                              onClick={() =>
-                                toggleGamePaymentStatus(memberPayment.member_id)
-                              }
-                              disabled={submitting}
-                            >
-                              {memberPayment.paid_with_points
-                                ? 'P 포인트납부'
-                                : memberPayment.is_paid
-                                ? '✓ 납입완료'
-                                : '✗ 미납'}
-                            </button>
-                          </td>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-delete"
-                              onClick={() =>
-                                removeMemberFromGamePayment(
-                                  memberPayment.member_id
-                                )
-                              }
-                              disabled={submitting}
-                            >
-                              삭제
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="btn btn-primary"
-                onClick={saveGamePayments}
-                disabled={submitting}
-              >
-                {submitting
-                  ? '저장 중...'
-                  : gamePaymentMembers.length === 0
-                  ? '저장'
-                  : '저장'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GamePaymentModal
+        isOpen={showGamePaymentModal}
+        onClose={closeGamePaymentModal}
+        gamePaymentDate={gamePaymentDate}
+        onDateChange={handleDateChange}
+        gameType={gameType}
+        onGameTypeChange={setGameType}
+        gameAmount={gameAmount}
+        onGameAmountChange={setGameAmount}
+        memberSearchQuery={memberSearchQuery}
+        onSearchMembers={handleSearchMembers}
+        availableMembers={availableMembers}
+        gamePaymentMembers={gamePaymentMembers}
+        onAddMember={addMemberToGamePayment}
+        onRemoveMember={removeMemberFromGamePayment}
+        onTogglePaymentStatus={toggleGamePaymentStatus}
+        onSave={saveGamePayments}
+        submitting={submitting}
+      />
 
       {/* 선입 추가 모달 */}
-      {showPrepayModal && prepayTarget && (
-        <div className="modal-overlay">
-          <div className="modal-content prepay-modal">
-            <div className="modal-header">
-              <h3>선입 납입 추가</h3>
-              <button
-                className="btn btn-sm btn-secondary"
-                onClick={() => {
-                  setShowPrepayModal(false);
-                  setPrepayTarget(null);
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {(() => {
-                // 선택한 월부터 12월까지의 남은 개월 수 계산
-                const monthStr = prepayTarget.month; // YYYY-MM 형식
-                const monthNum = parseInt(monthStr.split('-')[1], 10); // MM 추출
-                const maxMonths = 13 - monthNum; // 선택한 월 포함해서 12월까지
-                const maxMonthsLimited = Math.max(1, Math.min(maxMonths, 12)); // 최소 1개월, 최대 12개월
-
-                // 현재 선택된 개월 수가 최대값을 초과하면 최대값으로 조정
-                const validPrepayMonths = Math.min(
-                  prepayMonths,
-                  maxMonthsLimited
-                );
-                if (prepayMonths > maxMonthsLimited) {
-                  setPrepayMonths(maxMonthsLimited);
-                }
-
-                const selectedMember = members.find(
-                  (m) => m.id === prepayTarget.memberId
-                );
-
-                return (
-                  <>
-                    <div className="form-group">
-                      <label>회원</label>
-                      <input
-                        type="text"
-                        value={selectedMember?.name || ''}
-                        className="form-control"
-                        disabled
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>시작 월</label>
-                      <input
-                        type="text"
-                        value={prepayTarget.month}
-                        className="form-control"
-                        disabled
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>선입 개월 수</label>
-                      <select
-                        className="form-control"
-                        value={validPrepayMonths}
-                        onChange={(e) =>
-                          setPrepayMonths(parseInt(e.target.value, 10))
-                        }
-                        disabled={submitting}
-                      >
-                        {Array.from(
-                          { length: maxMonthsLimited },
-                          (_, i) => i + 1
-                        ).map((m) => (
-                          <option key={m} value={m}>
-                            {`${m}개월`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>상태 선택</label>
-                      <select
-                        className="form-control"
-                        value={prepayStatus}
-                        onChange={(e) => setPrepayStatus(e.target.value)}
-                        disabled={submitting}
-                      >
-                        <option value="paid">납입</option>
-                        <option value="point">포인트</option>
-                        <option value="exempt">면제</option>
-                        <option value="unpaid">미납</option>
-                      </select>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowPrepayModal(false);
-                  setPrepayTarget(null);
-                }}
-                disabled={submitting}
-              >
-                취소
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  if (prepayTarget) {
-                    handlePrepay(
-                      prepayTarget.memberId,
-                      prepayTarget.month,
-                      prepayMonths,
-                      monthlyFeeAmount,
-                      prepayStatus
-                    );
-                  }
-                }}
-                disabled={submitting}
-              >
-                {submitting ? '추가 중...' : '추가'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PrepayModal
+        isOpen={showPrepayModal && prepayTarget !== null}
+        onClose={() => {
+          setShowPrepayModal(false);
+          setPrepayTarget(null);
+        }}
+        prepayTarget={prepayTarget}
+        members={members}
+        prepayMonths={prepayMonths}
+        onPrepayMonthsChange={setPrepayMonths}
+        prepayStatus={prepayStatus}
+        onPrepayStatusChange={setPrepayStatus}
+        monthlyFeeAmount={monthlyFeeAmount}
+        onSubmit={handlePrepay}
+        submitting={submitting}
+      />
 
       {/* 월회비 설정 모달 */}
-      {showMonthlyFeeSettingsModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowMonthlyFeeSettingsModal(false)}
-        >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>월회비 설정</h3>
-              <button
-                className="btn btn-close"
-                onClick={() => setShowMonthlyFeeSettingsModal(false)}
-                style={{ fontSize: '24px', lineHeight: '1' }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label style={{ textAlign: 'left', display: 'block' }}>
-                  월회비 금액 (원)
-                </label>
-                <input
-                  type="number"
-                  value={monthlyFeeInput}
-                  onChange={(e) => setMonthlyFeeInput(e.target.value)}
-                  className="form-control"
-                  min="1"
-                  placeholder={monthlyFeeAmount.toString()}
-                  style={{
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'textfield',
-                  }}
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={async () => {
-                  const amount = parseInt(monthlyFeeInput);
-                  if (isNaN(amount) || amount <= 0) {
-                    alert('올바른 금액을 입력해주세요.');
-                    return;
-                  }
-                  setSubmitting(true);
-                  try {
-                    await paymentAPI.updateBalance({
-                      monthly_fee_amount: amount,
-                    });
-                    setMonthlyFeeAmount(amount);
-                    setShowMonthlyFeeSettingsModal(false);
-                    alert('월회비 금액이 저장되었습니다.');
-                  } catch (error) {
-                    alert(
-                      error.response?.data?.message ||
-                        '월회비 금액 저장에 실패했습니다.'
-                    );
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-                disabled={submitting}
-              >
-                {submitting ? '저장 중...' : '저장'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MonthlyFeeSettingsModal
+        isOpen={showMonthlyFeeSettingsModal}
+        onClose={() => setShowMonthlyFeeSettingsModal(false)}
+        monthlyFeeAmount={monthlyFeeAmount}
+        onSave={async (amount) => {
+          setSubmitting(true);
+          try {
+            await paymentAPI.updateBalance({
+              monthly_fee_amount: amount,
+            });
+            setMonthlyFeeAmount(amount);
+            setShowMonthlyFeeSettingsModal(false);
+            alert('월회비 금액이 저장되었습니다.');
+          } catch (error) {
+            alert(
+              error.response?.data?.message ||
+                '월회비 금액 저장에 실패했습니다.'
+            );
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+        submitting={submitting}
+      />
 
       <LoadingModal isOpen={ledgerSaving} message="장부 항목 저장 중..." />
       <LoadingModal isOpen={submitting} message="저장 중..." />

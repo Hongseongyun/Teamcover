@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import { pointAPI, sheetsAPI, memberAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
@@ -14,7 +20,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Plus, Trash2, Search, MoreVertical } from 'lucide-react';
-import LoadingModal from '../components/LoadingModal';
+import { LoadingModal } from '../components/common/Modal';
+import { ReasonSettingsModal } from './Points/modals';
 import './Points.css';
 import './Members.css'; // action-menu 스타일 사용
 
@@ -984,7 +991,7 @@ const Points = () => {
   const saveInlineEdit = async () => {
     try {
       setSavingInlineEdit(true); // 로딩 시작
-      
+
       await pointAPI.updatePoint(editingId, formData);
 
       // 성공 시 목록 새로고침
@@ -998,7 +1005,7 @@ const Points = () => {
         point_date: '',
         note: '',
       });
-      
+
       setSavingInlineEdit(false); // 로딩 종료
     } catch (error) {
       setSavingInlineEdit(false); // 로딩 종료
@@ -1324,7 +1331,6 @@ const Points = () => {
             {!editingPoint ? (
               // 표 형식 포인트 등록
               <div className="table-form-container">
-
                 <form
                   onSubmit={handleSubmit}
                   className={`table-form ${submitting ? 'submitting' : ''}`}
@@ -1721,150 +1727,13 @@ const Points = () => {
       )}
 
       {/* 사유 설정 모달 */}
-      {showReasonSettings && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3>포인트 설정</h3>
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setShowReasonSettings(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="reason-settings-grid">
-                {editingReasons
-                  .filter((reason) => reason.name !== '기타')
-                  .map((reason, index) => (
-                    <div key={reason.name} className="reason-setting-item">
-                      <label className="reason-name">{reason.name}</label>
-                      <div className="reason-amount-input">
-                        <input
-                          type="number"
-                          value={
-                            typeof reason.amount === 'string'
-                              ? reason.amount
-                              : Number.isFinite(reason.amount)
-                              ? String(reason.amount)
-                              : ''
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            // 입력 중 상태 허용: '', '-'
-                            if (value === '' || value === '-') {
-                              updateEditingReason(index, 'amount', value);
-                              return;
-                            }
-                            const numValue = Number(value);
-                            if (!Number.isNaN(numValue)) {
-                              updateEditingReason(index, 'amount', numValue);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'ArrowUp') {
-                              e.preventDefault();
-                              const currentAmount =
-                                typeof reason.amount === 'number'
-                                  ? reason.amount
-                                  : 0;
-                              updateEditingReason(
-                                index,
-                                'amount',
-                                currentAmount + 500
-                              );
-                            } else if (e.key === 'ArrowDown') {
-                              e.preventDefault();
-                              const currentAmount =
-                                typeof reason.amount === 'number'
-                                  ? reason.amount
-                                  : 0;
-                              updateEditingReason(
-                                index,
-                                'amount',
-                                currentAmount - 500
-                              );
-                            } else if (e.key === '-') {
-                              // 전체 선택 상태에서 '-' 입력 허용
-                              const input = e.target;
-                              const start = input.selectionStart;
-                              const end = input.selectionEnd;
-                              if (start !== end) {
-                                e.preventDefault();
-                                updateEditingReason(index, 'amount', '-');
-                              }
-                            }
-                          }}
-                          onMouseDown={(e) => {
-                            // 스피너 버튼 클릭 감지 및 기본 동작 차단
-                            const rect = e.target.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const y = e.clientY - rect.top;
-                            const width = rect.width;
-                            const height = rect.height;
-
-                            if (
-                              x > width - 20 &&
-                              x < width &&
-                              y >= 0 &&
-                              y <= height
-                            ) {
-                              e.preventDefault();
-                              e.stopPropagation();
-
-                              const currentAmount =
-                                typeof reason.amount === 'number'
-                                  ? reason.amount
-                                  : 0;
-                              if (y < height / 2) {
-                                updateEditingReason(
-                                  index,
-                                  'amount',
-                                  currentAmount + 500
-                                );
-                              } else {
-                                updateEditingReason(
-                                  index,
-                                  'amount',
-                                  currentAmount - 500
-                                );
-                              }
-                            }
-                          }}
-                          step="1"
-                          min="-999999"
-                          max="999999"
-                        />
-                        <span className="amount-unit">P</span>
-                      </div>
-                    </div>
-                  ))}
-                <div className="reason-setting-item">
-                  <label className="reason-name">기타</label>
-                  <div className="reason-amount-input">
-                    <span className="readonly-note">
-                      기타 항목은 각 행에서 직접 입력하세요
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={saveReasonSettings}
-                >
-                  저장
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReasonSettingsModal
+        isOpen={showReasonSettings}
+        onClose={() => setShowReasonSettings(false)}
+        editingReasons={editingReasons}
+        onUpdateReason={updateEditingReason}
+        onSave={saveReasonSettings}
+      />
 
       {/* 개인별 검색 섹션 */}
       <div className="member-search-section">
@@ -2464,10 +2333,7 @@ const Points = () => {
       )}
 
       <LoadingModal isOpen={submitting} message="포인트 저장 중..." />
-      <LoadingModal
-        isOpen={savingInlineEdit}
-        message="설정변경중.."
-      />
+      <LoadingModal isOpen={savingInlineEdit} message="설정변경중.." />
       <LoadingModal
         isOpen={Boolean(deletingPointId)}
         message="포인트 삭제 중..."

@@ -3,55 +3,9 @@ import { memberAPI, sheetsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
 import api from '../services/api';
-import LoadingModal from '../components/LoadingModal';
+import { LoadingModal, TierBadge } from '../components/common';
+import { PasswordModal, PasswordSettingModal } from './Members/modals';
 import './Members.css';
-
-// 티어 표시 컴포넌트
-const TierBadge = ({ tier, size = 'normal' }) => {
-  const getTierClass = (tier) => {
-    if (!tier) return 'tier-unranked';
-
-    const tierMap = {
-      배치: 'tier-unranked',
-      아이언: 'tier-iron',
-      브론즈: 'tier-bronze',
-      실버: 'tier-silver',
-      골드: 'tier-gold',
-      플레티넘: 'tier-platinum',
-      다이아: 'tier-diamond',
-      마스터: 'tier-master',
-      챌린저: 'tier-challenger',
-    };
-
-    return tierMap[tier] || 'tier-unranked';
-  };
-
-  const getDisplayTier = (tier) => {
-    const tierMap = {
-      배치: 'UNRANKED',
-      아이언: 'IRON',
-      브론즈: 'BRONZE',
-      실버: 'SILVER',
-      골드: 'GOLD',
-      플레티넘: 'PLATINUM',
-      다이아: 'DIAMOND',
-      마스터: 'MASTER',
-      챌린저: 'CHALLENGER',
-    };
-    return tierMap[tier] || 'UNRANKED';
-  };
-
-  const displayTier = getDisplayTier(tier);
-  const tierClass = getTierClass(tier);
-  const badgeClass =
-    size === 'small' ? 'tier-badge tier-badge-sm' : 'tier-badge';
-
-  return (
-    <div className={`${badgeClass} ${tierClass}`}>
-      <span>{displayTier}</span>
-    </div>
-  );
-};
 
 const Members = () => {
   const { user } = useAuth();
@@ -123,65 +77,65 @@ const Members = () => {
   // 정렬된 회원 목록 (메모이제이션)
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
-    let valueA, valueB;
+      let valueA, valueB;
 
-    switch (sortField) {
-      case 'name':
-        valueA = a.name || '';
-        valueB = b.name || '';
-        break;
-      case 'tier':
-        // 티어별 우선순위 정의
-        const tierOrder = {
-          챌린저: 0,
-          마스터: 1,
-          다이아: 2,
-          다이아몬드: 2,
-          플레티넘: 3,
-          플래티넘: 3,
-          골드: 4,
-          실버: 5,
-          브론즈: 6,
-          아이언: 7,
-          배치: 8,
-          언랭크: 8,
-          '': 9,
-        };
-        valueA = tierOrder[a.tier] !== undefined ? tierOrder[a.tier] : 9;
-        valueB = tierOrder[b.tier] !== undefined ? tierOrder[b.tier] : 9;
-        break;
-      case 'join_date':
-        valueA = a.join_date || a.created_at || '';
-        valueB = b.join_date || b.created_at || '';
-        break;
-      default:
-        return 0;
-    }
-
-    // 날짜 비교
-    if (sortField === 'join_date') {
-      const dateA = valueA ? new Date(valueA) : new Date(0);
-      const dateB = valueB ? new Date(valueB) : new Date(0);
-      if (sortOrder === 'asc') {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
+      switch (sortField) {
+        case 'name':
+          valueA = a.name || '';
+          valueB = b.name || '';
+          break;
+        case 'tier':
+          // 티어별 우선순위 정의
+          const tierOrder = {
+            챌린저: 0,
+            마스터: 1,
+            다이아: 2,
+            다이아몬드: 2,
+            플레티넘: 3,
+            플래티넘: 3,
+            골드: 4,
+            실버: 5,
+            브론즈: 6,
+            아이언: 7,
+            배치: 8,
+            언랭크: 8,
+            '': 9,
+          };
+          valueA = tierOrder[a.tier] !== undefined ? tierOrder[a.tier] : 9;
+          valueB = tierOrder[b.tier] !== undefined ? tierOrder[b.tier] : 9;
+          break;
+        case 'join_date':
+          valueA = a.join_date || a.created_at || '';
+          valueB = b.join_date || b.created_at || '';
+          break;
+        default:
+          return 0;
       }
-    }
 
-    // 티어는 숫자 비교
-    if (sortField === 'tier') {
-      if (sortOrder === 'asc') {
-        return valueA - valueB;
-      } else {
-        return valueB - valueA;
+      // 날짜 비교
+      if (sortField === 'join_date') {
+        const dateA = valueA ? new Date(valueA) : new Date(0);
+        const dateB = valueB ? new Date(valueB) : new Date(0);
+        if (sortOrder === 'asc') {
+          return dateA - dateB;
+        } else {
+          return dateB - dateA;
+        }
       }
-    }
 
-    // 문자열 비교
-    if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
-    if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
+      // 티어는 숫자 비교
+      if (sortField === 'tier') {
+        if (sortOrder === 'asc') {
+          return valueA - valueB;
+        } else {
+          return valueB - valueA;
+        }
+      }
+
+      // 문자열 비교
+      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
     });
   }, [members, sortField, sortOrder]);
 
@@ -630,7 +584,7 @@ const Members = () => {
   const saveInlineEdit = async (memberId) => {
     try {
       setSavingInlineEdit(true); // 로딩 시작
-      
+
       // 잠금 상태이거나 마스킹 값이면 해당 필드는 전송하지 않도록 정제
       const payload = { ...inlineEditData };
       if (!privacyUnlocked || (payload.phone && payload.phone.includes('*'))) {
@@ -679,7 +633,7 @@ const Members = () => {
 
       // 데이터베이스와 동기화를 위해 다시 로드
       loadMembers();
-      
+
       setSavingInlineEdit(false); // 로딩 종료
     } catch (error) {
       setSavingInlineEdit(false); // 로딩 종료
@@ -1289,100 +1243,38 @@ const Members = () => {
       </div>
 
       {/* 개인정보 보호 비밀번호 입력 모달 */}
-      {showPasswordModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>🔒 개인정보 보호</h3>
-            <p>전화번호와 이메일을 보려면 비밀번호를 입력하세요.</p>
-
-            {passwordError && (
-              <div className="error-message">{passwordError}</div>
-            )}
-
-            <div className="form-group">
-              <label>비밀번호</label>
-              <input
-                type="password"
-                value={privacyPassword}
-                onChange={(e) => setPrivacyPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleVerifyPassword()}
-                placeholder="비밀번호 입력"
-                autoFocus
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="btn btn-primary"
-                onClick={handleVerifyPassword}
-              >
-                확인
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setPrivacyPassword('');
-                  setPasswordError('');
-                }}
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPrivacyPassword('');
+          setPasswordError('');
+        }}
+        password={privacyPassword}
+        onPasswordChange={setPrivacyPassword}
+        onVerify={handleVerifyPassword}
+        error={passwordError}
+      />
 
       {/* 비밀번호 설정 모달 */}
-      {showPasswordSetting && (
-        <div className="modal-overlay">
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>🔒 개인정보 보호 비밀번호 설정</h3>
-            <p>
-              {passwordSetStatus
-                ? '비밀번호를 변경하려면 새 비밀번호를 입력하세요.'
-                : '개인정보(전화번호, 이메일) 열람 시 필요한 비밀번호를 설정하세요.'}
-            </p>
-
-            <div className="form-group">
-              <label>비밀번호 (4자리 이상)</label>
-              <input
-                type="password"
-                value={newPrivacyPassword}
-                onChange={(e) => setNewPrivacyPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSetPassword()}
-                placeholder="비밀번호 입력"
-                autoFocus
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={handleSetPassword}>
-                저장
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowPasswordSetting(false);
-                  setNewPrivacyPassword('');
-                }}
-              >
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PasswordSettingModal
+        isOpen={showPasswordSetting}
+        onClose={() => {
+          setShowPasswordSetting(false);
+          setNewPrivacyPassword('');
+        }}
+        password={newPrivacyPassword}
+        onPasswordChange={setNewPrivacyPassword}
+        onSave={handleSetPassword}
+        isPasswordSet={passwordSetStatus}
+      />
 
       <LoadingModal isOpen={submitting} message="회원 저장 중..." />
       <LoadingModal
         isOpen={Boolean(deletingMemberId)}
         message="회원 삭제 중..."
       />
-      <LoadingModal
-        isOpen={savingInlineEdit}
-        message="설정변경중.."
-      />
+      <LoadingModal isOpen={savingInlineEdit} message="설정변경중.." />
     </div>
   );
 };
