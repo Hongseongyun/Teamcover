@@ -156,6 +156,7 @@ class Member(db.Model):
     join_date = db.Column(db.Date, nullable=True)  # 가입일 (수정 가능)
     is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
     is_deleted = db.Column(db.Boolean, default=False)  # 삭제 여부 (soft delete)
+    rejoined_at = db.Column(db.DateTime, nullable=True)  # 재가입일 (탈퇴 후 재가입한 경우)
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

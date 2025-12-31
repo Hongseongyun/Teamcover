@@ -124,14 +124,25 @@ def get_members():
         members_data = []
         for member in members:
             member_dict = member.to_dict(hide_privacy=hide_privacy)
-            # 재가입 여부 계산: created_at과 updated_at이 크게 차이나면 재가입으로 간주
-            # (삭제 후 재등록 시 updated_at이 최근에 갱신되지만 created_at은 원래 값 유지)
-            if member.created_at and member.updated_at:
-                time_diff = (member.updated_at - member.created_at).total_seconds()
-                # created_at과 updated_at이 1일 이상 차이나면 재가입으로 간주
-                # (일반적인 수정은 몇 분 내에 이루어지지만, 재가입은 시간이 지난 후)
-                if time_diff > 86400:  # 1일 = 86400초
-                    member_dict['is_rejoined'] = True
+            # 재가입 여부 계산: rejoined_at이 있고, 재가입일로부터 한 달 이내인 경우에만 재가입 뱃지 표시
+            if member.rejoined_at:
+                now = datetime.utcnow()
+                # rejoined_at이 datetime 객체가 아닌 경우 변환
+                rejoined_date = member.rejoined_at
+                if isinstance(rejoined_date, str):
+                    rejoined_date = datetime.strptime(rejoined_date, '%Y-%m-%d %H:%M:%S')
+                elif isinstance(rejoined_date, datetime):
+                    pass
+                else:
+                    rejoined_date = None
+                
+                if rejoined_date:
+                    # 재가입일로부터 한 달(30일) 이내인지 확인
+                    days_since_rejoin = (now - rejoined_date).days
+                    if days_since_rejoin <= 30:
+                        member_dict['is_rejoined'] = True
+                    else:
+                        member_dict['is_rejoined'] = False
                 else:
                     member_dict['is_rejoined'] = False
             else:
@@ -270,6 +281,7 @@ def add_member():
             deleted_member.email = data.get('email', '').strip()
             deleted_member.note = data.get('note', '').strip()
             deleted_member.is_staff = is_staff
+            deleted_member.rejoined_at = datetime.utcnow()  # 재가입일 저장
             deleted_member.updated_at = datetime.utcnow()
             
             db.session.commit()
