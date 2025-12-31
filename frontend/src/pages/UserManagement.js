@@ -290,31 +290,31 @@ const UserManagement = () => {
       // 슈퍼관리자는 항상 별도 섹션에 표시
       if (user.role === 'super_admin') {
         superAdmins.push(user);
+      } else {
+        // 일반 사용자만 클럽별로 그룹화
+        // 백엔드에서 이미 승인된 멤버십(status='approved')만 반환하지만,
+        // 안전을 위해 프론트엔드에서도 확인
+        const approvedClubs = (user.clubs || []).filter(
+          (club) => !club.status || club.status === 'approved'
+        );
+
+        if (approvedClubs.length === 0) {
+          noClubUsers.push(user);
         } else {
-          // 일반 사용자만 클럽별로 그룹화
-          // 백엔드에서 이미 승인된 멤버십(status='approved')만 반환하지만,
-          // 안전을 위해 프론트엔드에서도 확인
-          const approvedClubs = (user.clubs || []).filter(
-            (club) => !club.status || club.status === 'approved'
-          );
-          
-          if (approvedClubs.length === 0) {
-            noClubUsers.push(user);
-          } else {
-            approvedClubs.forEach((club) => {
-              if (!clubGroups[club.id]) {
-                clubGroups[club.id] = {
-                  club: club,
-                  users: [],
-                };
-              }
-              // 중복 방지: 이미 추가된 사용자인지 확인
-              if (!clubGroups[club.id].users.find((u) => u.id === user.id)) {
-                clubGroups[club.id].users.push(user);
-              }
-            });
-          }
+          approvedClubs.forEach((club) => {
+            if (!clubGroups[club.id]) {
+              clubGroups[club.id] = {
+                club: club,
+                users: [],
+              };
+            }
+            // 중복 방지: 이미 추가된 사용자인지 확인
+            if (!clubGroups[club.id].users.find((u) => u.id === user.id)) {
+              clubGroups[club.id].users.push(user);
+            }
+          });
         }
+      }
     });
 
     return { clubGroups, noClubUsers, superAdminsNoClub: superAdmins };
@@ -379,7 +379,7 @@ const UserManagement = () => {
                           <th>이름</th>
                           <th>이메일</th>
                           <th>요청일시</th>
-                          <th>작업</th>
+                          <th>설정</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -448,11 +448,13 @@ const UserManagement = () => {
           <div key={club.id} className="club-section">
             <div className="club-section-header">
               <span className={`club-section-badge club-color-${colorIndex}`}>
-                {club.name}
+                {club.name} ({clubUsers.length}명)
               </span>
-              <span className="club-section-count">({clubUsers.length}명)</span>
-              {currentUser?.role === 'super_admin' && club.id !== 1 && (
-                <div className="action-menu-container" data-item-id={club.id}>
+              {currentUser?.role === 'super_admin' && (
+                <div
+                  className="action-menu-container club-action-menu"
+                  data-item-id={club.id}
+                >
                   <button
                     type="button"
                     className="btn btn-sm btn-menu-toggle"
@@ -464,7 +466,7 @@ const UserManagement = () => {
                     }}
                     disabled={clubDeletingId === club.id}
                   >
-                    {clubDeletingId === club.id ? '삭제 중...' : '⋯'}
+                    {clubDeletingId === club.id ? '삭제 중...' : '⋮'}
                   </button>
                   {openClubMenuId === club.id && (
                     <div className="action-menu-dropdown">
@@ -494,7 +496,7 @@ const UserManagement = () => {
                     <th>상태</th>
                     <th>가입일</th>
                     <th>마지막 로그인</th>
-                    <th>작업</th>
+                    <th>설정</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -518,9 +520,10 @@ const UserManagement = () => {
                         user.clubs?.find((c) => c.id === club.id) || {};
                       const clubRole = membership.role || 'member';
 
-                      const isMenuOpen = openUserMenuId === `${user.id}-${club.id}`;
+                      const isMenuOpen =
+                        openUserMenuId === `${user.id}-${club.id}`;
                       return (
-                        <tr 
+                        <tr
                           key={`${club.id}-${user.id}`}
                           className={isMenuOpen ? 'menu-open' : ''}
                         >
@@ -635,7 +638,7 @@ const UserManagement = () => {
                                   }}
                                   title="클럽에서 탈퇴"
                                 >
-                                  ⋯
+                                  ⋮
                                 </button>
                                 {openUserMenuId === `${user.id}-${club.id}` && (
                                   <div className="action-menu-dropdown">
@@ -665,157 +668,6 @@ const UserManagement = () => {
         );
       })}
 
-      {/* 슈퍼관리자 (클럽 소속 없음) 섹션 */}
-      {superAdminsNoClub.length > 0 && (
-        <div className="club-section">
-          <div className="club-section-header">
-            <span className="club-section-badge super-admin-badge">
-              슈퍼관리자
-            </span>
-            <span className="club-section-count">
-              ({superAdminsNoClub.length}명)
-            </span>
-          </div>
-          <div className="users-table-container">
-            <table className="users-table">
-              <thead>
-                <tr>
-                  <th>이름</th>
-                  <th>이메일</th>
-                  <th>역할</th>
-                  <th>상태</th>
-                  <th>가입일</th>
-                  <th>마지막 로그인</th>
-                  <th>작업</th>
-                </tr>
-              </thead>
-              <tbody>
-                {superAdminsNoClub.map((user) => {
-                  const isMenuOpen = openUserMenuId === user.id;
-                  return (
-                  <tr 
-                    key={user.id}
-                    className={isMenuOpen ? 'menu-open' : ''}
-                  >
-                    <td className="user-name-cell">
-                      <div className="user-name-content">
-                        <div className="user-avatar">
-                          {user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="user-name-text">{user.name}</span>
-                      </div>
-                    </td>
-                    <td className="user-email-cell">
-                      <span className="user-email-text">{user.email}</span>
-                    </td>
-                    <td className="role-cell">
-                      <select
-                        value={user.role}
-                        onChange={(e) =>
-                          handleRoleChange(user.id, e.target.value)
-                        }
-                        className={`role-select ${getRoleBadgeClass(
-                          user.role
-                        )}`}
-                        disabled={
-                          user.id === currentUser?.id ||
-                          user.email === 'syun4224@naver.com'
-                        }
-                      >
-                        <option value="user">일반 사용자</option>
-                        <option value="admin">운영진</option>
-                        {user.email === 'syun4224@naver.com' && (
-                          <option value="super_admin">슈퍼 관리자</option>
-                        )}
-                      </select>
-                    </td>
-                    <td className="status-cell">
-                      <label className="status-toggle">
-                        <input
-                          type="checkbox"
-                          checked={user.is_active}
-                          onChange={(e) =>
-                            handleStatusChange(user.id, e.target.checked)
-                          }
-                          disabled={user.id === currentUser?.id}
-                        />
-                        <span
-                          className={`status-indicator ${
-                            user.is_active ? 'active' : 'inactive'
-                          }`}
-                        >
-                          {user.is_active ? '활성' : '비활성'}
-                        </span>
-                      </label>
-                    </td>
-                    <td className="date-cell">
-                      <span className="date-text">
-                        {user.created_at
-                          ? new Date(user.created_at).toLocaleDateString(
-                              'ko-KR'
-                            )
-                          : '-'}
-                      </span>
-                    </td>
-                    <td className="date-cell">
-                      <span className="date-text">
-                        {user.last_login
-                          ? new Date(user.last_login).toLocaleDateString(
-                              'ko-KR'
-                            )
-                          : '-'}
-                      </span>
-                    </td>
-                    <td className="actions-cell">
-                      {user.id === currentUser?.id ? (
-                        <span className="current-user-badge">현재 사용자</span>
-                      ) : user.email === 'syun4224@naver.com' ? (
-                        <span className="protected-user-badge">
-                          보호된 계정
-                        </span>
-                      ) : (
-                        <div
-                          className="action-menu-container"
-                          data-item-id={user.id}
-                        >
-                          <button
-                            className="btn btn-sm btn-menu-toggle"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenUserMenuId(
-                                openUserMenuId === user.id ? null : user.id
-                              );
-                            }}
-                            title="사용자 삭제"
-                          >
-                            ⋯
-                          </button>
-                          {openUserMenuId === user.id && (
-                            <div className="action-menu-dropdown">
-                              <button
-                                className="action-menu-item action-menu-item-danger"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteClick(user);
-                                  setOpenUserMenuId(null);
-                                }}
-                              >
-                                삭제
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* 클럽이 없는 사용자 섹션 */}
       {noClubUsers.length > 0 && (
         <div className="club-section">
@@ -842,10 +694,7 @@ const UserManagement = () => {
                   const isLastTwo = index >= noClubUsers.length - 2;
                   const isMenuOpen = openUserMenuId === user.id;
                   return (
-                    <tr 
-                      key={user.id}
-                      className={isMenuOpen ? 'menu-open' : ''}
-                    >
+                    <tr key={user.id} className={isMenuOpen ? 'menu-open' : ''}>
                       <td className="user-name-cell">
                         <div className="user-name-content">
                           <div className="user-avatar">
@@ -969,29 +818,6 @@ const UserManagement = () => {
           </div>
         </div>
       )}
-
-      <div className="user-stats">
-        <div className="stat-card">
-          <div className="stat-number">{users.length}</div>
-          <div className="stat-label">총 사용자</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">
-            {users.filter((u) => u.is_active).length}
-          </div>
-          <div className="stat-label">활성 사용자</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-number">
-            {
-              users.filter(
-                (u) => u.role === 'admin' || u.role === 'super_admin'
-              ).length
-            }
-          </div>
-          <div className="stat-label">관리자</div>
-        </div>
-      </div>
 
       {/* 삭제 확인 모달 */}
       {deleteModal.isOpen && (

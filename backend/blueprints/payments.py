@@ -1200,14 +1200,16 @@ def get_fund_balance_cache():
             else:
                 return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
-        # 페이지 새로고침 시 항상 장부 기반으로 스냅샷 재계산
-        try:
-            _calculate_fund_balance_and_chart(club_id)
-        except Exception as calc_error:
-            print(f'스냅샷 계산 오류: {str(calc_error)}')
-        
-        # 재계산된 스냅샷 조회
+        # 스냅샷에서 데이터 조회 (장부/포인트 변경 시 이미 업데이트됨)
         snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).order_by(FundBalanceSnapshot.month.asc()).all()
+        
+        # 스냅샷이 없는 경우에만 초기 계산 수행 (처음 접근 시)
+        if not snapshots:
+            try:
+                _calculate_fund_balance_and_chart(club_id)
+                snapshots = FundBalanceSnapshot.query.filter_by(club_id=club_id).order_by(FundBalanceSnapshot.month.asc()).all()
+            except Exception as calc_error:
+                print(f'초기 스냅샷 계산 오류: {str(calc_error)}')
         
         # 그래프 데이터 구성
         labels = []

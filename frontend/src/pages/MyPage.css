@@ -384,16 +384,24 @@
   gap: 15px;
   margin-top: 0;
   justify-content: flex-end;
+  border-top: none;
 }
 
 /* form-group 다음에 오는 form-actions는 간격 최소화 */
 .form-group + .form-actions {
   margin-top: 8px;
+  border-top: none;
 }
 
 /* 클럽 설명 관리 카드 안에서는 버튼 위 여백을 조금만 사용 */
 .club-description-item .form-actions {
   margin-top: 8px;
+  border-top: none;
+}
+
+/* info-card 내부의 form-actions에서 상단 선 제거 */
+.info-card .form-actions {
+  border-top: none;
 }
 
 /* 모바일 반응형 */

@@ -55,6 +55,10 @@
   border-left: 4px solid #e0e7ff;
 }
 
+.club-action-menu {
+  margin-left: auto;
+}
+
 [data-theme='dark'] .club-section-header {
   background: rgba(30, 41, 59, 0.6);
   border-left-color: rgba(99, 102, 241, 0.5);
@@ -256,7 +260,7 @@
 }
 
 .users-table th:first-child {
-  text-align: left !important;
+  text-align: center !important;
 }
 
 [data-theme='dark'] .users-table th {
