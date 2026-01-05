@@ -1005,12 +1005,13 @@ const Payments = () => {
     );
     if (tempPayment) return tempPayment;
 
-    // 실제 납입 확인
+    // 실제 납입 확인 (개별 납입만, 선납 제외)
     const payment = payments.find(
       (p) =>
         p.member_id === memberId &&
         p.month === month &&
-        p.payment_type === paymentType
+        p.payment_type === paymentType &&
+        !p.note?.includes('개월 선납') // 선납이 아닌 개별 납입만 확인
     );
     if (payment) return payment;
 
@@ -1049,6 +1050,35 @@ const Payments = () => {
               currentMonthNum >= startMonthNum &&
               currentMonthNum < startMonthNum + count
             ) {
+              // 현재 월에 이미 개별 납입(면제 포함)이 있는지 확인
+              // 위에서 이미 확인했지만, 선납 범위 내에서 면제된 월은 제외해야 함
+              const existingPayment = payments.find(
+                (p) =>
+                  p.member_id === memberId &&
+                  p.month === month &&
+                  p.payment_type === paymentType &&
+                  !p.note?.includes('개월 선납') // 개별 납입만 확인 (선납이 아닌)
+              );
+
+              // 이미 개별 납입(면제 포함)이 있으면 선납으로 덮어쓰지 않음
+              if (existingPayment) {
+                continue;
+              }
+
+              // 임시 납입에도 개별 납입이 있는지 확인
+              const existingTempPayment = tempNewPayments.find(
+                (p) =>
+                  p.member_id === memberId &&
+                  p.month === month &&
+                  p.payment_type === paymentType &&
+                  !p.prepayGroupId // 선납이 아닌 개별 납입만 확인
+              );
+
+              // 임시 납입에 개별 납입(면제 포함)이 있으면 선납으로 덮어쓰지 않음
+              if (existingTempPayment) {
+                continue;
+              }
+
               // 선납 정보를 복사해서 현재 월 정보로 반환
               return {
                 ...prepayPayment,
@@ -1564,8 +1594,8 @@ const Payments = () => {
           ? monthsCount * monthlyFeeAmount - monthlyFeeAmount // 할인 적용
           : monthsCount * monthlyFeeAmount; // 할인 없음
 
-        // 첫 번째 월의 payment_date 사용
-        const paymentDate = `${firstMonth}-01`;
+        // 선납 추가한 오늘 날짜 사용
+        const paymentDate = new Date().toISOString().split('T')[0];
 
         // 월 표시 형식: "2025-01" -> "2025년 1월"
         const [year, month] = firstMonth.split('-');
