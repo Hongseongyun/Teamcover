@@ -1006,13 +1006,26 @@ const Payments = () => {
     if (tempPayment) return tempPayment;
 
     // 실제 납입 확인 (개별 납입만, 선납 제외)
-    const payment = payments.find(
-      (p) =>
-        p.member_id === memberId &&
-        p.month === month &&
-        p.payment_type === paymentType &&
-        !p.note?.includes('개월 선납') // 선납이 아닌 개별 납입만 확인
-    );
+    // month 필드가 있으면 그것을 사용하고, 없으면 payment_date에서 추출
+    const payment = payments.find((p) => {
+      if (
+        p.member_id !== memberId ||
+        p.payment_type !== paymentType ||
+        p.note?.includes('개월 선납')
+      ) {
+        return false;
+      }
+      // month 필드가 있으면 그것을 사용
+      if (p.month) {
+        return p.month === month;
+      }
+      // month 필드가 없으면 payment_date에서 월 추출
+      if (p.payment_date) {
+        const paymentMonth = p.payment_date.substring(0, 7); // YYYY-MM 형식
+        return paymentMonth === month;
+      }
+      return false;
+    });
     if (payment) return payment;
 
     // 선납인 경우 해당 월 범위에 납입이 있는 것으로 표시
@@ -1606,6 +1619,12 @@ const Payments = () => {
         const note =
           monthsCount === 1 ? '' : `${monthDisplay} ${monthsCount}개월 선납`;
 
+        // 포인트로 납입한 경우 비고에 추가
+        let finalNote = note;
+        if (group.paid_with_points) {
+          finalNote = note ? `${note} (포인트로 납입)` : '포인트로 납입';
+        }
+
         return paymentAPI.addPayment({
           member_id: group.member_id,
           payment_type: group.payment_type,
@@ -1614,13 +1633,15 @@ const Payments = () => {
           is_paid: group.is_paid,
           is_exempt: group.is_exempt || false,
           paid_with_points: group.paid_with_points || false,
-          note: note,
+          note: finalNote,
         });
       });
 
       // 나머지 납입들 저장 (개별 납입)
       const otherNewPayments = otherPayments.map((tempPayment) => {
         const paymentDate = `${tempPayment.month}-01`;
+        // 포인트로 납입한 경우 비고에 추가
+        const note = tempPayment.paid_with_points ? '포인트로 납입' : '';
         return paymentAPI.addPayment({
           member_id: tempPayment.member_id,
           payment_type: tempPayment.payment_type,
@@ -1629,7 +1650,7 @@ const Payments = () => {
           is_paid: tempPayment.is_paid,
           is_exempt: tempPayment.is_exempt || false,
           paid_with_points: tempPayment.paid_with_points || false,
-          note: '',
+          note: note,
         });
       });
 
@@ -3434,8 +3455,9 @@ const Payments = () => {
                 <tbody>
                   {(() => {
                     // 면제 상태 및 미납 상태인 납입 내역은 목록에서 제외 (납입 완료된 항목만 표시)
+                    // payment_date가 없는 항목도 제외 (데이터 무결성)
                     let filteredPayments = payments.filter(
-                      (p) => !p.is_exempt && p.is_paid
+                      (p) => !p.is_exempt && p.is_paid && p.payment_date
                     );
 
                     // 같은 회원의 연속된 개월 납입을 그룹화
@@ -3464,6 +3486,10 @@ const Payments = () => {
                     // 회원별로 그룹화 (일반 납입만)
                     const groupedByMember = {};
                     regularPayments.forEach((payment) => {
+                      // payment_date가 없거나 유효하지 않은 경우 필터링
+                      if (!payment.payment_date) {
+                        return;
+                      }
                       const key = payment.member_id;
                       if (!groupedByMember[key]) {
                         groupedByMember[key] = [];
@@ -3475,10 +3501,20 @@ const Payments = () => {
                     Object.keys(groupedByMember).forEach((memberId) => {
                       const memberPayments = groupedByMember[memberId];
 
-                      // 날짜로 정렬
-                      memberPayments.sort((a, b) =>
-                        a.payment_date.localeCompare(b.payment_date)
-                      );
+                      // month 필드를 기준으로 정렬 (month가 없으면 payment_date에서 추출)
+                      memberPayments.sort((a, b) => {
+                        const monthA =
+                          a.month ||
+                          (a.payment_date
+                            ? a.payment_date.substring(0, 7)
+                            : '');
+                        const monthB =
+                          b.month ||
+                          (b.payment_date
+                            ? b.payment_date.substring(0, 7)
+                            : '');
+                        return monthA.localeCompare(monthB);
+                      });
 
                       // 연속된 개월 납입 그룹 찾기
                       let i = 0;
@@ -3488,24 +3524,44 @@ const Payments = () => {
 
                         // 연속된 개월인지 확인하며 그룹 만들기
                         while (j < memberPayments.length) {
-                          const prevDate = new Date(
-                            consecutiveGroup[
-                              consecutiveGroup.length - 1
-                            ].payment_date
-                          );
-                          const currDate = new Date(
-                            memberPayments[j].payment_date
-                          );
+                          // month 필드를 사용 (없으면 payment_date에서 추출)
+                          const prevMonth =
+                            consecutiveGroup[consecutiveGroup.length - 1]
+                              .month ||
+                            (consecutiveGroup[consecutiveGroup.length - 1]
+                              .payment_date
+                              ? consecutiveGroup[
+                                  consecutiveGroup.length - 1
+                                ].payment_date.substring(0, 7)
+                              : '');
+                          const currMonth =
+                            memberPayments[j].month ||
+                            (memberPayments[j].payment_date
+                              ? memberPayments[j].payment_date.substring(0, 7)
+                              : '');
 
-                          // 예상 다음 달 계산
-                          const expectedDate = new Date(prevDate);
-                          expectedDate.setMonth(expectedDate.getMonth() + 1);
+                          if (!prevMonth || !currMonth) break;
 
-                          // 실제 날짜가 예상 날짜와 같은 달인지 확인
+                          // YYYY-MM 형식에서 연도와 월 추출
+                          const [prevYear, prevMonthNum] = prevMonth
+                            .split('-')
+                            .map(Number);
+                          const [currYear, currMonthNum] = currMonth
+                            .split('-')
+                            .map(Number);
+
+                          // 다음 달 계산
+                          let expectedYear = prevYear;
+                          let expectedMonth = prevMonthNum + 1;
+                          if (expectedMonth > 12) {
+                            expectedMonth = 1;
+                            expectedYear += 1;
+                          }
+
+                          // 실제 월이 예상 월과 같은지 확인 (같은 연도 내에서만)
                           if (
-                            expectedDate.getFullYear() ===
-                              currDate.getFullYear() &&
-                            expectedDate.getMonth() === currDate.getMonth()
+                            currYear === expectedYear &&
+                            currMonthNum === expectedMonth
                           ) {
                             consecutiveGroup.push(memberPayments[j]);
                             j++;
@@ -3515,18 +3571,11 @@ const Payments = () => {
                         }
 
                         if (consecutiveGroup.length > 1) {
-                          // 연속된 개월이 2개 이상인 경우 첫 달에 금액 합산
-                          const firstPayment = { ...consecutiveGroup[0] };
-                          firstPayment.amount = consecutiveGroup.reduce(
-                            (sum, p) => sum + (parseInt(p.amount) || 0),
-                            0
-                          );
-                          processedPayments.push(firstPayment);
-
-                          // 나머지 달 납입은 숨기기
-                          for (let k = 1; k < consecutiveGroup.length; k++) {
-                            hiddenPaymentIds.add(consecutiveGroup[k].id);
-                          }
+                          // 연속된 개월이 2개 이상인 경우 각각 개별적으로 표시
+                          // (등록한 날짜로 표시하기 위해 그룹화하지 않음)
+                          consecutiveGroup.forEach((payment) => {
+                            processedPayments.push(payment);
+                          });
                         } else {
                           // 연속이 아니면 그대로 추가
                           processedPayments.push(consecutiveGroup[0]);
