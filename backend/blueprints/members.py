@@ -253,9 +253,10 @@ def add_member():
                 return jsonify({'success': False, 'message': '관리자 권한이 필요합니다.'}), 403
         
         # 슈퍼관리자, 시스템 관리자, 또는 클럽별 운영진만 회원 추가 가능
-        is_staff = False
-        if (is_system_admin or is_club_admin):
-            is_staff = data.get('is_staff', False)
+        member_role = data.get('member_role', 'regular')
+        # member_role 유효성 검사
+        if member_role not in ['club_leader', 'staff', 'regular']:
+            member_role = 'regular'
         
         # 동일한 이름 + 전화번호인 삭제된 회원 확인 (재가입 처리)
         phone = data.get('phone', '').strip()
@@ -280,7 +281,7 @@ def add_member():
             deleted_member.tier = data.get('tier', '').strip()
             deleted_member.email = data.get('email', '').strip()
             deleted_member.note = data.get('note', '').strip()
-            deleted_member.is_staff = is_staff
+            deleted_member.member_role = member_role
             deleted_member.rejoined_at = datetime.utcnow()  # 재가입일 저장
             deleted_member.updated_at = datetime.utcnow()
             
@@ -303,7 +304,7 @@ def add_member():
                 tier=data.get('tier', '').strip(),
                 email=data.get('email', '').strip(),
                 note=data.get('note', '').strip(),
-                is_staff=is_staff,
+                member_role=member_role,
                 club_id=club_id
             )
             
@@ -368,9 +369,20 @@ def update_member(member_id):
         # 현재 사용자 확인
         current_user = User.query.get(int(user_id))
         
+        # 슈퍼관리자 또는 시스템 관리자인지 확인
+        is_system_admin = current_user and current_user.role in ['super_admin', 'admin']
+        
+        # 클럽별 운영진인지 확인
+        is_club_admin = False
+        if not is_system_admin and user_id:
+            from utils.club_helpers import check_club_permission
+            has_permission, result = check_club_permission(int(user_id), club_id, 'admin')
+            if has_permission:
+                is_club_admin = True
+        
         print(f"[DEBUG] Received data: {data}")
         print(f"[DEBUG] User ID: {user_id}, Current User: {current_user.name if current_user else None}, Role: {current_user.role if current_user else None}")
-        print(f"[DEBUG] is_staff from request: {data.get('is_staff')}")
+        print(f"[DEBUG] member_role from request: {data.get('member_role')}")
         
         member.name = name
         # 마스킹 값 방어: '*'를 포함한 값 또는 전형적 마스킹 패턴(***-****-****)은 무시하고 기존 값 유지
@@ -405,17 +417,21 @@ def update_member(member_id):
         # email 필드가 요청에 없으면 기존 값 유지 (아무것도 하지 않음)
         member.note = data.get('note', '').strip()
         
+        # 회원등급 업데이트 (관리자만)
+        if 'member_role' in data and (is_super_admin or is_club_admin):
+            member_role = data.get('member_role', 'regular')
+            # member_role 유효성 검사
+            if member_role in ['club_leader', 'staff', 'regular']:
+                member.member_role = member_role
+            else:
+                member.member_role = 'regular'
+        
         # 가입일 업데이트
         if 'join_date' in data and data['join_date']:
             try:
                 member.join_date = datetime.strptime(data['join_date'], '%Y-%m-%d').date()
             except ValueError:
                 return jsonify({'success': False, 'message': '올바른 날짜 형식이 아닙니다. (YYYY-MM-DD)'})
-        
-        # 운영진 여부 업데이트 (admin/super_admin만 수정 가능)
-        if current_user and current_user.role in ['admin', 'super_admin']:
-            is_staff_value = data.get('is_staff', False)
-            member.is_staff = is_staff_value
         
         member.updated_at = datetime.utcnow()
         

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { memberAPI, sheetsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useClub } from '../contexts/ClubContext';
+import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
 import { LoadingModal, TierBadge } from '../components/common';
 import { PasswordModal, PasswordSettingModal } from './Members/modals';
@@ -10,6 +11,7 @@ import './Members.css';
 const Members = () => {
   const { user } = useAuth();
   const { currentClub, loading: clubLoading, isAdmin: clubIsAdmin } = useClub();
+  const { theme } = useTheme();
   const isSuperAdmin = user && user.role === 'super_admin';
   // 클럽별 운영 권한: 현재 클럽의 운영진이거나 슈퍼관리자일 때만 true
   const isAdmin = isSuperAdmin || clubIsAdmin;
@@ -34,7 +36,7 @@ const Members = () => {
     phone: '',
     gender: '',
     note: '',
-    is_staff: false,
+    member_role: 'regular', // 'club_leader', 'staff', 'regular'
   });
 
   // 인라인 편집 상태
@@ -44,7 +46,7 @@ const Members = () => {
     phone: '',
     gender: '',
     note: '',
-    is_staff: false,
+    member_role: 'regular', // 'club_leader', 'staff', 'regular'
     join_date: '',
   });
   const [savingInlineEdit, setSavingInlineEdit] = useState(false); // 인라인 편집 저장 중 로딩 상태
@@ -59,7 +61,7 @@ const Members = () => {
   });
 
   // 정렬 상태
-  const [sortField, setSortField] = useState('name'); // name, tier, join_date
+  const [sortField, setSortField] = useState('member_role'); // name, tier, join_date, member_role
   const [sortOrder, setSortOrder] = useState('asc'); // asc, desc
 
   // 정렬 함수
@@ -77,6 +79,57 @@ const Members = () => {
   // 정렬된 회원 목록 (메모이제이션)
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => {
+      // 회원등급 기준 정렬인 경우
+      if (sortField === 'member_role') {
+        const roleOrder = {
+          club_leader: 0,
+          staff: 1,
+          regular: 2,
+        };
+        // member_role만 사용 (is_staff 제거됨)
+        const getRole = (member) => {
+          // member_role이 명시적으로 설정되어 있으면 사용
+          if (member.member_role && 
+              (member.member_role === 'club_leader' || 
+               member.member_role === 'staff' || 
+               member.member_role === 'regular')) {
+            return member.member_role;
+          }
+          // member_role이 없거나 유효하지 않으면 기본값 'regular'
+          return 'regular';
+        };
+        const roleA = getRole(a);
+        const roleB = getRole(b);
+        const orderA = roleOrder[roleA] !== undefined ? roleOrder[roleA] : 2;
+        const orderB = roleOrder[roleB] !== undefined ? roleOrder[roleB] : 2;
+        
+        // 디버깅용 로그 (개발 환경에서만)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Sorting:', {
+            nameA: a.name,
+            roleA: roleA,
+            orderA: orderA,
+            nameB: b.name,
+            roleB: roleB,
+            orderB: orderB,
+          });
+        }
+
+        // 회원등급이 같으면 이름순으로 정렬 (한글 ㄱㄴㄷ순)
+        if (orderA === orderB) {
+          const nameA = a.name || '';
+          const nameB = b.name || '';
+          return nameA.localeCompare(nameB, 'ko', { numeric: true, sensitivity: 'base' });
+        }
+
+        // 회원등급 순서대로 정렬
+        if (sortOrder === 'asc') {
+          return orderA - orderB;
+        } else {
+          return orderB - orderA;
+        }
+      }
+
       let valueA, valueB;
 
       switch (sortField) {
@@ -132,9 +185,16 @@ const Members = () => {
         }
       }
 
-      // 문자열 비교
-      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
-      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      // 문자열 비교 (이름)
+      if (sortField === 'name') {
+        // 한글 정렬을 위해 localeCompare 사용
+        if (sortOrder === 'asc') {
+          return (valueA || '').localeCompare(valueB || '', 'ko', { numeric: true, sensitivity: 'base' });
+        } else {
+          return (valueB || '').localeCompare(valueA || '', 'ko', { numeric: true, sensitivity: 'base' });
+        }
+      }
+
       return 0;
     });
   }, [members, sortField, sortOrder]);
@@ -191,6 +251,7 @@ const Members = () => {
         });
     }
   }, [openMenuId]);
+
 
   // 드롭다운이 열릴 때 위치 재계산
   useEffect(() => {
@@ -432,7 +493,7 @@ const Members = () => {
         gender: '',
         email: '',
         note: '',
-        is_staff: false,
+        member_role: 'regular',
       });
       loadMembers();
     } catch (error) {
@@ -487,7 +548,7 @@ const Members = () => {
       phone: '',
       gender: '',
       note: '',
-      is_staff: false,
+      member_role: 'regular',
     });
     setEditingMember(null);
     setShowAddForm(false);
@@ -562,7 +623,7 @@ const Members = () => {
       phone: member.phone || '',
       gender: member.gender || '',
       note: member.note || '',
-      is_staff: member.is_staff || false,
+      member_role: member.member_role || 'regular',
       join_date: member.join_date || '',
     });
   };
@@ -576,7 +637,8 @@ const Members = () => {
       gender: '',
       email: '',
       note: '',
-      is_staff: false,
+      member_role: 'regular',
+      join_date: '',
     });
   };
 
@@ -621,7 +683,7 @@ const Members = () => {
                   gender: inlineEditData.gender,
                   email: inlineEditData.email,
                   note: inlineEditData.note,
-                  is_staff: inlineEditData.is_staff,
+                  member_role: inlineEditData.member_role,
                 }
               : m
           )
@@ -811,6 +873,25 @@ const Members = () => {
                     disabled={submitting}
                   />
                 </div>
+                {isAdmin && (
+                  <div className="form-group form-group-role">
+                    <label>회원등급</label>
+                    <select
+                      value={formData.member_role || 'regular'}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          member_role: e.target.value,
+                        })
+                      }
+                      disabled={submitting}
+                    >
+                      <option value="regular">정회원</option>
+                      <option value="staff">운영진</option>
+                      <option value="club_leader">클럽장</option>
+                    </select>
+                  </div>
+                )}
                 <div className="form-group form-group-phone">
                   <label>전화번호</label>
                   <input
@@ -847,22 +928,6 @@ const Members = () => {
                     disabled={submitting}
                   />
                 </div>
-                {isAdmin && (
-                  <div className="form-group form-group-staff">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_staff}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          is_staff: e.target.checked,
-                        })
-                      }
-                      disabled={submitting}
-                    />
-                    <label>운영진</label>
-                  </div>
-                )}
               </div>
               <div className="form-actions">
                 <button
@@ -911,6 +976,14 @@ const Members = () => {
                     이름{' '}
                     {sortField === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
+                  <th
+                    className="sortable"
+                    onClick={() => handleSort('member_role')}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    회원등급{' '}
+                    {sortField === 'member_role' && (sortOrder === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th>전화번호</th>
                   <th>성별</th>
                   <th
@@ -921,7 +994,6 @@ const Members = () => {
                     티어{' '}
                     {sortField === 'tier' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </th>
-                  <th>운영진</th>
                   <th
                     className="sortable"
                     onClick={() => handleSort('join_date')}
@@ -954,6 +1026,32 @@ const Members = () => {
                               }
                               required
                             />
+                          </td>
+                          <td>
+                            {isAdmin ? (
+                              <select
+                                className="inline-select"
+                                value={inlineEditData.member_role || 'regular'}
+                                onChange={(e) =>
+                                  setInlineEditData((prev) => ({
+                                    ...prev,
+                                    member_role: e.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="regular">정회원</option>
+                                <option value="staff">운영진</option>
+                                <option value="club_leader">클럽장</option>
+                              </select>
+                            ) : (
+                              <span>
+                                {inlineEditData.member_role === 'club_leader'
+                                  ? '클럽장'
+                                  : inlineEditData.member_role === 'staff'
+                                  ? '운영진'
+                                  : '정회원'}
+                              </span>
+                            )}
                           </td>
                           <td>
                             <input
@@ -992,33 +1090,6 @@ const Members = () => {
                           </td>
                           <td>
                             <TierBadge tier={member.tier} size="small" />
-                          </td>
-                          <td>
-                            {isAdmin ? (
-                              <label
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '5px',
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={inlineEditData.is_staff || false}
-                                  onChange={(e) =>
-                                    setInlineEditData((prev) => ({
-                                      ...prev,
-                                      is_staff: e.target.checked,
-                                    }))
-                                  }
-                                />
-                                운영진
-                              </label>
-                            ) : member.is_staff ? (
-                              <span className="badge badge-info">운영진</span>
-                            ) : (
-                              <span>-</span>
-                            )}
                           </td>
                           <td>
                             <input
@@ -1106,6 +1177,38 @@ const Members = () => {
                               </span>
                             )}
                           </td>
+                          <td>
+                            {member.member_role === 'club_leader' ? (
+                              <span
+                                className="member-role-text"
+                                style={{
+                                  color: '#ef4444',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                클럽장
+                              </span>
+                            ) : member.member_role === 'staff' ? (
+                              <span
+                                className="member-role-text"
+                                style={{
+                                  color: '#ef4444',
+                                  fontWeight: 'bold',
+                                }}
+                              >
+                                운영진
+                              </span>
+                            ) : (
+                              <span
+                                className="member-role-text"
+                                style={{
+                                  color: theme === 'dark' ? '#ffffff' : '#000000',
+                                }}
+                              >
+                                정회원
+                              </span>
+                            )}
+                          </td>
                           <td className="privacy-cell-wrapper">
                             <span className="privacy-text">
                               {maskPhone(member.phone)}
@@ -1124,24 +1227,6 @@ const Members = () => {
                           <td>{member.gender || '-'}</td>
                           <td>
                             <TierBadge tier={member.tier} size="small" />
-                          </td>
-                          <td>
-                            {member.is_staff ? (
-                              <span
-                                style={{
-                                  padding: '2px 6px',
-                                  backgroundColor: '#e7f3ff',
-                                  color: '#0066cc',
-                                  borderRadius: '3px',
-                                  fontSize: '12px',
-                                  fontWeight: 'bold',
-                                }}
-                              >
-                                운영진
-                              </span>
-                            ) : (
-                              '-'
-                            )}
                           </td>
                           <td>
                             {member.join_date || member.created_at

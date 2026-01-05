@@ -154,7 +154,7 @@ class Member(db.Model):
     email = db.Column(db.String(100), nullable=True)
     note = db.Column(db.Text, nullable=True)
     join_date = db.Column(db.Date, nullable=True)  # 가입일 (수정 가능)
-    is_staff = db.Column(db.Boolean, default=False)  # 운영진 여부
+    member_role = db.Column(db.String(20), nullable=False, default='regular')  # 회원등급: 'club_leader', 'staff', 'regular'
     is_deleted = db.Column(db.Boolean, default=False)  # 삭제 여부 (soft delete)
     rejoined_at = db.Column(db.DateTime, nullable=True)  # 재가입일 (탈퇴 후 재가입한 경우)
     club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)  # 클럽 ID
@@ -359,7 +359,7 @@ class Member(db.Model):
             'average_score': self.average_score,  # 이미 자연수로 저장됨
             'note': self.note,
             'join_date': self.join_date.strftime('%Y-%m-%d') if self.join_date else None,
-            'is_staff': self.is_staff,  # 운영진 여부
+            'member_role': self.member_role or 'regular',  # 회원등급
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d') if self.updated_at else None
         }

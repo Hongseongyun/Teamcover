@@ -665,6 +665,11 @@
   white-space: nowrap;
 }
 
+/* 회원등급 텍스트 반응형 스타일 */
+.member-role-text {
+  font-size: var(--responsive-table-font, 0.875rem);
+}
+
 /* 다크모드에서 테이블 선 더 잘 보이도록 */
 [data-theme='dark'] .members-table th,
 [data-theme='dark'] .members-table td {
@@ -793,17 +798,17 @@
 
 .members-table th:nth-child(2),
 .members-table td:nth-child(2) {
-  width: 18%;
+  width: 10%;
 }
 
 .members-table th:nth-child(3),
 .members-table td:nth-child(3) {
-  width: 8%;
+  width: 16%;
 }
 
 .members-table th:nth-child(4),
 .members-table td:nth-child(4) {
-  width: 14%;
+  width: 10%;
 }
 
 .members-table th:nth-child(5),
@@ -834,17 +839,17 @@
 
 .members-table th:nth-child(2),
 .members-table td:nth-child(2) {
-  min-width: 170px;
+  min-width: 60px;
 }
 
 .members-table th:nth-child(3),
 .members-table td:nth-child(3) {
-  min-width: 50px;
+  min-width: 200px;
 }
 
 .members-table th:nth-child(4),
 .members-table td:nth-child(4) {
-  min-width: 80px;
+  min-width: 50px;
 }
 
 .members-table th:nth-child(5),
@@ -1489,16 +1494,16 @@
     width: 18%;
   }
 
-  /* 전화번호 컬럼 - 40% */
+  /* 회원등급 컬럼 - 20% */
   .members-table th:nth-child(2),
   .members-table td:nth-child(2) {
-    width: 40%;
+    width: 20%;
   }
 
-  /* 성별 컬럼 - 12% */
+  /* 전화번호 컬럼 - 32% */
   .members-table th:nth-child(3),
   .members-table td:nth-child(3) {
-    width: 12%;
+    width: 32%;
   }
 
   /* 작업 컬럼 - 30% */
