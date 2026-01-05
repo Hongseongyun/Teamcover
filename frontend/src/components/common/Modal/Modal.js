@@ -53,7 +53,10 @@ const Modal = ({
         document.body.style.top = '';
         document.body.style.width = '';
         document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
+        // DOM 업데이트가 완료된 후 스크롤 위치 복원
+        requestAnimationFrame(() => {
+          window.scrollTo(0, scrollY);
+        });
       };
     }
   }, [isOpen, preventScroll]);

@@ -96,27 +96,7 @@ const Payments = () => {
   const [showMonthlyFeeSettingsModal, setShowMonthlyFeeSettingsModal] =
     useState(false);
 
-  // 모달이 열릴 때 배경 스크롤 막기 (선불금 모달만 적용)
-  useEffect(() => {
-    if (showPrepayModal) {
-      // 현재 스크롤 위치 저장
-      const scrollY = window.scrollY;
-      // body 스타일 적용
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        // 모달이 닫힐 때 스크롤 복원
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [showPrepayModal]);
+  // PrepayModal은 Modal 컴포넌트가 스크롤을 처리하므로 별도 로직 불필요
 
   // 납입 추가 폼이 열릴 때 스크롤 위치 유지
   useEffect(() => {
@@ -2358,6 +2338,7 @@ const Payments = () => {
                                       data-item-id={item.id}
                                     >
                                       <button
+                                        type="button"
                                         className="btn btn-sm btn-menu-toggle"
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -2403,6 +2384,7 @@ const Payments = () => {
                                       {openLedgerMenuId === item.id && (
                                         <div className="action-menu-dropdown">
                                           <button
+                                            type="button"
                                             className="action-menu-item"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -2413,6 +2395,7 @@ const Payments = () => {
                                             수정
                                           </button>
                                           <button
+                                            type="button"
                                             className="action-menu-item action-menu-item-danger"
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -2723,6 +2706,7 @@ const Payments = () => {
               {isAdmin && (
                 <div className="action-menu-container">
                   <button
+                    type="button"
                     className="btn btn-sm btn-menu-toggle"
                     onClick={() => {
                       setShowMonthlyFeeSettingsModal(true);
