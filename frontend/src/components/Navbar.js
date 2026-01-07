@@ -123,6 +123,7 @@ const Navbar = () => {
       '/board': hasRole('user'),
       '/messages': hasRole('user'),
       '/inquiry': hasRole('user') || hasRole('admin'), // 일반 사용자 및 운영진
+      '/schedules': hasRole('user'), // 일반 사용자
     };
 
     return pagePermissions[page] || false;
@@ -228,6 +229,17 @@ const Navbar = () => {
                   </Link>
                 </li>
               )}
+            {canAccessPage('/schedules') && currentClub && (
+              <li className="nav-item">
+                <Link
+                  to="/schedules"
+                  className={`nav-link ${isActive('/schedules')}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  일정확인
+                </Link>
+              </li>
+            )}
             {canAccessPage('/payments') && currentClub && (
               <li className="nav-item">
                 <Link

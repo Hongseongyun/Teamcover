@@ -858,4 +858,116 @@ class Like(db.Model):
             'post_id': self.post_id,
             'user_id': self.user_id,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
-        } 
+        }
+
+
+class Schedule(db.Model):
+    """일정 모델 (정기전, 벙, 이벤트전)"""
+    __tablename__ = 'schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=True)
+    schedule_type = db.Column(db.String(20), nullable=False)  # 'regular', 'meeting', 'event'
+    title = db.Column(db.String(200), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    max_participants = db.Column(db.Integer, nullable=False, default=18)
+    description = db.Column(db.Text, nullable=True)
+    is_recurring = db.Column(db.Boolean, default=False)  # 정기전 여부
+    recurring_config = db.Column(db.JSON, nullable=True)  # 정기전 설정: { "day_of_week": 1, "week_type": "all|even|odd", "frequency": 4 }
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    club = db.relationship('Club', backref=db.backref('schedules', lazy=True))
+    creator = db.relationship('User', backref=db.backref('created_schedules', lazy=True))
+    attendances = db.relationship('ScheduleAttendance', backref='schedule', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<Schedule {self.title} {self.date}>'
+    
+    def to_dict(self, include_attendances=False):
+        """딕셔너리 형태로 변환"""
+        data = {
+            'id': self.id,
+            'club_id': self.club_id,
+            'schedule_type': self.schedule_type,
+            'title': self.title,
+            'date': self.date.strftime('%Y-%m-%d') if self.date else None,
+            'time': self.time.strftime('%H:%M') if self.time else None,
+            'max_participants': self.max_participants,
+            'description': self.description,
+            'is_recurring': self.is_recurring,
+            'recurring_config': self.recurring_config,
+            'created_by': self.created_by,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+        }
+        
+        if include_attendances:
+            data['attendances'] = [att.to_dict() for att in self.attendances]
+            data['attendance_count'] = len([att for att in self.attendances if att.status == 'attending'])
+        else:
+            data['attendance_count'] = len([att for att in self.attendances if att.status == 'attending'])
+        
+        return data
+
+
+class ScheduleAttendance(db.Model):
+    """일정 참석 모델"""
+    __tablename__ = 'schedule_attendances'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    schedule_id = db.Column(db.Integer, db.ForeignKey('schedules.id'), nullable=False)
+    member_id = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='attending')  # 'attending', 'rejected'
+    rejected_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 관계
+    member = db.relationship('Member', backref=db.backref('schedule_attendances', lazy=True))
+    rejector = db.relationship('User', foreign_keys=[rejected_by])
+    
+    # 중복 참석 방지
+    __table_args__ = (db.UniqueConstraint('schedule_id', 'member_id', name='unique_schedule_member'),)
+    
+    def __repr__(self):
+        return f'<ScheduleAttendance {self.member_id} - {self.schedule_id} ({self.status})>'
+    
+    def to_dict(self):
+        """딕셔너리 형태로 변환
+
+        참석자 이름은 가능하면 마이페이지(User) 이름을 사용하고,
+        없을 경우 기존 Member 이름을 사용합니다.
+        """
+        member_name = None
+
+        # 1. Member가 있고 이메일이 있는 경우, 같은 이메일을 가진 User를 찾아 이름 사용
+        if self.member and self.member.email:
+            try:
+                user = User.query.filter_by(email=self.member.email).first()
+                if user and user.name:
+                    member_name = user.name
+            except Exception:
+                # User 조회 중 오류가 나면 조용히 무시하고 Member 이름으로 폴백
+                member_name = None
+
+        # 2. User 기반 이름이 없으면 기존 Member 이름 사용
+        if not member_name and self.member:
+            member_name = self.member.name
+
+        return {
+            'id': self.id,
+            'schedule_id': self.schedule_id,
+            'member_id': self.member_id,
+            'member_name': member_name,
+            'status': self.status,
+            'rejected_by': self.rejected_by,
+            'rejector_name': self.rejector.name if self.rejector else None,
+            'rejected_at': self.rejected_at.strftime('%Y-%m-%d %H:%M:%S') if self.rejected_at else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
+        }

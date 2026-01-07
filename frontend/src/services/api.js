@@ -323,4 +323,19 @@ export const inquiryAPI = {
   getUnreadCount: () => api.get('/api/inquiries/unread-count'),
 };
 
+// 일정 관리 API
+export const scheduleAPI = {
+  getSchedules: (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/api/schedules/${queryString ? '?' + queryString : ''}`);
+  },
+  getSchedule: (scheduleId) => api.get(`/api/schedules/${scheduleId}`),
+  createSchedule: (data) => api.post('/api/schedules/', data),
+  updateSchedule: (scheduleId, data) => api.put(`/api/schedules/${scheduleId}`, data),
+  deleteSchedule: (scheduleId) => api.delete(`/api/schedules/${scheduleId}`),
+  attendSchedule: (scheduleId, data) => api.post(`/api/schedules/${scheduleId}/attend`, data),
+  cancelAttendance: (scheduleId, data) => api.post(`/api/schedules/${scheduleId}/cancel`, data),
+  rejectAttendance: (scheduleId, data) => api.post(`/api/schedules/${scheduleId}/reject`, data),
+};
+
 export default api;

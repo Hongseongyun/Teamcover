@@ -23,6 +23,7 @@ import UserManagement from './pages/UserManagement';
 import MyPage from './pages/MyPage';
 import Board from './pages/Board';
 import Inquiry from './pages/Inquiry';
+import Schedules from './pages/Schedules';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
@@ -111,6 +112,14 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole="user">
                       <Inquiry />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/schedules"
+                  element={
+                    <ProtectedRoute requiredRole="user">
+                      <Schedules />
                     </ProtectedRoute>
                   }
                 />
