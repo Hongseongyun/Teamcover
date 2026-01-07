@@ -236,7 +236,7 @@ const Navbar = () => {
                   className={`nav-link ${isActive('/schedules')}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  일정확인
+                  캘린더
                 </Link>
               </li>
             )}
@@ -307,11 +307,13 @@ const Navbar = () => {
                 </div>
                 <span className="user-name">{user?.name}</span>
                 <span className="user-role">
-                  ({user?.role === 'super_admin' 
-                    ? 'super_admin' 
-                    : isClubAdmin 
-                    ? 'admin' 
-                    : user?.role})
+                  (
+                  {user?.role === 'super_admin'
+                    ? 'super_admin'
+                    : isClubAdmin
+                    ? 'admin'
+                    : user?.role}
+                  )
                 </span>
                 <span
                   className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`}

@@ -435,9 +435,12 @@
     gap: 1rem;
   }
 
+  /* 타이틀 아래에 오지만 버튼 크기는 유지 */
   .schedules-actions {
-    width: 100%;
-    flex-direction: column;
+    margin-top: 0.5rem;
+    align-self: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
   .calendar-day {

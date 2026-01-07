@@ -456,7 +456,7 @@ const Schedules = () => {
     <div className="schedules-page">
       <LoadingModal isOpen={creatingRegularSchedules} />
       <div className="schedules-header">
-        <h1>일정확인</h1>
+        <h1>캘린더</h1>
         <div className="schedules-actions">
           {isAdmin && (
             <button
@@ -468,11 +468,12 @@ const Schedules = () => {
             </button>
           )}
           <button
-            className="btn btn-secondary"
+            type="button"
+            className="inquiry-create-button"
             onClick={() => setShowAddScheduleModal(true)}
             disabled={creatingRegularSchedules}
           >
-            일정 추가
+            <span>일정 추가</span>
           </button>
         </div>
       </div>
