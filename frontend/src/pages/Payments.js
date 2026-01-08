@@ -1794,13 +1794,13 @@ const Payments = () => {
               })()}
             </div>
             <div className="balance-chart">
-              {ledgerLoading || 
-               !balanceSeries.labels || 
-               balanceSeries.labels.length === 0 ||
-               !balanceSeries.credits ||
-               !balanceSeries.debits ||
-               !balanceSeries.paymentBalances ||
-               !balanceSeries.pointBalances ? (
+              {ledgerLoading ||
+              !balanceSeries.labels ||
+              balanceSeries.labels.length === 0 ||
+              !balanceSeries.credits ||
+              !balanceSeries.debits ||
+              !balanceSeries.paymentBalances ||
+              !balanceSeries.pointBalances ? (
                 <div className="chart-loading">그래프 준비 중...</div>
               ) : (
                 <Bar
@@ -1865,10 +1865,15 @@ const Payments = () => {
                         callbacks: {
                           label: function (context) {
                             // null 체크 추가
-                            if (!context || !context.parsed || context.parsed.y === null || context.parsed.y === undefined) {
+                            if (
+                              !context ||
+                              !context.parsed ||
+                              context.parsed.y === null ||
+                              context.parsed.y === undefined
+                            ) {
                               return '';
                             }
-                            
+
                             const value = context.parsed.y;
                             const label = context.dataset.label || '';
                             // 1원 단위까지 정확히 표시

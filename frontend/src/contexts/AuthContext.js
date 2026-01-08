@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }) => {
           success: true,
           message: response.data.message,
           has_active_session: has_active_session || false,
+          pending_approval: response.data.pending_approval || false,
         };
       } else {
         return { success: false, message: response.data.message };

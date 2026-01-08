@@ -300,10 +300,16 @@ def verify_email_token(token):
                         club_id=club_id
                     ).first()
                     if not existing_membership:
+                        # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+                        is_super_admin = existing_user.role == 'super_admin'
                         membership = ClubMember(
                             user_id=existing_user.id,
                             club_id=club_id,
-                            role='member'
+                            role='member',
+                            status='approved' if is_super_admin else 'pending',
+                            requested_at=datetime.utcnow(),
+                            approved_at=datetime.utcnow() if is_super_admin else None,
+                            approved_by=existing_user.id if is_super_admin else None
                         )
                         db.session.add(membership)
                 
@@ -329,10 +335,16 @@ def verify_email_token(token):
         
         # 선택한 클럽에 가입 (club_id가 있는 경우)
         if club_id:
+            # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+            is_super_admin = new_user.role == 'super_admin'
             membership = ClubMember(
                 user_id=new_user.id,
                 club_id=club_id,
-                role='member'
+                role='member',
+                status='approved' if is_super_admin else 'pending',
+                requested_at=datetime.utcnow(),
+                approved_at=datetime.utcnow() if is_super_admin else None,
+                approved_by=new_user.id if is_super_admin else None
             )
             db.session.add(membership)
         else:
@@ -340,14 +352,40 @@ def verify_email_token(token):
             from models import Club
             default_club = Club.query.filter_by(name='Teamcover').first()
             if default_club:
+                # 슈퍼관리자는 즉시 승인, 일반 회원은 승인 대기
+                is_super_admin = new_user.role == 'super_admin'
                 membership = ClubMember(
                     user_id=new_user.id,
                     club_id=default_club.id,
-                    role='member'
+                    role='member',
+                    status='approved' if is_super_admin else 'pending',
+                    requested_at=datetime.utcnow(),
+                    approved_at=datetime.utcnow() if is_super_admin else None,
+                    approved_by=new_user.id if is_super_admin else None
                 )
                 db.session.add(membership)
         
         db.session.commit()
+        
+        # 슈퍼관리자가 아니고 클럽 가입이 pending 상태인 경우
+        is_super_admin = new_user.role == 'super_admin'
+        has_pending_membership = False
+        if club_id or default_club:
+            club_id_to_check = club_id or (default_club.id if default_club else None)
+            if club_id_to_check:
+                membership = ClubMember.query.filter_by(
+                    user_id=new_user.id,
+                    club_id=club_id_to_check
+                ).first()
+                if membership and membership.status == 'pending':
+                    has_pending_membership = True
+        
+        if not is_super_admin and has_pending_membership:
+            return {
+                'success': True, 
+                'message': '이메일 인증이 완료되었습니다. 관리자 승인을 기다려주세요.',
+                'pending_approval': True
+            }
         
         return {'success': True, 'message': '이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.'}
         

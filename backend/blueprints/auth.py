@@ -246,6 +246,22 @@ def login():
                     'status': membership.status
                 })
         
+        # 승인 대기 중인 멤버십 확인
+        pending_memberships = ClubMember.query.filter_by(
+            user_id=user.id,
+            status='pending'
+        ).all()
+        has_pending_membership = len(pending_memberships) > 0
+        has_approved_club = len(club_memberships) > 0
+        
+        # 승인 대기 중이고 승인된 클럽이 없는 경우
+        if has_pending_membership and not has_approved_club:
+            return jsonify({
+                'success': True,
+                'message': '아직 클럽 가입 승인이 완료되지 않았습니다. 승인 후 다시 로그인해주세요.',
+                'pending_approval': True
+            })
+        
         user_dict = user.to_dict()
         user_dict['clubs'] = clubs_info
         

@@ -27,6 +27,7 @@ const Login = () => {
   const [pendingLoginData, setPendingLoginData] = useState(null);
   const [availableClubs, setAvailableClubs] = useState([]);
   const [loadingClubs, setLoadingClubs] = useState(false);
+  const [showApprovalPendingModal, setShowApprovalPendingModal] = useState(false);
 
   const { login, register, isAuthenticated, logoutOtherDevices, logout, user } = useAuth();
   const navigate = useNavigate();
@@ -335,13 +336,19 @@ const Login = () => {
 
       // 로그인 성공 시에만 여기 도달
       if (result.success) {
+        // 승인 대기 상태인 경우
+        if (result.pending_approval) {
+          setShowApprovalPendingModal(true);
+          setLoading(false);
+          return;
+        }
+        
         // 다른 기기에서 로그인되어 있는지 확인
         if (result.has_active_session) {
           setPendingNavigation(from);
           setShowActiveSessionModal(true);
         } else {
           // 로그인 성공 시 항상 랜딩 페이지로 이동
-          // 승인 대기 상태는 구글 로그인 콜백에서 모달로 처리하므로 여기서는 확인하지 않음
           navigate('/', { replace: true });
         }
       } else {
@@ -805,6 +812,53 @@ const Login = () => {
                 disabled={loading}
               >
                 이 기기에서만 계속하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 승인 대기 모달 */}
+      {showApprovalPendingModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-icon">
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="10" fill="#fff3cd" />
+                <path
+                  d="M12 8v4M12 16h.01"
+                  stroke="#ff9800"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <h2>승인 대기 중</h2>
+            <div className="modal-message">
+              <p
+                className="modal-message-main"
+                style={{ marginBottom: '10px' }}
+              >
+                관리자에게 승인 요청하였습니다.
+              </p>
+              <p className="modal-message-sub">
+                승인이 완료되면 정상적으로 이용이 가능합니다.
+              </p>
+            </div>
+            <div className="modal-buttons">
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  setShowApprovalPendingModal(false);
+                }}
+              >
+                확인
               </button>
             </div>
           </div>
