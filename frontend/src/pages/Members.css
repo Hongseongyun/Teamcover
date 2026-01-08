@@ -1762,6 +1762,15 @@
   font-weight: 600;
 }
 
+/* 취소 버튼은 ClubDetail과 동일한 스타일로 오버라이드 */
+.import-actions .btn.btn-secondary {
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  min-width: auto !important;
+}
+
 .import-form {
   display: flex;
   flex-direction: column;
@@ -2030,6 +2039,39 @@
   background-color: var(--toss-gray-600);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(107, 114, 128, 0.3);
+}
+
+/* 섹션 내부 취소 버튼 (구글시트 가져오기, 새 회원 등록) - ClubDetail과 동일 */
+.form-actions .btn-secondary,
+.import-actions .btn-secondary {
+  padding: 0.75rem 1.5rem !important;
+  background: var(--color-surface-secondary, #f9fafb) !important;
+  color: var(--color-text, #333) !important;
+  border: 1px solid var(--color-border, #e0e0e0) !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+.form-actions .btn-secondary:hover:not(:disabled),
+.import-actions .btn-secondary:hover:not(:disabled) {
+  background: var(--color-border, #e0e0e0) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+[data-theme='dark'] .form-actions .btn-secondary,
+[data-theme='dark'] .import-actions .btn-secondary {
+  background: var(--color-surface-secondary, #374151) !important;
+  border-color: var(--color-border, #4b5563) !important;
+  color: var(--color-text, #f3f4f6) !important;
+}
+
+[data-theme='dark'] .form-actions .btn-secondary:hover:not(:disabled),
+[data-theme='dark'] .import-actions .btn-secondary:hover:not(:disabled) {
+  background: var(--color-border, #4b5563) !important;
 }
 
 .section-actions .btn-success,

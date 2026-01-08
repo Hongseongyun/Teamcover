@@ -815,3 +815,258 @@ def reject_join_request(request_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'가입 요청 거부 실패: {str(e)}'}), 500
+
+# ========== 클럽 홍보 페이지 관련 API ==========
+
+# 모든 클럽 목록 조회 (홍보 페이지용 - 공개)
+@clubs_bp.route('/promotion', methods=['GET'])
+def get_promotion_clubs():
+    """홍보 페이지용 클럽 목록 조회 (공개)"""
+    try:
+        clubs = Club.query.all()
+        clubs_data = []
+        
+        for club in clubs:
+            # 회원 수 계산
+            member_count = db.session.query(db.func.count(ClubMember.id)).filter(
+                ClubMember.club_id == club.id,
+                ClubMember.status == 'approved'
+            ).scalar() or 0
+            
+            # 해시태그에서 지역과 상주볼링장 추출
+            hashtags = club.hashtags if club.hashtags else []
+            region = None
+            bowling_alley = None
+            
+            for tag in hashtags:
+                if isinstance(tag, str):
+                    # #제거하고 공백 제거
+                    clean_tag = tag.replace('#', '').strip()
+                    # 지역 추출 (예: #서울, #부산 등)
+                    if not region and any(keyword in clean_tag for keyword in ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주']):
+                        region = clean_tag
+                    # 상주볼링장 추출
+                    if not bowling_alley and ('볼링장' in clean_tag or '앵커스' in clean_tag or '볼링' in clean_tag):
+                        bowling_alley = clean_tag
+            
+            clubs_data.append({
+                'id': club.id,
+                'name': club.name,
+                'description': club.description,  # 간단한 설명 (슈퍼관리자 마이페이지에서 관리)
+                'image_url': club.image_url,
+                'hashtags': hashtags,
+                'region': region,
+                'bowling_alley': bowling_alley,
+                'member_count': member_count
+            })
+        
+        return jsonify({
+            'success': True,
+            'clubs': clubs_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'클럽 목록 조회 실패: {str(e)}'}), 500
+
+# 클럽 상세 정보 조회 (홍보 페이지용 - 공개)
+@clubs_bp.route('/promotion/<int:club_id>', methods=['GET'])
+def get_promotion_club_detail(club_id):
+    """홍보 페이지용 클럽 상세 정보 조회 (공개)"""
+    try:
+        club = Club.query.get_or_404(club_id)
+        
+        # 회원 수 계산
+        member_count = db.session.query(db.func.count(ClubMember.id)).filter(
+            ClubMember.club_id == club.id,
+            ClubMember.status == 'approved'
+        ).scalar() or 0
+        
+        return jsonify({
+            'success': True,
+            'club': {
+                'id': club.id,
+                'name': club.name,
+                'description': club.description,
+                'image_url': club.image_url,
+                'hashtags': club.hashtags if club.hashtags else [],
+                'promotion_description': club.promotion_description,
+                'member_count': member_count
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'클럽 상세 정보 조회 실패: {str(e)}'}), 500
+
+# 클럽 상세 정보 업데이트 (운영진 이상)
+@clubs_bp.route('/promotion/<int:club_id>', methods=['PUT'])
+@jwt_required()
+def update_promotion_club_detail(club_id):
+    """클럽 상세 정보 업데이트 (운영진 이상)"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자 정보를 찾을 수 없습니다.'}), 401
+        
+        is_super_admin = current_user.role == 'super_admin'
+        
+        club = Club.query.get_or_404(club_id)
+        
+        # 권한 확인: 슈퍼관리자가 아니면 해당 클럽의 admin 이상만 수정 가능
+        if not is_super_admin:
+            role = get_user_club_role(user_id, club_id)
+            if role not in ['admin', 'owner']:
+                return jsonify({
+                    'success': False,
+                    'message': '클럽 정보를 수정할 권한이 없습니다.'
+                }), 403
+        
+        data = request.get_json() or {}
+        
+        # 이미지 URL 업데이트
+        if 'image_url' in data:
+            club.image_url = data.get('image_url')
+        
+        # 상세 설명 업데이트
+        if 'promotion_description' in data:
+            club.promotion_description = data.get('promotion_description', '').strip()
+        
+        # 해시태그 업데이트
+        if 'hashtags' in data:
+            hashtags = data.get('hashtags', [])
+            # 해시태그 정규화 (# 제거하고 중복 제거)
+            normalized_hashtags = []
+            seen = set()
+            for tag in hashtags:
+                if isinstance(tag, str):
+                    clean_tag = tag.replace('#', '').strip()
+                    if clean_tag and clean_tag not in seen:
+                        normalized_hashtags.append(f"#{clean_tag}")
+                        seen.add(clean_tag)
+            club.hashtags = normalized_hashtags
+        
+        club.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '클럽 정보가 업데이트되었습니다.',
+            'club': club.to_dict(include_member_count=True)
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 정보 업데이트 실패: {str(e)}'}), 500
+
+# 클럽 이미지 업로드
+@clubs_bp.route('/promotion/<int:club_id>/upload-image', methods=['POST'])
+@jwt_required()
+def upload_club_image(club_id):
+    """클럽 이미지 업로드 (운영진 이상)"""
+    try:
+        import os
+        import uuid
+        from werkzeug.utils import secure_filename
+        
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        if not current_user:
+            return jsonify({'success': False, 'message': '사용자 정보를 찾을 수 없습니다.'}), 401
+        
+        is_super_admin = current_user.role == 'super_admin'
+        
+        club = Club.query.get_or_404(club_id)
+        
+        # 권한 확인: 슈퍼관리자가 아니면 해당 클럽의 admin 이상만 수정 가능
+        if not is_super_admin:
+            role = get_user_club_role(user_id, club_id)
+            if role not in ['admin', 'owner']:
+                return jsonify({
+                    'success': False,
+                    'message': '클럽 이미지를 업로드할 권한이 없습니다.'
+                }), 403
+        
+        if 'image' not in request.files:
+            return jsonify({'success': False, 'message': '이미지 파일이 없습니다.'}), 400
+        
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': '선택된 파일이 없습니다.'}), 400
+        
+        # 파일 확장자 확인
+        ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        def allowed_file(filename):
+            return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        
+        if not allowed_file(file.filename):
+            return jsonify({'success': False, 'message': '허용되지 않은 파일 형식입니다.'}), 400
+        
+        # 파일 저장
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        
+        # 업로드 폴더 생성
+        UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads', 'clubs')
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        file.save(file_path)
+        
+        # URL 반환
+        image_url = f"/uploads/clubs/{unique_filename}"
+        
+        # 클럽 이미지 URL 업데이트
+        club.image_url = image_url
+        club.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '이미지가 업로드되었습니다.',
+            'url': image_url
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'이미지 업로드 중 오류가 발생했습니다: {str(e)}'}), 500
+
+# 클럽 생성 (슈퍼관리자 전용)
+@clubs_bp.route('/promotion', methods=['POST'])
+@jwt_required()
+def create_promotion_club():
+    """클럽 생성 (슈퍼관리자 전용)"""
+    try:
+        user_id = int(get_jwt_identity())
+        current_user = User.query.get(user_id)
+        
+        if not current_user or current_user.role != 'super_admin':
+            return jsonify({'success': False, 'message': '권한이 없습니다.'}), 403
+        
+        data = request.get_json() or {}
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'message': '클럽 이름을 입력해주세요.'}), 400
+        
+        # 중복 확인
+        existing_club = Club.query.filter_by(name=name).first()
+        if existing_club:
+            return jsonify({'success': False, 'message': '이미 존재하는 클럽 이름입니다.'}), 400
+        
+        # 새 클럽 생성
+        new_club = Club(
+            name=name,
+            description=data.get('description', '').strip() or None,
+            image_url=data.get('image_url'),
+            hashtags=data.get('hashtags', []),
+            promotion_description=data.get('promotion_description', '').strip() or None,
+            created_by=user_id
+        )
+        
+        db.session.add(new_club)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '클럽이 생성되었습니다.',
+            'club': new_club.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'클럽 생성 실패: {str(e)}'}), 500

@@ -1,0 +1,199 @@
+.club-promotion-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  min-height: calc(100vh - 120px);
+}
+
+.club-promotion-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.club-promotion-header h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--toss-gray-900, #1f2937);
+}
+
+[data-theme='dark'] .club-promotion-header h1 {
+  color: var(--toss-gray-100, #f3f4f6);
+}
+
+.club-promotion-subtitle {
+  font-size: 1.1rem;
+  color: var(--toss-gray-600, #4b5563);
+  margin-bottom: 1.5rem;
+}
+
+[data-theme='dark'] .club-promotion-subtitle {
+  color: var(--toss-gray-400, #9ca3af);
+}
+
+.btn-create-club {
+  padding: 0.75rem 1.5rem;
+  background: var(--toss-primary, #3182f6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-create-club:hover {
+  background: var(--toss-primary-dark, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+}
+
+.loading-message,
+.error-message,
+.empty-message {
+  text-align: center;
+  padding: 3rem 1rem;
+  font-size: 1.1rem;
+  color: var(--toss-gray-600, #4b5563);
+}
+
+[data-theme='dark'] .loading-message,
+[data-theme='dark'] .error-message,
+[data-theme='dark'] .empty-message {
+  color: var(--toss-gray-400, #9ca3af);
+}
+
+.error-message {
+  color: var(--toss-red-600, #dc2626);
+}
+
+[data-theme='dark'] .error-message {
+  color: var(--toss-red-400, #f87171);
+}
+
+.club-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.club-card {
+  background: var(--surface-card, #ffffff);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='dark'] .club-card {
+  background: var(--surface-card, #1f2937);
+  border-color: var(--border-color, #4b5563);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.club-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='dark'] .club-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.club-image {
+  width: 100%;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--toss-gray-100, #f3f4f6);
+}
+
+[data-theme='dark'] .club-image {
+  background-color: var(--toss-gray-700, #374151);
+}
+
+.club-image-placeholder {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--toss-gray-100, #f3f4f6);
+}
+
+[data-theme='dark'] .club-image-placeholder {
+  background-color: var(--toss-gray-700, #374151);
+}
+
+.club-info {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.club-card .club-info .club-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--color-text, #333);
+}
+
+[data-theme='dark'] .club-card .club-info .club-name {
+  color: var(--color-text, #f3f4f6);
+}
+
+.club-description {
+  font-size: 0.95rem;
+  color: var(--color-text-muted, #666);
+  margin-bottom: 1rem;
+  flex: 1;
+  line-height: 1.5;
+}
+
+[data-theme='dark'] .club-description {
+  color: var(--color-text-muted, #d1d5db);
+}
+
+.club-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.club-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #666);
+}
+
+[data-theme='dark'] .club-meta-item {
+  color: var(--color-text-muted, #d1d5db);
+}
+
+.club-meta-item svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .club-promotion-container {
+    padding: 1rem;
+  }
+
+  .club-promotion-header h1 {
+    font-size: 2rem;
+  }
+
+  .club-list {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}

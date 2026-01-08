@@ -467,10 +467,10 @@ const GoogleAuthCallback = () => {
                 className="btn-secondary"
                 onClick={() => {
                   setShowClubSelectModal(false);
-                  navigate('/login', { replace: true });
+                  navigate('/clubs/promotion', { replace: true });
                 }}
               >
-                취소
+                가입한 클럽이 없습니다
               </button>
             </div>
           </div>

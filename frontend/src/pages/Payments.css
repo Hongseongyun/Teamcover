@@ -321,6 +321,21 @@
   gap: 0.75rem;
 }
 
+/* 인라인 편집 버튼 스타일 - Members.css와 동일하게 유지 */
+.payments-table .btn-inline-complete,
+.payments-table .btn-inline-cancel,
+.ledger-table .btn-inline-complete,
+.ledger-table .btn-inline-cancel {
+  /* Members.css의 스타일이 적용되도록 보장 */
+  background: none !important;
+  border: none !important;
+  padding: 0.5rem !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: auto !important;
+  font-size: inherit !important;
+}
+
 /* 인라인 편집 입력란을 부드럽고 둥글게 */
 .payments-table input[type='text'],
 .payments-table input[type='number'],
@@ -1105,13 +1120,29 @@
 }
 
 .prepay-cancel {
-  background: var(--toss-gray-50);
-  color: var(--toss-gray-600);
-  border: 1px solid var(--toss-gray-200);
+  padding: 0.75rem 1.5rem;
+  background: var(--color-surface-secondary, #f9fafb);
+  color: var(--color-text, #333);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .prepay-cancel:hover:not(:disabled) {
-  background: var(--toss-gray-200);
+  background: var(--color-border, #e0e0e0);
+}
+
+[data-theme='dark'] .prepay-cancel {
+  background: var(--color-surface-secondary, #374151);
+  border-color: var(--color-border, #4b5563);
+  color: var(--color-text, #f3f4f6);
+}
+
+[data-theme='dark'] .prepay-cancel:hover:not(:disabled) {
+  background: var(--color-border, #4b5563);
 }
 
 /* 정기전 게임비 스타일 */
@@ -1866,6 +1897,29 @@ div.action-menu-dropdown,
   min-width: 80px;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
+}
+
+/* 월회비 설정 모달의 저장 버튼 - ClubDetail의 저장 버튼과 동일 */
+/* MonthlyFeeSettingsModal은 footer에 저장 버튼만 있으므로, footer의 단일 버튼을 저장 버튼으로 스타일링 */
+.common-modal__footer > .btn-secondary:only-child {
+  padding: 0.75rem 1.5rem !important;
+  background: var(--toss-primary, #3182f6) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+.common-modal__footer > .btn-secondary:only-child:hover:not(:disabled) {
+  background: var(--toss-primary-dark, #2563eb) !important;
+}
+
+.common-modal__footer > .btn-secondary:only-child:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 선입 납입 모달 다크모드 스타일 */

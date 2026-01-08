@@ -861,23 +861,29 @@
 }
 
 .modal-btn-cancel {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-[data-theme='dark'] .modal-btn-cancel {
-  background: rgba(30, 41, 59, 0.8);
-  color: rgba(226, 232, 240, 0.9);
-  border-color: rgba(148, 163, 184, 0.35);
+  padding: 0.75rem 1.5rem;
+  background: var(--color-surface-secondary, #f9fafb);
+  color: var(--color-text, #333);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .modal-btn-cancel:hover {
-  background: #e5e7eb;
+  background: var(--color-border, #e0e0e0);
+}
+
+[data-theme='dark'] .modal-btn-cancel {
+  background: var(--color-surface-secondary, #374151);
+  border-color: var(--color-border, #4b5563);
+  color: var(--color-text, #f3f4f6);
 }
 
 [data-theme='dark'] .modal-btn-cancel:hover {
-  background: rgba(30, 41, 59, 0.95);
+  background: var(--color-border, #4b5563);
 }
 
 .modal-btn-danger {

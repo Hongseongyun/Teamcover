@@ -37,11 +37,6 @@
   padding: 1.5rem;
 }
 
-[data-theme='dark'] .inquiry-content-section {
-  background: var(--surface-card, rgba(15, 23, 42, 0.98));
-  border-color: var(--border-color, rgba(148, 163, 184, 0.2));
-}
-
 .inquiry-content-header {
   display: flex;
   justify-content: flex-end;

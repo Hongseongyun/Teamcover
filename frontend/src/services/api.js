@@ -261,6 +261,17 @@ export const clubAPI = {
     api.post(`/api/clubs/join-requests/${requestId}/approve`),
   rejectJoinRequest: (requestId) =>
     api.post(`/api/clubs/join-requests/${requestId}/reject`),
+  // 클럽 홍보 페이지 관련 API
+  getPromotionClubs: () => api.get('/api/clubs/promotion'), // 홍보 페이지용 클럽 목록 (공개)
+  getPromotionClubDetail: (clubId) => api.get(`/api/clubs/promotion/${clubId}`), // 홍보 페이지용 클럽 상세 (공개)
+  updatePromotionClubDetail: (clubId, data) => api.put(`/api/clubs/promotion/${clubId}`, data), // 클럽 상세 정보 업데이트 (운영진 이상)
+  uploadClubImage: (clubId, formData) =>
+    api.post(`/api/clubs/promotion/${clubId}/upload-image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }), // 클럽 이미지 업로드 (운영진 이상)
+  createPromotionClub: (data) => api.post('/api/clubs/promotion', data), // 클럽 생성 (슈퍼관리자 전용)
 };
 
 // 게시판 API

@@ -30,6 +30,12 @@
 
 .navbar-club-selector {
   flex-shrink: 0;
+  max-width: 180px;
+}
+
+.navbar-club-selector .club-selector-button {
+  max-width: 160px !important;
+  width: auto !important;
 }
 
 .navbar-brand {

@@ -24,6 +24,8 @@ import MyPage from './pages/MyPage';
 import Board from './pages/Board';
 import Inquiry from './pages/Inquiry';
 import Schedules from './pages/Schedules';
+import ClubPromotion from './pages/ClubPromotion';
+import ClubDetail from './pages/ClubDetail';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
@@ -123,6 +125,8 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/clubs/promotion" element={<ClubPromotion />} />
+                <Route path="/clubs/promotion/:clubId" element={<ClubDetail />} />
               </Routes>
             </main>
             <Footer />

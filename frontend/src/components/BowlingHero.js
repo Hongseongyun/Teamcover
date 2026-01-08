@@ -374,7 +374,7 @@ const BowlingHero = () => {
         </div>
 
         {!isAuthenticated && (
-          <div className="mt-8 pointer-events-auto">
+          <div className="mt-8 pointer-events-auto flex gap-4">
             <button
               onClick={() => navigate('/login')}
               className="bg-slate-800 hover:bg-slate-700 text-white px-12 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
@@ -383,6 +383,15 @@ const BowlingHero = () => {
               }}
             >
               지금 시작하기
+            </button>
+            <button
+              onClick={() => navigate('/clubs/promotion')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-xl font-semibold text-lg transition-all duration-300"
+              style={{
+                boxShadow: 'none',
+              }}
+            >
+              클럽 둘러보기
             </button>
           </div>
         )}

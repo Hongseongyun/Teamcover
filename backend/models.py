@@ -78,8 +78,11 @@ class Club(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)  # 클럽 이름
-    description = db.Column(db.Text, nullable=True)  # 클럽 설명
+    description = db.Column(db.Text, nullable=True)  # 클럽 설명 (간단한 설명 - 슈퍼관리자 마이페이지에서 관리)
     is_points_enabled = db.Column(db.Boolean, default=False)  # 포인트 시스템 활성화 여부
+    image_url = db.Column(db.Text, nullable=True)  # 클럽 사진 URL
+    hashtags = db.Column(db.JSON, nullable=True, default=list)  # 해시태그 배열 (예: ["#서울", "#앵커스"])
+    promotion_description = db.Column(db.Text, nullable=True)  # 클럽 상세 설명 (홍보 페이지용)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
@@ -87,15 +90,29 @@ class Club(db.Model):
     # 관계
     creator = db.relationship('User', foreign_keys=[created_by])
     
-    def to_dict(self):
-        return {
+    def to_dict(self, include_member_count=False):
+        result = {
             'id': self.id,
             'name': self.name,
             'description': self.description,
             'is_points_enabled': self.is_points_enabled,
+            'image_url': self.image_url,
+            'hashtags': self.hashtags if self.hashtags else [],
+            'promotion_description': self.promotion_description,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
         }
+        
+        # 회원 수 포함 (필요한 경우)
+        if include_member_count:
+            from sqlalchemy import func
+            member_count = db.session.query(func.count(ClubMember.id)).filter(
+                ClubMember.club_id == self.id,
+                ClubMember.status == 'approved'
+            ).scalar()
+            result['member_count'] = member_count or 0
+        
+        return result
     
     def __repr__(self):
         return f'<Club {self.name}>'

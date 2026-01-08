@@ -97,7 +97,16 @@ const Navbar = () => {
   };
 
   const isActive = (path) => {
-    return location.pathname === path ? 'active' : '';
+    // 정확한 경로 매칭
+    if (location.pathname === path) return 'active';
+    // 클럽 홍보 관리 페이지는 동적 경로이므로 포함 여부로 확인
+    if (
+      path.includes('/clubs/promotion/') &&
+      location.pathname.startsWith('/clubs/promotion/')
+    ) {
+      return 'active';
+    }
+    return '';
   };
 
   const handleLogout = async () => {
@@ -124,6 +133,7 @@ const Navbar = () => {
       '/messages': hasRole('user'),
       '/inquiry': hasRole('user') || hasRole('admin'), // 일반 사용자 및 운영진
       '/schedules': hasRole('user'), // 일반 사용자
+      '/club-promotion': isAdminForCurrentClub, // 클럽 홍보 관리 (운영진만)
     };
 
     return pagePermissions[page] || false;
@@ -237,6 +247,19 @@ const Navbar = () => {
                   onClick={() => setShowMobileMenu(false)}
                 >
                   캘린더
+                </Link>
+              </li>
+            )}
+            {canAccessPage('/club-promotion') && currentClub && (
+              <li className="nav-item">
+                <Link
+                  to={`/clubs/promotion/${currentClub.id}`}
+                  className={`nav-link ${isActive(
+                    `/clubs/promotion/${currentClub.id}`
+                  )}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  클럽 홍보 관리
                 </Link>
               </li>
             )}

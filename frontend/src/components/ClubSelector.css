@@ -21,7 +21,10 @@
   transition: all 0.2s;
   font-size: 0.8125rem;
   white-space: nowrap;
+  width: auto;
   max-width: 160px;
+  min-width: auto;
+  flex-shrink: 0;
 }
 
 .club-selector-button:hover {
@@ -29,12 +32,15 @@
   border-color: var(--border-hover, #bbb);
 }
 
-.club-name {
+.club-selector .club-name {
   font-weight: 600;
   color: var(--text-primary, #333);
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1;
+  min-width: 0;
+  font-size: 0.8125rem !important;
 }
 
 .club-role {
@@ -186,8 +192,9 @@
   color: var(--text-primary, #fff);
 }
 
-[data-theme='dark'] .club-name {
+[data-theme='dark'] .club-selector .club-name {
   color: var(--text-primary, #f9fafb);
+  font-size: 0.8125rem !important;
 }
 
 [data-theme='dark'] .dropdown-arrow {
