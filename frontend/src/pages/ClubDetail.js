@@ -29,9 +29,13 @@ const ClubDetail = () => {
   const [isHashtagDeleteMode, setIsHashtagDeleteMode] = useState(false);
   const [openDescriptionMenu, setOpenDescriptionMenu] = useState(false);
   const [openHashtagMenu, setOpenHashtagMenu] = useState(false);
+  const [joinRequestStatus, setJoinRequestStatus] = useState(null); // 'pending', 'approved', null
+  const [joining, setJoining] = useState(false);
 
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = isSuperAdmin || (userClubRole && ['admin', 'owner'].includes(userClubRole));
+  const isMember = !!userClubRole; // 이미 가입한 사용자
+  const canJoin = !isSuperAdmin && !isMember; // 가입 가능한 사용자 (로그인 여부와 무관)
 
   useEffect(() => {
     if (clubId) {
@@ -52,6 +56,14 @@ const ClubDetail = () => {
         setClub(clubData);
         setPromotionDescription(clubData.promotion_description || '');
         setHashtags(clubData.hashtags || []);
+        
+        // 사용자 가입 상태 설정
+        if (clubData.user_membership_status) {
+          setJoinRequestStatus(clubData.user_membership_status);
+        }
+        if (clubData.user_membership_role) {
+          setUserClubRole(clubData.user_membership_role);
+        }
       } else {
         setError('클럽 정보를 불러오는데 실패했습니다.');
       }
@@ -72,6 +84,12 @@ const ClubDetail = () => {
         const userClub = clubs.find((c) => c.id === parseInt(clubId));
         if (userClub) {
           setUserClubRole(userClub.role);
+          setJoinRequestStatus(userClub.status || 'approved'); // 'approved', 'pending', 'rejected'
+        } else {
+          // 가입하지 않은 경우, 가입 요청 상태 확인
+          // 백엔드에서 클럽 상세 정보를 가져올 때 현재 사용자의 가입 상태도 함께 반환하도록 수정 필요
+          // 일단 null로 설정
+          setJoinRequestStatus(null);
         }
       }
     } catch (err) {
@@ -197,6 +215,35 @@ const ClubDetail = () => {
     setShowHashtagAddForm(false);
     setIsHashtagDeleteMode(false);
     setOpenHashtagMenu(false);
+  };
+
+  const handleJoinClub = async () => {
+    // 로그인하지 않은 경우 회원가입 페이지로 이동
+    if (!user) {
+      navigate(`/login?club_id=${clubId}&mode=signup`);
+      return;
+    }
+    
+    // 이미 가입했거나 슈퍼관리자인 경우
+    if (isSuperAdmin || isMember) return;
+    
+    try {
+      setJoining(true);
+      const response = await clubAPI.joinClub(clubId);
+      if (response.data.success) {
+        setJoinRequestStatus('pending');
+        alert('클럽 가입 요청이 제출되었습니다. 슈퍼관리자의 승인을 기다려주세요.');
+        // 가입 요청 후 사용자 클럽 역할 다시 로드
+        await loadUserClubRole();
+      } else {
+        alert(response.data.message || '가입 신청에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error('가입 신청 실패:', err);
+      alert('가입 신청에 실패했습니다.');
+    } finally {
+      setJoining(false);
+    }
   };
 
   if (loading) {
@@ -381,11 +428,30 @@ const ClubDetail = () => {
               )}
             </div>
           )}
+          
+          {/* 클럽 가입 신청 버튼 (슈퍼관리자 제외, 이미 가입한 사용자 제외) */}
+          {canJoin && (
+            <div className="club-join-section">
+              <button
+                className="btn-join-club"
+                onClick={handleJoinClub}
+                disabled={joining || joinRequestStatus === 'pending'}
+              >
+                {joining
+                  ? '신청 중...'
+                  : joinRequestStatus === 'pending'
+                  ? '가입 신청 완료 (승인 대기 중)'
+                  : '클럽 가입 신청하기'}
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="club-detail-section">
-          <div className="section-header">
-            <h2>해시태그</h2>
+        {/* 해시태그 섹션 (운영자/슈퍼관리자만 볼 수 있음) */}
+        {isAdmin && (
+          <div className="club-detail-section">
+            <div className="section-header">
+              <h2>해시태그</h2>
             {isAdmin && !showHashtagAddForm && !isHashtagDeleteMode && (
               <div className={`action-menu-container ${openHashtagMenu ? 'menu-active' : ''}`}>
                 <button
@@ -528,7 +594,8 @@ const ClubDetail = () => {
               )}
             </div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

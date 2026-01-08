@@ -363,18 +363,31 @@
 .hashtag-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--toss-blue-100, #dbeafe);
-  color: var(--toss-blue-800, #1e40af);
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  padding: 0;
+  background: none;
+  color: var(--toss-primary, #3b82f6);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+
+.hashtag-tag:hover {
+  opacity: 1;
+  color: var(--toss-primary-dark, #2563eb);
 }
 
 [data-theme='dark'] .hashtag-tag {
-  background: var(--toss-blue-900, #1e3a8a);
-  color: var(--toss-blue-200, #bfdbfe);
+  background: none;
+  color: var(--toss-blue-400, #60a5fa);
+  opacity: 0.9;
+}
+
+[data-theme='dark'] .hashtag-tag:hover {
+  opacity: 1;
+  color: var(--toss-blue-300, #93c5fd);
 }
 
 .hashtag-remove {
@@ -502,6 +515,51 @@
 .btn-cancel:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* 클럽 가입 신청 섹션 */
+.club-join-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+[data-theme='dark'] .club-join-section {
+  border-top-color: var(--border-color, #4b5563);
+}
+
+.btn-join-club {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: var(--toss-primary, #3182f6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-join-club:hover:not(:disabled) {
+  background: var(--toss-primary-dark, #2563eb);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+}
+
+.btn-join-club:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .btn-join-club {
+  background: var(--toss-primary, #3b82f6);
+}
+
+[data-theme='dark'] .btn-join-club:hover:not(:disabled) {
+  background: var(--toss-primary-dark, #2563eb);
 }
 
 .loading-message,

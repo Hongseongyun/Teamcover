@@ -309,6 +309,18 @@
   margin: 2px 0;
 }
 
+.password-success {
+  margin-top: 5px;
+}
+
+.password-success .success-text {
+  color: #28a745;
+  font-size: 12px;
+  display: block;
+  margin-top: 3px;
+  font-weight: 500;
+}
+
 .error-text {
   color: #dc3545;
   font-size: 12px;

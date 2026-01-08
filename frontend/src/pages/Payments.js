@@ -1794,7 +1794,13 @@ const Payments = () => {
               })()}
             </div>
             <div className="balance-chart">
-              {ledgerLoading || balanceSeries.labels.length === 0 ? (
+              {ledgerLoading || 
+               !balanceSeries.labels || 
+               balanceSeries.labels.length === 0 ||
+               !balanceSeries.credits ||
+               !balanceSeries.debits ||
+               !balanceSeries.paymentBalances ||
+               !balanceSeries.pointBalances ? (
                 <div className="chart-loading">그래프 준비 중...</div>
               ) : (
                 <Bar
@@ -1855,8 +1861,14 @@ const Payments = () => {
                       tooltip: {
                         mode: 'index',
                         intersect: false,
+                        enabled: true,
                         callbacks: {
                           label: function (context) {
+                            // null 체크 추가
+                            if (!context || !context.parsed || context.parsed.y === null || context.parsed.y === undefined) {
+                              return '';
+                            }
+                            
                             const value = context.parsed.y;
                             const label = context.dataset.label || '';
                             // 1원 단위까지 정확히 표시
@@ -1886,6 +1898,10 @@ const Payments = () => {
                           },
                         },
                       },
+                    },
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
                     },
                     scales: {
                       x: {

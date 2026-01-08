@@ -143,6 +143,72 @@ const GoogleAuthCallback = () => {
 
           // 클럽 선택이 필요한 경우 (가장 먼저 체크)
           if (data.needs_club_selection) {
+            // club_id가 있으면 클럽 선택 모달을 건너뛰고 자동으로 가입신청 처리
+            if (clubId) {
+              console.log('Club ID provided, auto-joining club:', clubId);
+              setStatus('클럽 가입 처리 중...');
+              try {
+                const response = await authAPI.selectClubAfterSignup({
+                  user_id: data.user.id,
+                  club_id: parseInt(clubId),
+                  email: data.email,
+                });
+
+                if (response.data.success) {
+                  const { user: userData, access_token, club } = response.data;
+                  setUser(userData);
+                  setToken(access_token);
+                  localStorage.setItem('token', access_token);
+
+                  // 클럽 멤버십 상태 확인
+                  const membershipStatus =
+                    club?.membership_status || club?.status || 'pending';
+                  const isSuperAdmin = userData?.role === 'super_admin';
+
+                  // 승인 대기 상태인 경우 (일반 회원이고 pending 상태)
+                  if (!isSuperAdmin && membershipStatus === 'pending') {
+                    setStatus('승인 대기 중...');
+                    setShowApprovalPendingModal(true);
+                    isProcessing = false;
+                    return;
+                  }
+
+                  // 승인된 경우 또는 슈퍼관리자인 경우
+                  if (club && club.id) {
+                    localStorage.setItem('currentClubId', club.id.toString());
+                  }
+
+                  // 클럽 컨텍스트 새로고침
+                  try {
+                    await loadClubs();
+                  } catch (error) {
+                    console.error('Failed to reload clubs:', error);
+                  }
+
+                  setStatus('리디렉션 중...');
+                  isProcessing = false;
+                  window.location.href = '/';
+                  return;
+                } else {
+                  throw new Error(response.data.message || '클럽 가입에 실패했습니다.');
+                }
+              } catch (error) {
+                console.error('Auto club join error:', error);
+                // 에러 발생 시 클럽 선택 모달 표시
+                setClubSelectionData({
+                  user: data.user,
+                  email: data.email,
+                  redirectTo,
+                });
+                setShowClubSelectModal(true);
+                setStatus('클럽 선택 중...');
+                isProcessing = false;
+                loadAvailableClubs();
+                return;
+              }
+            }
+
+            // club_id가 없으면 기존대로 클럽 선택 모달 표시
             console.log('Club selection needed, showing modal...');
             setClubSelectionData({
               user: data.user,

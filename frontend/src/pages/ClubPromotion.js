@@ -116,86 +116,22 @@ const ClubPromotion = () => {
                 </div>
               )}
               <div className="club-info">
-                <h3 className="club-name">{club.name}</h3>
+                <div className="club-name-wrapper">
+                  <h3 className="club-name">{club.name}</h3>
+                  <span className="club-member-count">{club.member_count}명</span>
+                </div>
                 <p className="club-description">
                   {club.description || '설명이 없습니다.'}
                 </p>
-                <div className="club-meta">
-                  {club.region && (
-                    <span className="club-meta-item">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="9" r="2.5" fill="currentColor" />
-                      </svg>
-                      {club.region}
-                    </span>
-                  )}
-                  {club.bowling_alley && (
-                    <span className="club-meta-item">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <polyline
-                          points="9 22 9 12 15 12 15 22"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      {club.bowling_alley}
-                    </span>
-                  )}
-                  <span className="club-meta-item">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
-                      <path
-                        d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    {club.member_count}명
-                  </span>
-                </div>
+                {club.hashtags && club.hashtags.length > 0 && (
+                  <div className="club-hashtags">
+                    {club.hashtags.map((tag, index) => (
+                      <span key={index} className="club-hashtag-tag">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))

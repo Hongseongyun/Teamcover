@@ -869,6 +869,7 @@ def get_promotion_clubs():
 
 # 클럽 상세 정보 조회 (홍보 페이지용 - 공개)
 @clubs_bp.route('/promotion/<int:club_id>', methods=['GET'])
+@jwt_required(optional=True)
 def get_promotion_club_detail(club_id):
     """홍보 페이지용 클럽 상세 정보 조회 (공개)"""
     try:
@@ -880,6 +881,22 @@ def get_promotion_club_detail(club_id):
             ClubMember.status == 'approved'
         ).scalar() or 0
         
+        # 현재 사용자의 가입 상태 확인 (로그인한 경우에만)
+        user_membership_status = None
+        user_membership_role = None
+        current_user_id = get_jwt_identity()
+        
+        if current_user_id:
+            user = User.query.get(current_user_id)
+            if user:
+                membership = ClubMember.query.filter_by(
+                    user_id=user.id,
+                    club_id=club_id
+                ).first()
+                if membership:
+                    user_membership_status = membership.status
+                    user_membership_role = membership.role
+        
         return jsonify({
             'success': True,
             'club': {
@@ -889,7 +906,9 @@ def get_promotion_club_detail(club_id):
                 'image_url': club.image_url,
                 'hashtags': club.hashtags if club.hashtags else [],
                 'promotion_description': club.promotion_description,
-                'member_count': member_count
+                'member_count': member_count,
+                'user_membership_status': user_membership_status,  # 'pending', 'approved', 'rejected', None
+                'user_membership_role': user_membership_role  # 'member', 'admin', 'owner', None
             }
         })
     except Exception as e:

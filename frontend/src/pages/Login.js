@@ -108,6 +108,21 @@ const Login = () => {
       }
     }
 
+    // URL 파라미터에서 club_id와 mode 확인 (클럽 상세 페이지에서 가입 신청 버튼 클릭 시)
+    const clubId = urlParams.get('club_id');
+    const mode = urlParams.get('mode');
+    if (clubId && mode === 'signup') {
+      // 회원가입 모드로 전환
+      setIsLogin(false);
+      // 클럽 ID 설정
+      setFormData((prev) => ({
+        ...prev,
+        club_id: clubId,
+      }));
+      // URL 파라미터 정리
+      window.history.replaceState({}, '', '/login');
+    }
+
     // URL 파라미터에서 활성 세션 확인 (구글 로그인 콜백에서 리디렉션된 경우)
     const hasActiveSession = urlParams.get('has_active_session');
     const fromParam = urlParams.get('from');
@@ -288,6 +303,10 @@ const Login = () => {
             setError(''); // 오류 메시지 초기화
             setSuccessMessage('이메일을 확인하여 인증을 완료해주세요.');
             setLoading(false); // 로딩 상태 해제
+            // 이메일 인증 메시지가 표시될 때 화면을 위로 스크롤
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
             return; // 자동 로그인하지 않음
           } else if (result.data?.email_sent === false) {
             setError(
@@ -491,6 +510,13 @@ const Login = () => {
                 onChange={handleInputChange}
                 required
                 placeholder="비밀번호를 입력하세요"
+                className={
+                  !isLogin && formData.password
+                    ? passwordErrors.length > 0
+                      ? 'error'
+                      : 'success'
+                    : ''
+                }
               />
               <div className="password-requirements">
                 <small>소문자, 대문자, 특수문자 포함 6글자 이상</small>
@@ -501,6 +527,15 @@ const Login = () => {
                         • {error}
                       </small>
                     ))}
+                  </div>
+                )}
+                {!isLogin && 
+                 formData.password && 
+                 passwordErrors.length === 0 && (
+                  <div className="password-success">
+                    <small className="success-text">
+                      ✓ 모든 조건이 충족되었습니다
+                    </small>
                   </div>
                 )}
               </div>
