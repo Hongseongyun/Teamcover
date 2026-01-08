@@ -338,15 +338,26 @@
 .club-create-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-start;
   cursor: pointer;
   font-weight: normal;
+  min-height: 1.125rem;
 }
 
 .club-create-checkbox-label input[type='checkbox'] {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
+  margin: 0 !important;
+  margin-right: 0.75rem !important;
+  flex-shrink: 0;
+}
+
+.club-create-checkbox-label span {
+  line-height: 1.125rem;
+  height: 1.125rem;
+  display: inline-block;
+  font-size: 0.875rem;
 }
 
 .club-create-checkbox-description {

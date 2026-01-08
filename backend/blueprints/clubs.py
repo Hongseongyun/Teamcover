@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify, make_response
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from models import (
     db,
     Club,
     ClubMember,
+    ClubFavorite,
     User,
     Member,
     Score,
@@ -820,11 +821,19 @@ def reject_join_request(request_id):
 
 # 모든 클럽 목록 조회 (홍보 페이지용 - 공개)
 @clubs_bp.route('/promotion', methods=['GET'])
+@jwt_required(optional=True)
 def get_promotion_clubs():
     """홍보 페이지용 클럽 목록 조회 (공개)"""
     try:
         clubs = Club.query.all()
         clubs_data = []
+        current_user_id = get_jwt_identity()
+        
+        # 현재 사용자의 즐겨찾기 클럽 ID 목록 (로그인한 경우에만)
+        favorite_club_ids = set()
+        if current_user_id:
+            favorites = ClubFavorite.query.filter_by(user_id=current_user_id).all()
+            favorite_club_ids = {f.club_id for f in favorites}
         
         for club in clubs:
             # 회원 수 계산
@@ -857,7 +866,8 @@ def get_promotion_clubs():
                 'hashtags': hashtags,
                 'region': region,
                 'bowling_alley': bowling_alley,
-                'member_count': member_count
+                'member_count': member_count,
+                'is_favorite': club.id in favorite_club_ids
             })
         
         return jsonify({
@@ -1089,3 +1099,121 @@ def create_promotion_club():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'클럽 생성 실패: {str(e)}'}), 500
+
+# ========== 클럽 즐겨찾기 관련 API ==========
+
+# 클럽 즐겨찾기 추가/제거
+@clubs_bp.route('/promotion/<int:club_id>/favorite', methods=['POST', 'DELETE'])
+def toggle_club_favorite(club_id):
+    """클럽 즐겨찾기 추가/제거 (회원가입된 유저만 가능)"""
+    try:
+        # JWT 토큰 검증 (optional=True로 토큰이 없어도 계속 진행)
+        current_user_id = None
+        try:
+            verify_jwt_in_request(optional=True)
+            current_user_id = get_jwt_identity()
+        except Exception:
+            # 토큰이 없거나 유효하지 않으면 None으로 처리
+            current_user_id = None
+        
+        if not current_user_id:
+            return jsonify({'success': False, 'message': '로그인이 필요합니다.'}), 401
+        
+        # 사용자가 실제로 회원가입되어 있는지 확인 (최소한 하나의 클럽에 가입되어 있어야 함)
+        user = User.query.get(int(current_user_id))
+        if not user:
+            return jsonify({'success': False, 'message': '사용자를 찾을 수 없습니다.'}), 404
+        
+        # 슈퍼관리자는 제외, 일반 사용자는 최소한 하나의 클럽에 가입되어 있어야 함
+        if user.role != 'super_admin':
+            approved_memberships = ClubMember.query.filter_by(
+                user_id=current_user_id,
+                status='approved'
+            ).count()
+            
+            if approved_memberships == 0:
+                return jsonify({'success': False, 'message': '클럽에 가입된 회원만 즐겨찾기를 사용할 수 있습니다.'}), 403
+        
+        club = Club.query.get_or_404(club_id)
+        
+        if request.method == 'POST':
+            # 즐겨찾기 추가
+            existing = ClubFavorite.query.filter_by(
+                user_id=current_user_id,
+                club_id=club_id
+            ).first()
+            
+            if existing:
+                return jsonify({
+                    'success': True,
+                    'message': '이미 즐겨찾기에 추가된 클럽입니다.',
+                    'is_favorite': True
+                })
+            
+            favorite = ClubFavorite(
+                user_id=current_user_id,
+                club_id=club_id
+            )
+            db.session.add(favorite)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': '즐겨찾기에 추가되었습니다.',
+                'is_favorite': True
+            })
+        else:
+            # 즐겨찾기 제거
+            favorite = ClubFavorite.query.filter_by(
+                user_id=current_user_id,
+                club_id=club_id
+            ).first()
+            
+            if not favorite:
+                return jsonify({
+                    'success': True,
+                    'message': '즐겨찾기에 없는 클럽입니다.',
+                    'is_favorite': False
+                })
+            
+            db.session.delete(favorite)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': '즐겨찾기에서 제거되었습니다.',
+                'is_favorite': False
+            })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'즐겨찾기 처리 실패: {str(e)}'}), 500
+
+# 사용자의 즐겨찾기 클럽 목록 조회
+@clubs_bp.route('/promotion/favorites', methods=['GET'])
+def get_favorite_clubs():
+    """사용자의 즐겨찾기 클럽 목록 조회"""
+    try:
+        # JWT 토큰 검증 (optional=True로 토큰이 없어도 계속 진행)
+        current_user_id = None
+        try:
+            verify_jwt_in_request(optional=True)
+            current_user_id = get_jwt_identity()
+        except Exception:
+            # 토큰이 없거나 유효하지 않으면 None으로 처리
+            current_user_id = None
+        
+        if not current_user_id:
+            return jsonify({
+                'success': True,
+                'favorite_club_ids': []
+            })
+        
+        favorites = ClubFavorite.query.filter_by(user_id=current_user_id).all()
+        favorite_club_ids = [f.club_id for f in favorites]
+        
+        return jsonify({
+            'success': True,
+            'favorite_club_ids': favorite_club_ids
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'즐겨찾기 목록 조회 실패: {str(e)}'}), 500

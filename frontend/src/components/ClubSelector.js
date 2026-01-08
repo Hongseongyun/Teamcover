@@ -290,9 +290,7 @@ const ClubSelector = () => {
 
       {/* 클럽 가입 모달 (일반 회원용) */}
       {showJoinModal && (
-        <div
-          className="club-create-modal-overlay"
-        >
+        <div className="club-create-modal-overlay">
           <div
             className="club-create-modal"
             onClick={(e) => e.stopPropagation()}

@@ -272,6 +272,10 @@ export const clubAPI = {
       },
     }), // 클럽 이미지 업로드 (운영진 이상)
   createPromotionClub: (data) => api.post('/api/clubs/promotion', data), // 클럽 생성 (슈퍼관리자 전용)
+  // 클럽 즐겨찾기 관련 API
+  toggleClubFavorite: (clubId) => api.post(`/api/clubs/promotion/${clubId}/favorite`), // 즐겨찾기 추가
+  removeClubFavorite: (clubId) => api.delete(`/api/clubs/promotion/${clubId}/favorite`), // 즐겨찾기 제거
+  getFavoriteClubs: () => api.get('/api/clubs/promotion/favorites'), // 즐겨찾기 목록 조회
 };
 
 // 게시판 API

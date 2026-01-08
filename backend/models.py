@@ -157,6 +157,33 @@ class ClubMember(db.Model):
     def __repr__(self):
         return f'<ClubMember {self.user_id} - {self.club_id} ({self.role}, {self.status})>'
 
+class ClubFavorite(db.Model):
+    """클럽 즐겨찾기 모델"""
+    __tablename__ = 'club_favorites'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    club_id = db.Column(db.Integer, db.ForeignKey('clubs.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 관계
+    user = db.relationship('User', backref=db.backref('club_favorites', lazy=True))
+    club = db.relationship('Club', backref=db.backref('favorites', lazy=True))
+    
+    # 중복 즐겨찾기 방지
+    __table_args__ = (db.UniqueConstraint('user_id', 'club_id', name='unique_user_club_favorite'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'club_id': self.club_id,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<ClubFavorite {self.user_id} - {self.club_id}>'
+
 class Member(db.Model):
     """회원 모델"""
     __tablename__ = 'members'

@@ -80,6 +80,7 @@
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 [data-theme='dark'] .club-card {
@@ -95,6 +96,63 @@
 
 [data-theme='dark'] .club-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.club-favorite-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  color: var(--toss-gray-400, #9ca3af);
+}
+
+.club-favorite-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  color: var(--toss-yellow-500, #eab308);
+}
+
+.club-favorite-btn.active {
+  color: var(--toss-yellow-500, #eab308);
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--toss-yellow-500, #eab308);
+}
+
+.club-favorite-btn.active:hover {
+  color: var(--toss-yellow-600, #ca8a04);
+  border-color: var(--toss-yellow-600, #ca8a04);
+}
+
+[data-theme='dark'] .club-favorite-btn {
+  background: rgba(31, 41, 55, 0.9);
+  border-color: var(--border-color, #4b5563);
+  color: var(--toss-gray-500, #6b7280);
+}
+
+[data-theme='dark'] .club-favorite-btn:hover {
+  background: rgba(31, 41, 55, 1);
+  color: var(--toss-yellow-400, #facc15);
+}
+
+[data-theme='dark'] .club-favorite-btn.active {
+  color: var(--toss-yellow-400, #facc15);
+  background: rgba(31, 41, 55, 1);
+  border-color: var(--toss-yellow-400, #facc15);
+}
+
+[data-theme='dark'] .club-favorite-btn.active:hover {
+  color: var(--toss-yellow-300, #fde047);
+  border-color: var(--toss-yellow-300, #fde047);
 }
 
 .club-image {
