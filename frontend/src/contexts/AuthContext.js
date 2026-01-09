@@ -15,9 +15,22 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  // sessionStorage 사용 (창을 닫으면 자동으로 삭제됨)
+  const [token, setToken] = useState(sessionStorage.getItem('token'));
   const lastUnreadCountRef = useRef(0);
   const lastUnreadInquiryCountRef = useRef(0);
+
+  // 창을 닫을 때 토큰 제거 (추가 안전장치)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.removeItem('token');
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // FCM 토큰 등록 함수
   const registerFCMToken = async () => {
@@ -43,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         } = response.data;
         setUser(userData);
         setToken(access_token);
-        localStorage.setItem('token', access_token);
+        sessionStorage.setItem('token', access_token);
 
         // 개인정보 접근 토큰 삭제 (새로운 로그인 시 이전 토큰 무효화)
         localStorage.removeItem('privacy_token');
@@ -78,7 +91,7 @@ export const AuthProvider = ({ children }) => {
         const userData = response.data.user;
         setUser(userData);
         setToken(jwtToken);
-        localStorage.setItem('token', jwtToken);
+        sessionStorage.setItem('token', jwtToken);
         
         // FCM 토큰 등록
         registerFCMToken();
@@ -143,7 +156,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setToken(null);
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
     }
   };
 
@@ -169,12 +182,12 @@ export const AuthProvider = ({ children }) => {
             registerFCMToken();
           } else {
             // 토큰이 유효하지 않으면 제거
-            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
             setToken(null);
           }
         } catch (error) {
           console.error('사용자 정보 조회 실패:', error);
-          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
           setToken(null);
         }
       }

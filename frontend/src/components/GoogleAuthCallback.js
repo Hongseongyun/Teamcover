@@ -158,7 +158,7 @@ const GoogleAuthCallback = () => {
                   const { user: userData, access_token, club } = response.data;
                   setUser(userData);
                   setToken(access_token);
-                  localStorage.setItem('token', access_token);
+                  sessionStorage.setItem('token', access_token);
 
                   // 클럽 멤버십 상태 확인
                   const membershipStatus =
@@ -247,7 +247,7 @@ const GoogleAuthCallback = () => {
             // 사용자 정보와 토큰을 직접 설정
             setUser(userData);
             setToken(access_token);
-            localStorage.setItem('token', access_token);
+            sessionStorage.setItem('token', access_token);
 
             console.log('User logged in successfully:', userData);
             setStatus('리디렉션 중...');
@@ -421,7 +421,7 @@ const GoogleAuthCallback = () => {
                         const { user: userData, access_token } = response.data;
                         setUser(userData);
                         setToken(access_token);
-                        localStorage.setItem('token', access_token);
+                        sessionStorage.setItem('token', access_token);
                         setShowConfirmModal(false);
                         navigate('/', { replace: true }); // 항상 랜딩 페이지로 이동
                       } else {
@@ -582,7 +582,7 @@ const GoogleAuthCallback = () => {
                 onClick={() => {
                   setShowApprovalPendingModal(false);
                   // 로그아웃 처리
-                  localStorage.removeItem('token');
+                  sessionStorage.removeItem('token');
                   navigate('/login', { replace: true });
                 }}
               >

@@ -179,7 +179,7 @@ export const ClubProvider = ({ children }) => {
 
   useEffect(() => {
     // 토큰 확인 및 클럽 목록 로드
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     lastTokenRef.current = token;
 
     if (token && user) {
@@ -219,7 +219,7 @@ export const ClubProvider = ({ children }) => {
 
     // 같은 탭에서도 감지하기 위해 polling
     const checkToken = setInterval(() => {
-      const currentToken = localStorage.getItem('token');
+      const currentToken = sessionStorage.getItem('token');
 
       if (currentToken !== lastTokenRef.current) {
         if (currentToken && !lastTokenRef.current) {

@@ -31,6 +31,7 @@ class User(UserMixin, db.Model):
     
     # 활성 세션 관리
     active_token = db.Column(db.Text, nullable=True)  # 현재 활성화된 JWT 토큰
+    last_device_fingerprint = db.Column(db.String(64), nullable=True)  # 마지막 로그인한 기기 식별자 (User-Agent + IP 해시)
     
     # FCM 푸시 알림 토큰
     fcm_token = db.Column(db.Text, nullable=True)  # Firebase Cloud Messaging 토큰

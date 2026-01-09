@@ -13,9 +13,26 @@ import re
 import random
 import string
 import uuid
+import hashlib
 
 # 인증 관리 Blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+def get_device_fingerprint():
+    """요청의 User-Agent와 IP 주소를 조합해서 기기 식별자 생성"""
+    user_agent = request.headers.get('User-Agent', '')
+    # IP 주소 가져오기 (프록시를 고려)
+    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if ip_address:
+        # X-Forwarded-For는 여러 IP가 있을 수 있으므로 첫 번째만 사용
+        ip_address = ip_address.split(',')[0].strip()
+    else:
+        ip_address = request.remote_addr or ''
+    
+    # User-Agent와 IP를 조합해서 해시 생성
+    device_string = f"{user_agent}|{ip_address}"
+    device_hash = hashlib.sha256(device_string.encode('utf-8')).hexdigest()[:32]  # 32자리 해시
+    return device_hash
 
 def validate_password(password):
     """비밀번호 조건 검증"""
@@ -175,8 +192,25 @@ def check_active_session():
                 'has_active_session': False
             })
         
+        # 현재 요청의 토큰 확인 (같은 기기인지 확인)
+        current_token_jti = None
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from flask_jwt_extended import decode_token
+                token = auth_header.split(' ')[1]
+                decoded = decode_token(token)
+                current_token_jti = decoded.get('jti')
+            except Exception:
+                # 토큰 디코딩 실패 시 무시
+                pass
+        
         # 활성 토큰 확인
-        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        # 같은 기기에서 재로그인하는 경우 (현재 토큰의 jti가 active_token과 같으면) false로 설정
+        if current_token_jti and user.active_token == current_token_jti:
+            has_active_session = False  # 같은 기기이므로 false
+        else:
+            has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
         return jsonify({
             'success': True,
@@ -207,8 +241,36 @@ def login():
         if not user.is_active:
             return jsonify({'success': False, 'message': '비활성화된 계정입니다.'})
         
+        # 현재 요청의 기기 식별자 생성
+        current_device_fingerprint = get_device_fingerprint()
+        
+        # 현재 요청의 토큰 확인 (같은 기기인지 확인)
+        current_token_jti = None
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from flask_jwt_extended import decode_token
+                token = auth_header.split(' ')[1]
+                decoded = decode_token(token)
+                current_token_jti = decoded.get('jti')
+            except Exception:
+                # 토큰 디코딩 실패 시 무시
+                pass
+        
         # 기존 활성 토큰 확인
-        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        # 같은 기기에서 재로그인하는 경우 확인:
+        # 1. 현재 토큰의 jti가 active_token과 같거나
+        # 2. 현재 기기 식별자가 마지막 로그인 기기와 같으면 같은 기기로 판단
+        is_same_device = False
+        if current_token_jti and user.active_token == current_token_jti:
+            is_same_device = True  # 같은 토큰이면 같은 기기
+        elif user.last_device_fingerprint and current_device_fingerprint == user.last_device_fingerprint:
+            is_same_device = True  # 같은 기기 식별자면 같은 기기
+        
+        if is_same_device:
+            has_active_session = False  # 같은 기기이므로 false
+        else:
+            has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
         # 로그인 처리
         login_user(user, remember=True)
@@ -222,9 +284,10 @@ def login():
             additional_claims={"jti": jti}
         )
         
-        # 새 토큰의 jti를 활성 토큰으로 저장
+        # 새 토큰의 jti를 활성 토큰으로 저장하고 기기 식별자도 저장
         old_active_token = user.active_token
         user.active_token = jti
+        user.last_device_fingerprint = current_device_fingerprint
         db.session.commit()
         
         print(f"[LOGIN] User {user.id} ({email}): Updated active_token from {old_active_token[:8] if old_active_token else 'None'}... to {jti[:8]}...")
@@ -386,8 +449,36 @@ def google_login():
                     'email': email
                 })
         
+        # 현재 요청의 기기 식별자 생성
+        current_device_fingerprint = get_device_fingerprint()
+        
+        # 현재 요청의 토큰 확인 (같은 기기인지 확인)
+        current_token_jti = None
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from flask_jwt_extended import decode_token
+                token = auth_header.split(' ')[1]
+                decoded = decode_token(token)
+                current_token_jti = decoded.get('jti')
+            except Exception:
+                # 토큰 디코딩 실패 시 무시
+                pass
+        
         # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
-        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        # 같은 기기에서 재로그인하는 경우 확인:
+        # 1. 현재 토큰의 jti가 active_token과 같거나
+        # 2. 현재 기기 식별자가 마지막 로그인 기기와 같으면 같은 기기로 판단
+        is_same_device = False
+        if current_token_jti and user.active_token == current_token_jti:
+            is_same_device = True  # 같은 토큰이면 같은 기기
+        elif user.last_device_fingerprint and current_device_fingerprint == user.last_device_fingerprint:
+            is_same_device = True  # 같은 기기 식별자면 같은 기기
+        
+        if is_same_device:
+            has_active_session = False  # 같은 기기이므로 false
+        else:
+            has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
         # 활성 세션이 있으면 로그인 처리를 하지 않고 알림만 반환
         if has_active_session:
@@ -458,9 +549,13 @@ def google_confirm_login():
             additional_claims={"jti": jti}
         )
         
-        # 새 토큰의 jti를 활성 토큰으로 저장 (다른 기기 로그아웃)
+        # 현재 요청의 기기 식별자 생성
+        current_device_fingerprint = get_device_fingerprint()
+        
+        # 새 토큰의 jti를 활성 토큰으로 저장하고 기기 식별자도 저장 (다른 기기 로그아웃)
         old_active_token = user.active_token
         user.active_token = jti
+        user.last_device_fingerprint = current_device_fingerprint
         db.session.commit()
         
         print(f"[GOOGLE_CONFIRM_LOGIN] User {user.id} ({email}): Updated active_token from {old_active_token[:8] if old_active_token else 'None'}... to {jti[:8]}...")
@@ -672,8 +767,36 @@ def google_callback():
                     'email': email
                 })
         
+        # 현재 요청의 기기 식별자 생성
+        current_device_fingerprint = get_device_fingerprint()
+        
+        # 현재 요청의 토큰 확인 (같은 기기인지 확인)
+        current_token_jti = None
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            try:
+                from flask_jwt_extended import decode_token
+                token = auth_header.split(' ')[1]
+                decoded = decode_token(token)
+                current_token_jti = decoded.get('jti')
+            except Exception:
+                # 토큰 디코딩 실패 시 무시
+                pass
+        
         # 기존 활성 토큰 확인 (로그인 처리 전에 확인)
-        has_active_session = user.active_token is not None and user.active_token.strip() != ''
+        # 같은 기기에서 재로그인하는 경우 확인:
+        # 1. 현재 토큰의 jti가 active_token과 같거나
+        # 2. 현재 기기 식별자가 마지막 로그인 기기와 같으면 같은 기기로 판단
+        is_same_device = False
+        if current_token_jti and user.active_token == current_token_jti:
+            is_same_device = True  # 같은 토큰이면 같은 기기
+        elif user.last_device_fingerprint and current_device_fingerprint == user.last_device_fingerprint:
+            is_same_device = True  # 같은 기기 식별자면 같은 기기
+        
+        if is_same_device:
+            has_active_session = False  # 같은 기기이므로 false
+        else:
+            has_active_session = user.active_token is not None and user.active_token.strip() != ''
         
         # 활성 세션이 있으면 로그인 처리를 하지 않고 알림만 반환
         # 프론트엔드에서 확인 모달을 표시한 후 로그인을 진행하도록 함
@@ -1255,8 +1378,12 @@ def verify_code():
             additional_claims={"jti": jti}
         )
         
-        # 새 토큰의 jti를 활성 토큰으로 저장
+        # 현재 요청의 기기 식별자 생성
+        current_device_fingerprint = get_device_fingerprint()
+        
+        # 새 토큰의 jti를 활성 토큰으로 저장하고 기기 식별자도 저장
         user.active_token = jti
+        user.last_device_fingerprint = current_device_fingerprint
         db.session.commit()
         
         print(f"User verified and logged in: {user.email}")

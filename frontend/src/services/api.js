@@ -35,7 +35,7 @@ api.interceptors.request.use(
 
     // JWT 토큰 추가 (비밀번호 재설정용 임시 토큰 우선)
     const tempResetToken = localStorage.getItem('temp_reset_token');
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
 
     if (tempResetToken) {
       config.headers.Authorization = `Bearer ${tempResetToken}`;
