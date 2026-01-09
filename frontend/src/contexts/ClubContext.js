@@ -106,8 +106,8 @@ export const ClubProvider = ({ children }) => {
         setCurrentClub(response.data.club);
         localStorage.setItem('currentClubId', clubId.toString());
 
-        // 페이지 새로고침하여 클럽별 데이터 로드
-        window.location.reload();
+        // 페이지 새로고침 대신 이벤트를 발생시켜 관련 컴포넌트들이 클럽 변경을 감지하도록 함
+        window.dispatchEvent(new Event('clubChanged'));
       }
     } catch (error) {
       console.error('클럽 선택 실패:', error);

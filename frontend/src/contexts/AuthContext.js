@@ -171,11 +171,17 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             
             // 슈퍼관리자가 아니고, 승인된 클럽이 없는 경우 승인 대기 상태 확인
-            // alert는 제거하고 조용히 로그아웃 처리 (구글 로그인 콜백에서 모달로 처리)
+            // 단, 클럽이 선택되어 있으면 (localStorage에 currentClubId가 있으면) 로그아웃하지 않음
+            // 클럽 선택 직후 페이지 새로고침 시 타이밍 이슈로 클럽 정보가 아직 반영되지 않았을 수 있음
+            const currentClubId = localStorage.getItem('currentClubId');
             if (userData.role !== 'super_admin' && (!userData.clubs || userData.clubs.length === 0)) {
-              // 승인 대기 중인 사용자는 로그아웃 처리
-              await logout();
-              return;
+              // 클럽이 선택되어 있지 않은 경우에만 로그아웃 처리
+              if (!currentClubId) {
+                // 승인 대기 중인 사용자는 로그아웃 처리
+                await logout();
+                return;
+              }
+              // 클럽이 선택되어 있으면 로그아웃하지 않음 (클럽 정보가 곧 반영될 수 있음)
             }
             
             // FCM 토큰 등록

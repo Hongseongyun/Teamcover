@@ -124,7 +124,12 @@ def get_unread_inquiry_count():
         else:
             club_id = get_current_club_id()
             if not club_id:
-                return jsonify({'success': False, 'message': '클럽이 선택되지 않았습니다.'}), 400
+                # 클럽이 선택되지 않은 경우 0 반환 (400 에러 대신)
+                # 클럽 선택 직후 타이밍 이슈로 클럽 ID가 없을 수 있음
+                return jsonify({
+                    'success': True,
+                    'unread_count': 0
+                })
             
             # 클럽 운영진 권한 확인
             has_permission, result = check_club_permission(user.id, club_id, 'admin')
