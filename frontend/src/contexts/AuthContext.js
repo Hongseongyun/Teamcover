@@ -20,9 +20,30 @@ export const AuthProvider = ({ children }) => {
   const lastUnreadCountRef = useRef(0);
   const lastUnreadInquiryCountRef = useRef(0);
 
-  // 창을 닫을 때 토큰 제거 (추가 안전장치)
+  // 창을 닫을 때 서버에 로그아웃 요청 및 토큰 제거
   useEffect(() => {
     const handleBeforeUnload = () => {
+      const token = sessionStorage.getItem('token');
+      
+      // 토큰이 있으면 서버에 로그아웃 요청 (keepalive 옵션으로 페이지가 닫혀도 요청 전송 보장)
+      if (token) {
+        const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+        const logoutUrl = `${API_BASE_URL}/api/auth/logout`;
+        
+        // fetch with keepalive 옵션 사용 (페이지가 닫혀도 요청이 전송됨)
+        fetch(logoutUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          keepalive: true, // 페이지가 닫혀도 요청이 전송되도록 보장
+        }).catch(() => {
+          // 에러는 무시 (페이지가 닫히는 중이므로)
+        });
+      }
+      
+      // 클라이언트 측 토큰 제거
       sessionStorage.removeItem('token');
     };
 
