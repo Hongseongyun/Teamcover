@@ -17,6 +17,7 @@ const Navbar = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [joinRequestsCount, setJoinRequestsCount] = useState(0);
   const [unreadInquiryCount, setUnreadInquiryCount] = useState(0);
+  const [openDropdown, setOpenDropdown] = useState(null); // 'club', 'board', null
 
   useEffect(() => {
     if (user?.role === 'super_admin' && isAuthenticated) {
@@ -109,6 +110,37 @@ const Navbar = () => {
     return '';
   };
 
+  const isParentActive = (paths) => {
+    return paths.some((path) => {
+      if (location.pathname === path) return true;
+      if (
+        path.includes('/clubs/promotion/') &&
+        location.pathname.startsWith('/clubs/promotion/')
+      ) {
+        return true;
+      }
+      return false;
+    });
+  };
+
+  const handleDropdownToggle = (menu) => {
+    setOpenDropdown(openDropdown === menu ? null : menu);
+  };
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.nav-item-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openDropdown]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -172,108 +204,150 @@ const Navbar = () => {
         {/* 상단 메뉴는 로그인 + 클럽 선택 후에만 표시 (슈퍼관리자는 클럽 선택 없이도 사용자 관리 접근 가능) */}
         {isAuthenticated && (currentClub || hasRole('super_admin')) && (
           <ul className={`navbar-nav ${showMobileMenu ? 'mobile-active' : ''}`}>
-            {canAccessPage('/members') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to="/members"
-                  className={`nav-link ${isActive('/members')}`}
-                  onClick={() => setShowMobileMenu(false)}
+            {/* 클럽관리 드롭다운 */}
+            {currentClub && (
+              <li className="nav-item nav-item-dropdown">
+                <button
+                  className={`nav-link nav-link-dropdown ${
+                    isParentActive([
+                      '/scores',
+                      '/points',
+                      '/schedules',
+                      `/clubs/promotion/${currentClub.id}`,
+                    ])
+                      ? 'active'
+                      : ''
+                  }`}
+                  onClick={() => handleDropdownToggle('club')}
                 >
-                  회원
-                </Link>
-              </li>
-            )}
-            {canAccessPage('/scores') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to="/scores"
-                  className={`nav-link ${isActive('/scores')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  스코어
-                </Link>
-              </li>
-            )}
-            {canAccessPage('/points') &&
-              currentClub &&
-              currentClub?.is_points_enabled && (
-                <li className="nav-item">
-                  <Link
-                    to="/points"
-                    className={`nav-link ${isActive('/points')}`}
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    포인트
-                  </Link>
-                </li>
-              )}
-            {/* 슈퍼관리자는 클럽 선택 전에도 게시판/문의하기 접근 가능 */}
-            {canAccessPage('/board') &&
-              (currentClub || hasRole('super_admin')) && (
-                <li className="nav-item">
-                  <Link
-                    to="/board"
-                    className={`nav-link ${isActive('/board')}`}
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    게시판
-                  </Link>
-                </li>
-              )}
-            {canAccessPage('/inquiry') &&
-              (currentClub || hasRole('super_admin')) && (
-                <li className="nav-item">
-                  <Link
-                    to="/inquiry"
-                    className={`nav-link ${isActive('/inquiry')} ${
-                      unreadInquiryCount > 0 ? 'has-notification' : ''
-                    }`}
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    문의하기
-                    {unreadInquiryCount > 0 && (
-                      <span className="notification-badge">
-                        {unreadInquiryCount}
-                      </span>
+                  클럽관리
+                  <span className={`dropdown-arrow ${openDropdown === 'club' ? 'rotated' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+                {openDropdown === 'club' && (
+                  <ul className="nav-dropdown-menu">
+                    {canAccessPage('/scores') && (
+                      <li>
+                        <Link
+                          to="/scores"
+                          className={`nav-dropdown-link ${isActive('/scores')}`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          스코어
+                        </Link>
+                      </li>
                     )}
-                  </Link>
-                </li>
-              )}
-            {canAccessPage('/schedules') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to="/schedules"
-                  className={`nav-link ${isActive('/schedules')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  캘린더
-                </Link>
+                    {canAccessPage('/points') &&
+                      currentClub?.is_points_enabled && (
+                        <li>
+                          <Link
+                            to="/points"
+                            className={`nav-dropdown-link ${isActive('/points')}`}
+                            onClick={() => {
+                              setShowMobileMenu(false);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            포인트
+                          </Link>
+                        </li>
+                      )}
+                    {canAccessPage('/schedules') && (
+                      <li>
+                        <Link
+                          to="/schedules"
+                          className={`nav-dropdown-link ${isActive('/schedules')}`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          캘린더
+                        </Link>
+                      </li>
+                    )}
+                    {canAccessPage('/club-promotion') && (
+                      <li>
+                        <Link
+                          to={`/clubs/promotion/${currentClub.id}`}
+                          className={`nav-dropdown-link ${isActive(
+                            `/clubs/promotion/${currentClub.id}`
+                          )}`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          클럽 홍보 관리
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+                )}
               </li>
             )}
-            {canAccessPage('/club-promotion') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to={`/clubs/promotion/${currentClub.id}`}
-                  className={`nav-link ${isActive(
-                    `/clubs/promotion/${currentClub.id}`
-                  )}`}
-                  onClick={() => setShowMobileMenu(false)}
+
+            {/* 게시판 드롭다운 */}
+            {(currentClub || hasRole('super_admin')) && (
+              <li className="nav-item nav-item-dropdown">
+                <button
+                  className={`nav-link nav-link-dropdown ${
+                    isParentActive(['/board', '/inquiry']) ? 'active' : ''
+                  }`}
+                  onClick={() => handleDropdownToggle('board')}
                 >
-                  클럽 홍보 관리
-                </Link>
+                  게시판
+                  <span className={`dropdown-arrow ${openDropdown === 'board' ? 'rotated' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+                {openDropdown === 'board' && (
+                  <ul className="nav-dropdown-menu">
+                    {canAccessPage('/board') && (
+                      <li>
+                        <Link
+                          to="/board"
+                          className={`nav-dropdown-link ${isActive('/board')}`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          공지
+                        </Link>
+                      </li>
+                    )}
+                    {canAccessPage('/inquiry') && (
+                      <li>
+                        <Link
+                          to="/inquiry"
+                          className={`nav-dropdown-link ${isActive('/inquiry')} ${
+                            unreadInquiryCount > 0 ? 'has-notification' : ''
+                          }`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          문의하기
+                          {unreadInquiryCount > 0 && (
+                            <span className="notification-badge">
+                              {unreadInquiryCount}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    )}
+                  </ul>
+                )}
               </li>
             )}
-            {canAccessPage('/payments') && currentClub && (
-              <li className="nav-item">
-                <Link
-                  to="/payments"
-                  className={`nav-link ${isActive('/payments')}`}
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  회비관리
-                </Link>
-              </li>
-            )}
+
+            {/* 팀 배정 (드롭다운 없음) */}
             {canAccessPage('/team-assignment') && currentClub && (
               <li className="nav-item">
                 <Link
@@ -285,6 +359,7 @@ const Navbar = () => {
                 </Link>
               </li>
             )}
+
             {/* 슈퍼관리자는 클럽 선택 없이도 사용자 관리 접근 가능 */}
             {hasRole('super_admin') && (
               <li className="nav-item">

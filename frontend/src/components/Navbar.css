@@ -63,6 +63,11 @@
 
 .nav-item {
   margin: 0;
+  position: relative;
+}
+
+.nav-item-dropdown {
+  position: relative;
 }
 
 .nav-link {
@@ -73,6 +78,73 @@
   transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease;
   white-space: nowrap;
   font-size: 0.9375rem;
+}
+
+.nav-link-dropdown {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.nav-link-dropdown .dropdown-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.nav-link-dropdown .dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--navbar-dropdown-background);
+  border-radius: 8px;
+  box-shadow: var(--navbar-dropdown-shadow),
+    0 0 0 1px var(--navbar-dropdown-border-color);
+  min-width: 180px;
+  z-index: 1001;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0;
+  list-style: none;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.3s ease;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--navbar-dropdown-border-color);
+}
+
+.nav-dropdown-link {
+  display: block;
+  padding: 0.75rem 1.25rem;
+  color: var(--navbar-dropdown-text);
+  text-decoration: none;
+  transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease;
+  font-size: 0.875rem;
+  position: relative;
+}
+
+.nav-dropdown-link:hover {
+  background: var(--navbar-dropdown-item-hover-bg);
+  color: var(--navbar-dropdown-item-hover-text);
+  padding-left: 1.5rem;
+}
+
+.nav-dropdown-link.active {
+  background: var(--navbar-active-bg);
+  color: var(--navbar-text-strong);
+  font-weight: 500;
+}
+
+.nav-dropdown-link.has-notification {
+  position: relative;
 }
 
 .nav-link:hover {
@@ -582,6 +654,35 @@
   .nav-link.active {
     background-color: var(--navbar-active-bg);
     color: var(--navbar-text-strong);
+  }
+
+  .nav-item-dropdown {
+    width: 100%;
+  }
+
+  .nav-link-dropdown {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-dropdown-menu {
+    position: static;
+    width: 100%;
+    margin-top: 0;
+    margin-left: 1rem;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--navbar-border);
+    box-shadow: none;
+    animation: none;
+  }
+
+  .nav-dropdown-link {
+    padding-left: 2rem;
+  }
+
+  .nav-dropdown-link:hover {
+    padding-left: 2.5rem;
   }
 }
 
