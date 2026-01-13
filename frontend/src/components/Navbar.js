@@ -213,6 +213,7 @@ const Navbar = () => {
                       '/scores',
                       '/points',
                       '/schedules',
+                      '/payments',
                       `/clubs/promotion/${currentClub.id}`,
                     ])
                       ? 'active'
@@ -267,6 +268,20 @@ const Navbar = () => {
                           }}
                         >
                           캘린더
+                        </Link>
+                      </li>
+                    )}
+                    {canAccessPage('/payments') && (
+                      <li>
+                        <Link
+                          to="/payments"
+                          className={`nav-dropdown-link ${isActive('/payments')}`}
+                          onClick={() => {
+                            setShowMobileMenu(false);
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          회비관리
                         </Link>
                       </li>
                     )}
